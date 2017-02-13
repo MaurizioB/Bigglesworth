@@ -1,0 +1,7278 @@
+(lp0
+(S'reserved'
+p1
+NNNNNtp2
+a(lp3
+(I16
+I112
+I12
+tp4
+a(S"128'"
+p5
+S"64'"
+p6
+S"32'"
+p7
+S"16'"
+p8
+S"8'"
+p9
+S"4'"
+p10
+S"2'"
+p11
+S"1'"
+p12
+S"1/2'"
+p13
+tp14
+aS'Osc 1 Octave'
+p15
+aS'Octave'
+p16
+aS'Osc 1'
+p17
+aS'Osc_1_Octave'
+p18
+aa(lp19
+(I52
+I76
+I1
+tp20
+a(S'-12'
+p21
+S'-11'
+p22
+S'-10'
+p23
+S'-9'
+p24
+S'-8'
+p25
+S'-7'
+p26
+S'-6'
+p27
+S'-5'
+p28
+S'-4'
+p29
+S'-3'
+p30
+S'-2'
+p31
+S'-1'
+p32
+S'0'
+p33
+S'+1'
+p34
+S'+2'
+p35
+S'+3'
+p36
+S'+4'
+p37
+S'+5'
+p38
+S'+6'
+p39
+S'+7'
+p40
+S'+8'
+p41
+S'+9'
+p42
+S'+10'
+p43
+S'+11'
+p44
+S'+12'
+p45
+tp46
+aS'Osc 1 Semitone'
+p47
+aS'Semitone'
+p48
+aS'Osc 1'
+p49
+aS'Osc_1_Semitone'
+p50
+aa(lp51
+(I0
+I127
+I1
+tp52
+a(S'-64'
+p53
+S'-63'
+p54
+S'-62'
+p55
+S'-61'
+p56
+S'-60'
+p57
+S'-59'
+p58
+S'-58'
+p59
+S'-57'
+p60
+S'-56'
+p61
+S'-55'
+p62
+S'-54'
+p63
+S'-53'
+p64
+S'-52'
+p65
+S'-51'
+p66
+S'-50'
+p67
+S'-49'
+p68
+S'-48'
+p69
+S'-47'
+p70
+S'-46'
+p71
+S'-45'
+p72
+S'-44'
+p73
+S'-43'
+p74
+S'-42'
+p75
+S'-41'
+p76
+S'-40'
+p77
+S'-39'
+p78
+S'-38'
+p79
+S'-37'
+p80
+S'-36'
+p81
+S'-35'
+p82
+S'-34'
+p83
+S'-33'
+p84
+S'-32'
+p85
+S'-31'
+p86
+S'-30'
+p87
+S'-29'
+p88
+S'-28'
+p89
+S'-27'
+p90
+S'-26'
+p91
+S'-25'
+p92
+S'-24'
+p93
+S'-23'
+p94
+S'-22'
+p95
+S'-21'
+p96
+S'-20'
+p97
+S'-19'
+p98
+S'-18'
+p99
+S'-17'
+p100
+S'-16'
+p101
+S'-15'
+p102
+S'-14'
+p103
+S'-13'
+p104
+S'-12'
+p105
+S'-11'
+p106
+S'-10'
+p107
+S'-9'
+p108
+S'-8'
+p109
+S'-7'
+p110
+S'-6'
+p111
+S'-5'
+p112
+S'-4'
+p113
+S'-3'
+p114
+S'-2'
+p115
+S'-1'
+p116
+S'0'
+p117
+S'+1'
+p118
+S'+2'
+p119
+S'+3'
+p120
+S'+4'
+p121
+S'+5'
+p122
+S'+6'
+p123
+S'+7'
+p124
+S'+8'
+p125
+S'+9'
+p126
+S'+10'
+p127
+S'+11'
+p128
+S'+12'
+p129
+S'+13'
+p130
+S'+14'
+p131
+S'+15'
+p132
+S'+16'
+p133
+S'+17'
+p134
+S'+18'
+p135
+S'+19'
+p136
+S'+20'
+p137
+S'+21'
+p138
+S'+22'
+p139
+S'+23'
+p140
+S'+24'
+p141
+S'+25'
+p142
+S'+26'
+p143
+S'+27'
+p144
+S'+28'
+p145
+S'+29'
+p146
+S'+30'
+p147
+S'+31'
+p148
+S'+32'
+p149
+S'+33'
+p150
+S'+34'
+p151
+S'+35'
+p152
+S'+36'
+p153
+S'+37'
+p154
+S'+38'
+p155
+S'+39'
+p156
+S'+40'
+p157
+S'+41'
+p158
+S'+42'
+p159
+S'+43'
+p160
+S'+44'
+p161
+S'+45'
+p162
+S'+46'
+p163
+S'+47'
+p164
+S'+48'
+p165
+S'+49'
+p166
+S'+50'
+p167
+S'+51'
+p168
+S'+52'
+p169
+S'+53'
+p170
+S'+54'
+p171
+S'+55'
+p172
+S'+56'
+p173
+S'+57'
+p174
+S'+58'
+p175
+S'+59'
+p176
+S'+60'
+p177
+S'+61'
+p178
+S'+62'
+p179
+S'+63'
+p180
+tp181
+aS'Osc 1 Detune'
+p182
+aS'Detune'
+p183
+aS'Osc 1'
+p184
+aS'Osc_1_Detune'
+p185
+aa(lp186
+(I40
+I88
+I1
+tp187
+a(S'-24'
+p188
+S'-23'
+p189
+S'-22'
+p190
+S'-21'
+p191
+S'-20'
+p192
+S'-19'
+p193
+S'-18'
+p194
+S'-17'
+p195
+S'-16'
+p196
+S'-15'
+p197
+S'-14'
+p198
+S'-13'
+p199
+S'-12'
+p200
+S'-11'
+p201
+S'-10'
+p202
+S'-9'
+p203
+S'-8'
+p204
+S'-7'
+p205
+S'-6'
+p206
+S'-5'
+p207
+S'-4'
+p208
+S'-3'
+p209
+S'-2'
+p210
+S'-1'
+p211
+S'0'
+p212
+S'+1'
+p213
+S'+2'
+p214
+S'+3'
+p215
+S'+4'
+p216
+S'+5'
+p217
+S'+6'
+p218
+S'+7'
+p219
+S'+8'
+p220
+S'+9'
+p221
+S'+10'
+p222
+S'+11'
+p223
+S'+12'
+p224
+S'+13'
+p225
+S'+14'
+p226
+S'+15'
+p227
+S'+16'
+p228
+S'+17'
+p229
+S'+18'
+p230
+S'+19'
+p231
+S'+20'
+p232
+S'+21'
+p233
+S'+22'
+p234
+S'+23'
+p235
+S'+24'
+p236
+tp237
+aS'Osc 1 Bend Range'
+p238
+aS'Bend Range'
+p239
+aS'Osc 1'
+p240
+aS'Osc_1_Bend_Range'
+p241
+aa(lp242
+(I0
+I127
+I1
+tp243
+a(S'-200%'
+p244
+S'-197%'
+p245
+S'-194%'
+p246
+S'-191%'
+p247
+S'-188%'
+p248
+S'-184%'
+p249
+S'-181%'
+p250
+S'-178%'
+p251
+S'-175%'
+p252
+S'-172%'
+p253
+S'-169%'
+p254
+S'-166%'
+p255
+S'-163%'
+p256
+S'-160%'
+p257
+S'-156%'
+p258
+S'-153%'
+p259
+S'-150%'
+p260
+S'-147%'
+p261
+S'-144%'
+p262
+S'-141%'
+p263
+S'-138%'
+p264
+S'-135%'
+p265
+S'-132%'
+p266
+S'-128%'
+p267
+S'-125%'
+p268
+S'-122%'
+p269
+S'-119%'
+p270
+S'-116%'
+p271
+S'-113%'
+p272
+S'-110%'
+p273
+S'-107%'
+p274
+S'-104%'
+p275
+S'-100%'
+p276
+S'-97%'
+p277
+S'-94%'
+p278
+S'-91%'
+p279
+S'-88%'
+p280
+S'-85%'
+p281
+S'-82%'
+p282
+S'-79%'
+p283
+S'-76%'
+p284
+S'-72%'
+p285
+S'-69%'
+p286
+S'-66%'
+p287
+S'-63%'
+p288
+S'-60%'
+p289
+S'-57%'
+p290
+S'-54%'
+p291
+S'-51%'
+p292
+S'-48%'
+p293
+S'-44%'
+p294
+S'-41%'
+p295
+S'-38%'
+p296
+S'-35%'
+p297
+S'-32%'
+p298
+S'-29%'
+p299
+S'-26%'
+p300
+S'-23%'
+p301
+S'-20%'
+p302
+S'-16%'
+p303
+S'-13%'
+p304
+S'-10%'
+p305
+S'-7%'
+p306
+S'-4%'
+p307
+S'+-1%'
+p308
+S'+3%'
+p309
+S'+6%'
+p310
+S'+9%'
+p311
+S'+13%'
+p312
+S'+16%'
+p313
+S'+19%'
+p314
+S'+22%'
+p315
+S'+25%'
+p316
+S'+28%'
+p317
+S'+31%'
+p318
+S'+34%'
+p319
+S'+37%'
+p320
+S'+41%'
+p321
+S'+44%'
+p322
+S'+47%'
+p323
+S'+50%'
+p324
+S'+53%'
+p325
+S'+56%'
+p326
+S'+59%'
+p327
+S'+62%'
+p328
+S'+65%'
+p329
+S'+69%'
+p330
+S'+72%'
+p331
+S'+75%'
+p332
+S'+78%'
+p333
+S'+81%'
+p334
+S'+84%'
+p335
+S'+87%'
+p336
+S'+90%'
+p337
+S'+93%'
+p338
+S'+97%'
+p339
+S'+100%'
+p340
+S'+103%'
+p341
+S'+106%'
+p342
+S'+109%'
+p343
+S'+112%'
+p344
+S'+115%'
+p345
+S'+118%'
+p346
+S'+121%'
+p347
+S'+125%'
+p348
+S'+128%'
+p349
+S'+131%'
+p350
+S'+134%'
+p351
+S'+137%'
+p352
+S'+140%'
+p353
+S'+143%'
+p354
+S'+146%'
+p355
+S'+149%'
+p356
+S'+153%'
+p357
+S'+156%'
+p358
+S'+159%'
+p359
+S'+162%'
+p360
+S'+165%'
+p361
+S'+168%'
+p362
+S'+171%'
+p363
+S'+174%'
+p364
+S'+177%'
+p365
+S'+181%'
+p366
+S'+184%'
+p367
+S'+187%'
+p368
+S'+190%'
+p369
+S'+193%'
+p370
+S'+196%'
+p371
+tp372
+aS'Osc 1 Keytrack'
+p373
+aS'Keytrack'
+p374
+aS'Osc 1'
+p375
+aS'Osc_1_Keytrack'
+p376
+aa(lp377
+(I0
+I11
+I1
+tp378
+a(lp379
+S'off'
+p380
+aS'Osc 1'
+p381
+aS'Osc 2'
+p382
+aS'Osc 3'
+p383
+aS'Noise'
+p384
+aS'LFO 1'
+p385
+aS'LFO 2'
+p386
+aS'LFO 3'
+p387
+aS'FilterEnv'
+p388
+aS'AmpEnv'
+p389
+aS'Env3'
+p390
+aS'Env4'
+p391
+aaS'Osc 1 FM Source'
+p392
+aS'FM Source'
+p393
+aS'Osc 1'
+p394
+aS'Osc_1_FM_Source'
+p395
+aa(lp396
+(I0
+I127
+I1
+tp397
+a(S'0'
+p398
+S'1'
+p399
+S'2'
+p400
+S'3'
+p401
+S'4'
+p402
+S'5'
+p403
+S'6'
+p404
+S'7'
+p405
+S'8'
+p406
+S'9'
+p407
+S'10'
+p408
+S'11'
+p409
+S'12'
+p410
+S'13'
+p411
+S'14'
+p412
+S'15'
+p413
+S'16'
+p414
+S'17'
+p415
+S'18'
+p416
+S'19'
+p417
+S'20'
+p418
+S'21'
+p419
+S'22'
+p420
+S'23'
+p421
+S'24'
+p422
+S'25'
+p423
+S'26'
+p424
+S'27'
+p425
+S'28'
+p426
+S'29'
+p427
+S'30'
+p428
+S'31'
+p429
+S'32'
+p430
+S'33'
+p431
+S'34'
+p432
+S'35'
+p433
+S'36'
+p434
+S'37'
+p435
+S'38'
+p436
+S'39'
+p437
+S'40'
+p438
+S'41'
+p439
+S'42'
+p440
+S'43'
+p441
+S'44'
+p442
+S'45'
+p443
+S'46'
+p444
+S'47'
+p445
+S'48'
+p446
+S'49'
+p447
+S'50'
+p448
+S'51'
+p449
+S'52'
+p450
+S'53'
+p451
+S'54'
+p452
+S'55'
+p453
+S'56'
+p454
+S'57'
+p455
+S'58'
+p456
+S'59'
+p457
+S'60'
+p458
+S'61'
+p459
+S'62'
+p460
+S'63'
+p461
+S'64'
+p462
+S'65'
+p463
+S'66'
+p464
+S'67'
+p465
+S'68'
+p466
+S'69'
+p467
+S'70'
+p468
+S'71'
+p469
+S'72'
+p470
+S'73'
+p471
+S'74'
+p472
+S'75'
+p473
+S'76'
+p474
+S'77'
+p475
+S'78'
+p476
+S'79'
+p477
+S'80'
+p478
+S'81'
+p479
+S'82'
+p480
+S'83'
+p481
+S'84'
+p482
+S'85'
+p483
+S'86'
+p484
+S'87'
+p485
+S'88'
+p486
+S'89'
+p487
+S'90'
+p488
+S'91'
+p489
+S'92'
+p490
+S'93'
+p491
+S'94'
+p492
+S'95'
+p493
+S'96'
+p494
+S'97'
+p495
+S'98'
+p496
+S'99'
+p497
+S'100'
+p498
+S'101'
+p499
+S'102'
+p500
+S'103'
+p501
+S'104'
+p502
+S'105'
+p503
+S'106'
+p504
+S'107'
+p505
+S'108'
+p506
+S'109'
+p507
+S'110'
+p508
+S'111'
+p509
+S'112'
+p510
+S'113'
+p511
+S'114'
+p512
+S'115'
+p513
+S'116'
+p514
+S'117'
+p515
+S'118'
+p516
+S'119'
+p517
+S'120'
+p518
+S'121'
+p519
+S'122'
+p520
+S'123'
+p521
+S'124'
+p522
+S'125'
+p523
+S'126'
+p524
+S'127'
+p525
+tp526
+aS'Osc 1 FM Amount'
+p527
+aS'FM Amount'
+p528
+aS'Osc 1'
+p529
+aS'Osc_1_FM_Amount'
+p530
+aa(lp531
+(I0
+I72
+I1
+tp532
+a(lp533
+S'off'
+p534
+aS'Pulse'
+p535
+aS'Saw'
+p536
+aS'Triangle'
+p537
+aS'Sine'
+p538
+aS'Alt 1'
+p539
+aS'Alt 2'
+p540
+aS'Resonant'
+p541
+aS'Resonant2'
+p542
+aS'MalletSyn'
+p543
+aS'Sqr-Sweep'
+p544
+aS'Bellish'
+p545
+aS'Pul-Sweep'
+p546
+aS'Saw-Sweep'
+p547
+aS'MellowSaw'
+p548
+aS'Feedback'
+p549
+aS'Add Harm'
+p550
+aS'Reso 3 HP'
+p551
+aS'Wind Syn'
+p552
+aS'High Harm'
+p553
+aS'Clipper'
+p554
+aS'Organ Syn'
+p555
+aS'SquareSaw'
+p556
+aS'Formant 1'
+p557
+aS'Polated'
+p558
+aS'Transient'
+p559
+aS'ElectricP'
+p560
+aS'Robotic'
+p561
+aS'StrongHrm'
+p562
+aS'PercOrgan'
+p563
+aS'ClipSweep'
+p564
+aS'ResoHarms'
+p565
+aS'2 Echoes'
+p566
+aS'Formant 2'
+p567
+aS'FmntVocal'
+p568
+aS'MicroSync'
+p569
+aS'Micro PWM'
+p570
+aS'Glassy'
+p571
+aS'Square HP'
+p572
+aS'SawSync 1'
+p573
+aS'SawSync 2'
+p574
+aS'SawSync 3'
+p575
+aS'PulSync 1'
+p576
+aS'PulSync 2'
+p577
+aS'PulSync 3'
+p578
+aS'SinSync 1'
+p579
+aS'SinSync 2'
+p580
+aS'SinSync 3'
+p581
+aS'PWM Pulse'
+p582
+aS'PWM Saw'
+p583
+aS'Fuzz Wave'
+p584
+aS'Distorted'
+p585
+aS'HeavyFuzz'
+p586
+aS'Fuzz Sync'
+p587
+aS'K+Strong1'
+p588
+aS'K+Strong2'
+p589
+aS'K+Strong3'
+p590
+aS'1-2-3-4-5'
+p591
+aS'19/twenty'
+p592
+aS'Wavetrip1'
+p593
+aS'Wavetrip2'
+p594
+aS'Wavetrip3'
+p595
+aS'Wavetrip4'
+p596
+aS'MaleVoice'
+p597
+aS'Low Piano'
+p598
+aS'ResoSweep'
+p599
+aS'Xmas Bell'
+p600
+aS'FM Piano'
+p601
+aS'Fat Organ'
+p602
+aS'Vibes'
+p603
+aS'Chorus 2'
+p604
+aS'True PWM'
+p605
+aS'UpperWaves'
+p606
+aaS'Osc 1 Shape'
+p607
+aS'Shape'
+p608
+aS'Osc 1'
+p609
+aS'Osc_1_Shape'
+p610
+aa(lp611
+(I0
+I127
+I1
+tp612
+ag526
+aS'Osc 1 Pulsewidth'
+p613
+aS'Pulsewidth'
+p614
+aS'Osc 1'
+p615
+aS'Osc_1_Pulsewidth'
+p616
+aa(lp617
+(I0
+I30
+I1
+tp618
+a(lp619
+S'off'
+p620
+aS'LFO 1'
+p621
+aS'LFO1*MW'
+p622
+aS'LFO 2'
+p623
+aS'LFO2*Press'
+p624
+aS'LFO 3'
+p625
+aS'FilterEnv'
+p626
+aS'AmpEnv'
+p627
+aS'Env3'
+p628
+aS'Env4'
+p629
+aS'Keytrack'
+p630
+aS'Velocity'
+p631
+aS'Rel. Velo'
+p632
+aS'Pressure'
+p633
+aS'Poly Press'
+p634
+aS'Pitch Bend'
+p635
+aS'Mod Wheel'
+p636
+aS'Sustain'
+p637
+aS'Foot Ctrl'
+p638
+aS'BreathCtrl'
+p639
+aS'Control W'
+p640
+aS'Control X'
+p641
+aS'Control Y'
+p642
+aS'Control Z'
+p643
+aS'Unisono V.'
+p644
+aS'Modifier 1'
+p645
+aS'Modifier 2'
+p646
+aS'Modifier 3'
+p647
+aS'Modifier 4'
+p648
+aS'minimum'
+p649
+aS'MAXIMUM'
+p650
+aaS'Osc 1 PWM Source'
+p651
+aS'PWM Source'
+p652
+aS'Osc 1'
+p653
+aS'Osc_1_PWM_Source'
+p654
+aa(lp655
+(I0
+I127
+I1
+tp656
+ag181
+aS'Osc 1 PWM Amount'
+p657
+aS'PWM Amount'
+p658
+aS'Osc 1'
+p659
+aS'Osc_1_PWM_Amount'
+p660
+aag2
+ag2
+a(lp661
+(I0
+I1
+I1
+tp662
+a(S'on'
+p663
+S'off'
+p664
+tp665
+aS'Osc 1 Limit WT'
+p666
+aS'Limit WT'
+p667
+aS'Osc 1'
+p668
+aS'Osc_1_Limit_WT'
+p669
+aag2
+a(lp670
+(I0
+I127
+I1
+tp671
+ag526
+aS'Osc 1 Brilliance'
+p672
+aS'Brilliance'
+p673
+aS'Osc 1'
+p674
+aS'Osc_1_Brilliance'
+p675
+aa(lp676
+(I16
+I112
+I12
+tp677
+ag14
+aS'Osc 2 Octave'
+p678
+aS'Octave'
+p679
+aS'Osc 2'
+p680
+aS'Osc_2_Octave'
+p681
+aa(lp682
+(I52
+I76
+I1
+tp683
+ag46
+aS'Osc 2 Semitone'
+p684
+aS'Semitone'
+p685
+aS'Osc 2'
+p686
+aS'Osc_2_Semitone'
+p687
+aa(lp688
+(I0
+I127
+I1
+tp689
+ag181
+aS'Osc 2 Detune'
+p690
+aS'Detune'
+p691
+aS'Osc 2'
+p692
+aS'Osc_2_Detune'
+p693
+aa(lp694
+(I40
+I88
+I1
+tp695
+ag237
+aS'Osc 2 Bend Range'
+p696
+aS'Bend Range'
+p697
+aS'Osc 2'
+p698
+aS'Osc_2_Bend_Range'
+p699
+aa(lp700
+(I0
+I127
+I1
+tp701
+ag372
+aS'Osc 2 Keytrack'
+p702
+aS'Keytrack'
+p703
+aS'Osc 2'
+p704
+aS'Osc_2_Keytrack'
+p705
+aa(lp706
+(I0
+I11
+I1
+tp707
+ag379
+aS'Osc 2 FM Source'
+p708
+aS'FM Source'
+p709
+aS'Osc 2'
+p710
+aS'Osc_2_FM_Source'
+p711
+aa(lp712
+(I0
+I127
+I1
+tp713
+ag526
+aS'Osc 2 FM Amount'
+p714
+aS'FM Amount'
+p715
+aS'Osc 2'
+p716
+aS'Osc_2_FM_Amount'
+p717
+aa(lp718
+(I0
+I72
+I1
+tp719
+ag533
+aS'Osc 2 Shape'
+p720
+aS'Shape'
+p721
+aS'Osc 2'
+p722
+aS'Osc_2_Shape'
+p723
+aa(lp724
+(I0
+I127
+I1
+tp725
+ag526
+aS'Osc 2 Pulsewidth'
+p726
+aS'Pulsewidth'
+p727
+aS'Osc 2'
+p728
+aS'Osc_2_Pulsewidth'
+p729
+aa(lp730
+(I0
+I30
+I1
+tp731
+ag619
+aS'Osc 2 PWM Source'
+p732
+aS'PWM Source'
+p733
+aS'Osc 2'
+p734
+aS'Osc_2_PWM_Source'
+p735
+aa(lp736
+(I0
+I127
+I1
+tp737
+ag181
+aS'Osc 2 PWM Amount'
+p738
+aS'PWM Amount'
+p739
+aS'Osc 2'
+p740
+aS'Osc_2_PWM_Amount'
+p741
+aag2
+ag2
+a(lp742
+(I0
+I1
+I1
+tp743
+ag665
+aS'Osc 2 Limit WT'
+p744
+aS'Limit WT'
+p745
+aS'Osc 2'
+p746
+aS'Osc_2_Limit_WT'
+p747
+aag2
+a(lp748
+(I0
+I127
+I1
+tp749
+ag526
+aS'Osc 2 Brilliance'
+p750
+aS'Brilliance'
+p751
+aS'Osc 2'
+p752
+aS'Osc_2_Brilliance'
+p753
+aa(lp754
+(I16
+I112
+I12
+tp755
+ag14
+aS'Osc 3 Octave'
+p756
+aS'Octave'
+p757
+aS'Osc 3'
+p758
+aS'Osc_3_Octave'
+p759
+aa(lp760
+(I52
+I76
+I1
+tp761
+ag46
+aS'Osc 3 Semitone'
+p762
+aS'Semitone'
+p763
+aS'Osc 3'
+p764
+aS'Osc_3_Semitone'
+p765
+aa(lp766
+(I0
+I127
+I1
+tp767
+ag181
+aS'Osc 3 Detune'
+p768
+aS'Detune'
+p769
+aS'Osc 3'
+p770
+aS'Osc_3_Detune'
+p771
+aa(lp772
+(I40
+I88
+I1
+tp773
+ag237
+aS'Osc 3 Bend Range'
+p774
+aS'Bend Range'
+p775
+aS'Osc 3'
+p776
+aS'Osc_3_Bend_Range'
+p777
+aa(lp778
+(I0
+I127
+I1
+tp779
+ag372
+aS'Osc 3 Keytrack'
+p780
+aS'Keytrack'
+p781
+aS'Osc 3'
+p782
+aS'Osc_3_Keytrack'
+p783
+aa(lp784
+(I0
+I11
+I1
+tp785
+ag379
+aS'Osc 3 FM Source'
+p786
+aS'FM Source'
+p787
+aS'Osc 3'
+p788
+aS'Osc_3_FM_Source'
+p789
+aa(lp790
+(I0
+I127
+I1
+tp791
+ag526
+aS'Osc 3 FM Amount'
+p792
+aS'FM Amount'
+p793
+aS'Osc 3'
+p794
+aS'Osc_3_FM_Amount'
+p795
+aa(lp796
+(I0
+I4
+I1
+tp797
+ag533
+aS'Osc 3 Shape'
+p798
+aS'Shape'
+p799
+aS'Osc 3'
+p800
+aS'Osc_3_Shape'
+p801
+aa(lp802
+(I0
+I127
+I1
+tp803
+ag526
+aS'Osc 3 Pulsewidth'
+p804
+aS'Pulsewidth'
+p805
+aS'Osc 3'
+p806
+aS'Osc_3_Pulsewidth'
+p807
+aa(lp808
+(I0
+I30
+I1
+tp809
+ag619
+aS'Osc 3 PWM Source'
+p810
+aS'PWM Source'
+p811
+aS'Osc 3'
+p812
+aS'Osc_3_PWM_Source'
+p813
+aa(lp814
+(I0
+I127
+I1
+tp815
+ag181
+aS'Osc 3 PWM Amount'
+p816
+aS'PWM Amount'
+p817
+aS'Osc 3'
+p818
+aS'Osc_3_PWM_Amount'
+p819
+aag2
+ag2
+ag2
+ag2
+a(lp820
+(I0
+I127
+I1
+tp821
+ag526
+aS'Osc 3 Brilliance'
+p822
+aS'Brilliance'
+p823
+aS'Osc 3'
+p824
+aS'Osc_3_Brilliance'
+p825
+aa(lp826
+(I0
+I1
+I1
+tp827
+a(g664
+g663
+tp828
+aS'Osc 2 Sync to O3'
+p829
+aS'Sync to O3'
+p830
+aS'Osc 2'
+p831
+aS'Osc_2_Sync_to_O3'
+p832
+aa(lp833
+(I0
+I30
+I1
+tp834
+ag619
+aS'Osc Pitch Source'
+p835
+aS'Source'
+p836
+aS'Osc Pitch'
+p837
+aS'Osc_Pitch_Source'
+p838
+aa(lp839
+(I0
+I127
+I1
+tp840
+ag181
+aS'Osc Pitch Amount'
+p841
+aS'Amount'
+p842
+aS'Osc Pitch'
+p843
+aS'Osc_Pitch_Amount'
+p844
+aag2
+a(lp845
+(I0
+I1
+I1
+tp846
+ag828
+aS'Glide'
+p847
+ag847
+aS''
+p848
+ag847
+aag2
+ag2
+a(lp849
+(I0
+I3
+I1
+tp850
+a(lp851
+S'Portamento'
+p852
+aS'fingered P'
+p853
+aS'Glissando'
+p854
+aS'fingered G'
+p855
+aaS'Glide Mode'
+p856
+aS'Mode'
+p857
+aS'Glide'
+p858
+aS'Glide_Mode'
+p859
+aa(lp860
+(I0
+I127
+I1
+tp861
+ag526
+aS'Glide Rate'
+p862
+aS'Rate'
+p863
+aS'Glide'
+p864
+aS'Glide_Rate'
+p865
+aa(lp866
+(I0
+I127
+I1
+tp867
+ag526
+aS'Allocation Mode and Unisono'
+p868
+ag868
+ag848
+aS'Allocation_Mode_and_Unisono'
+p869
+aa(lp870
+(I0
+I127
+I1
+tp871
+ag526
+aS'Unisono Uni Detune'
+p872
+ag872
+ag848
+aS'Unisono_Uni_Detune'
+p873
+aag2
+a(lp874
+(I0
+I127
+I1
+tp875
+ag526
+aS'Mixer Osc 1 Level'
+p876
+aS'Level'
+p877
+aS'Mixer Osc 1'
+p878
+aS'Mixer_Osc_1_Level'
+p879
+aa(lp880
+(I0
+I127
+I1
+tp881
+a(S'F1 64'
+p882
+S'F1 63'
+p883
+S'F1 62'
+p884
+S'F1 61'
+p885
+S'F1 60'
+p886
+S'F1 59'
+p887
+S'F1 58'
+p888
+S'F1 57'
+p889
+S'F1 56'
+p890
+S'F1 55'
+p891
+S'F1 54'
+p892
+S'F1 53'
+p893
+S'F1 52'
+p894
+S'F1 51'
+p895
+S'F1 50'
+p896
+S'F1 49'
+p897
+S'F1 48'
+p898
+S'F1 47'
+p899
+S'F1 46'
+p900
+S'F1 45'
+p901
+S'F1 44'
+p902
+S'F1 43'
+p903
+S'F1 42'
+p904
+S'F1 41'
+p905
+S'F1 40'
+p906
+S'F1 39'
+p907
+S'F1 38'
+p908
+S'F1 37'
+p909
+S'F1 36'
+p910
+S'F1 35'
+p911
+S'F1 34'
+p912
+S'F1 33'
+p913
+S'F1 32'
+p914
+S'F1 31'
+p915
+S'F1 30'
+p916
+S'F1 29'
+p917
+S'F1 28'
+p918
+S'F1 27'
+p919
+S'F1 26'
+p920
+S'F1 25'
+p921
+S'F1 24'
+p922
+S'F1 23'
+p923
+S'F1 22'
+p924
+S'F1 21'
+p925
+S'F1 20'
+p926
+S'F1 19'
+p927
+S'F1 18'
+p928
+S'F1 17'
+p929
+S'F1 16'
+p930
+S'F1 15'
+p931
+S'F1 14'
+p932
+S'F1 13'
+p933
+S'F1 12'
+p934
+S'F1 11'
+p935
+S'F1 10'
+p936
+S'F1 9'
+p937
+S'F1 8'
+p938
+S'F1 7'
+p939
+S'F1 6'
+p940
+S'F1 5'
+p941
+S'F1 4'
+p942
+S'F1 3'
+p943
+S'F1 2'
+p944
+S'F1 1'
+p945
+S'middle'
+p946
+S'F2 1'
+p947
+S'F2 2'
+p948
+S'F2 3'
+p949
+S'F2 4'
+p950
+S'F2 5'
+p951
+S'F2 6'
+p952
+S'F2 7'
+p953
+S'F2 8'
+p954
+S'F2 9'
+p955
+S'F2 10'
+p956
+S'F2 11'
+p957
+S'F2 12'
+p958
+S'F2 13'
+p959
+S'F2 14'
+p960
+S'F2 15'
+p961
+S'F2 16'
+p962
+S'F2 17'
+p963
+S'F2 18'
+p964
+S'F2 19'
+p965
+S'F2 20'
+p966
+S'F2 21'
+p967
+S'F2 22'
+p968
+S'F2 23'
+p969
+S'F2 24'
+p970
+S'F2 25'
+p971
+S'F2 26'
+p972
+S'F2 27'
+p973
+S'F2 28'
+p974
+S'F2 29'
+p975
+S'F2 30'
+p976
+S'F2 31'
+p977
+S'F2 32'
+p978
+S'F2 33'
+p979
+S'F2 34'
+p980
+S'F2 35'
+p981
+S'F2 36'
+p982
+S'F2 37'
+p983
+S'F2 38'
+p984
+S'F2 39'
+p985
+S'F2 40'
+p986
+S'F2 41'
+p987
+S'F2 42'
+p988
+S'F2 43'
+p989
+S'F2 44'
+p990
+S'F2 45'
+p991
+S'F2 46'
+p992
+S'F2 47'
+p993
+S'F2 48'
+p994
+S'F2 49'
+p995
+S'F2 50'
+p996
+S'F2 51'
+p997
+S'F2 52'
+p998
+S'F2 53'
+p999
+S'F2 54'
+p1000
+S'F2 55'
+p1001
+S'F2 56'
+p1002
+S'F2 57'
+p1003
+S'F2 58'
+p1004
+S'F2 59'
+p1005
+S'F2 60'
+p1006
+S'F2 61'
+p1007
+S'F2 62'
+p1008
+S'F2 63'
+p1009
+tp1010
+aS'Mixer Osc 1 Balance'
+p1011
+aS'Balance'
+p1012
+aS'Mixer Osc 1'
+p1013
+aS'Mixer_Osc_1_Balance'
+p1014
+aa(lp1015
+(I0
+I127
+I1
+tp1016
+ag526
+aS'Mixer Osc 2 Level'
+p1017
+aS'Level'
+p1018
+aS'Mixer Osc 2'
+p1019
+aS'Mixer_Osc_2_Level'
+p1020
+aa(lp1021
+(I0
+I127
+I1
+tp1022
+ag1010
+aS'Mixer Osc 2 Balance'
+p1023
+aS'Balance'
+p1024
+aS'Mixer Osc 2'
+p1025
+aS'Mixer_Osc_2_Balance'
+p1026
+aa(lp1027
+(I0
+I127
+I1
+tp1028
+ag526
+aS'Mixer Osc 3 Level'
+p1029
+aS'Level'
+p1030
+aS'Mixer Osc 3'
+p1031
+aS'Mixer_Osc_3_Level'
+p1032
+aa(lp1033
+(I0
+I127
+I1
+tp1034
+ag1010
+aS'Mixer Osc 3 Balance'
+p1035
+aS'Balance'
+p1036
+aS'Mixer Osc 3'
+p1037
+aS'Mixer_Osc_3_Balance'
+p1038
+aa(lp1039
+(I0
+I127
+I1
+tp1040
+ag526
+aS'Mixer Noise Level'
+p1041
+aS'Level'
+p1042
+aS'Mixer Noise'
+p1043
+aS'Mixer_Noise_Level'
+p1044
+aa(lp1045
+(I0
+I127
+I1
+tp1046
+ag1010
+aS'Mixer Noise Balance'
+p1047
+aS'Balance'
+p1048
+aS'Mixer Noise'
+p1049
+aS'Mixer_Noise_Balance'
+p1050
+aa(lp1051
+(I0
+I127
+I1
+tp1052
+ag181
+aS'Mixer Noise Colour'
+p1053
+aS'Colour'
+p1054
+aS'Mixer Noise'
+p1055
+aS'Mixer_Noise_Colour'
+p1056
+aag2
+a(lp1057
+(I0
+I127
+I1
+tp1058
+ag526
+aS'Mixer RingMod Level'
+p1059
+aS'Level'
+p1060
+aS'Mixer RingMod'
+p1061
+aS'Mixer_RingMod_Level'
+p1062
+aa(lp1063
+(I0
+I127
+I1
+tp1064
+ag1010
+aS'Mixer RingMod Balance'
+p1065
+aS'Balance'
+p1066
+aS'Mixer RingMod'
+p1067
+aS'Mixer_RingMod_Balance'
+p1068
+aag2
+ag2
+ag2
+ag2
+a(lp1069
+(I0
+I11
+I1
+tp1070
+a(lp1071
+S'Bypass'
+p1072
+aS'LP 24dB'
+p1073
+aS'LP 12dB'
+p1074
+aS'BP 24dB'
+p1075
+aS'BP 12dB'
+p1076
+aS'HP 24dB'
+p1077
+aS'HP 12dB'
+p1078
+aS'Notch24dB'
+p1079
+aS'Notch12dB'
+p1080
+aS'Comb+'
+p1081
+aS'Comb-'
+p1082
+aS'PPG LP'
+p1083
+aaS'Filter 1 Type'
+p1084
+aS'Type'
+p1085
+aS'Filter 1'
+p1086
+aS'Filter_1_Type'
+p1087
+aa(lp1088
+(I0
+I127
+I1
+tp1089
+ag526
+aS'Filter 1 Cutoff'
+p1090
+aS'Cutoff'
+p1091
+aS'Filter 1'
+p1092
+aS'Filter_1_Cutoff'
+p1093
+aag2
+a(lp1094
+(I0
+I127
+I1
+tp1095
+ag526
+aS'Filter 1 Resonance'
+p1096
+aS'Resonance'
+p1097
+aS'Filter 1'
+p1098
+aS'Filter_1_Resonance'
+p1099
+aa(lp1100
+(I0
+I127
+I1
+tp1101
+ag526
+aS'Filter 1 Drive'
+p1102
+aS'Drive'
+p1103
+aS'Filter 1'
+p1104
+aS'Filter_1_Drive'
+p1105
+aa(lp1106
+(I0
+I12
+I1
+tp1107
+a(lp1108
+S'Clipping'
+p1109
+aS'Tube'
+p1110
+aS'Hard'
+p1111
+aS'Medium'
+p1112
+aS'Soft'
+p1113
+aS'Pickup 1'
+p1114
+aS'Pickup 2'
+p1115
+aS'Rectifier'
+p1116
+aS'Square'
+p1117
+aS'Binary'
+p1118
+aS'Overflow'
+p1119
+aS'Sine Shaper'
+p1120
+aS'Osc 1 Mod'
+p1121
+aaS'Filter 1 Drive Curve'
+p1122
+aS'Drive Curve'
+p1123
+aS'Filter 1'
+p1124
+aS'Filter_1_Drive_Curve'
+p1125
+aag2
+ag2
+ag2
+a(lp1126
+(I0
+I127
+I1
+tp1127
+ag372
+aS'Filter 1 Keytrack'
+p1128
+aS'Keytrack'
+p1129
+aS'Filter 1'
+p1130
+aS'Filter_1_Keytrack'
+p1131
+aa(lp1132
+(I0
+I127
+I1
+tp1133
+ag181
+aS'Filter 1 Env Amount'
+p1134
+aS'Env Amount'
+p1135
+aS'Filter 1'
+p1136
+aS'Filter_1_Env_Amount'
+p1137
+aa(lp1138
+(I0
+I127
+I1
+tp1139
+ag181
+aS'Filter 1 Env Velocity'
+p1140
+aS'Env Velocity'
+p1141
+aS'Filter 1'
+p1142
+aS'Filter_1_Env_Velocity'
+p1143
+aa(lp1144
+(I0
+I30
+I1
+tp1145
+ag619
+aS'Filter 1 Mod Source'
+p1146
+aS'Mod Source'
+p1147
+aS'Filter 1'
+p1148
+aS'Filter_1_Mod_Source'
+p1149
+aa(lp1150
+(I0
+I127
+I1
+tp1151
+ag181
+aS'Filter 1 Mod Amount'
+p1152
+aS'Mod Amount'
+p1153
+aS'Filter 1'
+p1154
+aS'Filter_1_Mod_Amount'
+p1155
+aa(lp1156
+(I0
+I11
+I1
+tp1157
+ag379
+aS'Filter 1 FM Source'
+p1158
+aS'FM Source'
+p1159
+aS'Filter 1'
+p1160
+aS'Filter_1_FM_Source'
+p1161
+aa(lp1162
+(I0
+I127
+I1
+tp1163
+ag379
+aS'Filter 1 FM Amount'
+p1164
+aS'FM Amount'
+p1165
+aS'Filter 1'
+p1166
+aS'Filter_1_FM_Amount'
+p1167
+aa(lp1168
+(I0
+I127
+I1
+tp1169
+a(S'left 64'
+p1170
+S'left 63'
+p1171
+S'left 62'
+p1172
+S'left 61'
+p1173
+S'left 60'
+p1174
+S'left 59'
+p1175
+S'left 58'
+p1176
+S'left 57'
+p1177
+S'left 56'
+p1178
+S'left 55'
+p1179
+S'left 54'
+p1180
+S'left 53'
+p1181
+S'left 52'
+p1182
+S'left 51'
+p1183
+S'left 50'
+p1184
+S'left 49'
+p1185
+S'left 48'
+p1186
+S'left 47'
+p1187
+S'left 46'
+p1188
+S'left 45'
+p1189
+S'left 44'
+p1190
+S'left 43'
+p1191
+S'left 42'
+p1192
+S'left 41'
+p1193
+S'left 40'
+p1194
+S'left 39'
+p1195
+S'left 38'
+p1196
+S'left 37'
+p1197
+S'left 36'
+p1198
+S'left 35'
+p1199
+S'left 34'
+p1200
+S'left 33'
+p1201
+S'left 32'
+p1202
+S'left 31'
+p1203
+S'left 30'
+p1204
+S'left 29'
+p1205
+S'left 28'
+p1206
+S'left 27'
+p1207
+S'left 26'
+p1208
+S'left 25'
+p1209
+S'left 24'
+p1210
+S'left 23'
+p1211
+S'left 22'
+p1212
+S'left 21'
+p1213
+S'left 20'
+p1214
+S'left 19'
+p1215
+S'left 18'
+p1216
+S'left 17'
+p1217
+S'left 16'
+p1218
+S'left 15'
+p1219
+S'left 14'
+p1220
+S'left 13'
+p1221
+S'left 12'
+p1222
+S'left 11'
+p1223
+S'left 10'
+p1224
+S'left 9'
+p1225
+S'left 8'
+p1226
+S'left 7'
+p1227
+S'left 6'
+p1228
+S'left 5'
+p1229
+S'left 4'
+p1230
+S'left 3'
+p1231
+S'left 2'
+p1232
+S'left 1'
+p1233
+S'center'
+p1234
+S'right 1'
+p1235
+S'right 2'
+p1236
+S'right 3'
+p1237
+S'right 4'
+p1238
+S'right 5'
+p1239
+S'right 6'
+p1240
+S'right 7'
+p1241
+S'right 8'
+p1242
+S'right 9'
+p1243
+S'right 10'
+p1244
+S'right 11'
+p1245
+S'right 12'
+p1246
+S'right 13'
+p1247
+S'right 14'
+p1248
+S'right 15'
+p1249
+S'right 16'
+p1250
+S'right 17'
+p1251
+S'right 18'
+p1252
+S'right 19'
+p1253
+S'right 20'
+p1254
+S'right 21'
+p1255
+S'right 22'
+p1256
+S'right 23'
+p1257
+S'right 24'
+p1258
+S'right 25'
+p1259
+S'right 26'
+p1260
+S'right 27'
+p1261
+S'right 28'
+p1262
+S'right 29'
+p1263
+S'right 30'
+p1264
+S'right 31'
+p1265
+S'right 32'
+p1266
+S'right 33'
+p1267
+S'right 34'
+p1268
+S'right 35'
+p1269
+S'right 36'
+p1270
+S'right 37'
+p1271
+S'right 38'
+p1272
+S'right 39'
+p1273
+S'right 40'
+p1274
+S'right 41'
+p1275
+S'right 42'
+p1276
+S'right 43'
+p1277
+S'right 44'
+p1278
+S'right 45'
+p1279
+S'right 46'
+p1280
+S'right 47'
+p1281
+S'right 48'
+p1282
+S'right 49'
+p1283
+S'right 50'
+p1284
+S'right 51'
+p1285
+S'right 52'
+p1286
+S'right 53'
+p1287
+S'right 54'
+p1288
+S'right 55'
+p1289
+S'right 56'
+p1290
+S'right 57'
+p1291
+S'right 58'
+p1292
+S'right 59'
+p1293
+S'right 60'
+p1294
+S'right 61'
+p1295
+S'right 62'
+p1296
+S'right 63'
+p1297
+tp1298
+aS'Filter 1 Pan'
+p1299
+aS'Pan'
+p1300
+aS'Filter 1'
+p1301
+aS'Filter_1_Pan'
+p1302
+aa(lp1303
+(I0
+I30
+I1
+tp1304
+ag619
+aS'Filter 1 Pan Source'
+p1305
+aS'Pan Source'
+p1306
+aS'Filter 1'
+p1307
+aS'Filter_1_Pan_Source'
+p1308
+aa(lp1309
+(I0
+I127
+I1
+tp1310
+ag181
+aS'Filter 1 Pan Amount'
+p1311
+aS'Pan Amount'
+p1312
+aS'Filter 1'
+p1313
+aS'Filter_1_Pan_Amount'
+p1314
+aag2
+a(lp1315
+(I0
+I11
+I1
+tp1316
+ag1071
+aS'Filter 2 Type'
+p1317
+aS'Type'
+p1318
+aS'Filter 2'
+p1319
+aS'Filter_2_Type'
+p1320
+aa(lp1321
+(I0
+I127
+I1
+tp1322
+ag526
+aS'Filter 2 Cutoff'
+p1323
+aS'Cutoff'
+p1324
+aS'Filter 2'
+p1325
+aS'Filter_2_Cutoff'
+p1326
+aag2
+a(lp1327
+(I0
+I127
+I1
+tp1328
+ag526
+aS'Filter 2 Resonance'
+p1329
+aS'Resonance'
+p1330
+aS'Filter 2'
+p1331
+aS'Filter_2_Resonance'
+p1332
+aa(lp1333
+(I0
+I127
+I1
+tp1334
+ag526
+aS'Filter 2 Drive'
+p1335
+aS'Drive'
+p1336
+aS'Filter 2'
+p1337
+aS'Filter_2_Drive'
+p1338
+aa(lp1339
+(I0
+I12
+I1
+tp1340
+ag1108
+aS'Filter 2 Drive Curve'
+p1341
+aS'Drive Curve'
+p1342
+aS'Filter 2'
+p1343
+aS'Filter_2_Drive_Curve'
+p1344
+aag2
+ag2
+ag2
+a(lp1345
+(I0
+I127
+I1
+tp1346
+ag372
+aS'Filter 2 Keytrack'
+p1347
+aS'Keytrack'
+p1348
+aS'Filter 2'
+p1349
+aS'Filter_2_Keytrack'
+p1350
+aa(lp1351
+(I0
+I127
+I1
+tp1352
+ag181
+aS'Filter 2 Env Amount'
+p1353
+aS'Env Amount'
+p1354
+aS'Filter 2'
+p1355
+aS'Filter_2_Env_Amount'
+p1356
+aa(lp1357
+(I0
+I127
+I1
+tp1358
+ag181
+aS'Filter 2 Env Velocity'
+p1359
+aS'Env Velocity'
+p1360
+aS'Filter 2'
+p1361
+aS'Filter_2_Env_Velocity'
+p1362
+aa(lp1363
+(I0
+I30
+I1
+tp1364
+ag619
+aS'Filter 2 Mod Source'
+p1365
+aS'Mod Source'
+p1366
+aS'Filter 2'
+p1367
+aS'Filter_2_Mod_Source'
+p1368
+aa(lp1369
+(I0
+I127
+I1
+tp1370
+ag181
+aS'Filter 2 Mod Amount'
+p1371
+aS'Mod Amount'
+p1372
+aS'Filter 2'
+p1373
+aS'Filter_2_Mod_Amount'
+p1374
+aa(lp1375
+(I0
+I11
+I1
+tp1376
+ag379
+aS'Filter 2 FM Source'
+p1377
+aS'FM Source'
+p1378
+aS'Filter 2'
+p1379
+aS'Filter_2_FM_Source'
+p1380
+aa(lp1381
+(I0
+I127
+I1
+tp1382
+ag379
+aS'Filter 2 FM Amount'
+p1383
+aS'FM Amount'
+p1384
+aS'Filter 2'
+p1385
+aS'Filter_2_FM_Amount'
+p1386
+aa(lp1387
+(I0
+I127
+I1
+tp1388
+ag1298
+aS'Filter 2 Pan'
+p1389
+aS'Pan'
+p1390
+aS'Filter 2'
+p1391
+aS'Filter_2_Pan'
+p1392
+aa(lp1393
+(I0
+I30
+I1
+tp1394
+ag619
+aS'Filter 2 Pan Source'
+p1395
+aS'Pan Source'
+p1396
+aS'Filter 2'
+p1397
+aS'Filter_2_Pan_Source'
+p1398
+aa(lp1399
+(I0
+I127
+I1
+tp1400
+ag181
+aS'Filter 2 Pan Amount'
+p1401
+aS'Pan Amount'
+p1402
+aS'Filter 2'
+p1403
+aS'Filter_2_Pan_Amount'
+p1404
+aag2
+a(lp1405
+(I0
+I1
+I1
+tp1406
+a(S'parallel'
+p1407
+S'serial'
+p1408
+tp1409
+aS'Filter Routing'
+p1410
+aS'Routing'
+p1411
+aS'Filter'
+p1412
+aS'Filter_Routing'
+p1413
+aag2
+ag2
+ag2
+a(lp1414
+(I0
+I127
+I1
+tp1415
+ag526
+aS'Amplifier Volume'
+p1416
+aS'Volume'
+p1417
+aS'Amplifier'
+p1418
+aS'Amplifier_Volume'
+p1419
+aa(lp1420
+(I0
+I127
+I1
+tp1421
+ag181
+aS'Amplifier Velocity'
+p1422
+aS'Velocity'
+p1423
+aS'Amplifier'
+p1424
+aS'Amplifier_Velocity'
+p1425
+aa(lp1426
+(I0
+I30
+I1
+tp1427
+ag619
+aS'Amplifier Mod Source'
+p1428
+aS'Source'
+p1429
+aS'Amplifier Mod'
+p1430
+aS'Amplifier_Mod_Source'
+p1431
+aa(lp1432
+(I0
+I127
+I1
+tp1433
+ag181
+aS'Amplifier Mod Amount'
+p1434
+aS'Amount'
+p1435
+aS'Amplifier Mod'
+p1436
+aS'Amplifier_Mod_Amount'
+p1437
+aag2
+ag2
+ag2
+a(lp1438
+(I0
+I127
+I1
+tp1439
+a(lp1440
+S'Bypass'
+p1441
+aS'Chorus'
+p1442
+aS'Flanger'
+p1443
+aS'Phaser'
+p1444
+aS'Overdrive'
+p1445
+aS'Triple FX'
+p1446
+aaS'Effect 1 Type'
+p1447
+aS'Type'
+p1448
+aS'Effect 1'
+p1449
+aS'Effect_1_Type'
+p1450
+aa(lp1451
+(I0
+I127
+I1
+tp1452
+ag526
+aS'Effect 1 Mix'
+p1453
+aS'Mix'
+p1454
+aS'Effect 1'
+p1455
+aS'Effect_1_Mix'
+p1456
+aa(lp1457
+(I0
+I127
+I1
+tp1458
+ag526
+aS'Effect 1 Parameter 1'
+p1459
+aS'Parameter 1'
+p1460
+aS'Effect 1'
+p1461
+aS'Effect_1_Parameter_1'
+p1462
+aa(lp1463
+(I0
+I127
+I1
+tp1464
+ag526
+aS'Effect 1 Parameter 2'
+p1465
+aS'Parameter 2'
+p1466
+aS'Effect 1'
+p1467
+aS'Effect_1_Parameter_2'
+p1468
+aa(lp1469
+(I0
+I127
+I1
+tp1470
+ag526
+aS'Effect 1 Parameter 3'
+p1471
+aS'Parameter 3'
+p1472
+aS'Effect 1'
+p1473
+aS'Effect_1_Parameter_3'
+p1474
+aa(lp1475
+(I0
+I127
+I1
+tp1476
+ag526
+aS'Effect 1 Parameter 4'
+p1477
+aS'Parameter 4'
+p1478
+aS'Effect 1'
+p1479
+aS'Effect_1_Parameter_4'
+p1480
+aa(lp1481
+(I0
+I127
+I1
+tp1482
+ag526
+aS'Effect 1 Parameter 5'
+p1483
+aS'Parameter 5'
+p1484
+aS'Effect 1'
+p1485
+aS'Effect_1_Parameter_5'
+p1486
+aa(lp1487
+(I0
+I127
+I1
+tp1488
+ag526
+aS'Effect 1 Parameter 6'
+p1489
+aS'Parameter 6'
+p1490
+aS'Effect 1'
+p1491
+aS'Effect_1_Parameter_6'
+p1492
+aa(lp1493
+(I0
+I127
+I1
+tp1494
+ag526
+aS'Effect 1 Parameter 7'
+p1495
+aS'Parameter 7'
+p1496
+aS'Effect 1'
+p1497
+aS'Effect_1_Parameter_7'
+p1498
+aa(lp1499
+(I0
+I127
+I1
+tp1500
+ag526
+aS'Effect 1 Parameter 8'
+p1501
+aS'Parameter 8'
+p1502
+aS'Effect 1'
+p1503
+aS'Effect_1_Parameter_8'
+p1504
+aa(lp1505
+(I0
+I127
+I1
+tp1506
+ag526
+aS'Effect 1 Parameter 9'
+p1507
+aS'Parameter 9'
+p1508
+aS'Effect 1'
+p1509
+aS'Effect_1_Parameter_9'
+p1510
+aa(lp1511
+(I0
+I127
+I1
+tp1512
+ag526
+aS'Effect 1 Parameter 10'
+p1513
+aS'Parameter 10'
+p1514
+aS'Effect 1'
+p1515
+aS'Effect_1_Parameter_10'
+p1516
+aa(lp1517
+(I0
+I127
+I1
+tp1518
+ag526
+aS'Effect 1 Parameter 11'
+p1519
+aS'Parameter 11'
+p1520
+aS'Effect 1'
+p1521
+aS'Effect_1_Parameter_11'
+p1522
+aa(lp1523
+(I0
+I127
+I1
+tp1524
+ag526
+aS'Effect 1 Parameter 12'
+p1525
+aS'Parameter 12'
+p1526
+aS'Effect 1'
+p1527
+aS'Effect_1_Parameter_12'
+p1528
+aa(lp1529
+(I0
+I127
+I1
+tp1530
+ag526
+aS'Effect 1 Parameter 13'
+p1531
+aS'Parameter 13'
+p1532
+aS'Effect 1'
+p1533
+aS'Effect_1_Parameter_13'
+p1534
+aa(lp1535
+(I0
+I127
+I1
+tp1536
+ag526
+aS'Effect 1 Parameter 14'
+p1537
+aS'Parameter 14'
+p1538
+aS'Effect 1'
+p1539
+aS'Effect_1_Parameter_14'
+p1540
+aa(lp1541
+(I0
+I127
+I1
+tp1542
+a(lp1543
+g1441
+ag1442
+ag1443
+ag1444
+ag1445
+ag1446
+aS'Delay'
+p1544
+aS'Clk.Delay'
+p1545
+aS'Reverb'
+p1546
+aaS'Effect 2 Type'
+p1547
+aS'Type'
+p1548
+aS'Effect 2'
+p1549
+aS'Effect_2_Type'
+p1550
+aa(lp1551
+(I0
+I127
+I1
+tp1552
+ag526
+aS'Effect 2 Mix'
+p1553
+aS'Mix'
+p1554
+aS'Effect 2'
+p1555
+aS'Effect_2_Mix'
+p1556
+aa(lp1557
+(I0
+I127
+I1
+tp1558
+ag526
+aS'Effect 2 Parameter 1'
+p1559
+aS'Parameter 1'
+p1560
+aS'Effect 2'
+p1561
+aS'Effect_2_Parameter_1'
+p1562
+aa(lp1563
+(I0
+I127
+I1
+tp1564
+ag526
+aS'Effect 2 Parameter 2'
+p1565
+aS'Parameter 2'
+p1566
+aS'Effect 2'
+p1567
+aS'Effect_2_Parameter_2'
+p1568
+aa(lp1569
+(I0
+I127
+I1
+tp1570
+ag526
+aS'Effect 2 Parameter 3'
+p1571
+aS'Parameter 3'
+p1572
+aS'Effect 2'
+p1573
+aS'Effect_2_Parameter_3'
+p1574
+aa(lp1575
+(I0
+I127
+I1
+tp1576
+ag526
+aS'Effect 2 Parameter 4'
+p1577
+aS'Parameter 4'
+p1578
+aS'Effect 2'
+p1579
+aS'Effect_2_Parameter_4'
+p1580
+aa(lp1581
+(I0
+I127
+I1
+tp1582
+ag526
+aS'Effect 2 Parameter 5'
+p1583
+aS'Parameter 5'
+p1584
+aS'Effect 2'
+p1585
+aS'Effect_2_Parameter_5'
+p1586
+aa(lp1587
+(I0
+I127
+I1
+tp1588
+ag526
+aS'Effect 2 Parameter 6'
+p1589
+aS'Parameter 6'
+p1590
+aS'Effect 2'
+p1591
+aS'Effect_2_Parameter_6'
+p1592
+aa(lp1593
+(I0
+I127
+I1
+tp1594
+ag526
+aS'Effect 2 Parameter 7'
+p1595
+aS'Parameter 7'
+p1596
+aS'Effect 2'
+p1597
+aS'Effect_2_Parameter_7'
+p1598
+aa(lp1599
+(I0
+I127
+I1
+tp1600
+ag526
+aS'Effect 2 Parameter 8'
+p1601
+aS'Parameter 8'
+p1602
+aS'Effect 2'
+p1603
+aS'Effect_2_Parameter_8'
+p1604
+aa(lp1605
+(I0
+I127
+I1
+tp1606
+ag526
+aS'Effect 2 Parameter 9'
+p1607
+aS'Parameter 9'
+p1608
+aS'Effect 2'
+p1609
+aS'Effect_2_Parameter_9'
+p1610
+aa(lp1611
+(I0
+I127
+I1
+tp1612
+ag526
+aS'Effect 2 Parameter 10'
+p1613
+aS'Parameter 10'
+p1614
+aS'Effect 2'
+p1615
+aS'Effect_2_Parameter_10'
+p1616
+aa(lp1617
+(I0
+I127
+I1
+tp1618
+ag526
+aS'Effect 2 Parameter 11'
+p1619
+aS'Parameter 11'
+p1620
+aS'Effect 2'
+p1621
+aS'Effect_2_Parameter_11'
+p1622
+aa(lp1623
+(I0
+I127
+I1
+tp1624
+ag526
+aS'Effect 2 Parameter 12'
+p1625
+aS'Parameter 12'
+p1626
+aS'Effect 2'
+p1627
+aS'Effect_2_Parameter_12'
+p1628
+aa(lp1629
+(I0
+I127
+I1
+tp1630
+ag526
+aS'Effect 2 Parameter 13'
+p1631
+aS'Parameter 13'
+p1632
+aS'Effect 2'
+p1633
+aS'Effect_2_Parameter_13'
+p1634
+aa(lp1635
+(I0
+I127
+I1
+tp1636
+ag526
+aS'Effect 2 Parameter 14'
+p1637
+aS'Parameter 14'
+p1638
+aS'Effect 2'
+p1639
+aS'Effect_2_Parameter_14'
+p1640
+aa(lp1641
+(I0
+I5
+I1
+tp1642
+a(lp1643
+S'Sine'
+p1644
+aS'Triangle'
+p1645
+aS'Square'
+p1646
+aS'Saw'
+p1647
+aS'Random'
+p1648
+aS'S&H'
+p1649
+aaS'LFO 1 Shape'
+p1650
+aS'Shape'
+p1651
+aS'LFO 1'
+p1652
+aS'LFO_1_Shape'
+p1653
+aa(lp1654
+(I0
+I127
+I1
+tp1655
+a(lp1656
+S'1280 bars'
+p1657
+aS'1280 bars'
+p1658
+aS'1152 bars'
+p1659
+aS'1152 bars'
+p1660
+aS'1024 bars'
+p1661
+aS'1024 bars'
+p1662
+aS'896 bars'
+p1663
+aS'896 bars'
+p1664
+aS'768 bars'
+p1665
+aS'768 bars'
+p1666
+aS'640 bars'
+p1667
+aS'640 bars'
+p1668
+aS'576 bars'
+p1669
+aS'576 bars'
+p1670
+aS'512 bars'
+p1671
+aS'512 bars'
+p1672
+aS'448 bars'
+p1673
+aS'448 bars'
+p1674
+aS'384 bars'
+p1675
+aS'384 bars'
+p1676
+aS'320 bars'
+p1677
+aS'320 bars'
+p1678
+aS'288 bars'
+p1679
+aS'288 bars'
+p1680
+aS'256 bars'
+p1681
+aS'256 bars'
+p1682
+aS'224 bars'
+p1683
+aS'224 bars'
+p1684
+aS'192 bars'
+p1685
+aS'192 bars'
+p1686
+aS'160 bars'
+p1687
+aS'160 bars'
+p1688
+aS'144 bars'
+p1689
+aS'144 bars'
+p1690
+aS'128 bars'
+p1691
+aS'128 bars'
+p1692
+aS'112 bars'
+p1693
+aS'112 bars'
+p1694
+aS'96 bars'
+p1695
+aS'96 bars'
+p1696
+aS'80 bars'
+p1697
+aS'80 bars'
+p1698
+aS'72 bars'
+p1699
+aS'72 bars'
+p1700
+aS'64 bars'
+p1701
+aS'64 bars'
+p1702
+aS'56 bars'
+p1703
+aS'56 bars'
+p1704
+aS'48 bars'
+p1705
+aS'48 bars'
+p1706
+aS'40 bars'
+p1707
+aS'40 bars'
+p1708
+aS'36 bars'
+p1709
+aS'36 bars'
+p1710
+aS'32 bars'
+p1711
+aS'32 bars'
+p1712
+aS'28 bars'
+p1713
+aS'28 bars'
+p1714
+aS'24 bars'
+p1715
+aS'24 bars'
+p1716
+aS'20 bars'
+p1717
+aS'20 bars'
+p1718
+aS'18 bars'
+p1719
+aS'18 bars'
+p1720
+aS'16 bars'
+p1721
+aS'16 bars'
+p1722
+aS'14 bars'
+p1723
+aS'14 bars'
+p1724
+aS'12 bars'
+p1725
+aS'12 bars'
+p1726
+aS'10 bars'
+p1727
+aS'10 bars'
+p1728
+aS'9 bars'
+p1729
+aS'9 bars'
+p1730
+aS'8 bars'
+p1731
+aS'8 bars'
+p1732
+aS'7 bars'
+p1733
+aS'7 bars'
+p1734
+aS'6 bars'
+p1735
+aS'6 bars'
+p1736
+aS'5 bars'
+p1737
+aS'5 bars'
+p1738
+aS'4 bars'
+p1739
+aS'4 bars'
+p1740
+aS'3.5 bars'
+p1741
+aS'3.5 bars'
+p1742
+aS'3 bars'
+p1743
+aS'3 bars'
+p1744
+aS'2.5 bars'
+p1745
+aS'2.5 bars'
+p1746
+aS'2 bars'
+p1747
+aS'2 bars'
+p1748
+aS'1.5 bars'
+p1749
+aS'1.5 bars'
+p1750
+aS'1 bar'
+p1751
+aS'1 bar'
+p1752
+aS'1/2.'
+p1753
+aS'1/2.'
+p1754
+aS'1/1T'
+p1755
+aS'1/1T'
+p1756
+aS'1/2 '
+p1757
+aS'1/2 '
+p1758
+aS'1/4.'
+p1759
+aS'1/4.'
+p1760
+aS'1/2T'
+p1761
+aS'1/2T'
+p1762
+aS'1/4 '
+p1763
+aS'1/4 '
+p1764
+aS'1/8.'
+p1765
+aS'1/8.'
+p1766
+aS'1/4T'
+p1767
+aS'1/4T'
+p1768
+aS'1/8 '
+p1769
+aS'1/8 '
+p1770
+aS'1/16.'
+p1771
+aS'1/16.'
+p1772
+aS'1/8T'
+p1773
+aS'1/8T'
+p1774
+aS'1/16 '
+p1775
+aS'1/16 '
+p1776
+aS'1/32.'
+p1777
+aS'1/32.'
+p1778
+aS'1/16T'
+p1779
+aS'1/16T'
+p1780
+aS'1/32 '
+p1781
+aS'1/32 '
+p1782
+aS'1/48'
+p1783
+aS'1/48'
+p1784
+aaS'LFO 1 Speed'
+p1785
+aS'Speed'
+p1786
+aS'LFO 1'
+p1787
+aS'LFO_1_Speed'
+p1788
+aag2
+a(lp1789
+(I0
+I1
+I1
+tp1790
+ag828
+aS'LFO 1 Sync'
+p1791
+aS'Sync'
+p1792
+aS'LFO 1'
+p1793
+aS'LFO_1_Sync'
+p1794
+aa(lp1795
+(I0
+I1
+I1
+tp1796
+ag828
+aS'LFO 1 Clocked'
+p1797
+aS'Clocked'
+p1798
+aS'LFO 1'
+p1799
+aS'LFO_1_Clocked'
+p1800
+aa(lp1801
+(I0
+I127
+I1
+tp1802
+a(S'free'
+p1803
+S'0\xc2\xb0'
+p1804
+S'3\xc2\xb0'
+p1805
+S'6\xc2\xb0'
+p1806
+S'8\xc2\xb0'
+p1807
+S'11\xc2\xb0'
+p1808
+S'14\xc2\xb0'
+p1809
+S'17\xc2\xb0'
+p1810
+S'20\xc2\xb0'
+p1811
+S'22\xc2\xb0'
+p1812
+S'25\xc2\xb0'
+p1813
+S'28\xc2\xb0'
+p1814
+S'31\xc2\xb0'
+p1815
+S'34\xc2\xb0'
+p1816
+S'36\xc2\xb0'
+p1817
+S'39\xc2\xb0'
+p1818
+S'42\xc2\xb0'
+p1819
+S'45\xc2\xb0'
+p1820
+S'48\xc2\xb0'
+p1821
+S'50\xc2\xb0'
+p1822
+S'53\xc2\xb0'
+p1823
+S'56\xc2\xb0'
+p1824
+S'59\xc2\xb0'
+p1825
+S'62\xc2\xb0'
+p1826
+S'64\xc2\xb0'
+p1827
+S'67\xc2\xb0'
+p1828
+S'70\xc2\xb0'
+p1829
+S'73\xc2\xb0'
+p1830
+S'76\xc2\xb0'
+p1831
+S'78\xc2\xb0'
+p1832
+S'81\xc2\xb0'
+p1833
+S'84\xc2\xb0'
+p1834
+S'87\xc2\xb0'
+p1835
+S'90\xc2\xb0'
+p1836
+S'92\xc2\xb0'
+p1837
+S'95\xc2\xb0'
+p1838
+S'98\xc2\xb0'
+p1839
+S'101\xc2\xb0'
+p1840
+S'104\xc2\xb0'
+p1841
+S'106\xc2\xb0'
+p1842
+S'109\xc2\xb0'
+p1843
+S'112\xc2\xb0'
+p1844
+S'115\xc2\xb0'
+p1845
+S'118\xc2\xb0'
+p1846
+S'120\xc2\xb0'
+p1847
+S'123\xc2\xb0'
+p1848
+S'126\xc2\xb0'
+p1849
+S'129\xc2\xb0'
+p1850
+S'132\xc2\xb0'
+p1851
+S'134\xc2\xb0'
+p1852
+S'137\xc2\xb0'
+p1853
+S'140\xc2\xb0'
+p1854
+S'143\xc2\xb0'
+p1855
+S'146\xc2\xb0'
+p1856
+S'148\xc2\xb0'
+p1857
+S'151\xc2\xb0'
+p1858
+S'154\xc2\xb0'
+p1859
+S'157\xc2\xb0'
+p1860
+S'160\xc2\xb0'
+p1861
+S'162\xc2\xb0'
+p1862
+S'165\xc2\xb0'
+p1863
+S'168\xc2\xb0'
+p1864
+S'171\xc2\xb0'
+p1865
+S'174\xc2\xb0'
+p1866
+S'176\xc2\xb0'
+p1867
+S'179\xc2\xb0'
+p1868
+S'182\xc2\xb0'
+p1869
+S'185\xc2\xb0'
+p1870
+S'188\xc2\xb0'
+p1871
+S'190\xc2\xb0'
+p1872
+S'193\xc2\xb0'
+p1873
+S'196\xc2\xb0'
+p1874
+S'199\xc2\xb0'
+p1875
+S'202\xc2\xb0'
+p1876
+S'204\xc2\xb0'
+p1877
+S'207\xc2\xb0'
+p1878
+S'210\xc2\xb0'
+p1879
+S'213\xc2\xb0'
+p1880
+S'216\xc2\xb0'
+p1881
+S'218\xc2\xb0'
+p1882
+S'221\xc2\xb0'
+p1883
+S'224\xc2\xb0'
+p1884
+S'227\xc2\xb0'
+p1885
+S'230\xc2\xb0'
+p1886
+S'232\xc2\xb0'
+p1887
+S'235\xc2\xb0'
+p1888
+S'238\xc2\xb0'
+p1889
+S'241\xc2\xb0'
+p1890
+S'244\xc2\xb0'
+p1891
+S'246\xc2\xb0'
+p1892
+S'249\xc2\xb0'
+p1893
+S'252\xc2\xb0'
+p1894
+S'255\xc2\xb0'
+p1895
+S'258\xc2\xb0'
+p1896
+S'260\xc2\xb0'
+p1897
+S'263\xc2\xb0'
+p1898
+S'266\xc2\xb0'
+p1899
+S'269\xc2\xb0'
+p1900
+S'272\xc2\xb0'
+p1901
+S'274\xc2\xb0'
+p1902
+S'277\xc2\xb0'
+p1903
+S'280\xc2\xb0'
+p1904
+S'283\xc2\xb0'
+p1905
+S'286\xc2\xb0'
+p1906
+S'288\xc2\xb0'
+p1907
+S'291\xc2\xb0'
+p1908
+S'294\xc2\xb0'
+p1909
+S'297\xc2\xb0'
+p1910
+S'300\xc2\xb0'
+p1911
+S'302\xc2\xb0'
+p1912
+S'305\xc2\xb0'
+p1913
+S'308\xc2\xb0'
+p1914
+S'311\xc2\xb0'
+p1915
+S'314\xc2\xb0'
+p1916
+S'316\xc2\xb0'
+p1917
+S'319\xc2\xb0'
+p1918
+S'322\xc2\xb0'
+p1919
+S'325\xc2\xb0'
+p1920
+S'328\xc2\xb0'
+p1921
+S'330\xc2\xb0'
+p1922
+S'333\xc2\xb0'
+p1923
+S'336\xc2\xb0'
+p1924
+S'339\xc2\xb0'
+p1925
+S'342\xc2\xb0'
+p1926
+S'344\xc2\xb0'
+p1927
+S'347\xc2\xb0'
+p1928
+S'350\xc2\xb0'
+p1929
+S'353\xc2\xb0'
+p1930
+tp1931
+aS'LFO 1 Start Phase'
+p1932
+aS'Start Phase'
+p1933
+aS'LFO 1'
+p1934
+aS'LFO_1_Start_Phase'
+p1935
+aa(lp1936
+(I0
+I127
+I1
+tp1937
+ag526
+aS'LFO 1 Delay'
+p1938
+aS'Delay'
+p1939
+aS'LFO 1'
+p1940
+aS'LFO_1_Delay'
+p1941
+aa(lp1942
+(I0
+I127
+I1
+tp1943
+ag181
+aS'LFO 1 Fade'
+p1944
+aS'Fade'
+p1945
+aS'LFO 1'
+p1946
+aS'LFO_1_Fade'
+p1947
+aag2
+ag2
+a(lp1948
+(I0
+I127
+I1
+tp1949
+ag372
+aS'LFO 1 Keytrack'
+p1950
+aS'Keytrack'
+p1951
+aS'LFO 1'
+p1952
+aS'LFO_1_Keytrack'
+p1953
+aag2
+a(lp1954
+(I0
+I5
+I1
+tp1955
+ag1643
+aS'LFO 2 Shape'
+p1956
+aS'Shape'
+p1957
+aS'LFO 2'
+p1958
+aS'LFO_2_Shape'
+p1959
+aa(lp1960
+(I0
+I127
+I1
+tp1961
+ag1656
+aS'LFO 2 Speed'
+p1962
+aS'Speed'
+p1963
+aS'LFO 2'
+p1964
+aS'LFO_2_Speed'
+p1965
+aag2
+a(lp1966
+(I0
+I1
+I1
+tp1967
+ag828
+aS'LFO 2 Sync'
+p1968
+aS'Sync'
+p1969
+aS'LFO 2'
+p1970
+aS'LFO_2_Sync'
+p1971
+aa(lp1972
+(I0
+I1
+I1
+tp1973
+ag828
+aS'LFO 2 Clocked'
+p1974
+aS'Clocked'
+p1975
+aS'LFO 2'
+p1976
+aS'LFO_2_Clocked'
+p1977
+aa(lp1978
+(I0
+I127
+I1
+tp1979
+ag1931
+aS'LFO 2 Start Phase'
+p1980
+aS'Start Phase'
+p1981
+aS'LFO 2'
+p1982
+aS'LFO_2_Start_Phase'
+p1983
+aa(lp1984
+(I0
+I127
+I1
+tp1985
+ag526
+aS'LFO 2 Delay'
+p1986
+aS'Delay'
+p1987
+aS'LFO 2'
+p1988
+aS'LFO_2_Delay'
+p1989
+aa(lp1990
+(I0
+I127
+I1
+tp1991
+ag181
+aS'LFO 2 Fade'
+p1992
+aS'Fade'
+p1993
+aS'LFO 2'
+p1994
+aS'LFO_2_Fade'
+p1995
+aag2
+ag2
+a(lp1996
+(I0
+I127
+I1
+tp1997
+ag372
+aS'LFO 2 Keytrack'
+p1998
+aS'Keytrack'
+p1999
+aS'LFO 2'
+p2000
+aS'LFO_2_Keytrack'
+p2001
+aag2
+a(lp2002
+(I0
+I5
+I1
+tp2003
+ag1643
+aS'LFO 3 Shape'
+p2004
+aS'Shape'
+p2005
+aS'LFO 3'
+p2006
+aS'LFO_3_Shape'
+p2007
+aa(lp2008
+(I0
+I127
+I1
+tp2009
+ag1656
+aS'LFO 3 Speed'
+p2010
+aS'Speed'
+p2011
+aS'LFO 3'
+p2012
+aS'LFO_3_Speed'
+p2013
+aag2
+a(lp2014
+(I0
+I1
+I1
+tp2015
+ag828
+aS'LFO 3 Sync'
+p2016
+aS'Sync'
+p2017
+aS'LFO 3'
+p2018
+aS'LFO_3_Sync'
+p2019
+aa(lp2020
+(I0
+I1
+I1
+tp2021
+ag828
+aS'LFO 3 Clocked'
+p2022
+aS'Clocked'
+p2023
+aS'LFO 3'
+p2024
+aS'LFO_3_Clocked'
+p2025
+aa(lp2026
+(I0
+I127
+I1
+tp2027
+ag1931
+aS'LFO 3 Start Phase'
+p2028
+aS'Start Phase'
+p2029
+aS'LFO 3'
+p2030
+aS'LFO_3_Start_Phase'
+p2031
+aa(lp2032
+(I0
+I127
+I1
+tp2033
+ag526
+aS'LFO 3 Delay'
+p2034
+aS'Delay'
+p2035
+aS'LFO 3'
+p2036
+aS'LFO_3_Delay'
+p2037
+aa(lp2038
+(I0
+I127
+I1
+tp2039
+ag181
+aS'LFO 3 Fade'
+p2040
+aS'Fade'
+p2041
+aS'LFO 3'
+p2042
+aS'LFO_3_Fade'
+p2043
+aag2
+ag2
+a(lp2044
+(I0
+I127
+I1
+tp2045
+ag372
+aS'LFO 3 Keytrack'
+p2046
+aS'Keytrack'
+p2047
+aS'LFO 3'
+p2048
+aS'LFO_3_Keytrack'
+p2049
+aag2
+a(lp2050
+(I0
+I4
+I1
+tp2051
+ag372
+aS'Filter Envelope Mode'
+p2052
+aS'Mode'
+p2053
+aS'Filter Envelope'
+p2054
+aS'Filter_Envelope_Mode'
+p2055
+aag2
+ag2
+a(lp2056
+(I0
+I127
+I1
+tp2057
+ag526
+aS'Filter Envelope Attack'
+p2058
+aS'Attack'
+p2059
+aS'Filter Envelope'
+p2060
+aS'Filter_Envelope_Attack'
+p2061
+aa(lp2062
+(I0
+I127
+I1
+tp2063
+ag526
+aS'Filter Envelope Attack Level'
+p2064
+aS'Attack Level'
+p2065
+aS'Filter Envelope'
+p2066
+aS'Filter_Envelope_Attack_Level'
+p2067
+aa(lp2068
+(I0
+I127
+I1
+tp2069
+ag526
+aS'Filter Envelope Decay'
+p2070
+aS'Decay'
+p2071
+aS'Filter Envelope'
+p2072
+aS'Filter_Envelope_Decay'
+p2073
+aa(lp2074
+(I0
+I127
+I1
+tp2075
+ag526
+aS'Filter Envelope Sustain'
+p2076
+aS'Sustain'
+p2077
+aS'Filter Envelope'
+p2078
+aS'Filter_Envelope_Sustain'
+p2079
+aa(lp2080
+(I0
+I127
+I1
+tp2081
+ag526
+aS'Filter Envelope Decay 2'
+p2082
+aS'Decay 2'
+p2083
+aS'Filter Envelope'
+p2084
+aS'Filter_Envelope_Decay_2'
+p2085
+aa(lp2086
+(I0
+I127
+I1
+tp2087
+ag526
+aS'Filter Envelope Sustain 2'
+p2088
+aS'Sustain 2'
+p2089
+aS'Filter Envelope'
+p2090
+aS'Filter_Envelope_Sustain_2'
+p2091
+aa(lp2092
+(I0
+I127
+I1
+tp2093
+ag526
+aS'Filter Envelope Release'
+p2094
+aS'Release'
+p2095
+aS'Filter Envelope'
+p2096
+aS'Filter_Envelope_Release'
+p2097
+aag2
+ag2
+a(lp2098
+(I0
+I4
+I1
+tp2099
+ag526
+aS'Amplifier Envelope Mode'
+p2100
+aS'Mode'
+p2101
+aS'Amplifier Envelope'
+p2102
+aS'Amplifier_Envelope_Mode'
+p2103
+aag2
+ag2
+a(lp2104
+(I0
+I127
+I1
+tp2105
+ag526
+aS'Amplifier Envelope Attack'
+p2106
+aS'Attack'
+p2107
+aS'Amplifier Envelope'
+p2108
+aS'Amplifier_Envelope_Attack'
+p2109
+aa(lp2110
+(I0
+I127
+I1
+tp2111
+ag526
+aS'Amplifier Envelope Attack Level'
+p2112
+aS'Attack Level'
+p2113
+aS'Amplifier Envelope'
+p2114
+aS'Amplifier_Envelope_Attack_Level'
+p2115
+aa(lp2116
+(I0
+I127
+I1
+tp2117
+ag526
+aS'Amplifier Envelope Decay'
+p2118
+aS'Decay'
+p2119
+aS'Amplifier Envelope'
+p2120
+aS'Amplifier_Envelope_Decay'
+p2121
+aa(lp2122
+(I0
+I127
+I1
+tp2123
+ag526
+aS'Amplifier Envelope Sustain'
+p2124
+aS'Sustain'
+p2125
+aS'Amplifier Envelope'
+p2126
+aS'Amplifier_Envelope_Sustain'
+p2127
+aa(lp2128
+(I0
+I127
+I1
+tp2129
+ag526
+aS'Amplifier Envelope Decay 2'
+p2130
+aS'Decay 2'
+p2131
+aS'Amplifier Envelope'
+p2132
+aS'Amplifier_Envelope_Decay_2'
+p2133
+aa(lp2134
+(I0
+I127
+I1
+tp2135
+ag526
+aS'Amplifier Envelope Sustain 2'
+p2136
+aS'Sustain 2'
+p2137
+aS'Amplifier Envelope'
+p2138
+aS'Amplifier_Envelope_Sustain_2'
+p2139
+aa(lp2140
+(I0
+I127
+I1
+tp2141
+ag526
+aS'Amplifier Envelope Release'
+p2142
+aS'Release'
+p2143
+aS'Amplifier Envelope'
+p2144
+aS'Amplifier_Envelope_Release'
+p2145
+aag2
+ag2
+a(lp2146
+(I0
+I4
+I1
+tp2147
+ag526
+aS'Envelope 3 Mode'
+p2148
+aS'Mode'
+p2149
+aS'Envelope 3'
+p2150
+aS'Envelope_3_Mode'
+p2151
+aag2
+ag2
+a(lp2152
+(I0
+I127
+I1
+tp2153
+ag526
+aS'Envelope 3 Attack'
+p2154
+aS'Attack'
+p2155
+aS'Envelope 3'
+p2156
+aS'Envelope_3_Attack'
+p2157
+aa(lp2158
+(I0
+I127
+I1
+tp2159
+ag526
+aS'Envelope 3 Attack Level'
+p2160
+aS'Attack Level'
+p2161
+aS'Envelope 3'
+p2162
+aS'Envelope_3_Attack_Level'
+p2163
+aa(lp2164
+(I0
+I127
+I1
+tp2165
+ag526
+aS'Envelope 3 Decay'
+p2166
+aS'Decay'
+p2167
+aS'Envelope 3'
+p2168
+aS'Envelope_3_Decay'
+p2169
+aa(lp2170
+(I0
+I127
+I1
+tp2171
+ag526
+aS'Envelope 3 Sustain'
+p2172
+aS'Sustain'
+p2173
+aS'Envelope 3'
+p2174
+aS'Envelope_3_Sustain'
+p2175
+aa(lp2176
+(I0
+I127
+I1
+tp2177
+ag526
+aS'Envelope 3 Decay 2'
+p2178
+aS'Decay 2'
+p2179
+aS'Envelope 3'
+p2180
+aS'Envelope_3_Decay_2'
+p2181
+aa(lp2182
+(I0
+I127
+I1
+tp2183
+ag526
+aS'Envelope 3 Sustain 2'
+p2184
+aS'Sustain 2'
+p2185
+aS'Envelope 3'
+p2186
+aS'Envelope_3_Sustain_2'
+p2187
+aa(lp2188
+(I0
+I127
+I1
+tp2189
+ag526
+aS'Envelope 3 Release'
+p2190
+aS'Release'
+p2191
+aS'Envelope 3'
+p2192
+aS'Envelope_3_Release'
+p2193
+aag2
+ag2
+a(lp2194
+(I0
+I4
+I1
+tp2195
+ag526
+aS'Envelope 4 Mode'
+p2196
+aS'Mode'
+p2197
+aS'Envelope 4'
+p2198
+aS'Envelope_4_Mode'
+p2199
+aag2
+ag2
+a(lp2200
+(I0
+I127
+I1
+tp2201
+ag526
+aS'Envelope 4 Attack'
+p2202
+aS'Attack'
+p2203
+aS'Envelope 4'
+p2204
+aS'Envelope_4_Attack'
+p2205
+aa(lp2206
+(I0
+I127
+I1
+tp2207
+ag526
+aS'Envelope 4 Attack Level'
+p2208
+aS'Attack Level'
+p2209
+aS'Envelope 4'
+p2210
+aS'Envelope_4_Attack_Level'
+p2211
+aa(lp2212
+(I0
+I127
+I1
+tp2213
+ag526
+aS'Envelope 4 Decay'
+p2214
+aS'Decay'
+p2215
+aS'Envelope 4'
+p2216
+aS'Envelope_4_Decay'
+p2217
+aa(lp2218
+(I0
+I127
+I1
+tp2219
+ag526
+aS'Envelope 4 Sustain'
+p2220
+aS'Sustain'
+p2221
+aS'Envelope 4'
+p2222
+aS'Envelope_4_Sustain'
+p2223
+aa(lp2224
+(I0
+I127
+I1
+tp2225
+ag526
+aS'Envelope 4 Decay 2'
+p2226
+aS'Decay 2'
+p2227
+aS'Envelope 4'
+p2228
+aS'Envelope_4_Decay_2'
+p2229
+aa(lp2230
+(I0
+I127
+I1
+tp2231
+ag526
+aS'Envelope 4 Sustain 2'
+p2232
+aS'Sustain 2'
+p2233
+aS'Envelope 4'
+p2234
+aS'Envelope_4_Sustain_2'
+p2235
+aa(lp2236
+(I0
+I127
+I1
+tp2237
+ag526
+aS'Envelope 4 Release'
+p2238
+aS'Release'
+p2239
+aS'Envelope 4'
+p2240
+aS'Envelope_4_Release'
+p2241
+aag2
+ag2
+ag2
+a(lp2242
+(I0
+I30
+I1
+tp2243
+ag619
+aS'Modifier 1 Source A'
+p2244
+aS'Source A'
+p2245
+aS'Modifier 1'
+p2246
+aS'Modifier_1_Source_A'
+p2247
+aa(lp2248
+(I0
+I30
+I1
+tp2249
+ag619
+aS'Modifier 1 Source B'
+p2250
+aS'Source B'
+p2251
+aS'Modifier 1'
+p2252
+aS'Modifier_1_Source_B'
+p2253
+aa(lp2254
+(I0
+I7
+I1
+tp2255
+a(lp2256
+S'+'
+p2257
+aS'-'
+p2258
+aS'*'
+p2259
+aS'AND'
+p2260
+aS'OR'
+p2261
+aS'XOR'
+p2262
+aS'MAX'
+p2263
+aS'min'
+p2264
+aaS'Modifier 1 Operation'
+p2265
+aS'Operation'
+p2266
+aS'Modifier 1'
+p2267
+aS'Modifier_1_Operation'
+p2268
+aa(lp2269
+(I0
+I127
+I1
+tp2270
+ag181
+aS'Modifier 1 Constant'
+p2271
+aS'Constant'
+p2272
+aS'Modifier 1'
+p2273
+aS'Modifier_1_Constant'
+p2274
+aa(lp2275
+(I0
+I30
+I1
+tp2276
+ag619
+aS'Modifier 2 Source A'
+p2277
+aS'Source A'
+p2278
+aS'Modifier 2'
+p2279
+aS'Modifier_2_Source_A'
+p2280
+aa(lp2281
+(I0
+I30
+I1
+tp2282
+ag619
+aS'Modifier 2 Source B'
+p2283
+aS'Source B'
+p2284
+aS'Modifier 2'
+p2285
+aS'Modifier_2_Source_B'
+p2286
+aa(lp2287
+(I0
+I7
+I1
+tp2288
+ag2256
+aS'Modifier 2 Operation'
+p2289
+aS'Operation'
+p2290
+aS'Modifier 2'
+p2291
+aS'Modifier_2_Operation'
+p2292
+aa(lp2293
+(I0
+I127
+I1
+tp2294
+ag181
+aS'Modifier 2 Constant'
+p2295
+aS'Constant'
+p2296
+aS'Modifier 2'
+p2297
+aS'Modifier_2_Constant'
+p2298
+aa(lp2299
+(I0
+I30
+I1
+tp2300
+ag619
+aS'Modifier 3 Source A'
+p2301
+aS'Source A'
+p2302
+aS'Modifier 3'
+p2303
+aS'Modifier_3_Source_A'
+p2304
+aa(lp2305
+(I0
+I30
+I1
+tp2306
+ag619
+aS'Modifier 3 Source B'
+p2307
+aS'Source B'
+p2308
+aS'Modifier 3'
+p2309
+aS'Modifier_3_Source_B'
+p2310
+aa(lp2311
+(I0
+I7
+I1
+tp2312
+ag2256
+aS'Modifier 3 Operation'
+p2313
+aS'Operation'
+p2314
+aS'Modifier 3'
+p2315
+aS'Modifier_3_Operation'
+p2316
+aa(lp2317
+(I0
+I127
+I1
+tp2318
+ag181
+aS'Modifier 3 Constant'
+p2319
+aS'Constant'
+p2320
+aS'Modifier 3'
+p2321
+aS'Modifier_3_Constant'
+p2322
+aa(lp2323
+(I0
+I30
+I1
+tp2324
+ag619
+aS'Modifier 4 Source A'
+p2325
+aS'Source A'
+p2326
+aS'Modifier 4'
+p2327
+aS'Modifier_4_Source_A'
+p2328
+aa(lp2329
+(I0
+I30
+I1
+tp2330
+ag619
+aS'Modifier 4 Source B'
+p2331
+aS'Source B'
+p2332
+aS'Modifier 4'
+p2333
+aS'Modifier_4_Source_B'
+p2334
+aa(lp2335
+(I0
+I7
+I1
+tp2336
+ag2256
+aS'Modifier 4 Operation'
+p2337
+aS'Operation'
+p2338
+aS'Modifier 4'
+p2339
+aS'Modifier_4_Operation'
+p2340
+aa(lp2341
+(I0
+I127
+I1
+tp2342
+ag181
+aS'Modifier 4 Constant'
+p2343
+aS'Constant'
+p2344
+aS'Modifier 4'
+p2345
+aS'Modifier_4_Constant'
+p2346
+aa(lp2347
+(I0
+I30
+I1
+tp2348
+ag619
+aS'Modulation 1 Source'
+p2349
+ag2349
+ag848
+aS'Modulation_1_Source'
+p2350
+aa(lp2351
+(I0
+I53
+I1
+tp2352
+a(lp2353
+S'Pitch'
+p2354
+aS'O1 Pitch'
+p2355
+aS'O1 FM'
+p2356
+aS'O1 PW/Wave'
+p2357
+aS'O2 Pitch'
+p2358
+aS'O2 FM'
+p2359
+aS'O2 PW/Wave'
+p2360
+aS'O3 Pitch'
+p2361
+aS'O3 FM'
+p2362
+aS'O3 PW'
+p2363
+aS'O1 Level'
+p2364
+aS'O1 Balance'
+p2365
+aS'O2 Level'
+p2366
+aS'O2 Balance'
+p2367
+aS'O3 Level'
+p2368
+aS'O3 Balance'
+p2369
+aS'RMod Level'
+p2370
+aS'RMod Bal.'
+p2371
+aS'NoiseLevel'
+p2372
+aS'Noise Bal.'
+p2373
+aS'F1 Cutoff'
+p2374
+aS'F1 Reson.'
+p2375
+aS'F1 FM'
+p2376
+aS'F1 Drive'
+p2377
+aS'F1 Pan'
+p2378
+aS'F2 Cutoff'
+p2379
+aS'F2 Reson.'
+p2380
+aS'F2 FM'
+p2381
+aS'F2 Drive'
+p2382
+aS'F2 Pan'
+p2383
+aS'Volume'
+p2384
+aS'LFO1Speed'
+p2385
+aS'LFO2Speed'
+p2386
+aS'LFO3Speed'
+p2387
+aS'FE Attack'
+p2388
+aS'FE Decay'
+p2389
+aS'FE Sustain'
+p2390
+aS'FE Release'
+p2391
+aS'AE Attack'
+p2392
+aS'AE Decay'
+p2393
+aS'AE Sustain'
+p2394
+aS'AE Release'
+p2395
+aS'E3 Attack'
+p2396
+aS'E3 Decay'
+p2397
+aS'E3 Sustain'
+p2398
+aS'E3 Release'
+p2399
+aS'E4 Attack'
+p2400
+aS'E4 Decay'
+p2401
+aS'E4 Sustain'
+p2402
+aS'E4 Release'
+p2403
+aS'M1 Amount'
+p2404
+aS'M2 Amount'
+p2405
+aS'M3 Amount'
+p2406
+aS'M4 Amount'
+p2407
+aaS'Modulation 1 Destination'
+p2408
+ag2408
+ag848
+aS'Modulation_1_Destination'
+p2409
+aa(lp2410
+(I0
+I127
+I1
+tp2411
+ag181
+aS'Modulation 1 Amount'
+p2412
+ag2412
+ag848
+aS'Modulation_1_Amount'
+p2413
+aa(lp2414
+(I0
+I30
+I1
+tp2415
+ag619
+aS'Modulation 2 Source'
+p2416
+ag2416
+ag848
+aS'Modulation_2_Source'
+p2417
+aa(lp2418
+(I0
+I53
+I1
+tp2419
+ag2353
+aS'Modulation 2 Destination'
+p2420
+ag2420
+ag848
+aS'Modulation_2_Destination'
+p2421
+aa(lp2422
+(I0
+I127
+I1
+tp2423
+ag181
+aS'Modulation 2 Amount'
+p2424
+ag2424
+ag848
+aS'Modulation_2_Amount'
+p2425
+aa(lp2426
+(I0
+I30
+I1
+tp2427
+ag619
+aS'Modulation 3 Source'
+p2428
+ag2428
+ag848
+aS'Modulation_3_Source'
+p2429
+aa(lp2430
+(I0
+I53
+I1
+tp2431
+ag2353
+aS'Modulation 3 Destination'
+p2432
+ag2432
+ag848
+aS'Modulation_3_Destination'
+p2433
+aa(lp2434
+(I0
+I127
+I1
+tp2435
+ag181
+aS'Modulation 3 Amount'
+p2436
+ag2436
+ag848
+aS'Modulation_3_Amount'
+p2437
+aa(lp2438
+(I0
+I30
+I1
+tp2439
+ag619
+aS'Modulation 4 Source'
+p2440
+ag2440
+ag848
+aS'Modulation_4_Source'
+p2441
+aa(lp2442
+(I0
+I53
+I1
+tp2443
+ag2353
+aS'Modulation 4 Destination'
+p2444
+ag2444
+ag848
+aS'Modulation_4_Destination'
+p2445
+aa(lp2446
+(I0
+I127
+I1
+tp2447
+ag181
+aS'Modulation 4 Amount'
+p2448
+ag2448
+ag848
+aS'Modulation_4_Amount'
+p2449
+aa(lp2450
+(I0
+I30
+I1
+tp2451
+ag619
+aS'Modulation 5 Source'
+p2452
+ag2452
+ag848
+aS'Modulation_5_Source'
+p2453
+aa(lp2454
+(I0
+I53
+I1
+tp2455
+ag2353
+aS'Modulation 5 Destination'
+p2456
+ag2456
+ag848
+aS'Modulation_5_Destination'
+p2457
+aa(lp2458
+(I0
+I127
+I1
+tp2459
+ag181
+aS'Modulation 5 Amount'
+p2460
+ag2460
+ag848
+aS'Modulation_5_Amount'
+p2461
+aa(lp2462
+(I0
+I30
+I1
+tp2463
+ag619
+aS'Modulation 6 Source'
+p2464
+ag2464
+ag848
+aS'Modulation_6_Source'
+p2465
+aa(lp2466
+(I0
+I53
+I1
+tp2467
+ag2353
+aS'Modulation 6 Destination'
+p2468
+ag2468
+ag848
+aS'Modulation_6_Destination'
+p2469
+aa(lp2470
+(I0
+I127
+I1
+tp2471
+ag181
+aS'Modulation 6 Amount'
+p2472
+ag2472
+ag848
+aS'Modulation_6_Amount'
+p2473
+aa(lp2474
+(I0
+I30
+I1
+tp2475
+ag619
+aS'Modulation 7 Source'
+p2476
+ag2476
+ag848
+aS'Modulation_7_Source'
+p2477
+aa(lp2478
+(I0
+I53
+I1
+tp2479
+ag2353
+aS'Modulation 7 Destination'
+p2480
+ag2480
+ag848
+aS'Modulation_7_Destination'
+p2481
+aa(lp2482
+(I0
+I127
+I1
+tp2483
+ag181
+aS'Modulation 7 Amount'
+p2484
+ag2484
+ag848
+aS'Modulation_7_Amount'
+p2485
+aa(lp2486
+(I0
+I30
+I1
+tp2487
+ag619
+aS'Modulation 8 Source'
+p2488
+ag2488
+ag848
+aS'Modulation_8_Source'
+p2489
+aa(lp2490
+(I0
+I53
+I1
+tp2491
+ag2353
+aS'Modulation 8 Destination'
+p2492
+ag2492
+ag848
+aS'Modulation_8_Destination'
+p2493
+aa(lp2494
+(I0
+I127
+I1
+tp2495
+ag181
+aS'Modulation 8 Amount'
+p2496
+ag2496
+ag848
+aS'Modulation_8_Amount'
+p2497
+aa(lp2498
+(I0
+I30
+I1
+tp2499
+ag619
+aS'Modulation 9 Source'
+p2500
+ag2500
+ag848
+aS'Modulation_9_Source'
+p2501
+aa(lp2502
+(I0
+I53
+I1
+tp2503
+ag2353
+aS'Modulation 9 Destination'
+p2504
+ag2504
+ag848
+aS'Modulation_9_Destination'
+p2505
+aa(lp2506
+(I0
+I127
+I1
+tp2507
+ag181
+aS'Modulation 9 Amount'
+p2508
+ag2508
+ag848
+aS'Modulation_9_Amount'
+p2509
+aa(lp2510
+(I0
+I30
+I1
+tp2511
+ag619
+aS'Modulation 10 Source'
+p2512
+ag2512
+ag848
+aS'Modulation_10_Source'
+p2513
+aa(lp2514
+(I0
+I53
+I1
+tp2515
+ag2353
+aS'Modulation 10 Destination'
+p2516
+ag2516
+ag848
+aS'Modulation_10_Destination'
+p2517
+aa(lp2518
+(I0
+I127
+I1
+tp2519
+ag181
+aS'Modulation 10 Amount'
+p2520
+ag2520
+ag848
+aS'Modulation_10_Amount'
+p2521
+aa(lp2522
+(I0
+I30
+I1
+tp2523
+ag619
+aS'Modulation 11 Source'
+p2524
+ag2524
+ag848
+aS'Modulation_11_Source'
+p2525
+aa(lp2526
+(I0
+I53
+I1
+tp2527
+ag2353
+aS'Modulation 11 Destination'
+p2528
+ag2528
+ag848
+aS'Modulation_11_Destination'
+p2529
+aa(lp2530
+(I0
+I127
+I1
+tp2531
+ag181
+aS'Modulation 11 Amount'
+p2532
+ag2532
+ag848
+aS'Modulation_11_Amount'
+p2533
+aa(lp2534
+(I0
+I30
+I1
+tp2535
+ag619
+aS'Modulation 12 Source'
+p2536
+ag2536
+ag848
+aS'Modulation_12_Source'
+p2537
+aa(lp2538
+(I0
+I53
+I1
+tp2539
+ag2353
+aS'Modulation 12 Destination'
+p2540
+ag2540
+ag848
+aS'Modulation_12_Destination'
+p2541
+aa(lp2542
+(I0
+I127
+I1
+tp2543
+ag181
+aS'Modulation 12 Amount'
+p2544
+ag2544
+ag848
+aS'Modulation_12_Amount'
+p2545
+aa(lp2546
+(I0
+I30
+I1
+tp2547
+ag619
+aS'Modulation 13 Source'
+p2548
+ag2548
+ag848
+aS'Modulation_13_Source'
+p2549
+aa(lp2550
+(I0
+I53
+I1
+tp2551
+ag2353
+aS'Modulation 13 Destination'
+p2552
+ag2552
+ag848
+aS'Modulation_13_Destination'
+p2553
+aa(lp2554
+(I0
+I127
+I1
+tp2555
+ag181
+aS'Modulation 13 Amount'
+p2556
+ag2556
+ag848
+aS'Modulation_13_Amount'
+p2557
+aa(lp2558
+(I0
+I30
+I1
+tp2559
+ag619
+aS'Modulation 14 Source'
+p2560
+ag2560
+ag848
+aS'Modulation_14_Source'
+p2561
+aa(lp2562
+(I0
+I53
+I1
+tp2563
+ag2353
+aS'Modulation 14 Destination'
+p2564
+ag2564
+ag848
+aS'Modulation_14_Destination'
+p2565
+aa(lp2566
+(I0
+I127
+I1
+tp2567
+ag181
+aS'Modulation 14 Amount'
+p2568
+ag2568
+ag848
+aS'Modulation_14_Amount'
+p2569
+aa(lp2570
+(I0
+I30
+I1
+tp2571
+ag619
+aS'Modulation 15 Source'
+p2572
+ag2572
+ag848
+aS'Modulation_15_Source'
+p2573
+aa(lp2574
+(I0
+I53
+I1
+tp2575
+ag2353
+aS'Modulation 15 Destination'
+p2576
+ag2576
+ag848
+aS'Modulation_15_Destination'
+p2577
+aa(lp2578
+(I0
+I127
+I1
+tp2579
+ag181
+aS'Modulation 15 Amount'
+p2580
+ag2580
+ag848
+aS'Modulation_15_Amount'
+p2581
+aa(lp2582
+(I0
+I30
+I1
+tp2583
+ag619
+aS'Modulation 16 Source'
+p2584
+ag2584
+ag848
+aS'Modulation_16_Source'
+p2585
+aa(lp2586
+(I0
+I53
+I1
+tp2587
+ag2353
+aS'Modulation 16 Destination'
+p2588
+ag2588
+ag848
+aS'Modulation_16_Destination'
+p2589
+aa(lp2590
+(I0
+I127
+I1
+tp2591
+ag181
+aS'Modulation 16 Amount'
+p2592
+ag2592
+ag848
+aS'Modulation_16_Amount'
+p2593
+aag2
+ag2
+a(lp2594
+(I0
+I3
+I1
+tp2595
+a(g664
+g663
+S'One Shot'
+p2596
+S'Hold'
+p2597
+tp2598
+aS'Arpeggiator Mode'
+p2599
+ag2599
+ag848
+aS'Arpeggiator_Mode'
+p2600
+aa(lp2601
+(I0
+I16
+I1
+tp2602
+a(g664
+S'User'
+p2603
+I1
+I2
+I3
+I4
+I5
+I6
+I7
+I8
+I9
+I10
+I11
+I12
+I13
+I14
+I15
+tp2604
+aS'Arpeggiator Pattern'
+p2605
+ag2605
+ag848
+aS'Arpeggiator_Pattern'
+p2606
+aag2
+a(lp2607
+(I0
+I42
+I1
+tp2608
+a(lp2609
+S'1/96'
+p2610
+aS'1/48'
+p2611
+aS'1/32 '
+p2612
+aS'1/16T'
+p2613
+aS'1/32.'
+p2614
+aS'1/16 '
+p2615
+aS'1/8T'
+p2616
+aS'1/16.'
+p2617
+aS'1/8 '
+p2618
+aS'1/4T'
+p2619
+aS'1/8.'
+p2620
+aS'1/4 '
+p2621
+aS'1/2T'
+p2622
+aS'1/4.'
+p2623
+aS'1/2 '
+p2624
+aS'1/1T'
+p2625
+aS'1/2.'
+p2626
+aS'1 bar'
+p2627
+aS'1.5 bars'
+p2628
+aS'2 bars'
+p2629
+aS'2.5 bars'
+p2630
+aS'3 bars'
+p2631
+aS'3.5 bars'
+p2632
+aS'4 bars'
+p2633
+aS'5 bars'
+p2634
+aS'6 bars'
+p2635
+aS'7 bars'
+p2636
+aS'8 bars'
+p2637
+aS'9 bars'
+p2638
+aS'10 bars'
+p2639
+aS'12 bars'
+p2640
+aS'14 bars'
+p2641
+aS'16 bars'
+p2642
+aS'18 bars'
+p2643
+aS'20 bars'
+p2644
+aS'24 bars'
+p2645
+aS'28 bars'
+p2646
+aS'32 bars'
+p2647
+aS'36 bars'
+p2648
+aS'40 bars'
+p2649
+aS'48 bars'
+p2650
+aS'56 bars'
+p2651
+aS'64 bars'
+p2652
+aaS'Arpeggiator Clock'
+p2653
+ag2653
+ag848
+aS'Arpeggiator_Clock'
+p2654
+aa(lp2655
+(I0
+I43
+I1
+tp2656
+a(S'1/96'
+p2657
+S'1/48'
+p2658
+S'1/32'
+p2659
+S'1/16T'
+p2660
+S'1/32.'
+p2661
+S'1/16'
+p2662
+S'1/8T'
+p2663
+S'1/16.'
+p2664
+S'1/8'
+p2665
+S'1/4T'
+p2666
+S'1/8.'
+p2667
+S'1/4'
+p2668
+S'1/2T'
+p2669
+S'1/4.'
+p2670
+S'1/2'
+p2671
+S'1/1T'
+p2672
+S'1/2.'
+p2673
+S'1 bar'
+p2674
+S'1.5 bars'
+p2675
+S'2 bars'
+p2676
+S'2.5 bars'
+p2677
+S'3 bars'
+p2678
+S'3.5 bars'
+p2679
+S'4 bars'
+p2680
+S'5 bars'
+p2681
+S'6 bars'
+p2682
+S'7 bars'
+p2683
+S'8 bars'
+p2684
+S'9 bars'
+p2685
+S'10 bars'
+p2686
+S'12 bars'
+p2687
+S'14 bars'
+p2688
+S'16 bars'
+p2689
+S'18 bars'
+p2690
+S'20 bars'
+p2691
+S'24 bars'
+p2692
+S'28 bars'
+p2693
+S'32 bars'
+p2694
+S'36 bars'
+p2695
+S'40 bars'
+p2696
+S'48 bars'
+p2697
+S'56 bars'
+p2698
+S'64 bars'
+p2699
+S'legato'
+p2700
+tp2701
+aS'Arpeggiator Length'
+p2702
+ag2702
+ag848
+aS'Arpeggiator_Length'
+p2703
+aa(lp2704
+(I0
+I9
+I1
+tp2705
+a(g399
+g400
+g401
+g402
+g403
+g404
+g405
+g406
+g407
+S'10'
+p2706
+tp2707
+aS'Arpeggiator Octave'
+p2708
+ag2708
+ag848
+aS'Arpeggiator_Octave'
+p2709
+aa(lp2710
+(I0
+I3
+I1
+tp2711
+a(S'Up'
+p2712
+S'Down'
+p2713
+S'Alt Up'
+p2714
+S'Alt Down'
+p2715
+tp2716
+aS'Arpeggiator Direction'
+p2717
+ag2717
+ag848
+aS'Arpeggiator_Direction'
+p2718
+aa(lp2719
+(I0
+I5
+I1
+tp2720
+a(lp2721
+S'as played'
+p2722
+aS'reversed'
+p2723
+aS'Key Lo>Hi'
+p2724
+aS'Key Hi>Lo'
+p2725
+aS'Vel Lo>Hi'
+p2726
+aS'Vel Hi>Lo'
+p2727
+aaS'Arpeggiator Sort Order'
+p2728
+ag2728
+ag848
+aS'Arpeggiator_Sort_Order'
+p2729
+aa(lp2730
+(I0
+I6
+I1
+tp2731
+a(lp2732
+S'Each Note'
+p2733
+aS'First Note'
+p2734
+aS'Last Note'
+p2735
+aS'fix 32'
+p2736
+aS'fix 64'
+p2737
+aS'fix 100'
+p2738
+aS'fix 127'
+p2739
+aaS'Arpeggiator Velocity'
+p2740
+ag2740
+ag848
+aS'Arpeggiator_Velocity'
+p2741
+aa(lp2742
+(I0
+I127
+I1
+tp2743
+ag526
+aS'Arpeggiator Timing Factor'
+p2744
+ag2744
+ag848
+aS'Arpeggiator_Timing_Factor'
+p2745
+aag2
+a(lp2746
+(I0
+I1
+I1
+tp2747
+ag828
+aS'Arpeggiator Ptn Reset'
+p2748
+ag2748
+ag848
+aS'Arpeggiator_Ptn_Reset'
+p2749
+aa(lp2750
+(I0
+I15
+I1
+tp2751
+a(lp2752
+I1
+aI2
+aI3
+aI4
+aI5
+aI6
+aI7
+aI8
+aI9
+aI10
+aI11
+aI12
+aI13
+aI14
+aI15
+aI16
+aaS'Arpeggiator Ptn Length'
+p2753
+ag2753
+ag848
+aS'Arpeggiator_Ptn_Length'
+p2754
+aag2
+ag2
+a(lp2755
+(I0
+I127
+I1
+tp2756
+a(S'40'
+p2757
+S'42'
+p2758
+S'44'
+p2759
+S'46'
+p2760
+S'48'
+p2761
+S'50'
+p2762
+S'52'
+p2763
+S'54'
+p2764
+S'56'
+p2765
+S'58'
+p2766
+S'60'
+p2767
+S'62'
+p2768
+S'64'
+p2769
+S'66'
+p2770
+S'68'
+p2771
+S'70'
+p2772
+S'72'
+p2773
+S'74'
+p2774
+S'76'
+p2775
+S'78'
+p2776
+S'80'
+p2777
+S'82'
+p2778
+S'84'
+p2779
+S'86'
+p2780
+S'88'
+p2781
+S'90'
+p2782
+S'91'
+p2783
+S'92'
+p2784
+S'93'
+p2785
+S'94'
+p2786
+S'95'
+p2787
+S'96'
+p2788
+S'97'
+p2789
+S'98'
+p2790
+S'99'
+p2791
+S'100'
+p2792
+S'101'
+p2793
+S'102'
+p2794
+S'103'
+p2795
+S'104'
+p2796
+S'105'
+p2797
+S'106'
+p2798
+S'107'
+p2799
+S'108'
+p2800
+S'109'
+p2801
+S'110'
+p2802
+S'111'
+p2803
+S'112'
+p2804
+S'113'
+p2805
+S'114'
+p2806
+S'115'
+p2807
+S'116'
+p2808
+S'117'
+p2809
+S'118'
+p2810
+S'119'
+p2811
+S'120'
+p2812
+S'121'
+p2813
+S'122'
+p2814
+S'123'
+p2815
+S'124'
+p2816
+S'125'
+p2817
+S'126'
+p2818
+S'127'
+p2819
+S'128'
+p2820
+S'129'
+p2821
+S'130'
+p2822
+S'131'
+p2823
+S'132'
+p2824
+S'133'
+p2825
+S'134'
+p2826
+S'135'
+p2827
+S'136'
+p2828
+S'137'
+p2829
+S'138'
+p2830
+S'139'
+p2831
+S'140'
+p2832
+S'141'
+p2833
+S'142'
+p2834
+S'143'
+p2835
+S'144'
+p2836
+S'145'
+p2837
+S'146'
+p2838
+S'147'
+p2839
+S'148'
+p2840
+S'149'
+p2841
+S'150'
+p2842
+S'151'
+p2843
+S'152'
+p2844
+S'153'
+p2845
+S'154'
+p2846
+S'155'
+p2847
+S'156'
+p2848
+S'157'
+p2849
+S'158'
+p2850
+S'159'
+p2851
+S'160'
+p2852
+S'161'
+p2853
+S'162'
+p2854
+S'163'
+p2855
+S'164'
+p2856
+S'165'
+p2857
+S'170'
+p2858
+S'175'
+p2859
+S'180'
+p2860
+S'185'
+p2861
+S'190'
+p2862
+S'195'
+p2863
+S'200'
+p2864
+S'205'
+p2865
+S'210'
+p2866
+S'215'
+p2867
+S'220'
+p2868
+S'225'
+p2869
+S'230'
+p2870
+S'235'
+p2871
+S'240'
+p2872
+S'245'
+p2873
+S'250'
+p2874
+S'255'
+p2875
+S'260'
+p2876
+S'265'
+p2877
+S'270'
+p2878
+S'275'
+p2879
+S'280'
+p2880
+S'285'
+p2881
+S'290'
+p2882
+S'295'
+p2883
+S'300'
+p2884
+tp2885
+aS'Arpeggiator Tempo'
+p2886
+ag2886
+ag848
+aS'Arpeggiator_Tempo'
+p2887
+aa(lp2888
+(I0
+I127
+I1
+tp2889
+ag2885
+aS'Arp Pattern Step/Glide/Accent 1'
+p2890
+ag2890
+ag848
+aS'Arp_Pattern_Step_Glide_Accent_1'
+p2891
+aa(lp2892
+(I0
+I127
+I1
+tp2893
+ag2885
+aS'Arp Pattern Step/Glide/Accent 2'
+p2894
+ag2894
+ag848
+aS'Arp_Pattern_Step_Glide_Accent_2'
+p2895
+aa(lp2896
+(I0
+I127
+I1
+tp2897
+ag2885
+aS'Arp Pattern Step/Glide/Accent 3'
+p2898
+ag2898
+ag848
+aS'Arp_Pattern_Step_Glide_Accent_3'
+p2899
+aa(lp2900
+(I0
+I127
+I1
+tp2901
+ag2885
+aS'Arp Pattern Step/Glide/Accent 4'
+p2902
+ag2902
+ag848
+aS'Arp_Pattern_Step_Glide_Accent_4'
+p2903
+aa(lp2904
+(I0
+I127
+I1
+tp2905
+ag2885
+aS'Arp Pattern Step/Glide/Accent 5'
+p2906
+ag2906
+ag848
+aS'Arp_Pattern_Step_Glide_Accent_5'
+p2907
+aa(lp2908
+(I0
+I127
+I1
+tp2909
+ag2885
+aS'Arp Pattern Step/Glide/Accent 6'
+p2910
+ag2910
+ag848
+aS'Arp_Pattern_Step_Glide_Accent_6'
+p2911
+aa(lp2912
+(I0
+I127
+I1
+tp2913
+ag2885
+aS'Arp Pattern Step/Glide/Accent 7'
+p2914
+ag2914
+ag848
+aS'Arp_Pattern_Step_Glide_Accent_7'
+p2915
+aa(lp2916
+(I0
+I127
+I1
+tp2917
+ag2885
+aS'Arp Pattern Step/Glide/Accent 8'
+p2918
+ag2918
+ag848
+aS'Arp_Pattern_Step_Glide_Accent_8'
+p2919
+aa(lp2920
+(I0
+I127
+I1
+tp2921
+ag2885
+aS'Arp Pattern Step/Glide/Accent 9'
+p2922
+ag2922
+ag848
+aS'Arp_Pattern_Step_Glide_Accent_9'
+p2923
+aa(lp2924
+(I0
+I127
+I1
+tp2925
+ag2885
+aS'Arp Pattern Step/Glide/Accent 10'
+p2926
+ag2926
+ag848
+aS'Arp_Pattern_Step_Glide_Accent_10'
+p2927
+aa(lp2928
+(I0
+I127
+I1
+tp2929
+ag2885
+aS'Arp Pattern Step/Glide/Accent 11'
+p2930
+ag2930
+ag848
+aS'Arp_Pattern_Step_Glide_Accent_11'
+p2931
+aa(lp2932
+(I0
+I127
+I1
+tp2933
+ag2885
+aS'Arp Pattern Step/Glide/Accent 12'
+p2934
+ag2934
+ag848
+aS'Arp_Pattern_Step_Glide_Accent_12'
+p2935
+aa(lp2936
+(I0
+I127
+I1
+tp2937
+ag2885
+aS'Arp Pattern Step/Glide/Accent 13'
+p2938
+ag2938
+ag848
+aS'Arp_Pattern_Step_Glide_Accent_13'
+p2939
+aa(lp2940
+(I0
+I127
+I1
+tp2941
+ag2885
+aS'Arp Pattern Step/Glide/Accent 14'
+p2942
+ag2942
+ag848
+aS'Arp_Pattern_Step_Glide_Accent_14'
+p2943
+aa(lp2944
+(I0
+I127
+I1
+tp2945
+ag2885
+aS'Arp Pattern Step/Glide/Accent 15'
+p2946
+ag2946
+ag848
+aS'Arp_Pattern_Step_Glide_Accent_15'
+p2947
+aa(lp2948
+(I0
+I127
+I1
+tp2949
+ag2885
+aS'Arp Pattern Step/Glide/Accent 16'
+p2950
+ag2950
+ag848
+aS'Arp_Pattern_Step_Glide_Accent_16'
+p2951
+aa(lp2952
+(I0
+I127
+I1
+tp2953
+ag2885
+aS'Arp Pattern Timing/Length 1'
+p2954
+ag2954
+ag848
+aS'Arp_Pattern_Timing_Length_1'
+p2955
+aa(lp2956
+(I0
+I127
+I1
+tp2957
+ag2885
+aS'Arp Pattern Timing/Length 2'
+p2958
+ag2958
+ag848
+aS'Arp_Pattern_Timing_Length_2'
+p2959
+aa(lp2960
+(I0
+I127
+I1
+tp2961
+ag2885
+aS'Arp Pattern Timing/Length 3'
+p2962
+ag2962
+ag848
+aS'Arp_Pattern_Timing_Length_3'
+p2963
+aa(lp2964
+(I0
+I127
+I1
+tp2965
+ag2885
+aS'Arp Pattern Timing/Length 4'
+p2966
+ag2966
+ag848
+aS'Arp_Pattern_Timing_Length_4'
+p2967
+aa(lp2968
+(I0
+I127
+I1
+tp2969
+ag2885
+aS'Arp Pattern Timing/Length 5'
+p2970
+ag2970
+ag848
+aS'Arp_Pattern_Timing_Length_5'
+p2971
+aa(lp2972
+(I0
+I127
+I1
+tp2973
+ag2885
+aS'Arp Pattern Timing/Length 6'
+p2974
+ag2974
+ag848
+aS'Arp_Pattern_Timing_Length_6'
+p2975
+aa(lp2976
+(I0
+I127
+I1
+tp2977
+ag2885
+aS'Arp Pattern Timing/Length 7'
+p2978
+ag2978
+ag848
+aS'Arp_Pattern_Timing_Length_7'
+p2979
+aa(lp2980
+(I0
+I127
+I1
+tp2981
+ag2885
+aS'Arp Pattern Timing/Length 8'
+p2982
+ag2982
+ag848
+aS'Arp_Pattern_Timing_Length_8'
+p2983
+aa(lp2984
+(I0
+I127
+I1
+tp2985
+ag2885
+aS'Arp Pattern Timing/Length 9'
+p2986
+ag2986
+ag848
+aS'Arp_Pattern_Timing_Length_9'
+p2987
+aa(lp2988
+(I0
+I127
+I1
+tp2989
+ag2885
+aS'Arp Pattern Timing/Length 10'
+p2990
+ag2990
+ag848
+aS'Arp_Pattern_Timing_Length_10'
+p2991
+aa(lp2992
+(I0
+I127
+I1
+tp2993
+ag2885
+aS'Arp Pattern Timing/Length 11'
+p2994
+ag2994
+ag848
+aS'Arp_Pattern_Timing_Length_11'
+p2995
+aa(lp2996
+(I0
+I127
+I1
+tp2997
+ag2885
+aS'Arp Pattern Timing/Length 12'
+p2998
+ag2998
+ag848
+aS'Arp_Pattern_Timing_Length_12'
+p2999
+aa(lp3000
+(I0
+I127
+I1
+tp3001
+ag2885
+aS'Arp Pattern Timing/Length 13'
+p3002
+ag3002
+ag848
+aS'Arp_Pattern_Timing_Length_13'
+p3003
+aa(lp3004
+(I0
+I127
+I1
+tp3005
+ag2885
+aS'Arp Pattern Timing/Length 14'
+p3006
+ag3006
+ag848
+aS'Arp_Pattern_Timing_Length_14'
+p3007
+aa(lp3008
+(I0
+I127
+I1
+tp3009
+ag2885
+aS'Arp Pattern Timing/Length 15'
+p3010
+ag3010
+ag848
+aS'Arp_Pattern_Timing_Length_15'
+p3011
+aa(lp3012
+(I0
+I127
+I1
+tp3013
+ag2885
+aS'Arp Pattern Timing/Length 16'
+p3014
+ag3014
+ag848
+aS'Arp_Pattern_Timing_Length_16'
+p3015
+aag2
+ag2
+ag2
+ag2
+a(lp3016
+(I32
+I127
+I1
+tp3017
+a(S' '
+p3018
+S'!'
+p3019
+S'"'
+p3020
+S'#'
+p3021
+S'$'
+p3022
+S'%'
+p3023
+S'&'
+p3024
+S"'"
+p3025
+S'('
+p3026
+S')'
+p3027
+S'*'
+p3028
+S'+'
+p3029
+S','
+p3030
+S'-'
+p3031
+S'.'
+p3032
+S'/'
+p3033
+S'0'
+p3034
+S'1'
+p3035
+S'2'
+p3036
+S'3'
+p3037
+S'4'
+p3038
+S'5'
+p3039
+S'6'
+p3040
+S'7'
+p3041
+S'8'
+p3042
+S'9'
+p3043
+S':'
+p3044
+S';'
+p3045
+S'<'
+p3046
+S'='
+p3047
+S'>'
+p3048
+S'?'
+p3049
+S'@'
+p3050
+S'A'
+p3051
+S'B'
+p3052
+S'C'
+p3053
+S'D'
+p3054
+S'E'
+p3055
+S'F'
+p3056
+S'G'
+p3057
+S'H'
+p3058
+S'I'
+p3059
+S'J'
+p3060
+S'K'
+p3061
+S'L'
+p3062
+S'M'
+p3063
+S'N'
+p3064
+S'O'
+p3065
+S'P'
+p3066
+S'Q'
+p3067
+S'R'
+p3068
+S'S'
+p3069
+S'T'
+p3070
+S'U'
+p3071
+S'V'
+p3072
+S'W'
+p3073
+S'X'
+p3074
+S'Y'
+p3075
+S'Z'
+p3076
+S'['
+p3077
+S'\\'
+p3078
+S']'
+p3079
+S'^'
+p3080
+S'_'
+p3081
+S'`'
+p3082
+S'a'
+p3083
+S'b'
+p3084
+S'c'
+p3085
+S'd'
+p3086
+S'e'
+p3087
+S'f'
+p3088
+S'g'
+p3089
+S'h'
+p3090
+S'i'
+p3091
+S'j'
+p3092
+S'k'
+p3093
+S'l'
+p3094
+S'm'
+p3095
+S'n'
+p3096
+S'o'
+p3097
+S'p'
+p3098
+S'q'
+p3099
+S'r'
+p3100
+S's'
+p3101
+S't'
+p3102
+S'u'
+p3103
+S'v'
+p3104
+S'w'
+p3105
+S'x'
+p3106
+S'y'
+p3107
+S'z'
+p3108
+S'{'
+p3109
+S'|'
+p3110
+S'}'
+p3111
+S'~'
+p3112
+S'\x7f'
+p3113
+tp3114
+aS'Name Char 00'
+p3115
+ag3115
+ag848
+aS'Name_Char_00'
+p3116
+aa(lp3117
+(I32
+I127
+I1
+tp3118
+ag3114
+aS'Name Char 01'
+p3119
+ag3119
+ag848
+aS'Name_Char_01'
+p3120
+aa(lp3121
+(I32
+I127
+I1
+tp3122
+ag3114
+aS'Name Char 02'
+p3123
+ag3123
+ag848
+aS'Name_Char_02'
+p3124
+aa(lp3125
+(I32
+I127
+I1
+tp3126
+ag3114
+aS'Name Char 03'
+p3127
+ag3127
+ag848
+aS'Name_Char_03'
+p3128
+aa(lp3129
+(I32
+I127
+I1
+tp3130
+ag3114
+aS'Name Char 04'
+p3131
+ag3131
+ag848
+aS'Name_Char_04'
+p3132
+aa(lp3133
+(I32
+I127
+I1
+tp3134
+ag3114
+aS'Name Char 05'
+p3135
+ag3135
+ag848
+aS'Name_Char_05'
+p3136
+aa(lp3137
+(I32
+I127
+I1
+tp3138
+ag3114
+aS'Name Char 06'
+p3139
+ag3139
+ag848
+aS'Name_Char_06'
+p3140
+aa(lp3141
+(I32
+I127
+I1
+tp3142
+ag3114
+aS'Name Char 07'
+p3143
+ag3143
+ag848
+aS'Name_Char_07'
+p3144
+aa(lp3145
+(I32
+I127
+I1
+tp3146
+ag3114
+aS'Name Char 08'
+p3147
+ag3147
+ag848
+aS'Name_Char_08'
+p3148
+aa(lp3149
+(I32
+I127
+I1
+tp3150
+ag3114
+aS'Name Char 09'
+p3151
+ag3151
+ag848
+aS'Name_Char_09'
+p3152
+aa(lp3153
+(I32
+I127
+I1
+tp3154
+ag3114
+aS'Name Char 10'
+p3155
+ag3155
+ag848
+aS'Name_Char_10'
+p3156
+aa(lp3157
+(I32
+I127
+I1
+tp3158
+ag3114
+aS'Name Char 11'
+p3159
+ag3159
+ag848
+aS'Name_Char_11'
+p3160
+aa(lp3161
+(I32
+I127
+I1
+tp3162
+ag3114
+aS'Name Char 12'
+p3163
+ag3163
+ag848
+aS'Name_Char_12'
+p3164
+aa(lp3165
+(I32
+I127
+I1
+tp3166
+ag3114
+aS'Name Char 13'
+p3167
+ag3167
+ag848
+aS'Name_Char_13'
+p3168
+aa(lp3169
+(I32
+I127
+I1
+tp3170
+ag3114
+aS'Name Char 14'
+p3171
+ag3171
+ag848
+aS'Name_Char_14'
+p3172
+aa(lp3173
+(I32
+I127
+I1
+tp3174
+ag3114
+aS'Name Char 15'
+p3175
+ag3175
+ag848
+aS'Name_Char_15'
+p3176
+aa(lp3177
+(I0
+I12
+I1
+tp3178
+a(lp3179
+S'Init'
+p3180
+aS'Arp '
+p3181
+aS'Atmo'
+p3182
+aS'Bass'
+p3183
+aS'Drum'
+p3184
+aS'FX  '
+p3185
+aS'Keys'
+p3186
+aS'Lead'
+p3187
+aS'Mono'
+p3188
+aS'Pad '
+p3189
+aS'Perc'
+p3190
+aS'Poly'
+p3191
+aS'Seq '
+p3192
+aaS'Category'
+p3193
+ag3193
+ag848
+ag3193
+aag2
+ag2
+ag2
+a.
