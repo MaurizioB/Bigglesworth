@@ -30,8 +30,8 @@ main directory:
 
     $ ./Bigglesworth
 
-If it doesn't work, just browse to the bigglesworth directory and run: $
-python **init**.py
+| If it doesn't work, just browse to the bigglesworth directory and run:
+|  $ python **init**.py
 
 A small window will show, listing the latest version of the presets from
 Waldorf, from here you can edit a sound by right clicking on it.
