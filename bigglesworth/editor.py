@@ -181,9 +181,9 @@ class BlofeldEnv(Envelope):
 
 class Editor(QtGui.QMainWindow):
     object_dict = {attr:ParamObject(param_tuple) for attr, param_tuple in Params.param_names.items()}
-    with open('blofeld_efx', 'rb') as _fx:
+    with open(local_path('blofeld_efx'), 'rb') as _fx:
         effects = pickle.load(_fx)
-    with open('blofeld_efx_ranges', 'rb') as _fx:
+    with open(local_path('blofeld_efx_ranges'), 'rb') as _fx:
         efx_ranges = pickle.load(_fx)
 
     def __init__(self, parent):
@@ -205,7 +205,7 @@ class Editor(QtGui.QMainWindow):
         self.send_btn = SquareButton(self, 'MIDI send', checkable=True, checked=False)
         self.send_btn.toggled.connect(lambda state: setattr(self, 'send', state))
         self.grid.addWidget(self.send_btn, 0, 1)
-        logo = QtGui.QIcon('logo.svg').pixmap(QtCore.QSize(160, 160)).toImage()
+        logo = QtGui.QIcon(local_path('logo.svg')).pixmap(QtCore.QSize(160, 160)).toImage()
         logo_widget = QtGui.QLabel()
         logo_widget.setPixmap(QtGui.QPixmap().fromImage(logo))
         self.grid.addWidget(logo_widget, 0, 3, 1, 1, QtCore.Qt.AlignBottom|QtCore.Qt.AlignRight)

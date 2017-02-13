@@ -280,7 +280,7 @@ class LoadingThread(QtCore.QObject):
         self.blofeld_library.setModel(self.blofeld_model)
 
     def run(self):
-        pattern = midifile.read_midifile('presets/blofeld_fact_080103/blofeld_fact_080103.mid')
+        pattern = midifile.read_midifile(local_path('presets/blofeld_fact_080103/blofeld_fact_080103.mid'))
         track = pattern[0]
         for event in track:
             if isinstance(event, midifile.SysexEvent):

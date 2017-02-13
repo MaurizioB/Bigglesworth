@@ -1,7 +1,10 @@
 import pickle
+from os import path
 from collections import namedtuple
 from PyQt4 import QtCore
 
+def local_path(name):
+    return path.join(path.dirname(path.abspath(__file__)), name)
 
 #with open('blofeld_params', 'rb') as _params_file:
 #    sound_params = pickle.load(_params_file)
@@ -85,7 +88,7 @@ class AdvParam(object):
 class ParamsClass(object):
     param_values_nt = namedtuple('param_values_nt', 'range values name short_name family attr')
     param_names_nt = namedtuple('param_names_nt', 'range values name short_name family attr id')
-    with open('blofeld_params', 'rb') as bp:
+    with open(local_path('blofeld_params'), 'rb') as bp:
         param_list = []
         param_names = {}
         for i, (r, v, n, s, f, a) in enumerate(pickle.load(bp)):

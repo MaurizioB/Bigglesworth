@@ -18,7 +18,7 @@ class AlsaMidi(QtCore.QObject):
         self.main = main
         self.active = False
         self.sysex_buffer = []
-        self.seq = alsaseq.Sequencer(clientname='Blofix')
+        self.seq = alsaseq.Sequencer(clientname='Bigglesworth')
         self.keep_going = True
         input_id = self.seq.create_simple_port(name = 'input', 
                                                  type = alsaseq.SEQ_PORT_TYPE_MIDI_GENERIC|alsaseq.SEQ_PORT_TYPE_APPLICATION, 
