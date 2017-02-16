@@ -19,6 +19,8 @@ class Librarian(QtGui.QMainWindow):
     def __init__(self, parent=None):
         QtGui.QMainWindow.__init__(self, parent=None)
         load_ui(self, 'main.ui')
+        self._font_db = QtGui.QFontDatabase()
+        self._font_db.addApplicationFont(local_path('FiraSans-Regular.ttf'))
 
         self.alsa_thread = QtCore.QThread()
         self.alsa = AlsaMidi(self)
@@ -92,8 +94,8 @@ class Librarian(QtGui.QMainWindow):
     def search_filter(self, text):
         filter =  self.search_filter_chk.isChecked()
         if not text and not filter: return
-        found = self.blofeld_model.findItems(text, QtCore.Qt.MatchContains, 3)
         if not filter:
+            found = self.blofeld_model.findItems(text, QtCore.Qt.MatchContains, 3)
             if found:
                 self.blofeld_sounds_table.selectRow(found[0].row())
             return
@@ -102,13 +104,7 @@ class Librarian(QtGui.QMainWindow):
     def sound_doubleclick(self, index):
         if self.edit_mode: return
         sound = self.blofeld_model.item(self.blofeld_model_proxy.mapToSource(index).row(), SOUND).data(SoundRole).toPyObject()
-        self.output_event(CtrlEvent(1, 0, 0, sound.bank))
-#        bank_req.source = self.seq.client_id, 1
-        self.output_event(ProgramEvent(1, 0, sound.prog))
-#        prog_req.source = self.seq.client_id, 1
-#        self.seq.output_event(bank_req.get_event())
-#        self.seq.output_event(prog_req.get_event())
-#        self.seq.drain_output()
+        self.program_change_request(sound.bank, sound.prog)
 
     def right_click(self, event):
         if event.button() != QtCore.Qt.RightButton: return
@@ -116,10 +112,10 @@ class Librarian(QtGui.QMainWindow):
         sound = self.blofeld_model.item(self.blofeld_model_proxy.mapToSource(index).row(), SOUND).data(SoundRole).toPyObject()
         menu = QtGui.QMenu()
         menu.setSeparatorsCollapsible(False)
-        header = QtGui.QAction(sound.name, self)
+        header = QtGui.QAction(sound.name, menu)
         header.setSeparator(True)
         menu.addAction(header)
-        edit_item = QtGui.QAction('Edit...', self)
+        edit_item = QtGui.QAction('Edit...', menu)
         menu.addAction(edit_item)
         menu.show()
         fm = QtGui.QFontMetrics(edit_item.font())
@@ -134,7 +130,7 @@ class Librarian(QtGui.QMainWindow):
         res = menu.exec_(event.globalPos())
         if res == edit_item:
             self.editor.show()
-            self.editor.setData(sound.data)
+            self.editor.setSound(sound.bank, sound.prog)
 
     def sound_drop_event(self, event):
         def rename(sound_range):
@@ -211,6 +207,9 @@ class Librarian(QtGui.QMainWindow):
         self.seq.output_event(alsa_event)
         self.seq.drain_output()
 
+    def program_change_request(self, bank, prog):
+        self.output_event(CtrlEvent(1, 0, 0, bank))
+        self.output_event(ProgramEvent(1, 0, prog))
 
     def device_request(self):
         req = SysExEvent(1, [0xF0, 0x7e, 0x7f, 0x6, 0x1, 0xf7])
@@ -257,7 +256,8 @@ class Librarian(QtGui.QMainWindow):
 
     def set_models(self, model, library):
         self.loading_complete = True
-        self.blofeld_library = library
+        self.blofeld_library = self.editor.blofeld_library = library
+        self.editor.create_sorted_library()
         self.blofeld_model = model
         self.blofeld_model.setHorizontalHeaderLabels(sound_headers)
         self.blofeld_model.itemChanged.connect(self.sound_update)
@@ -327,6 +327,7 @@ class Librarian(QtGui.QMainWindow):
             self.blofeld_current = event.data2, self.blofeld_current[1]
         elif event.type == PROGRAM:
             self.blofeld_current = self.blofeld_current[0], event.data2
+            self.blofeld_sounds_table.selectRow(self.blofeld_model_proxy.mapFromSource(self.blofeld_model.index(self.blofeld_current[0]*128+self.blofeld_current[1], 0)).row())
 
     def device_response(self, sysex):
         if sysex[5] == 0x3e:

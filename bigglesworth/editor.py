@@ -1,9 +1,11 @@
 import pickle
+from string import uppercase
 from PyQt4 import QtCore, QtGui
 
 from midiutils import *
 
 from const import *
+from classes import *
 from utils import *
 from ui_classes import *
 
@@ -147,6 +149,7 @@ class BlofeldEnv(Envelope):
             self.normalize()
 
     def enterEvent(self, event):
+        if not self.parent().isActiveWindow(): return
         if self.normal:
             self.normal_pos = self.pos()
             self.normal_layout = self.parent().layout()
@@ -177,7 +180,397 @@ class BlofeldEnv(Envelope):
         if not self.normal:
             self.normalize()
 
+class BaseDisplayWidget(QtGui.QGraphicsWidget):
+    pen = brush = QtGui.QColor(30, 50, 40)
 
+class DownArrowWidget(BaseDisplayWidget):
+    arrow = QtGui.QPainterPath()
+    arrow.moveTo(-4, -2)
+    arrow.lineTo(4, -2)
+    arrow.lineTo(0, 2)
+    arrow.closeSubpath()
+    def __init__(self, parent):
+        BaseDisplayWidget.__init__(self, parent)
+        width = self.arrow.boundingRect().width()+2
+        height = self.arrow.boundingRect().height()+2
+        self.setMinimumSize(width, height)
+        self.setMaximumSize(width+2, height+2)
+
+    def paint(self, painter, *args, **kwargs):
+        painter.setPen(self.pen)
+        painter.setBrush(self.brush)
+        painter.setRenderHints(QtGui.QPainter.Antialiasing)
+        painter.translate(self.rect().center())
+        painter.drawPath(self.arrow)
+
+class UpArrowWidget(DownArrowWidget):
+    arrow = QtGui.QPainterPath()
+    arrow.moveTo(-4, 2)
+    arrow.lineTo(4, 2)
+    arrow.lineTo(0, -2)
+    arrow.closeSubpath()
+
+class BaseTextWidget(BaseDisplayWidget):
+    def __init__(self, text, parent):
+        BaseDisplayWidget.__init__(self, parent)
+        self.text = text
+        self.text_align = QtCore.Qt.AlignLeft
+
+    def paint(self, painter, *args, **kwargs):
+#        painter.drawRect(self.rect())
+        painter.setRenderHints(QtGui.QPainter.Antialiasing)
+        painter.setPen(self.pen)
+        painter.setBrush(self.brush)
+        painter.setFont(self.font)
+        painter.drawText(self.rect(), self.text_align, self.text)
+
+class LabelTextWidget(BaseTextWidget):
+    def __init__(self, text, parent):
+        BaseTextWidget.__init__(self, text, parent)
+        self.font = QtGui.QFont('Fira Sans', 22)
+        self.font_metrics = QtGui.QFontMetrics(self.font)
+        self.setMinimumSize(self.font_metrics.width(self.text), self.font_metrics.height())
+
+class SmallLabelTextWidget(BaseTextWidget):
+    def __init__(self, text, parent, fixed=False):
+        BaseTextWidget.__init__(self, text, parent)
+        self.font = QtGui.QFont('Fira Sans', 12)
+        self.font_metrics = QtGui.QFontMetrics(self.font)
+        self.setMinimumSize(self.font_metrics.width(self.text), self.font_metrics.height())
+        self.setMaximumHeight(self.font_metrics.height())
+        if fixed:
+            self.setMaximumWidth(self.font_metrics.width(self.text))
+
+class SmallTextWidget(BaseTextWidget):
+    def __init__(self, text, parent):
+        BaseTextWidget.__init__(self, text, parent)
+        self.font = QtGui.QFont('Fira Sans', 12)
+        self.font_metrics = QtGui.QFontMetrics(self.font)
+
+class BankTextWidget(SmallTextWidget):
+    def __init__(self, parent):
+        SmallTextWidget.__init__(self, 'A', parent)
+        max_letters = max([self.font_metrics.width(l) for l in uppercase])
+        self.setMinimumSize(max_letters, self.font_metrics.height())
+        self.setMaximumSize(max_letters, self.font_metrics.height())
+
+class ProgTextWidget(SmallTextWidget):
+    def __init__(self, parent):
+        SmallTextWidget.__init__(self, '001', parent)
+#        max_letters = max([self.font_metrics.width(l) for l in uppercase])
+        max_digits = max([self.font_metrics.width(str(i)) for i in range(10)])
+        width = max_digits*3
+        self.setMinimumSize(width, self.font_metrics.height())
+        self.setMaximumSize(width, self.font_metrics.height())
+
+class CatTextWidget(SmallTextWidget):
+    def __init__(self, parent):
+        SmallTextWidget.__init__(self, 'off', parent)
+        width = max([self.font_metrics.width(c) for c in categories])
+        self.setMinimumSize(width, self.font_metrics.height())
+        self.setMaximumSize(width, self.font_metrics.height())
+        self.text_align = QtCore.Qt.AlignRight
+
+class DisplayVSpacer(QtGui.QGraphicsWidget):
+    def __init__(self, parent, size=2):
+        QtGui.QGraphicsWidget.__init__(self, parent)
+        self.setMinimumHeight(size)
+        self.setMaximumSize(0, size)
+
+class DisplayHSpacer(QtGui.QGraphicsWidget):
+    def __init__(self, parent, size=2):
+        QtGui.QGraphicsWidget.__init__(self, parent)
+        self.setMinimumWidth(size)
+        self.setMaximumSize(size, 0)
+
+class BlofeldDisplay(QtGui.QGraphicsView):
+    border_grad = QtGui.QConicalGradient(QtCore.QPointF(.5, .5), 45)
+    border_grad.setCoordinateMode(QtGui.QConicalGradient.ObjectBoundingMode)
+    _up = QtGui.QColor(80, 80, 80)
+    _left = QtGui.QColor(80, 80, 80)
+    _right = QtGui.QColor(120, 120, 120)
+    _down = QtGui.QColor(200, 200, 200)
+    border_grad.setColorAt(0, _up)
+    border_grad.setColorAt(.249, _up)
+    border_grad.setColorAt(.25, _left)
+    border_grad.setColorAt(.5, _left)
+    border_grad.setColorAt(.501, _down)
+    border_grad.setColorAt(.749, _down)
+    border_grad.setColorAt(.75, _right)
+    border_grad.setColorAt(.99, _right)
+    border_grad.setColorAt(1, _up)
+    border_pen = QtGui.QPen(border_grad, 1)
+    bgd_brush = QtGui.QBrush(QtGui.QColor(240, 250, 250))
+    def __init__(self, parent):
+        QtGui.QGraphicsView.__init__(self, parent)
+        self.main = parent
+        self.setFrameStyle(0)
+        self.scene = QtGui.QGraphicsScene(self)
+        self.setScene(self.scene)
+        self.setStyleSheet('background: transparent')
+        self._font_db = QtGui.QFontDatabase()
+        self._font_db.addApplicationFont(local_path('FiraSans-Regular.ttf'))
+        self.shadow = QtGui.QGraphicsDropShadowEffect()
+        self.shadow.setBlurRadius(4)
+        self.shadow.setOffset(1, 1)
+        self.shadow.setColor(QtGui.QColor(100, 100, 100, 150))
+        self.create_layout()
+#        self.setViewportUpdateMode(QtGui.QGraphicsView.FullViewportUpdate)
+
+    def create_layout(self):
+        panel = QtGui.QGraphicsWidget()
+        self.panel = panel
+        self.scene.addItem(panel)
+        layout = QtGui.QGraphicsGridLayout()
+        layout.setSpacing(0)
+        panel.setLayout(layout)
+
+        self.edit_mode_label = SmallLabelTextWidget('Sound mode Edit buffer', panel)
+#        self.edit_mode_label.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        layout.addItem(self.edit_mode_label, 0, 0)
+        self.prog_name = LabelTextWidget('Mini moog super', panel)
+        layout.addItem(self.prog_name, 1, 0)
+        self.status = SmallLabelTextWidget('status', panel)
+        layout.addItem(self.status, 2, 0)
+
+        side = QtGui.QGraphicsGridLayout()
+        side.setVerticalSpacing(1)
+        side.setHorizontalSpacing(2)
+        side.setSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Maximum)
+        layout.addItem(side, 0, 1, 3, 1, QtCore.Qt.AlignVCenter)
+
+        bank_label = SmallLabelTextWidget('Bank', panel, fixed=True)
+        side.addItem(bank_label, 0, 0, 1, 2, QtCore.Qt.AlignTop)
+        prog_label = SmallLabelTextWidget('Prog', panel, fixed=True)
+        side.addItem(prog_label, 0, 2, 1, 2, QtCore.Qt.AlignRight)
+
+        side.addItem(DisplayVSpacer(panel, 3), 1, 0)
+
+        self.bank = BankTextWidget(panel)
+        side.addItem(self.bank, 2, 0, 2, 1, QtCore.Qt.AlignVCenter)
+        self.bank_up = UpArrowWidget(panel)
+        side.addItem(self.bank_up, 2, 1)
+        self.bank_dn = DownArrowWidget(panel)
+        side.addItem(self.bank_dn, 3, 1)
+
+        self.prog = ProgTextWidget(panel)
+        side.addItem(self.prog, 2, 2, 2, 1, QtCore.Qt.AlignVCenter)
+        self.prog_up = UpArrowWidget(panel)
+        side.addItem(self.prog_up, 2, 3)
+        self.prog_dn = DownArrowWidget(panel)
+        side.addItem(self.prog_dn, 3, 3)
+
+        side.addItem(DisplayVSpacer(panel, 3), 4, 0)
+
+        cat = QtGui.QGraphicsGridLayout()
+        cat.setHorizontalSpacing(2)
+        cat.setSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Maximum)
+        side.addItem(cat, 5, 0, 1, 4)
+
+        self.cat_label = SmallLabelTextWidget('Cat: ', panel, fixed=True)
+        cat.addItem(self.cat_label, 0, 0, 2, 1, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+        self.cat_name = CatTextWidget(panel)
+        cat.addItem(self.cat_name, 0, 1, 2, 2, QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+        self.cat_up = UpArrowWidget(panel)
+        cat.addItem(self.cat_up, 0, 3)
+        self.cat_dn = DownArrowWidget(panel)
+        cat.addItem(self.cat_dn, 1, 3)
+
+        self.panel.setGraphicsEffect(self.shadow)
+
+    def mousePressEvent(self, event):
+        item = self.scene.itemAt(event.pos())
+        if item is None: return
+        sound = self.main.sound
+        bank = sound.bank
+        prog = sound.prog
+        cat = sound.cat
+        if item == self.bank_dn:
+            bank -= 1
+            if bank < 0: return
+        elif item == self.bank_up:
+            bank += 1
+            if bank > 7: return
+        elif item == self.prog_dn:
+            prog -= 1
+            if prog < 0:
+                if bank > 1:
+                    bank -= 1
+                    prog = 127
+                else: return
+        elif item == self.prog_up:
+            prog += 1
+            if prog > 127:
+                if bank < 7:
+                    bank += 1
+                    prog = 0
+                else: return
+        elif item == self.cat_up:
+            while True:
+                if cat >= len(categories)-1: return
+                cat_list = self.main.sorted_library.by_cat[cat+1]
+                if not len(cat_list):
+                    cat += 1
+                    continue
+                else:
+                    sound = cat_list[0]
+                    break
+            bank = sound.bank
+            prog = sound.prog
+        elif item == self.cat_dn:
+            while True:
+                if cat < 1: return
+                cat_list = self.main.sorted_library.by_cat[cat-1]
+                if not len(cat_list):
+                    cat -= 1
+                    continue
+                else:
+                    sound = cat_list[0]
+                    break
+            bank = sound.bank
+            prog = sound.prog
+        else:
+            if event.button() == QtCore.Qt.RightButton:
+                if item == self.prog_name:
+                    res = self.main.sorted_library_menu.exec_(event.globalPos())
+                    if not res: return
+                    self.main.setSound(*res.data().toPyObject(), pgm_send=True)
+                    return
+                elif item == self.bank:
+                    res = self.main.sorted_library_menu.actions()[0].menu().exec_(event.globalPos())
+                    if not res: return
+                    self.main.setSound(*res.data().toPyObject(), pgm_send=True)
+                    return
+                elif item == self.prog:
+                    res = self.main.sorted_library_menu.actions()[0].menu().actions()[bank].menu().exec_(event.globalPos())
+                    if not res: return
+                    self.main.setSound(*res.data().toPyObject(), pgm_send=True)
+                    return
+                elif item in [self.cat_label, self.cat_name]:
+                    res = self.main.sorted_library_menu.actions()[1].menu().exec_(event.globalPos())
+                    if not res: return
+                    self.main.setSound(*res.data().toPyObject(), pgm_send=True)
+                    return
+                else:
+                    return
+            else:
+                return
+        self.main.setSound(bank, prog, pgm_send=True)
+
+    def wheelEvent(self, event):
+        item = self.scene.itemAt(event.pos())
+        if item is None: return
+        sound = self.main.sound
+        bank = sound.bank
+        prog = sound.prog
+        delta = 1 if event.delta() > 0 else -1
+        if item in [self.prog_name, self.prog]:
+            prog += delta
+            if prog < 0:
+                if bank > 1:
+                    bank -= 1
+                    prog = 127
+                else: return
+            elif prog > 127:
+                if bank < 7:
+                    bank += 1
+                    prog = 0
+                else: return
+        elif item == self.bank:
+            bank += delta
+            if not 0 <= bank <= 7: return
+        else:
+            return
+        self.main.setSound(bank, prog, pgm_send=True)
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter(self.viewport())
+        qp.setRenderHints(QtGui.QPainter.Antialiasing)
+        qp.translate(.5, .5)
+        qp.setPen(self.border_pen)
+        qp.setBrush(self.bgd_brush)
+        qp.drawRoundedRect(self.border_rect, 4, 4)
+        qp.end()
+        QtGui.QGraphicsView.paintEvent(self, event)
+
+    def resizeEvent(self, event):
+        width = self.width()
+        height = self.height()
+        self.panel.layout().setGeometry(QtCore.QRectF(0, 0, width, height))
+        self.border_rect = QtCore.QRect(0, 0, width-1, height-1)
+        self.display_rect = self.border_rect.adjusted(2, 2, -2, -2)
+        self.setSceneRect(0, 0, self.width()-1, self.height()-1)
+
+    def setSound(self):
+        sound = self.main.sound
+        self.prog_name.text = sound.name
+        self.bank.text = uppercase[sound.bank]
+        self.prog.text = '{:03}'.format(sound.prog+1)
+        self.cat_name.text = categories[sound.cat]
+        self.update()
+        self.panel.update()
+
+class BlofeldDisplayz(QtGui.QWidget):
+    border_grad = QtGui.QConicalGradient(QtCore.QPointF(.5, .5), 45)
+    border_grad.setCoordinateMode(QtGui.QConicalGradient.ObjectBoundingMode)
+    _up = QtGui.QColor(180, 180, 180)
+    _left = QtGui.QColor(80, 80, 80)
+    _right = QtGui.QColor(120, 120, 120)
+    _down = QtGui.QColor(200, 200, 200)
+    border_grad.setColorAt(0, _up)
+    border_grad.setColorAt(.249, _up)
+    border_grad.setColorAt(.25, _left)
+    border_grad.setColorAt(.5, _left)
+    border_grad.setColorAt(.501, _down)
+    border_grad.setColorAt(.749, _down)
+    border_grad.setColorAt(.75, _right)
+    border_grad.setColorAt(.99, _right)
+    border_grad.setColorAt(1, _up)
+    border_pen = QtGui.QPen(border_grad, 1)
+    fgd_brush = QtGui.QBrush(QtGui.QColor(240, 250, 250))
+    def __init__(self, parent):
+        QtGui.QWidget.__init__(self, parent)
+        self._font_db = QtGui.QFontDatabase()
+#        self._font_db.addApplicationFont(local_path('erbos.ttf'))
+#        self.name_font = QtGui.QFont('Erbos Draco 1st Open NBP', 16)
+        self._font_db.addApplicationFont(local_path('FiraSans-Regular.ttf'))
+        self.name_font = QtGui.QFont('Fira Sans', 22)
+        self.name_font_metrics = QtGui.QFontMetrics(self.name_font)
+        self.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Expanding)
+        self.name = '...'
+
+    def setName(self, name):
+        self.name = name
+        self.text_rect = QtCore.QRect(self.display_rect.x()+2, self.display_rect.y()+2, self.name_font_metrics.width(self.name), self.display_rect.height()-2)
+        self.update()
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter()
+        qp.begin(self)
+        qp.setRenderHints(QtGui.QPainter.Antialiasing)
+        qp.translate(.5, .5)
+
+        qp.setPen(self.border_pen)
+        qp.setBrush(self.fgd_brush)
+        qp.drawRoundedRect(self.border_rect, 2, 2)
+        qp.drawRoundedRect(self.display_rect, 2, 2)
+
+        qp.setPen(QtCore.Qt.lightGray)
+        qp.setFont(self.name_font)
+        qp.drawText(self.text_rect.adjusted(1, 1, 1, 1), 0, self.name)
+
+        qp.setPen(QtCore.Qt.black)
+        qp.setFont(self.name_font)
+        qp.drawText(self.text_rect, 0, self.name)
+
+        qp.end()
+
+    def resizeEvent(self, event):
+        width = self.width()
+        height = self.height()
+        self.border_rect = QtCore.QRect(0, 0, width-1, height-1)
+        self.display_rect = self.border_rect.adjusted(2, 2, -2, -2)
+        self.text_rect = QtCore.QRect(self.display_rect.x()+2, self.display_rect.y()+2, self.name_font_metrics.width(self.name), self.display_rect.height()-2)
 
 class Editor(QtGui.QMainWindow):
     object_dict = {attr:ParamObject(param_tuple) for attr, param_tuple in Params.param_names.items()}
@@ -195,20 +588,24 @@ class Editor(QtGui.QMainWindow):
         self.setPalette(pal)
 
         self.main = parent
+        self.sorted_library = None
+        self.sorted_library_menu = None
+        self.blofeld_library = self.main.blofeld_library
+        self.create_sorted_library()
         self.alsa = self.main.alsa
         self.seq = self.main.seq
         self.params = Params
+        self.pgm_send = False
         self.send = False
         self.envelopes = []
         self.grid = self.centralWidget().layout()
 
-        self.send_btn = SquareButton(self, 'MIDI send', checkable=True, checked=False)
-        self.send_btn.toggled.connect(lambda state: setattr(self, 'send', state))
-        self.grid.addWidget(self.send_btn, 0, 1)
+        self.grid.addLayout(self.create_display(), 0, 1, 1, 2)
         logo = QtGui.QIcon(local_path('logo.svg')).pixmap(QtCore.QSize(160, 160)).toImage()
         logo_widget = QtGui.QLabel()
         logo_widget.setPixmap(QtGui.QPixmap().fromImage(logo))
         self.grid.addWidget(logo_widget, 0, 3, 1, 1, QtCore.Qt.AlignBottom|QtCore.Qt.AlignRight)
+
 
         self.grid.addWidget(self.create_mixer(), 0, 0, 2, 1)
 
@@ -265,6 +662,46 @@ class Editor(QtGui.QMainWindow):
             raise e
 #            raise NameError('{} attribute does not exist!'.format(attr))
 
+    def create_sorted_library(self):
+        sorted_library = SortedLibrary(self.blofeld_library)
+        del self.sorted_library_menu
+        menu = QtGui.QMenu()
+        by_bank = QtGui.QMenu('By bank', menu)
+        menu.addMenu(by_bank)
+        for id, bank in enumerate(sorted_library.by_bank):
+            if not any(bank): continue
+            bank_menu = QtGui.QMenu(uppercase[id], by_bank)
+            by_bank.addMenu(bank_menu)
+            for sound in bank:
+                if sound is None: continue
+                item = QtGui.QAction('{:03} {}'.format(sound.prog+1, sound.name), bank_menu)
+                item.setData((sound.bank, sound.prog))
+                bank_menu.addAction(item)
+        by_cat = QtGui.QMenu('By category', menu)
+        menu.addMenu(by_cat)
+        for cid, cat in enumerate(categories):
+            cat_menu = QtGui.QMenu(cat, by_cat)
+            by_cat.addMenu(cat_menu)
+            for sound in sorted_library.by_cat[cid]:
+                item = QtGui.QAction(sound.name, cat_menu)
+                item.setData((sound.bank, sound.prog))
+                cat_menu.addAction(item)
+            if not len(cat_menu.actions()):
+                cat_menu.setEnabled(False)
+        by_alpha = QtGui.QMenu('Alphabetical', menu)
+        menu.addMenu(by_alpha)
+        for l in sorted(sorted_library.by_alpha.keys()):
+            alpha_menu = QtGui.QMenu(l, by_alpha)
+            by_alpha.addMenu(alpha_menu)
+            for sound in sorted_library.by_alpha[l]:
+                item = QtGui.QAction(sound.name, alpha_menu)
+                item.setData((sound.bank, sound.prog))
+                alpha_menu.addAction(item)
+            if not len(alpha_menu.actions()):
+                alpha_menu.setEnabled(False)
+        self.sorted_library_menu = menu
+        self.sorted_library = sorted_library
+
     def send_value(self, attr, value):
         location = 0
         par_id = Params.index_from_attr(attr)
@@ -275,7 +712,11 @@ class Editor(QtGui.QMainWindow):
         self.seq.output_event(req.get_event())
         self.seq.drain_output()
 
-    def setData(self, data):
+    def setSound(self, bank, prog, pgm_send=False):
+        sound = self.blofeld_library[bank, prog]
+        if sound is None: return
+        self.sound = sound
+        data = sound.data
         old_send = self.send
         self.send = False
         for i, p in enumerate(data):
@@ -289,6 +730,22 @@ class Editor(QtGui.QMainWindow):
             env.compute_envelope()
             env.update()
         self.send = old_send
+        self.display.setSound()
+        if pgm_send and self.pgm_send_btn.isChecked():
+            self.main.program_change_request(sound.bank, sound.prog)
+
+    def create_display(self):
+        layout = QtGui.QGridLayout()
+        self.display = BlofeldDisplay(self)
+        layout.addWidget(self.display, 0, 0, 2, 1)
+        self.pgm_send_btn = SquareButton(self, 'PGM send', checkable=True, checked=False)
+        self.pgm_send_btn.toggled.connect(lambda state: setattr(self, 'pgm_send', state))
+        layout.addWidget(self.pgm_send_btn, 0, 1)
+        self.send_btn = SquareButton(self, 'MIDI send', checkable=True, checked=False)
+        self.send_btn.toggled.connect(lambda state: setattr(self, 'send', state))
+        layout.addWidget(self.send_btn, 1, 1)
+
+        return layout
 
     def create_common(self):
         frame = Frame(self, 'Common')

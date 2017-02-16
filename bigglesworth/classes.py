@@ -1,4 +1,4 @@
-from string import uppercase
+from string import uppercase, ascii_letters
 
 from PyQt4 import QtCore, QtGui
 import midifile
@@ -282,9 +282,12 @@ class LoadingThread(QtCore.QObject):
     def run(self):
         pattern = midifile.read_midifile(local_path('presets/blofeld_fact_080103/blofeld_fact_080103.mid'))
         track = pattern[0]
+        _ = 0
         for event in track:
             if isinstance(event, midifile.SysexEvent):
                 self.blofeld_library.addSound(Sound(event.data[6:391]))
+                _ += 1
+#                if _ == 208: break
         self.loaded.emit(self.blofeld_model, self.blofeld_library)
 
 class LoadingWindow(QtGui.QDialog):
@@ -313,4 +316,23 @@ class LoadingWindow(QtGui.QDialog):
 
     def closeEvent(self, event):
         event.ignore()
+
+class SortedLibrary(object):
+    def __init__(self, library):
+        self.by_bank = library.data
+        by_cat = {i:[] for i in range(len(categories))}
+        by_alpha = {l:[] for l in ['0..9']+list(uppercase)}
+        for b, progs in enumerate(library.data):
+            for p in progs:
+                if p is None: continue
+                if p.name[0] in ascii_letters:
+                    by_alpha[p.name[0].upper()].append(p)
+                else:
+                    by_alpha['0..9'].append(p)
+                by_cat[p.cat].append(p)
+        self.by_cat = by_cat
+        self.by_alpha = by_alpha
+
+
+
 
