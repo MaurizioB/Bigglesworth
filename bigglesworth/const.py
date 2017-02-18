@@ -68,6 +68,7 @@ class AdvParam(object):
         return res
 
     def get(self, data):
+#        print 'brabba {}'.format(data)
         if data&self.forbidden:
             raise IndexError
         res = []
@@ -102,6 +103,12 @@ class ParamsClass(object):
     def index_from_attr(self, par_attr):
         try:
             return self.param_names[par_attr].id
+        except:
+            raise KeyError('Parameter {} unknown!'.format(par_attr))
+
+    def param_from_attr(self, par_attr):
+        try:
+            return self.param_names[par_attr]
         except:
             raise KeyError('Parameter {} unknown!'.format(par_attr))
 

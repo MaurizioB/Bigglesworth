@@ -83,6 +83,7 @@ class BlofeldButton(SquareButton):
 
     def _setValue(self, state):
         self.setChecked(state)
+        self.toggle_states(state)
 
 class BlofeldSlider(Slider):
     def __init__(self, parent, param_tuple, *args, **kwargs):
@@ -194,7 +195,9 @@ class DownArrowWidget(BaseDisplayWidget):
         width = self.arrow.boundingRect().width()+2
         height = self.arrow.boundingRect().height()+2
         self.setMinimumSize(width, height)
-        self.setMaximumSize(width+2, height+2)
+#        self.setMaximumSize(width+2, height+2)
+        self.setMaximumSize(width, height)
+        self.setSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Minimum)
 
     def paint(self, painter, *args, **kwargs):
         painter.setPen(self.pen)
@@ -277,11 +280,18 @@ class DisplayVSpacer(QtGui.QGraphicsWidget):
         self.setMinimumHeight(size)
         self.setMaximumSize(0, size)
 
+#    def paint(self, painter, *args, **kwargs):
+#        painter.drawRect(self.rect())
+
 class DisplayHSpacer(QtGui.QGraphicsWidget):
     def __init__(self, parent, size=2):
         QtGui.QGraphicsWidget.__init__(self, parent)
         self.setMinimumWidth(size)
         self.setMaximumSize(size, 0)
+
+#    def paint(self, painter, *args, **kwargs):
+#        painter.drawRect(self.rect())
+
 
 class BlofeldDisplay(QtGui.QGraphicsView):
     border_grad = QtGui.QConicalGradient(QtCore.QPointF(.5, .5), 45)
@@ -308,8 +318,6 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         self.scene = QtGui.QGraphicsScene(self)
         self.setScene(self.scene)
         self.setStyleSheet('background: transparent')
-        self._font_db = QtGui.QFontDatabase()
-        self._font_db.addApplicationFont(local_path('FiraSans-Regular.ttf'))
         self.shadow = QtGui.QGraphicsDropShadowEffect()
         self.shadow.setBlurRadius(4)
         self.shadow.setOffset(1, 1)
@@ -330,8 +338,14 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         layout.addItem(self.edit_mode_label, 0, 0)
         self.prog_name = LabelTextWidget('Mini moog super', panel)
         layout.addItem(self.prog_name, 1, 0)
-        self.status = SmallLabelTextWidget('status', panel)
-        layout.addItem(self.status, 2, 0)
+
+        self.status_bar = QtGui.QGraphicsGridLayout()
+        layout.addItem(self.status_bar, 2, 0)
+        status_lbl = SmallLabelTextWidget('Status:', panel, fixed=True)
+        self.status_bar.addItem(status_lbl, 0, 0, QtCore.Qt.AlignLeft)
+
+        self.status = SmallLabelTextWidget('Ready', panel)
+        self.status_bar.addItem(self.status, 0, 1, QtCore.Qt.AlignLeft)
 
         side = QtGui.QGraphicsGridLayout()
         side.setVerticalSpacing(1)
@@ -339,42 +353,61 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         side.setSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Maximum)
         layout.addItem(side, 0, 1, 3, 1, QtCore.Qt.AlignVCenter)
 
+        bank_layout = QtGui.QGraphicsGridLayout()
+        self.bank_layout = bank_layout
+        side.addItem(bank_layout, 0, 0)
         bank_label = SmallLabelTextWidget('Bank', panel, fixed=True)
-        side.addItem(bank_label, 0, 0, 1, 2, QtCore.Qt.AlignTop)
-        prog_label = SmallLabelTextWidget('Prog', panel, fixed=True)
-        side.addItem(prog_label, 0, 2, 1, 2, QtCore.Qt.AlignRight)
-
-        side.addItem(DisplayVSpacer(panel, 3), 1, 0)
-
+        bank_layout.addItem(bank_label, 0, 0, 1, 2, QtCore.Qt.AlignHCenter)
         self.bank = BankTextWidget(panel)
-        side.addItem(self.bank, 2, 0, 2, 1, QtCore.Qt.AlignVCenter)
+        bank_layout.addItem(self.bank, 1, 0, QtCore.Qt.AlignVCenter)
+        bank_arrows = QtGui.QGraphicsGridLayout()
+        bank_layout.addItem(bank_arrows, 1, 1, QtCore.Qt.AlignRight)
         self.bank_up = UpArrowWidget(panel)
-        side.addItem(self.bank_up, 2, 1)
+        bank_arrows.addItem(self.bank_up, 0, 0)
         self.bank_dn = DownArrowWidget(panel)
-        side.addItem(self.bank_dn, 3, 1)
+        bank_arrows.addItem(self.bank_dn, 1, 0)
 
+        bp_spacer = DisplayHSpacer(panel)
+#        bp_spacer.setMaximumWidth(10)
+        bp_spacer.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed)
+        side.addItem(bp_spacer, 0, 1)
+
+        prog_layout = QtGui.QGraphicsGridLayout()
+        self.prog_layout = prog_layout
+        side.addItem(prog_layout, 0, 2)
+        prog_label = SmallLabelTextWidget('Prog', panel, fixed=True)
+        prog_layout.addItem(prog_label, 0, 1, 1, 2, QtCore.Qt.AlignHCenter)
+        prog_spacer = DisplayHSpacer(panel)
+        prog_layout.addItem(prog_spacer, 1, 0)
         self.prog = ProgTextWidget(panel)
-        side.addItem(self.prog, 2, 2, 2, 1, QtCore.Qt.AlignVCenter)
+        prog_layout.addItem(self.prog, 1, 1, QtCore.Qt.AlignVCenter)
+        prog_arrows = QtGui.QGraphicsGridLayout()
+        prog_layout.addItem(prog_arrows, 1, 2, QtCore.Qt.AlignRight)
         self.prog_up = UpArrowWidget(panel)
-        side.addItem(self.prog_up, 2, 3)
+        prog_arrows.addItem(self.prog_up, 0, 0)
         self.prog_dn = DownArrowWidget(panel)
-        side.addItem(self.prog_dn, 3, 3)
+        prog_arrows.addItem(self.prog_dn, 1, 0)
 
-        side.addItem(DisplayVSpacer(panel, 3), 4, 0)
+        side.addItem(DisplayVSpacer(panel, 10), 4, 0)
 
-        cat = QtGui.QGraphicsGridLayout()
-        cat.setHorizontalSpacing(2)
-        cat.setSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Maximum)
-        side.addItem(cat, 5, 0, 1, 4)
+        cat_layout = QtGui.QGraphicsGridLayout()
+        self.cat_layout = cat_layout
+        cat_layout.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Maximum)
+        side.addItem(cat_layout, 5, 0, 1, 3)
 
         self.cat_label = SmallLabelTextWidget('Cat: ', panel, fixed=True)
-        cat.addItem(self.cat_label, 0, 0, 2, 1, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+        cat_layout.addItem(self.cat_label, 0, 0, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+        cat_spacer = DisplayHSpacer(panel)
+        cat_spacer.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed)
+        cat_layout.addItem(cat_spacer, 0, 1)
         self.cat_name = CatTextWidget(panel)
-        cat.addItem(self.cat_name, 0, 1, 2, 2, QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+        cat_layout.addItem(self.cat_name, 0, 2, QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+        cat_arrows = QtGui.QGraphicsGridLayout()
+        cat_layout.addItem(cat_arrows, 0, 3, QtCore.Qt.AlignRight)
         self.cat_up = UpArrowWidget(panel)
-        cat.addItem(self.cat_up, 0, 3)
+        cat_arrows.addItem(self.cat_up, 0, 0)
         self.cat_dn = DownArrowWidget(panel)
-        cat.addItem(self.cat_dn, 1, 3)
+        cat_arrows.addItem(self.cat_dn, 1, 0)
 
         self.panel.setGraphicsEffect(self.shadow)
 
@@ -463,6 +496,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         sound = self.main.sound
         bank = sound.bank
         prog = sound.prog
+        cat = sound.cat
         delta = 1 if event.delta() > 0 else -1
         if item in [self.prog_name, self.prog]:
             prog += delta
@@ -479,6 +513,19 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         elif item == self.bank:
             bank += delta
             if not 0 <= bank <= 7: return
+        elif item == self.cat_name:
+            cat += delta
+            while True:
+                if not 0 <= cat <= len(categories)-1: return
+                cat_list = self.main.sorted_library.by_cat[cat]
+                if not len(cat_list):
+                    cat += delta
+                    continue
+                else:
+                    sound = cat_list[0]
+                    break
+            bank = sound.bank
+            prog = sound.prog
         else:
             return
         self.main.setSound(bank, prog, pgm_send=True)
@@ -490,16 +537,40 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         qp.setPen(self.border_pen)
         qp.setBrush(self.bgd_brush)
         qp.drawRoundedRect(self.border_rect, 4, 4)
+        qp.setPen(QtGui.QColor(220, 220, 220, 220))
+        qp.setBrush(QtGui.QColor(220, 220, 220, 50))
+        qp.drawRoundedRect(self.cat_rect, 4, 4)
+        qp.drawRoundedRect(self.bank_rect, 4, 4)
+        qp.drawRoundedRect(self.prog_rect, 4, 4)
         qp.end()
         QtGui.QGraphicsView.paintEvent(self, event)
 
     def resizeEvent(self, event):
         width = self.width()
         height = self.height()
-        self.panel.layout().setGeometry(QtCore.QRectF(0, 0, width, height))
+        self.panel.layout().setGeometry(QtCore.QRectF(0, 0, width-2, height-2))
         self.border_rect = QtCore.QRect(0, 0, width-1, height-1)
         self.display_rect = self.border_rect.adjusted(2, 2, -2, -2)
-        self.setSceneRect(0, 0, self.width()-1, self.height()-1)
+        self.setSceneRect(0, 0, width-1, height-1)
+        bank_geo = self.bank_layout.geometry()
+        self.bank_rect = QtCore.QRectF(bank_geo.x()-3, bank_geo.y()-1, bank_geo.width()+6, bank_geo.height()+4)
+        prog_geo = self.prog_layout.geometry()
+        self.prog_rect = QtCore.QRectF(prog_geo.x()-3, prog_geo.y()-1, prog_geo.width()+6, prog_geo.height()+4)
+        cat_geo = self.cat_layout.geometry()
+        self.cat_rect = QtCore.QRectF(cat_geo.x()-5, cat_geo.y()-2, cat_geo.width()+7, cat_geo.height()+4)
+
+    def statusParamUpdate(self, attr, value):
+        param = Params.param_from_attr(attr)
+        if isinstance(param.values, AdvParam):
+            value = list(reversed(param.values[getattr(self.main, attr)]))[param.values.named_kwargs.index(value[1])]
+        else:
+            value = param.values[(value-param.range[0])/param.range[2]]
+        self.statusUpdate('{} changed: {}'.format(param.name, value))
+
+    def statusUpdate(self, text):
+        self.status.text = text
+        self.update()
+        self.panel.update()
 
     def setSound(self):
         sound = self.main.sound
@@ -597,6 +668,7 @@ class Editor(QtGui.QMainWindow):
         self.params = Params
         self.pgm_send = False
         self.send = False
+        self.notify = True
         self.envelopes = []
         self.grid = self.centralWidget().layout()
 
@@ -654,7 +726,10 @@ class Editor(QtGui.QMainWindow):
         try:
             try:
                 self.object_dict[attr].value = value
+                if self.notify:
+                    self.display.statusParamUpdate(attr, value)
                 if self.send:
+                    value = self.object_dict[attr].value
                     self.send_value(attr, value)
             except:
                 QtCore.QObject.__setattr__(self, attr, value)
@@ -680,25 +755,31 @@ class Editor(QtGui.QMainWindow):
         by_cat = QtGui.QMenu('By category', menu)
         menu.addMenu(by_cat)
         for cid, cat in enumerate(categories):
-            cat_menu = QtGui.QMenu(cat, by_cat)
+            cat_menu = QtGui.QMenu(by_cat)
             by_cat.addMenu(cat_menu)
+            cat_len = 0
             for sound in sorted_library.by_cat[cid]:
+                cat_len += 1
                 item = QtGui.QAction(sound.name, cat_menu)
                 item.setData((sound.bank, sound.prog))
                 cat_menu.addAction(item)
             if not len(cat_menu.actions()):
                 cat_menu.setEnabled(False)
+            cat_menu.setTitle('{} ({})'.format(cat, cat_len))
         by_alpha = QtGui.QMenu('Alphabetical', menu)
         menu.addMenu(by_alpha)
-        for l in sorted(sorted_library.by_alpha.keys()):
-            alpha_menu = QtGui.QMenu(l, by_alpha)
+        for alpha in sorted(sorted_library.by_alpha.keys()):
+            alpha_menu = QtGui.QMenu(by_alpha)
             by_alpha.addMenu(alpha_menu)
-            for sound in sorted_library.by_alpha[l]:
+            alpha_len = 0
+            for sound in sorted_library.by_alpha[alpha]:
+                alpha_len += 1
                 item = QtGui.QAction(sound.name, alpha_menu)
                 item.setData((sound.bank, sound.prog))
                 alpha_menu.addAction(item)
             if not len(alpha_menu.actions()):
                 alpha_menu.setEnabled(False)
+            alpha_menu.setTitle('{} ({})'.format(alpha, alpha_len))
         self.sorted_library_menu = menu
         self.sorted_library = sorted_library
 
@@ -706,6 +787,7 @@ class Editor(QtGui.QMainWindow):
         location = 0
         par_id = Params.index_from_attr(attr)
         par_high, par_low = divmod(par_id, 128)
+        print par_high, par_low, value
         
         req = SysExEvent(1, [0xF0, 0x3e, 0x13, 0x00, 0x20, location, par_high, par_low, value, 0xf7])
         req.source = self.alsa.output.client.id, self.alsa.output.id
@@ -719,6 +801,7 @@ class Editor(QtGui.QMainWindow):
         data = sound.data
         old_send = self.send
         self.send = False
+        self.notify = False
         for i, p in enumerate(data):
             try:
                 attr = self.params[i].attr
@@ -730,6 +813,7 @@ class Editor(QtGui.QMainWindow):
             env.compute_envelope()
             env.update()
         self.send = old_send
+        self.notify = True
         self.display.setSound()
         if pgm_send and self.pgm_send_btn.isChecked():
             self.main.program_change_request(sound.bank, sound.prog)
@@ -740,9 +824,11 @@ class Editor(QtGui.QMainWindow):
         layout.addWidget(self.display, 0, 0, 2, 1)
         self.pgm_send_btn = SquareButton(self, 'PGM send', checkable=True, checked=False)
         self.pgm_send_btn.toggled.connect(lambda state: setattr(self, 'pgm_send', state))
+        self.pgm_send_btn.toggled.connect(lambda state: self.display.statusUpdate('PGM send: {}'.format('enabled' if state else 'disabled')))
         layout.addWidget(self.pgm_send_btn, 0, 1)
         self.send_btn = SquareButton(self, 'MIDI send', checkable=True, checked=False)
         self.send_btn.toggled.connect(lambda state: setattr(self, 'send', state))
+        self.send_btn.toggled.connect(lambda state: self.display.statusUpdate('MIDI send: {}'.format('enabled' if state else 'disabled')))
         layout.addWidget(self.send_btn, 1, 1)
 
         return layout
@@ -1576,7 +1662,7 @@ class Editor(QtGui.QMainWindow):
         right.addWidget(pwm_amount, 2, 1, 1, 1)
         fm_amount = BlofeldDial(self, self.params.Osc_1_FM_Amount, size=24, name='Amount')
         right.addWidget(fm_amount, 2, 2, 1, 1)
-        limit_wt = BlofeldButton(self, self.params.Osc_1_Limit_WT, checkable=True, name='Limit WT')
+        limit_wt = BlofeldButton(self, self.params.Osc_1_Limit_WT, checkable=True, name='Limit WT', inverted=True)
         right.addWidget(limit_wt, 0, 3, 3, 1)
 
         return frame
@@ -1630,7 +1716,7 @@ class Editor(QtGui.QMainWindow):
         right.addWidget(pwm_amount, 2, 1, 1, 1)
         fm_amount = BlofeldDial(self, self.params.Osc_2_FM_Amount, size=24, name='Amount')
         right.addWidget(fm_amount, 2, 2, 1, 1)
-        limit_wt = BlofeldButton(self, self.params.Osc_2_Limit_WT, checkable=True, name='Limit WT')
+        limit_wt = BlofeldButton(self, self.params.Osc_2_Limit_WT, checkable=True, name='Limit WT', inverted=True)
         right.addWidget(limit_wt, 1, 3, 1, 1, QtCore.Qt.AlignHCenter)
         sync = BlofeldButton(self, self.params.Osc_2_Sync_to_O3, checkable=True, name='Sync OSC3')
         right.addWidget(sync, 2, 3, 1, 1)

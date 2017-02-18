@@ -19,8 +19,8 @@ class Librarian(QtGui.QMainWindow):
     def __init__(self, parent=None):
         QtGui.QMainWindow.__init__(self, parent=None)
         load_ui(self, 'main.ui')
-        self._font_db = QtGui.QFontDatabase()
-        self._font_db.addApplicationFont(local_path('FiraSans-Regular.ttf'))
+        self.font_db = QtGui.QFontDatabase()
+        self.font_db.addApplicationFont(local_path('FiraSans-Regular.ttf'))
 
         self.alsa_thread = QtCore.QThread()
         self.alsa = AlsaMidi(self)
@@ -131,6 +131,7 @@ class Librarian(QtGui.QMainWindow):
         if res == edit_item:
             self.editor.show()
             self.editor.setSound(sound.bank, sound.prog)
+            self.editor.activateWindow()
 
     def sound_drop_event(self, event):
         def rename(sound_range):

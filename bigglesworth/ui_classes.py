@@ -636,7 +636,7 @@ class SquareButton(QtGui.QAbstractButton):
     base_width = 40
     base_height = 20
 
-    def __init__(self, parent=None, name='', color=QtCore.Qt.green, checkable=False, checked=True, size=None, min_size=None, max_size=None):
+    def __init__(self, parent=None, name='', inverted=False, color=QtCore.Qt.green, checkable=False, checked=False, size=None, min_size=None, max_size=None):
         QtGui.QAbstractButton.__init__(self, parent=parent)
         self.label_font = QtGui.QFont('Decorative', 9, QtGui.QFont.Bold)
         self.label_font_metrics = QtGui.QFontMetrics(self.label_font)
@@ -650,14 +650,18 @@ class SquareButton(QtGui.QAbstractButton):
         self.active_pressed_pen = QtGui.QPen(self.active_pressed_border, 1)
         self.active_pressed_color = QtGui.QBrush(self.active_pressed_grad)
         self.isPressed = False
+        self.inverted = inverted
 #        self.active_pen, self.active_color, self.active_pressed_pen, self.active_pressed_color = self.get_btn_colors(color)
         if not checkable:
             self.current_pen = self.active_pen
             self.current_color = self.active_color
         else:
             self.setCheckable(True)
-            self.current_pen = self.active_pen if checked else self.unactive_pen
-            self.current_color = self.active_color if checked else self.unactive_color
+            self.setChecked(checked)
+            self.toggle_states(checked^inverted)
+#            checked ^= inverted
+#            self.current_pen = self.active_pen if checked else self.unactive_pen
+#            self.current_color = self.active_color if checked else self.unactive_color
         self.name = name
         self.spacing = 4 if name else 0
         self.label_rect = QtCore.QRect(0, 0, self.label_font_metrics.width(name), self.label_font_metrics.height())
@@ -688,8 +692,13 @@ class SquareButton(QtGui.QAbstractButton):
             self.setMinimumSize(max_width, self.base_height+self.spacing+self.label_font_metrics.height())
             self.button_rect = QtCore.QRectF((max_width-self.base_width)/2., 0, self.base_width, self.base_height)
 
+#    def setChecked(self, state):
+#        if self.inverted:
+#            state = not state
+#        QtGui.QAbstractButton.setChecked(self,state)
 
     def toggle_states(self, state):
+        state ^= self.inverted
         if state:
             self.current_color = self.active_color
             self.current_pen = self.active_pen
@@ -1713,6 +1722,10 @@ class Combo(QtGui.QWidget):
     @property
     def count(self):
         return len(self.value_list)
+
+    @property
+    def text_value(self):
+        return self.value_list[self.currentIndex]
 
     def focusOutEvent(self, event):
         if self.list.isVisible():
