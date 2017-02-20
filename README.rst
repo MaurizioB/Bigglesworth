@@ -2,12 +2,13 @@ Bigglesworth
 ============
 
 Bigglesworth is a Waldorf Blofeld editor and librarian for GNU/Linux.
-This is an early version, most of the features are not available yet.
+This is an early version, some of the features are not available yet.
 
 Features
 --------
 
 -  Direct sound parameter editing
+-  Virtual keyboard (with input from the computer keyboard)
 -  Dumping sounds from Blofeld
 -  Dumping sounds to Blofeld (not yet)
 -  Organizing sounds and adding/restoring them from factory presets (not
@@ -52,6 +53,7 @@ What works
 -  Sound dumping (single, bank or full)
 -  Sound parameters sending for the current sound in "Sound Mode Edit
    Buffer", not for Multi Mode.
+-  Virtual keyboard
 
 What doesn't work
 ~~~~~~~~~~~~~~~~~

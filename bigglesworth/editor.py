@@ -672,7 +672,6 @@ class Editor(QtGui.QMainWindow):
         self.send = False
         self.notify = True
         self.envelopes = []
-        self.effects = []
         self.grid = self.centralWidget().layout()
 
         self.grid.addLayout(self.create_display(), 0, 1, 1, 2)
@@ -913,6 +912,8 @@ class Editor(QtGui.QMainWindow):
         for env in self.envelopes:
             env.compute_envelope()
             env.update()
+        self.set_effect_1_widgets()
+        self.set_effect_2_widgets()
         self.send = old_send
         self.notify = True
         self.display.setSound()
@@ -996,12 +997,6 @@ class Editor(QtGui.QMainWindow):
                        'Diffusion': 'Diff.', 
                        'Damping': 'Damp', 
                        }
-        def set_effects(id):
-            if id == 0:
-                self.effects_1_layout.currentWidget().setEnabled(False)
-                return
-            self.effects_1_layout.setCurrentIndex(id-1)
-            self.effects_1_layout.currentWidget().setEnabled(True)
         def create_effects(efx_dict):
             efx_widget = QtGui.QWidget(self)
             frame_layout = QtGui.QVBoxLayout()
@@ -1055,7 +1050,7 @@ class Editor(QtGui.QMainWindow):
         layout.addLayout(line1)
         line1.addWidget(HSpacer(max_width=70))
         efx_type = BlofeldCombo(self, self.params.Effect_1_Type)
-        efx_type.indexChanged.connect(set_effects)
+        efx_type.indexChanged.connect(self.set_effect_1_widgets)
         line1.addWidget(efx_type)
         efx_mix = BlofeldDial(self, self.params.Effect_1_Mix, size=24)
         line1.addWidget(efx_mix)
@@ -1067,9 +1062,18 @@ class Editor(QtGui.QMainWindow):
             efx_layout = create_effects(self.efx_params[0][efx])
             self.effects_1_layout.addWidget(efx_layout)
 
-        set_effects(0)
+        self.effects_1_layout.currentWidget().setEnabled(False)
 
         return frame
+
+    def set_effect_1_widgets(self, id=None):
+        if id is None:
+            id = self.Effect_1_Type
+        if id == 0:
+            self.effects_1_layout.currentWidget().setEnabled(False)
+            return
+        self.effects_1_layout.setCurrentIndex(id-1)
+        self.effects_1_layout.currentWidget().setEnabled(True)
 
     def create_effect_2(self):
         short_names = {
@@ -1078,12 +1082,6 @@ class Editor(QtGui.QMainWindow):
                        'Diffusion': 'Diff.', 
                        'Damping': 'Damp', 
                        }
-        def set_effects(id):
-            if id == 0:
-                self.effects_2_layout.currentWidget().setEnabled(False)
-                return
-            self.effects_2_layout.setCurrentIndex(id-1)
-            self.effects_2_layout.currentWidget().setEnabled(True)
         def create_effects(efx_dict):
             efx_widget = QtGui.QWidget(self)
             frame_layout = QtGui.QVBoxLayout()
@@ -1137,7 +1135,7 @@ class Editor(QtGui.QMainWindow):
         layout.addLayout(line1)
         line1.addWidget(HSpacer(max_width=70))
         efx_type = BlofeldCombo(self, self.params.Effect_2_Type)
-        efx_type.indexChanged.connect(set_effects)
+        efx_type.indexChanged.connect(self.set_effect_2_widgets)
         line1.addWidget(efx_type)
         efx_mix = BlofeldDial(self, self.params.Effect_2_Mix, size=24)
         line1.addWidget(efx_mix)
@@ -1149,9 +1147,18 @@ class Editor(QtGui.QMainWindow):
             efx_layout = create_effects(self.efx_params[1][efx])
             self.effects_2_layout.addWidget(efx_layout)
 
-        set_effects(0)
+        self.effects_2_layout.currentWidget().setEnabled(False)
 
         return frame
+
+    def set_effect_2_widgets(self, id=None):
+        if id is None:
+            id = self.Effect_2_Type
+        if id == 0:
+            self.effects_2_layout.currentWidget().setEnabled(False)
+            return
+        self.effects_2_layout.setCurrentIndex(id-1)
+        self.effects_2_layout.currentWidget().setEnabled(True)
 
     def create_amplifier(self):
         frame = Frame(self, 'Amplifier')
