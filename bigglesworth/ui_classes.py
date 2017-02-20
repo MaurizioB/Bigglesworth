@@ -5,6 +5,8 @@ from math import pi, sin, cos, acos, hypot, radians, degrees
 from bisect import bisect_left
 from PyQt4 import QtCore, QtGui
 
+from midiutils import NoteIds, NoteNames
+
 ADSR, ADS1DS2R, ONESHOT, LOOPS1S2, LOOPALL = range(5)
 VERTICAL = QtCore.Qt.Vertical
 HORIZONTAL = QtCore.Qt.Horizontal
@@ -13,6 +15,183 @@ BOTTOM = QtCore.Qt.BottomSection
 LEFT = QtCore.Qt.LeftSection
 RIGHT = QtCore.Qt.RightSection
 FROM, TO, EXT, INT = range(4)
+
+class Key(QtGui.QGraphicsWidget):
+    def __init__(self, parent):
+        QtGui.QGraphicsWidget.__init__(self, parent)
+
+    def paint(self, painter, *args, **kwargs):
+        painter.drawRect(0, 0, 40, 40)
+
+class KeyItem(QtGui.QGraphicsItem):
+    noteEvent = QtCore.pyqtSignal(int, int)
+    key_name_font = QtGui.QFont()
+    def __init__(self, note, text=False):
+        QtGui.QGraphicsItem.__init__(self, parent=None)
+        self.note = note
+        self.note_name = NoteNames[note]
+        self.note_short = self.note_name[0].upper()
+        if isinstance(text, bool):
+            self.note_label = self.note_short if text else ''
+        else:
+            self.note_label = text
+        self.setAcceptHoverEvents(True)
+        self.base_height = 100
+        self.base_x = 0
+        self.base_width = 20
+        self.border_pen = QtGui.QPen(QtCore.Qt.darkGray, 1)
+        self.pressed = 2
+        self.shadow = 5
+        self.current = self
+
+    def boundingRect(self):
+        return QtCore.QRectF(0, 0, self.base_x+self.base_width+1, self.base_height)
+
+    def mouseMoveEvent(self, event):
+        if not self.boundingRect().contains(event.pos()):
+            item = self.scene().itemAt(self.mapToScene(event.pos()))
+            if isinstance(item, QtGui.QGraphicsItem):
+                if item != self.current:
+                    try:
+                        self.current.release()
+                    except:
+                        pass
+                    item.push(int(round(1+event.pos().y()*126/item.boundingRect().height(), 0)))
+                    self.current = item
+            else:
+                try:
+                    self.current.release()
+                    self.current = None
+                except:
+                    pass
+        else:
+            if self.current != self:
+                try:
+                    self.current.release()
+                except:
+                    pass
+                self.push(int(round(1+event.pos().y()*126/self.boundingRect().height(), 0)))
+                self.current = self
+
+    def mousePressEvent(self, event):
+        self.current = self
+        self.push(int(round(1+event.pos().y()*126/self.boundingRect().height(), 0)))
+
+    def push(self, vel=127):
+        self.scene().views()[0].noteEvent.emit(self.note, vel)
+        self.key_color = self.key_color_dn
+        self.pressed = 0
+        self.shadow = 2
+        self.update()
+
+    def mouseReleaseEvent(self, event):
+        try:
+            self.current.release()
+        except:
+            pass
+
+    def release(self):
+        self.scene().views()[0].noteEvent.emit(self.note, 0)
+        self.key_color = self.key_color_up
+        self.pressed = 2
+        self.shadow = 5
+        self.update()
+
+    def paint_white(self, painter, *args, **kwargs):
+        painter.translate(.5, .5)
+        painter.setRenderHints(QtGui.QPainter.Antialiasing)
+        painter.setPen(QtCore.Qt.lightGray)
+        painter.setBrush(self.key_color)
+        painter.drawRect(self.base_x, 0, self.base_width, self.base_height-self.pressed)
+        painter.setPen(self.key_name_color)
+        painter.drawText(self.base_x, 0, self.base_width, self.base_height-5, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignBottom, self.note_label)
+
+    def paint_black(self, painter, *args, **kwargs):
+        painter.translate(.5, .5)
+        painter.setRenderHints(QtGui.QPainter.Antialiasing)
+        painter.setPen(self.border_pen)
+        painter.drawRect(self.base_x, 0, self.base_width, self.base_height)
+        painter.setPen(QtCore.Qt.NoPen)
+        painter.setBrush(self.key_shadow)
+        painter.drawRect(self.base_x+self.base_width, 0, self.shadow, self.base_height)
+        painter.setBrush(self.key_color)
+        painter.drawRect(self.base_x, 0, self.base_width, self.base_height-4-self.pressed)
+        painter.setBrush(self.key_angle)
+        painter.drawRect(self.base_x, self.base_height-5-self.pressed, self.base_width, 5+self.pressed)
+        painter.setPen(self.key_name_color)
+        painter.drawText(self.base_x, 0, self.base_width, self.base_height-5, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignBottom, self.note_label)
+
+class WhiteKey(KeyItem):
+    key_color_up = QtCore.Qt.white
+    key_color_dn = QtGui.QRadialGradient(0, .75, .5)
+    key_color_dn.setColorAt(0, QtGui.QColor(180, 180, 180))
+    key_color_dn.setColorAt(1, key_color_up)
+    key_color_dn.setCoordinateMode(QtGui.QRadialGradient.ObjectBoundingMode)
+    key_name_color = QtCore.Qt.black
+    def __init__(self, note, text):
+        KeyItem.__init__(self, note, text)
+        self.font_pen = QtGui.QPen()
+        self.paint = self.paint_white
+        self.key_color = self.key_color_up
+
+class BlackKey(KeyItem):
+    key_color_up = QtGui.QColor(30, 30, 30)
+    key_color_dn = QtGui.QColor(18, 18, 18)
+    key_shadow = QtGui.QColor(180, 180, 180, 200)
+    key_angle = QtCore.Qt.black
+    key_name_color = QtCore.Qt.white
+    def __init__(self, note, text):
+        KeyItem.__init__(self, note, text)
+        self.base_x = 2.5
+        self.base_width = 14
+        self.base_height = self.base_height*.625
+        self.paint = self.paint_black
+        self.key_color = self.key_color_up
+
+class Piano(QtGui.QGraphicsView):
+    noteEvent = QtCore.pyqtSignal(int, int)
+    def __init__(self, parent=None, lower='c2', higher='c7', key_list=None, key_list_start=12):
+        QtGui.QGraphicsView.__init__(self, parent)
+        self.scene = QtGui.QGraphicsScene(self)
+        self.main = parent
+        self.keys = {}
+        self.setFrameStyle(0)
+        self.scene = QtGui.QGraphicsScene(self)
+        self.setScene(self.scene)
+        self.draw_keyboard(lower, higher, key_list, key_list_start)
+
+    def draw_keyboard(self, lower, higher, key_list, key_list_start):
+        if isinstance(lower, str):
+            lower = NoteIds[lower]
+        if isinstance(higher, str):
+            higher = NoteIds[higher]
+        white = 0
+        for k, n in enumerate(range(lower, higher+1)):
+            if key_list and k >= key_list_start and k < (len(key_list)+key_list_start):
+                text = key_list[k-key_list_start]
+            else:
+                text = ''
+            if '#' not in NoteNames[n]:
+                key = WhiteKey(n, text)
+                self.scene.addItem(key)
+                key.setPos(20*white, 0)
+                key.setZValue(0)
+                white += 1
+            else:
+                key = BlackKey(n, text)
+                d = 0
+                if key.note_short in ['C', 'F']:
+                    d = -1
+                elif key.note_short in ['D', 'A']:
+                    d = 1
+                self.scene.addItem(key)
+                key.setPos(20*white-10+d, 0)
+                key.setZValue(1)
+            self.keys[n] = key
+        self.key_range = white
+
+    def resizeEvent(self, event):
+        self.fitInView(0, 0, self.key_range*20, 100, QtCore.Qt.IgnoreAspectRatio)
 
 class Label(QtGui.QWidget):
     def __init__(self, parent=None, text=''):
@@ -663,8 +842,12 @@ class SquareButton(QtGui.QAbstractButton):
 #            self.current_pen = self.active_pen if checked else self.unactive_pen
 #            self.current_color = self.active_color if checked else self.unactive_color
         self.name = name
-        self.spacing = 4 if name else 0
-        self.label_rect = QtCore.QRect(0, 0, self.label_font_metrics.width(name), self.label_font_metrics.height())
+        if name:
+            self.spacing = 4
+            self.label_rect = QtCore.QRect(0, 0, self.label_font_metrics.width(name), self.label_font_metrics.height())
+        else:
+            self.spacing = 0
+            self.label_rect = QtCore.QRect(0, 0, 0, 0)
         if size:
             max_width = max((size[0], self.label_rect.width()))
             self.setMinimumSize(max_width, size[1]+self.spacing+self.label_rect.height())
@@ -684,12 +867,13 @@ class SquareButton(QtGui.QAbstractButton):
             else:
                 w = h = max_size
             max_width = max((w, self.label_rect.width()))
+            self.setMinimumSize(max_width, h+self.spacing+self.label_rect.height())
             self.setMaximumSize(max_width, h+self.spacing+self.label_rect.height())
-            self.button_rect = QtCore.QRectF((max_width-max_width)/2., h)
+            self.button_rect = QtCore.QRectF((max_width-w)/2., 0, w, h)
 #            self.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Fixed)
         else:
             max_width = max((self.base_width, self.label_rect.width()))
-            self.setMinimumSize(max_width, self.base_height+self.spacing+self.label_font_metrics.height())
+            self.setMinimumSize(max_width, self.base_height+self.spacing+self.label_rect.height())
             self.button_rect = QtCore.QRectF((max_width-self.base_width)/2., 0, self.base_width, self.base_height)
 
 #    def setChecked(self, state):
@@ -1688,7 +1872,7 @@ class Combo(QtGui.QWidget):
     font = QtGui.QFont('Decorative', 10, QtGui.QFont.Bold)
     label_font = QtGui.QFont('Decorative', 9, QtGui.QFont.Bold)
     indexChanged = QtCore.pyqtSignal(int)
-    def __init__(self, parent=None, value_list=None, name='', wheel_dir=True):
+    def __init__(self, parent=None, value_list=None, name='', wheel_dir=True, default=0):
         QtGui.QWidget.__init__(self, parent)
         self.combo_padding = 3
         self.spacing = 4
@@ -1710,7 +1894,10 @@ class Combo(QtGui.QWidget):
         self.wheel_dir = 1 if wheel_dir else -1
         if value_list:
             self.add_items(value_list)
-            self.currentIndex = 0
+            if not 0 <= default <= len(value_list):
+                default = 0
+            self.currentIndex = default
+            self._setValue(default)
         else:
             self.current = 'None'
             self.currentIndex = -1

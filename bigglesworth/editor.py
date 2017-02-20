@@ -646,7 +646,7 @@ class BlofeldDisplayz(QtGui.QWidget):
 class Editor(QtGui.QMainWindow):
     object_dict = {attr:ParamObject(param_tuple) for attr, param_tuple in Params.param_names.items()}
     with open(local_path('blofeld_efx'), 'rb') as _fx:
-        effects = pickle.load(_fx)
+        efx_params = pickle.load(_fx)
     with open(local_path('blofeld_efx_ranges'), 'rb') as _fx:
         efx_ranges = pickle.load(_fx)
 
@@ -665,11 +665,14 @@ class Editor(QtGui.QMainWindow):
         self.create_sorted_library()
         self.alsa = self.main.alsa
         self.seq = self.main.seq
+        self.channel = 0
+        self.octave = 0
         self.params = Params
         self.pgm_send = False
         self.send = False
         self.notify = True
         self.envelopes = []
+        self.effects = []
         self.grid = self.centralWidget().layout()
 
         self.grid.addLayout(self.create_display(), 0, 1, 1, 2)
@@ -706,15 +709,14 @@ class Editor(QtGui.QMainWindow):
         efx_layout.addWidget(self.create_effect_1())
         efx_layout.addWidget(self.create_effect_2())
         self.grid.addLayout(efx_layout, 4, 3, 1, 2)
-#        b = QtGui.QPushButton()
-#        b.clicked.connect(self.setPreset)
-#        self.grid.addWidget(b, 4, 5)
 
-#        for r in range(self.grid.rowCount()):
-#            if r == 0:
-#                self.grid.setRowStretch(r, 5)
-#            else:
-#                self.grid.setRowStretch(r, 6)
+#        self.grid.addWidget(self.create_arp(), 4, 5)
+
+        self.keyboard = Piano(self, key_list=note_keys)
+        self.keyboard.noteEvent.connect(self.send_note)
+
+        self.grid.addWidget(self.keyboard, 5, 3, 1, 2)
+        self.grid.addWidget(self.create_key_config(), 5, 5, 1, 1)
 
     def __getattr__(self, attr):
         try:
@@ -736,6 +738,89 @@ class Editor(QtGui.QMainWindow):
         except Exception as e:
             raise e
 #            raise NameError('{} attribute does not exist!'.format(attr))
+
+    def keyPressEvent(self, event):
+        if event.isAutoRepeat(): return
+        scancode = event.nativeScanCode()
+        if scancode in note_scancodes:
+            note = note_scancodes.index(scancode)+36
+            self.keyboard.keys[note].push()
+
+    def keyReleaseEvent(self, event):
+        if event.isAutoRepeat(): return
+        scancode = event.nativeScanCode()
+        if scancode in note_scancodes:
+            note = note_scancodes.index(scancode)+36
+            self.keyboard.keys[note].release()
+
+    def create_key_config(self):
+        def set_channel(chan):
+            setattr(self, 'channel', chan)
+        def set_octave(oct):
+            setattr(self, 'octave', oct-2)
+        frame = Frame(self)
+        layout = QtGui.QGridLayout()
+        frame.setLayout(layout)
+
+        mod = Slider(self, name='MOD')
+        mod.valueChanged.connect(lambda value: self.send_ctrl(1, value))
+        layout.addWidget(mod, 0, 0, 3, 1)
+
+        chan_layout = QtGui.QHBoxLayout()
+        layout.addLayout(chan_layout, 0, 1)
+        chan_layout.addWidget(Label(self, 'Ch'))
+        channel = Combo(self, value_list=[str(c) for c in range(1, 17)])
+        channel.indexChanged.connect(set_channel)
+        channel.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        chan_layout.addWidget(channel)
+
+        oct_layout = QtGui.QHBoxLayout()
+        layout.addLayout(oct_layout, 0, 2)
+        oct_layout.addWidget(Label(self, 'Oct'))
+        octave = Combo(self, value_list=[str(o) for o in range(-2, 3)], default=2, wheel_dir=False)
+        octave.indexChanged.connect(set_octave)
+        oct_layout.addWidget(octave)
+
+        notes_off_layout = QtGui.QHBoxLayout()
+        layout.addLayout(notes_off_layout, 1, 1, 1, 2)
+        all_notes_off = SquareButton(self, color=QtCore.Qt.darkRed, max_size=12)
+        all_notes_off.clicked.connect(lambda: self.send_ctrl(123, 0))
+        notes_off_layout.addWidget(all_notes_off)
+        notes_off_layout.addWidget(Label(self, 'All notes OFF'), QtCore.Qt.AlignLeft)
+
+        sounds_off_layout = QtGui.QHBoxLayout()
+        layout.addLayout(sounds_off_layout, 2, 1, 1, 2)
+        all_sounds_off = SquareButton(self, color=QtCore.Qt.darkRed, max_size=12)
+        all_sounds_off.clicked.connect(lambda: self.send_ctrl(120, 0))
+        sounds_off_layout.addWidget(all_sounds_off)
+        sounds_off_layout.addWidget(Label(self, 'All sounds OFF'), QtCore.Qt.AlignLeft)
+
+        return frame
+
+    def create_arp(self):
+        def fade(op):
+            if op <= 0: return
+            op -= .2
+            opacity.setOpacity(op)
+            QtCore.QTimer.singleShot(30, lambda: fade(op))
+        frame = Frame(self, 'Arpegg.')
+        frame.setContentsMargins(2, 2, 2, 2)
+        layout = QtGui.QGridLayout()
+        frame.setLayout(layout)
+
+        mode_layout = QtGui.QHBoxLayout()
+        layout.addLayout(mode_layout, 0, 0)
+        mode_layout.addWidget(HSpacer())
+        arp_mode = BlofeldCombo(self, self.params.Arpeggiator_Mode, name='', values=['off', 'on', '1 shot', 'Hold'])
+        mode_layout.addWidget(arp_mode)
+        opacity = QtGui.QGraphicsOpacityEffect()
+        opacity.setOpacity(1)
+        frame.setGraphicsEffect(opacity)
+        b = QtGui.QPushButton('op')
+        layout.addWidget(b)
+        b.clicked.connect(lambda: fade(1))
+
+        return frame
 
     def create_sorted_library(self):
         sorted_library = SortedLibrary(self.blofeld_library)
@@ -787,11 +872,27 @@ class Editor(QtGui.QMainWindow):
         location = 0
         par_id = Params.index_from_attr(attr)
         par_high, par_low = divmod(par_id, 128)
-        print par_high, par_low, value
+#        print par_high, par_low, value
         
         req = SysExEvent(1, [0xF0, 0x3e, 0x13, 0x00, 0x20, location, par_high, par_low, value, 0xf7])
         req.source = self.alsa.output.client.id, self.alsa.output.id
         self.seq.output_event(req.get_event())
+        self.seq.drain_output()
+
+    def send_ctrl(self, param, value):
+        ctrl_event = CtrlEvent(1, self.channel, param, value)
+        ctrl_event.source = self.alsa.output.client.id, self.alsa.output.id
+        self.seq.output_event(ctrl_event.get_event())
+        self.seq.drain_output()
+
+    def send_note(self, note, state):
+        note = note+self.octave*12
+        if state:
+            note_event = NoteOnEvent(1, self.channel, note, state)
+        else:
+            note_event = NoteOffEvent(1, self.channel, note)
+        note_event.source = self.alsa.output.client.id, self.alsa.output.id
+        self.seq.output_event(note_event.get_event())
         self.seq.drain_output()
 
     def setSound(self, bank, prog, pgm_send=False):
@@ -962,8 +1063,8 @@ class Editor(QtGui.QMainWindow):
         self.effects_1_layout = QtGui.QStackedLayout()
         layout.addLayout(self.effects_1_layout)
 
-        for efx in sorted(self.effects[0]):
-            efx_layout = create_effects(self.effects[0][efx])
+        for efx in sorted(self.efx_params[0]):
+            efx_layout = create_effects(self.efx_params[0][efx])
             self.effects_1_layout.addWidget(efx_layout)
 
         set_effects(0)
@@ -1044,8 +1145,8 @@ class Editor(QtGui.QMainWindow):
         self.effects_2_layout = QtGui.QStackedLayout()
         layout.addLayout(self.effects_2_layout)
 
-        for efx in sorted(self.effects[1]):
-            efx_layout = create_effects(self.effects[1][efx])
+        for efx in sorted(self.efx_params[1]):
+            efx_layout = create_effects(self.efx_params[1][efx])
             self.effects_2_layout.addWidget(efx_layout)
 
         set_effects(0)
@@ -1595,22 +1696,31 @@ class Editor(QtGui.QMainWindow):
 
     def create_mixer(self):
         frame = Frame(self, 'Mixer')
-        layout = QtGui.QVBoxLayout()
-        frame.setLayout(layout)
+        frame.setContentsMargins(2, 2, 2, 2)
+#        layout = QtGui.QVBoxLayout()
+#        frame.setLayout(layout)
 
         grid = QtGui.QGridLayout()
-        layout.addLayout(grid)
-        grid.addWidget(BlofeldSlider(self, self.params.Mixer_Osc_1_Level, name='OSC 1'), 0, 0, 2, 1)
-        grid.addWidget(BlofeldDial(self, self.params.Mixer_Osc_1_Balance, size=24, center=True, default=64, name='Bal'), 2, 0, 1, 1)
-        grid.addWidget(BlofeldSlider(self, self.params.Mixer_Osc_2_Level, name='OSC 2'), 0, 1, 2, 1)
-        grid.addWidget(BlofeldDial(self, self.params.Mixer_Osc_2_Balance, size=24, center=True, default=64, name='Bal'), 2, 1, 1, 1)
-        grid.addWidget(BlofeldSlider(self, self.params.Mixer_Osc_3_Level, name='OSC 3'), 0, 2, 2, 1)
-        grid.addWidget(BlofeldDial(self, self.params.Mixer_Osc_3_Balance, size=24, center=True, default=64, name='Bal'), 2, 2, 1, 1)
-        grid.addWidget(BlofeldSlider(self, self.params.Mixer_RingMod_Level, name='RingMod'), 0, 3, 2, 1)
-        grid.addWidget(BlofeldDial(self, self.params.Mixer_RingMod_Balance, size=24, center=True, default=64, name='Bal'), 2, 3, 1, 1)
-        grid.addWidget(BlofeldDial(self, self.params.Mixer_Noise_Colour, size=24, center=True, default=64), 0, 4, 1, 1)
-        grid.addWidget(BlofeldSlider(self, self.params.Mixer_Noise_Level, name='Noise'), 1, 4, 1, 1)
-        grid.addWidget(BlofeldDial(self, self.params.Mixer_Noise_Balance, size=24, center=True, default=64, name='Bal'), 2, 4, 1, 1)
+        frame.setLayout(grid)
+#        layout.addLayout(grid)
+        grid.setRowMinimumHeight(0, 23)
+        grid.addWidget(BlofeldSlider(self, self.params.Mixer_Osc_1_Level, name='OSC 1'), 1, 0)
+        grid.addWidget(BlofeldDial(self, self.params.Mixer_Osc_1_Balance, size=24, center=True, default=64, name='Bal'), 2, 0)
+
+        grid.addWidget(BlofeldSlider(self, self.params.Mixer_Osc_2_Level, name='OSC 2'), 1, 1)
+        grid.addWidget(BlofeldDial(self, self.params.Mixer_Osc_2_Balance, size=24, center=True, default=64, name='Bal'), 2, 1)
+
+        grid.addWidget(BlofeldSlider(self, self.params.Mixer_Osc_3_Level, name='OSC 3'), 1, 2)
+        grid.addWidget(BlofeldDial(self, self.params.Mixer_Osc_3_Balance, size=24, center=True, default=64, name='Bal'), 2, 2)
+
+        grid.addWidget(BlofeldSlider(self, self.params.Mixer_RingMod_Level, name='RingMod'), 1, 3)
+        grid.addWidget(BlofeldDial(self, self.params.Mixer_RingMod_Balance, size=24, center=True, default=64, name='Bal'), 2, 3)
+
+        noise = QtGui.QVBoxLayout()
+        grid.addLayout(noise, 0, 4, 2, 1)
+        noise.addWidget(BlofeldDial(self, self.params.Mixer_Noise_Colour, size=24, center=True, default=64))
+        noise.addWidget(BlofeldSlider(self, self.params.Mixer_Noise_Level, name='Noise'))
+        grid.addWidget(BlofeldDial(self, self.params.Mixer_Noise_Balance, size=24, center=True, default=64, name='Bal'), 2, 4)
         return frame
 
     def create_osc1(self):

@@ -1,8 +1,8 @@
 Bigglesworth
 ============
 
-| Bigglesworth is an editor and librarian for GNU/Linux.
-| This is an early version, most of the features are not available yet.
+Bigglesworth is a Waldorf Blofeld editor and librarian for GNU/Linux.
+This is an early version, most of the features are not available yet.
 
 Features
 --------

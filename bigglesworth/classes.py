@@ -287,7 +287,7 @@ class LoadingThread(QtCore.QObject):
             if isinstance(event, midifile.SysexEvent):
                 self.blofeld_library.addSound(Sound(event.data[6:391]))
                 _ += 1
-#                if _ == 208: break
+                if _ == 208: break
         self.loaded.emit(self.blofeld_model, self.blofeld_library)
 
 class LoadingWindow(QtGui.QDialog):
@@ -295,6 +295,7 @@ class LoadingWindow(QtGui.QDialog):
         self.main = parent
         QtGui.QDialog.__init__(self, parent)
         self.setWindowTitle('Presets loading...')
+        self.setModal(True)
         grid = QtGui.QGridLayout(self)
         loading_lbl = QtGui.QLabel('Loading local presets, please wait')
         grid.addWidget(loading_lbl, 0, 0, 0, 0)

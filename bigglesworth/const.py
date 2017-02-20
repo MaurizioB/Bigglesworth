@@ -1,3 +1,6 @@
+#!/usr/bin/env python2.7
+# *-* coding: utf-8 *-*
+
 import pickle
 from os import path
 from collections import namedtuple
@@ -158,6 +161,18 @@ SoundRole = ProgRole + 1
 CatRole = SoundRole + 1
 EditedRole = CatRole + 1
 
+note_scancodes = [
+                  52, 39, 53, 40, 54, 55, 42, 56, 43, 57, 44, 58,
+                  59, 46, 60, 47, 61, 24, 11, 25, 12, 26, 13, 27, 
+                  28, 15, 29, 16, 30, 31, 18, 32, 19, 33, 20, 34, 
+                  35
+         ]
+#babba = QtCore.QString().fromUtf8('erg')
+note_keys = [
+             'Z', 'S', 'X', 'D', 'C', 'V', 'G', 'B', 'H', 'N', 'J', 'M', 
+             ',', 'L', '.', 'Ò', '-', 'Q', '2', 'W', '3', 'E', '4', 'R', 
+             'T', '6', 'Y', '7', 'U', 'I', '9', 'O', '0', 'P', '\'', 'È', 
+             '+'
+             ]
 
-
-
+note_keys = [QtCore.QString().fromUtf8(l) for l in note_keys]

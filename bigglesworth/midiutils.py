@@ -532,7 +532,7 @@ class NoteOnEvent(MidiEvent):
         return MidiEvent.alsa_event(NOTEON, port, channel, note, velocity)
 
 class NoteOffEvent(MidiEvent):
-    def __new__(self, port, channel, note, velocity):
+    def __new__(self, port, channel, note, velocity=0):
         return MidiEvent(NOTEOFF, port, channel, note, velocity)
 
     @classmethod
