@@ -287,7 +287,7 @@ class LoadingThread(QtCore.QObject):
             if isinstance(event, midifile.SysexEvent):
                 self.blofeld_library.addSound(Sound(event.data[6:391]))
                 _ += 1
-                if _ == 208: break
+#                if _ == 208: break
         self.loaded.emit(self.blofeld_model, self.blofeld_library)
 
 class LoadingWindow(QtGui.QDialog):

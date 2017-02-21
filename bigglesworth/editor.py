@@ -1,3 +1,6 @@
+#!/usr/bin/env python2.7
+# *-* coding: utf-8 *-*
+
 import pickle
 from string import uppercase
 from PyQt4 import QtCore, QtGui
@@ -123,6 +126,8 @@ class BlofeldCombo(Combo):
             short_name = kwargs.pop('name')
         if 'values' in kwargs:
             values = kwargs.pop('values')
+        if 'value_list' in kwargs:
+            values = kwargs.pop('value_list')
         if not (isinstance(values, list) or isinstance(values, tuple)):
             values = getattr(values, sub_par)
         Combo.__init__(self, parent=parent, value_list=values, name=short_name, *args, **kwargs)
@@ -169,7 +174,7 @@ class BlofeldEnv(Envelope):
         QtCore.QTimer.singleShot(10, self.setMaximized)
 
     def normalize(self):
-        self.setFixedSize(80, 40)
+        self.setFixedSize(68, 40)
         self.setWindowFlags(QtCore.Qt.Widget)
         self.normal_layout.addWidget(self, *self.index)
         self.normal = True
@@ -323,6 +328,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         self.shadow.setOffset(1, 1)
         self.shadow.setColor(QtGui.QColor(100, 100, 100, 150))
         self.create_layout()
+        self.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.Preferred)
 #        self.setViewportUpdateMode(QtGui.QGraphicsView.FullViewportUpdate)
 
     def create_layout(self):
@@ -411,7 +417,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
 
         self.panel.setGraphicsEffect(self.shadow)
 
-    def mousePressEvent(self, event):
+    def mouseReleaseEvent(self, event):
         item = self.scene.itemAt(event.pos())
         if item is None: return
         sound = self.main.sound
@@ -463,32 +469,60 @@ class BlofeldDisplay(QtGui.QGraphicsView):
             bank = sound.bank
             prog = sound.prog
         else:
-            if event.button() == QtCore.Qt.RightButton:
-                if item == self.prog_name:
-                    res = self.main.sorted_library_menu.exec_(event.globalPos())
-                    if not res: return
-                    self.main.setSound(*res.data().toPyObject(), pgm_send=True)
-                    return
-                elif item == self.bank:
-                    res = self.main.sorted_library_menu.actions()[0].menu().exec_(event.globalPos())
-                    if not res: return
-                    self.main.setSound(*res.data().toPyObject(), pgm_send=True)
-                    return
-                elif item == self.prog:
-                    res = self.main.sorted_library_menu.actions()[0].menu().actions()[bank].menu().exec_(event.globalPos())
-                    if not res: return
-                    self.main.setSound(*res.data().toPyObject(), pgm_send=True)
-                    return
-                elif item in [self.cat_label, self.cat_name]:
-                    res = self.main.sorted_library_menu.actions()[1].menu().exec_(event.globalPos())
-                    if not res: return
-                    self.main.setSound(*res.data().toPyObject(), pgm_send=True)
-                    return
-                else:
-                    return
-            else:
-                return
+            return
+#        else:
+#            if event.button() == QtCore.Qt.RightButton:
+#                if item == self.prog_name:
+#                    res = self.main.sorted_library_menu.exec_(event.globalPos())
+#                    if not res: return
+#                    self.main.setSound(*res.data().toPyObject(), pgm_send=True)
+#                    return
+#                elif item == self.bank:
+#                    res = self.main.sorted_library_menu.actions()[0].menu().exec_(event.globalPos())
+#                    if not res: return
+#                    self.main.setSound(*res.data().toPyObject(), pgm_send=True)
+#                    return
+#                elif item == self.prog:
+#                    res = self.main.sorted_library_menu.actions()[0].menu().actions()[bank].menu().exec_(event.globalPos())
+#                    if not res: return
+#                    self.main.setSound(*res.data().toPyObject(), pgm_send=True)
+#                    return
+#                elif item in [self.cat_label, self.cat_name]:
+#                    res = self.main.sorted_library_menu.actions()[1].menu().exec_(event.globalPos())
+#                    if not res: return
+#                    self.main.setSound(*res.data().toPyObject(), pgm_send=True)
+#                    return
+#                else:
+#                    return
+#            else:
+#                return
         self.main.setSound(bank, prog, pgm_send=True)
+
+    def contextMenuEvent(self, event):
+        item = self.scene.itemAt(event.pos())
+        if item not in [self.prog_name, self.bank, self.prog, self.cat_label, self.cat_name]:
+            return
+        bank = self.main.sound.bank
+        if item == self.prog_name:
+            res = self.main.sorted_library_menu.exec_(event.globalPos())
+            if not res: return
+            self.main.setSound(*res.data().toPyObject(), pgm_send=True)
+            return
+        elif item == self.bank:
+            res = self.main.sorted_library_menu.actions()[0].menu().exec_(event.globalPos())
+            if not res: return
+            self.main.setSound(*res.data().toPyObject(), pgm_send=True)
+            return
+        elif item == self.prog:
+            res = self.main.sorted_library_menu.actions()[0].menu().actions()[bank].menu().exec_(event.globalPos())
+            if not res: return
+            self.main.setSound(*res.data().toPyObject(), pgm_send=True)
+            return
+        elif item in [self.cat_label, self.cat_name]:
+            res = self.main.sorted_library_menu.actions()[1].menu().exec_(event.globalPos())
+            if not res: return
+            self.main.setSound(*res.data().toPyObject(), pgm_send=True)
+            return
 
     def wheelEvent(self, event):
         item = self.scene.itemAt(event.pos())
@@ -674,14 +708,17 @@ class Editor(QtGui.QMainWindow):
         self.envelopes = []
         self.grid = self.centralWidget().layout()
 
-        self.grid.addLayout(self.create_display(), 0, 1, 1, 2)
+        self.grid.addWidget(self.create_mixer(), 0, 0, 2, 1)
+
+        display_layout = QtGui.QGridLayout()
+        self.grid.addLayout(display_layout, 0, 1, 1, 2)
+        display_layout.addLayout(self.create_display(), 0, 0, 2, 1)
+        display_layout.addWidget(HSpacer(max_width=24), 0, 1)
         logo = QtGui.QIcon(local_path('logo.svg')).pixmap(QtCore.QSize(160, 160)).toImage()
         logo_widget = QtGui.QLabel()
         logo_widget.setPixmap(QtGui.QPixmap().fromImage(logo))
-        self.grid.addWidget(logo_widget, 0, 3, 1, 1, QtCore.Qt.AlignBottom|QtCore.Qt.AlignRight)
-
-
-        self.grid.addWidget(self.create_mixer(), 0, 0, 2, 1)
+        logo_widget.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        display_layout.addWidget(logo_widget, 1, 2, QtCore.Qt.AlignBottom|QtCore.Qt.AlignRight)
 
         amp_layout = QtGui.QVBoxLayout()
         amp_layout.addWidget(self.create_amplifier())
@@ -689,33 +726,50 @@ class Editor(QtGui.QMainWindow):
         amp_layout.addWidget(self.create_common())
         self.grid.addLayout(amp_layout, 2, 0, 2, 1)
 
-        self.grid.addWidget(VSpacer(min_height=60), 0, 1, 1, 1)
-        self.grid.addWidget(self.create_osc1(), 1, 1, 1, 2)
-        self.grid.addWidget(self.create_osc2(), 2, 1, 1, 2)
-        self.grid.addWidget(self.create_osc3(), 3, 1, 1, 2)
+        self.grid.addWidget(self.create_osc1(), 1, 1)
+        self.grid.addWidget(self.create_osc2(), 2, 1)
+        self.grid.addWidget(self.create_osc3(), 3, 1)
 
-        self.grid.addWidget(self.create_lfo1(), 1, 3, 1, 1)
-        self.grid.addWidget(self.create_lfo2(), 2, 3, 1, 1)
-        self.grid.addWidget(self.create_lfo3(), 3, 3, 1, 1)
+        self.grid.addWidget(self.create_lfo1(), 1, 2)
+        self.grid.addWidget(self.create_lfo2(), 2, 2)
+        self.grid.addWidget(self.create_lfo3(), 3, 2)
 
-        self.grid.addWidget(self.create_filter_sel(), 0, 4, 4, 2)
-        self.grid.addWidget(self.create_filter1(), 1, 4, 3, 1)
-        self.grid.addWidget(self.create_filter2(), 1, 5, 3, 1)
-#        self.grid.addWidget(self.create_effects(), 4, 1, 1, 2)
-        self.grid.addLayout(self.create_envelopes(), 4, 0, 3, 3)
-        
-        efx_layout = QtGui.QHBoxLayout()
-        efx_layout.addWidget(self.create_effect_1())
-        efx_layout.addWidget(self.create_effect_2())
-        self.grid.addLayout(efx_layout, 4, 3, 1, 2)
+        filter_layout = QtGui.QGridLayout()
+        self.grid.addLayout(filter_layout, 0, 3, 4, 2)
+        filter_layout.addWidget(self.create_filter_sel(), 0, 0, 1, 2)
+        filter_layout.addWidget(self.create_filter1(), 1, 0, 1, 1)
+        filter_layout.addWidget(self.create_filter2(), 1, 1, 1, 1)
 
-#        self.grid.addWidget(self.create_arp(), 4, 5)
+        btn_layout = QtGui.QHBoxLayout()
+        filter_layout.addLayout(btn_layout, 2, 0, 1, 2)
+        open_mod = SquareButton(self, color=QtCore.Qt.darkGreen, max_size=(20, 20))
+        open_mod.setEnabled(False)
+        btn_layout.addWidget(open_mod)
+        btn_layout.addWidget(Label(self, 'Mod Matrix Editor', QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter))
 
+        open_arp = SquareButton(self, color=QtCore.Qt.darkGreen, max_size=(20, 20))
+        btn_layout.addWidget(open_arp)
+        open_arp.setEnabled(False)
+        btn_layout.addWidget(Label(self, 'Arpeggiator Pattern Editor', QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter))
+
+        lower_layout = QtGui.QGridLayout()
+        self.grid.addLayout(lower_layout, 4, 0, 1, 5)
+        lower_layout.addLayout(self.create_envelopes(), 0, 0, 2, 1)
+        lower_layout.addLayout(self.create_adv(), 0, 1, 1, 2)
         self.keyboard = Piano(self, key_list=note_keys)
         self.keyboard.noteEvent.connect(self.send_note)
-
-        self.grid.addWidget(self.keyboard, 5, 3, 1, 2)
-        self.grid.addWidget(self.create_key_config(), 5, 5, 1, 1)
+        lower_layout.addWidget(self.keyboard, 1, 1)
+        lower_layout.addWidget(self.create_key_config(), 1, 2)
+        
+#        self.grid.addLayout(self.create_envelopes(), 4, 0, 3, 2)
+#        
+#        self.grid.addLayout(self.create_adv(), 4, 2, 1, 4)
+#
+#        self.keyboard = Piano(self, key_list=note_keys)
+#        self.keyboard.noteEvent.connect(self.send_note)
+#
+#        self.grid.addWidget(self.keyboard, 5, 2, 1, 3)
+#        self.grid.addWidget(self.create_key_config(), 5, 5, 1, 1)
 
     def __getattr__(self, attr):
         try:
@@ -797,12 +851,7 @@ class Editor(QtGui.QMainWindow):
         return frame
 
     def create_arp(self):
-        def fade(op):
-            if op <= 0: return
-            op -= .2
-            opacity.setOpacity(op)
-            QtCore.QTimer.singleShot(30, lambda: fade(op))
-        frame = Frame(self, 'Arpegg.')
+        frame = Frame(self, 'Arpeggiator')
         frame.setContentsMargins(2, 2, 2, 2)
         layout = QtGui.QGridLayout()
         frame.setLayout(layout)
@@ -810,14 +859,65 @@ class Editor(QtGui.QMainWindow):
         mode_layout = QtGui.QHBoxLayout()
         layout.addLayout(mode_layout, 0, 0)
         mode_layout.addWidget(HSpacer())
+        mode_layout.addWidget(Label(self, 'Mode'))
         arp_mode = BlofeldCombo(self, self.params.Arpeggiator_Mode, name='', values=['off', 'on', '1 shot', 'Hold'])
         mode_layout.addWidget(arp_mode)
-        opacity = QtGui.QGraphicsOpacityEffect()
-        opacity.setOpacity(1)
-        frame.setGraphicsEffect(opacity)
-        b = QtGui.QPushButton('op')
-        layout.addWidget(b)
-        b.clicked.connect(lambda: fade(1))
+        pattern_layout = QtGui.QHBoxLayout()
+        layout.addLayout(pattern_layout, 1, 0)
+        pattern_layout.addWidget(Label(self, 'Pattern'))
+        arp_patterns = [
+                        'User', 
+                        '●○●●●○●●●○●●●○●●', 
+                        '●○●○●○○●●○●○●○○●', 
+                        '●○●○●○●●●○●○●○●●', 
+                        '●○●●●○●○●○●●●○●○', 
+                        '●○●○●●○●●○●○●●○●', 
+                        '●●○●○●●○●●○●○●●○', 
+                        '●○●○●○●○●●○●○●○●', 
+                        '●○●○●○●●○●○●●○●○', 
+                        '●●●○●●●○●●●○●●●○', 
+                        '●●○●●○●●○●●○●●●○', 
+                        '●●○●●○●●○●●○●○●○', 
+                        '●●○●●○●○●●○●●○●○', 
+                        '●○●○●○●○●●○●○●●●', 
+                        '●○○●○○●○○●○○●○○●', 
+                        '●○●○●○●○●○○●●○●○', 
+                        ]
+        arp_patterns = [QtCore.QString().fromUtf8(p) for p in arp_patterns]
+        pattern = BlofeldCombo(self, self.params.Arpeggiator_Pattern, values=arp_patterns, name='')
+        pattern_layout.addWidget(pattern)
+
+        tempo_layout = QtGui.QHBoxLayout()
+        layout.addLayout(tempo_layout, 2, 0)
+        tempo_layout.addWidget(Label(self, 'Tempo'), QtCore.Qt.AlignTop)
+        tempo = BlofeldDial(self, self.params.Arpeggiator_Tempo, size=24, name='')
+        tempo_layout.addWidget(tempo, QtCore.Qt.AlignVCenter)
+        t_values = [v.replace('bars', 'b.') for v in self.params.Arpeggiator_Clock.values]
+        clock = BlofeldCombo(self, self.params.Arpeggiator_Clock, name='Clock', values=t_values)
+        tempo_layout.addWidget(clock)
+        length = BlofeldCombo(self, self.params.Arpeggiator_Ptn_Length, name='Length')
+        tempo_layout.addWidget(length)
+        ptn_reset = BlofeldButton(self, self.params.Arpeggiator_Ptn_Reset, checkable=True, max_size=(20, 20), name='Reset')
+        tempo_layout.addWidget(ptn_reset)
+
+        note_layout = QtGui.QHBoxLayout()
+        layout.addLayout(note_layout, 3, 0)
+        note_length = BlofeldCombo(self, self.params.Arpeggiator_Length, name='Note Len.')
+        note_layout.addWidget(note_length)
+        vel_values = ['Each', 'First', 'Last', '32', '64', '100', '127']
+        note_vel = BlofeldCombo(self, self.params.Arpeggiator_Velocity, values=vel_values, name='Velocity')
+        note_layout.addWidget(note_vel)
+        note_timing = BlofeldCombo(self, self.params.Arpeggiator_Timing_Factor, name='Timing')
+        note_layout.addWidget(note_timing)
+
+        adv_layout = QtGui.QHBoxLayout()
+        layout.addLayout(adv_layout, 4, 0)
+        octave = BlofeldCombo(self, self.params.Arpeggiator_Octave, name='Octave')
+        adv_layout.addWidget(octave)
+        direction = BlofeldCombo(self, self.params.Arpeggiator_Direction, name='Direction')
+        adv_layout.addWidget(direction)
+        sort = BlofeldCombo(self, self.params.Arpeggiator_Sort_Order, name='Sort Order')
+        adv_layout.addWidget(sort)
 
         return frame
 
@@ -965,14 +1065,19 @@ class Editor(QtGui.QMainWindow):
 
         return frame
 
-    def create_amp_effects(self):
-        layout = QtGui.QVBoxLayout()
-        layout.addWidget(self.create_amplifier())
-#        layout.addWidget(self.create_effect_1())
-#        layout.addWidget(self.create_effect_2())
-        layout.addWidget(self.create_glide())
-#        layout.addWidget(self.create_mixer())
-        return layout
+    def create_adv(self):
+        stack_layout = QtGui.QStackedLayout()
+        
+        main_widget = QtGui.QWidget()
+        main_widget.setContentsMargins(-3, -3, -3, -3)
+        main_layout = QtGui.QHBoxLayout()
+        main_widget.setLayout(main_layout)
+        stack_layout.addWidget(main_widget)
+        main_layout.addWidget(self.create_effect_1())
+        main_layout.addWidget(self.create_effect_2())
+        main_layout.addWidget(self.create_arp())
+
+        return stack_layout
 
     def create_glide(self):
         frame = Frame(self, 'Glide')
@@ -1041,14 +1146,14 @@ class Editor(QtGui.QMainWindow):
             efx_widget.setLayout(frame_layout)
             return efx_widget
             
-        frame = Frame(self, 'Effect 1')
+        frame = Frame(self, 'Efx1')
         layout = QtGui.QVBoxLayout()
         frame.setLayout(layout)
         frame.setContentsMargins(2, 2, 2, 2)
 
         line1 = QtGui.QHBoxLayout()
         layout.addLayout(line1)
-        line1.addWidget(HSpacer(max_width=70))
+        line1.addWidget(HSpacer(max_width=50))
         efx_type = BlofeldCombo(self, self.params.Effect_1_Type)
         efx_type.indexChanged.connect(self.set_effect_1_widgets)
         line1.addWidget(efx_type)
@@ -1126,14 +1231,14 @@ class Editor(QtGui.QMainWindow):
             efx_widget.setLayout(frame_layout)
             return efx_widget
             
-        frame = Frame(self, 'Effect 2')
+        frame = Frame(self, 'Efx2')
         layout = QtGui.QVBoxLayout()
         frame.setLayout(layout)
         frame.setContentsMargins(2, 2, 2, 2)
 
         line1 = QtGui.QHBoxLayout()
         layout.addLayout(line1)
-        line1.addWidget(HSpacer(max_width=70))
+        line1.addWidget(HSpacer(max_width=50))
         efx_type = BlofeldCombo(self, self.params.Effect_2_Type)
         efx_type.indexChanged.connect(self.set_effect_2_widgets)
         line1.addWidget(efx_type)
@@ -1260,9 +1365,9 @@ class Editor(QtGui.QMainWindow):
 
         grid.addLayout(combos, 4, 0, 1, 2)
 
-        keytrack = BlofeldDial(self, self.params.Filter_1_Keytrack, size=24)
+        keytrack = BlofeldDial(self, self.params.Filter_1_Keytrack)
         grid.addWidget(keytrack, 5, 0, 1, 1)
-        pan = BlofeldDial(self, self.params.Filter_1_Pan, size=24)
+        pan = BlofeldDial(self, self.params.Filter_1_Pan)
         grid.addWidget(pan, 5, 1, 1, 1)
 
         return frame
@@ -1325,9 +1430,9 @@ class Editor(QtGui.QMainWindow):
 
         grid.addLayout(combos, 4, 0, 1, 2)
 
-        keytrack = BlofeldDial(self, self.params.Filter_2_Keytrack, size=24)
+        keytrack = BlofeldDial(self, self.params.Filter_2_Keytrack)
         grid.addWidget(keytrack, 5, 0, 1, 1)
-        pan = BlofeldDial(self, self.params.Filter_2_Pan, size=24)
+        pan = BlofeldDial(self, self.params.Filter_2_Pan)
         grid.addWidget(pan, 5, 1, 1, 1)
 
         return frame
@@ -1443,10 +1548,10 @@ class Editor(QtGui.QMainWindow):
                 for w in (attack_level, decay2, sustain2):
                     w.setEnabled(True)
 
-        frame = Frame(self, 'Filter Envelope')
+        frame = Frame(self, 'Filter Env.')
         frame.setContentsMargins(2, 12, 2, 2)
         env = BlofeldEnv(self, 'Filter_Envelope', show_points=False)
-        env.setFixedSize(80, 40)
+        env.setFixedSize(68, 40)
         self.envelopes.append(env)
         
         grid = QtGui.QGridLayout()
@@ -1465,14 +1570,14 @@ class Editor(QtGui.QMainWindow):
         grid.addWidget(decay, 0, 2, 1, 1)
         sustain = BlofeldDial(self, self.params.Filter_Envelope_Sustain, size=24)
         grid.addWidget(sustain, 0, 3, 1, 1)
-        decay2 = BlofeldDial(self, self.params.Filter_Envelope_Decay_2, size=24)
+        decay2 = BlofeldDial(self, self.params.Filter_Envelope_Decay_2, size=24, name='Dec. 2')
         grid.addWidget(decay2, 1, 2, 1, 1)
-        sustain2 = BlofeldDial(self, self.params.Filter_Envelope_Sustain_2, size=24)
+        sustain2 = BlofeldDial(self, self.params.Filter_Envelope_Sustain_2, size=24, name='Sus. 2')
         grid.addWidget(sustain2, 1, 3, 1, 1)
         release = BlofeldDial(self, self.params.Filter_Envelope_Release, size=24)
         grid.addWidget(release, 0, 4, 1, 1)
 
-        grid.addWidget(OSpacer(min_width=80, min_height=40, max_width=80, max_height=40), 1, 4, 1, 1)
+        grid.addWidget(OSpacer(min_width=env.minimumWidth(), min_height=40, max_width=80, max_height=env.minimumWidth()), 1, 4, 1, 1)
         grid.addWidget(env, 1, 4, 1, 1)
 
         env.attackChanged.connect(attack.setValue)
@@ -1512,10 +1617,10 @@ class Editor(QtGui.QMainWindow):
                 for w in (attack_level, decay2, sustain2):
                     w.setEnabled(True)
 
-        frame = Frame(self, 'Amp Envelope')
+        frame = Frame(self, 'Amp Env.')
         frame.setContentsMargins(2, 12, 2, 2)
         env = BlofeldEnv(self, 'Amplifier_Envelope', show_points=False)
-        env.setFixedSize(80, 40)
+        env.setFixedSize(68, 40)
         self.envelopes.append(env)
         
         grid = QtGui.QGridLayout()
@@ -1534,14 +1639,14 @@ class Editor(QtGui.QMainWindow):
         grid.addWidget(decay, 0, 2, 1, 1)
         sustain = BlofeldDial(self, self.params.Amplifier_Envelope_Sustain, size=24)
         grid.addWidget(sustain, 0, 3, 1, 1)
-        decay2 = BlofeldDial(self, self.params.Amplifier_Envelope_Decay_2, size=24)
+        decay2 = BlofeldDial(self, self.params.Amplifier_Envelope_Decay_2, size=24, name='Dec. 2')
         grid.addWidget(decay2, 1, 2, 1, 1)
-        sustain2 = BlofeldDial(self, self.params.Amplifier_Envelope_Sustain_2, size=24)
+        sustain2 = BlofeldDial(self, self.params.Amplifier_Envelope_Sustain_2, size=24, name='Sus. 2')
         grid.addWidget(sustain2, 1, 3, 1, 1)
         release = BlofeldDial(self, self.params.Amplifier_Envelope_Release, size=24)
         grid.addWidget(release, 0, 4, 1, 1)
 
-        grid.addWidget(OSpacer(min_width=80, min_height=40, max_width=80, max_height=40), 1, 4, 1, 1)
+        grid.addWidget(OSpacer(min_width=env.minimumWidth(), min_height=40, max_width=80, max_height=env.minimumWidth()), 1, 4, 1, 1)
         grid.addWidget(env, 1, 4, 1, 1)
 
         env.attackChanged.connect(attack.setValue)
@@ -1584,7 +1689,7 @@ class Editor(QtGui.QMainWindow):
         frame = Frame(self, 'Envelope 3')
         frame.setContentsMargins(2, 12, 2, 2)
         env = BlofeldEnv(self, 'Envelope_3', show_points=False)
-        env.setFixedSize(80, 40)
+        env.setFixedSize(68, 40)
         self.envelopes.append(env)
         
         grid = QtGui.QGridLayout()
@@ -1603,14 +1708,14 @@ class Editor(QtGui.QMainWindow):
         grid.addWidget(decay, 0, 2, 1, 1)
         sustain = BlofeldDial(self, self.params.Envelope_3_Sustain, size=24)
         grid.addWidget(sustain, 0, 3, 1, 1)
-        decay2 = BlofeldDial(self, self.params.Envelope_3_Decay_2, size=24)
+        decay2 = BlofeldDial(self, self.params.Envelope_3_Decay_2, size=24, name='Dec. 2')
         grid.addWidget(decay2, 1, 2, 1, 1)
-        sustain2 = BlofeldDial(self, self.params.Envelope_3_Sustain_2, size=24)
+        sustain2 = BlofeldDial(self, self.params.Envelope_3_Sustain_2, size=24, name='Sus. 2')
         grid.addWidget(sustain2, 1, 3, 1, 1)
         release = BlofeldDial(self, self.params.Envelope_3_Release, size=24)
         grid.addWidget(release, 0, 4, 1, 1)
 
-        grid.addWidget(OSpacer(min_width=80, min_height=40, max_width=80, max_height=40), 1, 4, 1, 1)
+        grid.addWidget(OSpacer(min_width=env.minimumWidth(), min_height=40, max_width=80, max_height=env.minimumWidth()), 1, 4, 1, 1)
         grid.addWidget(env, 1, 4, 1, 1)
 
         env.attackChanged.connect(attack.setValue)
@@ -1653,7 +1758,7 @@ class Editor(QtGui.QMainWindow):
         frame = Frame(self, 'Envelope 4')
         frame.setContentsMargins(2, 12, 2, 2)
         env = BlofeldEnv(self, 'Envelope_4', show_points=False)
-        env.setFixedSize(80, 40)
+        env.setFixedSize(68, 40)
         self.envelopes.append(env)
         
         grid = QtGui.QGridLayout()
@@ -1672,14 +1777,14 @@ class Editor(QtGui.QMainWindow):
         grid.addWidget(decay, 0, 2, 1, 1)
         sustain = BlofeldDial(self, self.params.Envelope_4_Sustain, size=24)
         grid.addWidget(sustain, 0, 3, 1, 1)
-        decay2 = BlofeldDial(self, self.params.Envelope_4_Decay_2, size=24)
+        decay2 = BlofeldDial(self, self.params.Envelope_4_Decay_2, size=24, name='Dec. 2')
         grid.addWidget(decay2, 1, 2, 1, 1)
-        sustain2 = BlofeldDial(self, self.params.Envelope_4_Sustain_2, size=24)
+        sustain2 = BlofeldDial(self, self.params.Envelope_4_Sustain_2, size=24, name='Sus. 2')
         grid.addWidget(sustain2, 1, 3, 1, 1)
         release = BlofeldDial(self, self.params.Envelope_4_Release, size=24)
         grid.addWidget(release, 0, 4, 1, 1)
 
-        grid.addWidget(OSpacer(min_width=80, min_height=40, max_width=80, max_height=40), 1, 4, 1, 1)
+        grid.addWidget(OSpacer(min_width=env.minimumWidth(), min_height=40, max_width=80, max_height=env.minimumWidth()), 1, 4, 1, 1)
         grid.addWidget(env, 1, 4, 1, 1)
 
         env.attackChanged.connect(attack.setValue)
@@ -1780,7 +1885,7 @@ class Editor(QtGui.QMainWindow):
         fm_amount = BlofeldDial(self, self.params.Osc_1_FM_Amount, size=24, name='Amount')
         right.addWidget(fm_amount, 2, 2, 1, 1)
         limit_wt = BlofeldButton(self, self.params.Osc_1_Limit_WT, checkable=True, name='Limit WT', inverted=True)
-        right.addWidget(limit_wt, 0, 3, 3, 1)
+        right.addWidget(limit_wt, 0, 3, 2, 1)
 
         return frame
 
@@ -1834,9 +1939,7 @@ class Editor(QtGui.QMainWindow):
         fm_amount = BlofeldDial(self, self.params.Osc_2_FM_Amount, size=24, name='Amount')
         right.addWidget(fm_amount, 2, 2, 1, 1)
         limit_wt = BlofeldButton(self, self.params.Osc_2_Limit_WT, checkable=True, name='Limit WT', inverted=True)
-        right.addWidget(limit_wt, 1, 3, 1, 1, QtCore.Qt.AlignHCenter)
-        sync = BlofeldButton(self, self.params.Osc_2_Sync_to_O3, checkable=True, name='Sync OSC3')
-        right.addWidget(sync, 2, 3, 1, 1)
+        right.addWidget(limit_wt, 1, 3, 2, 1, QtCore.Qt.AlignHCenter)
 
         return frame
 
@@ -1890,6 +1993,9 @@ class Editor(QtGui.QMainWindow):
         fm_amount = BlofeldDial(self, self.params.Osc_3_FM_Amount, size=24, name='Amount')
         right.addWidget(fm_amount, 2, 2, 1, 1)
         right.addWidget(HSpacer(), 0, 3)
+
+        sync = BlofeldButton(self, self.params.Osc_2_Sync_to_O3, checkable=True, name='OSC2 sync')
+        right.addWidget(sync, 1, 3, 2, 1)
 
         return frame
 

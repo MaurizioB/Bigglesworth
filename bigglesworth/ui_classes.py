@@ -194,9 +194,10 @@ class Piano(QtGui.QGraphicsView):
         self.fitInView(0, 0, self.key_range*20, 100, QtCore.Qt.IgnoreAspectRatio)
 
 class Label(QtGui.QWidget):
-    def __init__(self, parent=None, text=''):
+    def __init__(self, parent=None, text='', text_align=QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter):
         QtGui.QWidget.__init__(self, parent)
         self.text = text
+        self.text_align = text_align
         self.font = QtGui.QFont('Decorative', 9, QtGui.QFont.Bold)
         self.font_metrics = QtGui.QFontMetrics(self.font)
         self.setMinimumSize(self.font_metrics.width(self.text)+1, self.font_metrics.height()+1)
@@ -209,7 +210,7 @@ class Label(QtGui.QWidget):
 #        qp.drawRect(0, 0, self.width()-1, self.height()-1)
 
         qp.setFont(self.font)
-        qp.drawText(0, 0, self.width(), self.height(), QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter, self.text)
+        qp.drawText(0, 0, self.width(), self.height(), self.text_align, self.text)
 
         qp.end()
 
@@ -881,6 +882,17 @@ class SquareButton(QtGui.QAbstractButton):
 #            state = not state
 #        QtGui.QAbstractButton.setChecked(self,state)
 
+    def changeEvent(self, event):
+        if not event.type() == QtCore.QEvent.EnabledChange: return
+#        QtGui.QAbstractButton.changeEvent(self, event)
+        state = self.isEnabled()
+        if not state:
+            self.current_color = self.unactive_color
+            self.current_pen = self.unactive_pen
+            self.repaint()
+        else:
+            self.toggle_states(self.isChecked())
+
     def toggle_states(self, state):
         state ^= self.inverted
         if state:
@@ -905,7 +917,10 @@ class SquareButton(QtGui.QAbstractButton):
         QtGui.QAbstractButton.mousePressEvent(self, event)
 
     def set_released_colors(self):
-        if self.isCheckable():
+        if not self.isEnabled():
+            self.current_color = self.unactive_color
+            self.current_pen = self.unactive_pen
+        elif self.isCheckable():
             self.current_color = self.active_color if self.isChecked() else self.unactive_color
             self.current_pen = self.active_pen if self.isChecked() else self.unactive_pen
         else:
@@ -1209,7 +1224,7 @@ class Envelope(QtGui.QWidget):
         self.mode = mode
         self.show_points = show_points
         self.setContentsMargins(2, 2, 2, 2)
-        self.setMinimumSize(90, 60)
+        self.setMinimumSize(68, 40)
         self.attack = 127
         self.attack_level = 127
         self.decay = 127
@@ -1716,7 +1731,7 @@ class Envelope(QtGui.QWidget):
 #        print self.height(), event.size().height()
         self.outer = QtCore.QRectF(0, 0, self.width()-1, self.height()-1)
         self.display = QtCore.QRectF(2, 2, self.width()-5, self.height()-5)
-        self.env_rect = QtCore.QRectF(16, 4, self.width()-33, self.height()-9)
+        self.env_rect = QtCore.QRectF(12, 4, self.width()-25, self.height()-9)
 
         self.attack_limit = self.env_rect.width()*self.attack_range
         self.compute_envelope()
@@ -2163,7 +2178,7 @@ class Dial(QtGui.QWidget):
         self.value_font_metrics = QtGui.QFontMetrics(self.value_font)
         self.label_font = QtGui.QFont('Decorative', 9, QtGui.QFont.Bold)
         self.label_font_metrics = QtGui.QFontMetrics(self.label_font)
-        self.setMinimumSize(QtGui.QFontMetrics(self.label_font).width(name), 50)
+        self.setMinimumSize(QtGui.QFontMetrics(self.label_font).width(name), 46)
         self.setFocusPolicy(QtCore.Qt.WheelFocus)
         self._size = QtCore.QSize(40, 40)
         sp = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Minimum)
