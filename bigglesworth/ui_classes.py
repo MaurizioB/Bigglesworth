@@ -202,6 +202,10 @@ class Label(QtGui.QWidget):
         self.font_metrics = QtGui.QFontMetrics(self.font)
         self.setMinimumSize(self.font_metrics.width(self.text)+1, self.font_metrics.height()+1)
 
+    def setText(self, text):
+        self.text = text
+        self.update()
+
     def paintEvent(self, event):
         qp = QtGui.QPainter()
         qp.begin(self)
@@ -563,6 +567,8 @@ class Slider(QtGui.QAbstractSlider):
         self.setOrientation(orientation)
         self.setMouseTracking(True)
 
+        if orientation == HORIZONTAL:
+            inverted = not inverted
         self.inverted = -1 if inverted else 1
         if inverted:
             self.get_pos = self._get_pos_negative
@@ -582,13 +588,14 @@ class Slider(QtGui.QAbstractSlider):
             self.value = min_value
         self.range = max_value - min_value
         self.range_size = 8
-        if orientation == QtCore.Qt.Vertical:
+        if orientation == VERTICAL:
             min_width = 20
             min_height = 24
             self.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.Expanding)
             self.slider_rect = QtCore.QRectF(0, 0, 16, 4)
             self.resizeEvent = self.resizeEventVertical
             self.mouseMoveEvent = self.mouseMoveEventVertical
+            self._setValue = self._setValueVertical
         else:
             min_width = 24
             min_height = 20
@@ -596,6 +603,7 @@ class Slider(QtGui.QAbstractSlider):
             self.slider_rect = QtCore.QRectF(0, 0, 4, 16)
             self.resizeEvent = self.resizeEventHorizontal
             self.mouseMoveEvent = self.mouseMoveEventHorizontal
+            self._setValue = self._setValueHorizontal
         self.name = name
         if name:
             self.label_pos = label_pos
@@ -658,6 +666,20 @@ class Slider(QtGui.QAbstractSlider):
         self.setValue(value)
         self.update()
 
+    def mouseMoveEventHorizontal(self, event):
+        if not event.buttons() == QtCore.Qt.LeftButton: return
+        if not self.cursor_mode:
+            return
+        value = int(round((event.pos().x()-self.current_delta-self.range_size/2)*self.range/self.range_range[1], 0))
+        if self.inverted < 1:
+            value = self.maximum()-value
+        if value < self.minimum():
+            value = self.minimum()
+        elif value > self.maximum():
+            value = self.maximum()
+        self.setValue(value)
+        self.update()
+
     def wheelEvent(self, event):
         if event.modifiers() == QtCore.Qt.ShiftModifier:
             delta = self.singleStep()*5*-self.inverted
@@ -666,14 +688,21 @@ class Slider(QtGui.QAbstractSlider):
         self.setValue(self.value+delta if event.delta() > 1 else self.value-delta)
         self.update()
 
-    def _setValue(self, value):
+    def _setValueVertical(self, value):
         if not self.minimum() <= value <= self.maximum(): return
         self.value = value
         pos = QtCore.QPointF(self.range_rect.center().x(), self.get_pos())
         self.slider_rect.moveCenter(pos)
         self.cursor.move(pos.x(), pos.y())
         self.update()
-#        print value
+
+    def _setValueHorizontal(self, value):
+        if not self.minimum() <= value <= self.maximum(): return
+        self.value = value
+        pos = QtCore.QPointF(self.get_pos(), self.range_rect.center().y())
+        self.slider_rect.moveCenter(pos)
+        self.cursor.move(pos.x(), pos.y())
+        self.update()
 
     def setValue(self, value):
         if value < self.minimum():
@@ -701,13 +730,17 @@ class Slider(QtGui.QAbstractSlider):
 
         #value shade
         qp.setPen(QtCore.Qt.NoPen)
-        self.value_grad.setStart(0, self.get_pos())
-        self.value_grad.setFinalStop(0, self.range_rect.height()+self.range_rect.x())
-#        self.value_grad.setColorAt(.7)
         value_color = QtGui.QColor(self.abs_value*180, 100-self.abs_value*100, 0)
-        self.value_grad.setColorAt(.1, value_color)
-        self.value_grad.setColorAt(.9, value_color.darker(300))
-#        self.value_color = QtGui.QBrush(self.value_grad)
+        if self.orientation() == VERTICAL:
+            self.value_grad.setStart(0, self.get_pos())
+            self.value_grad.setFinalStop(0, self.range_rect.height()+self.range_rect.x())
+            self.value_grad.setColorAt(.1, value_color)
+            self.value_grad.setColorAt(.9, value_color.darker(300))
+        else:
+            self.value_grad.setStart(self.get_pos(), 0)
+            self.value_grad.setFinalStop(0, 0)
+            self.value_grad.setColorAt(.9, value_color)
+            self.value_grad.setColorAt(.1, value_color.darker(300))
 
         qp.setBrush(self.value_grad)
         qp.drawRoundedRect(self.range_rect, 2, 2)
@@ -748,8 +781,25 @@ class Slider(QtGui.QAbstractSlider):
         pos = QtCore.QPointF(self.range_rect.center().x(), self.get_pos())
         self.slider_rect.moveCenter(pos)
         self.cursor.move(pos.x(), pos.y())
-#        print self.slider_rect.y(), self.cursor.y()
-        
+
+    def resizeEventHorizontal(self, event):
+        if self.label_pos == TOP:
+            y = self.label_font_metrics.height()+self.spacing
+            height = y
+            self.label_rect = QtCore.QRect(0, 0, self.width(), height)
+        elif self.label_pos == BOTTOM:
+            y = 0
+            height = self.label_font_metrics.height()+self.spacing
+            self.label_rect = QtCore.QRect(0, self.height()-height, self.width(), height)
+        else:
+            y = height = 0
+            x = width = 0
+        self.range_rect = QtCore.QRectF(self.range_size/2.+x, (self.height()-self.range_size)/2., self.width()-self.range_size-width, self.range_size)
+        self.range_range = self.range_rect.x()+4, self.range_rect.width()-8
+        pos = QtCore.QPointF(self.get_pos(), self.range_rect.center().y())
+        self.slider_rect.moveCenter(pos)
+        self.cursor.move(pos.x(), pos.y())
+
 
 class SquareButton(QtGui.QAbstractButton):
     @staticmethod
@@ -1889,7 +1939,7 @@ class Combo(QtGui.QWidget):
     indexChanged = QtCore.pyqtSignal(int)
     def __init__(self, parent=None, value_list=None, name='', wheel_dir=True, default=0):
         QtGui.QWidget.__init__(self, parent)
-        self.combo_padding = 3
+        self.combo_padding = 2
         self.spacing = 4
         self.label_font_metrics = QtGui.QFontMetrics(QtGui.QFont('Decorative', 9, QtGui.QFont.Bold))
         self.font_metrics = QtGui.QFontMetrics(QtGui.QFont('Decorative', 10, QtGui.QFont.Bold))

@@ -3,6 +3,7 @@
 
 import pickle
 from string import uppercase
+from itertools import cycle
 from PyQt4 import QtCore, QtGui
 
 from midiutils import *
@@ -734,20 +735,46 @@ class Editor(QtGui.QMainWindow):
         self.grid.addWidget(self.create_lfo2(), 2, 2)
         self.grid.addWidget(self.create_lfo3(), 3, 2)
 
-        filter_layout = QtGui.QGridLayout()
-        self.grid.addLayout(filter_layout, 0, 3, 4, 2)
-        filter_layout.addWidget(self.create_filter_sel(), 0, 0, 1, 2)
-        filter_layout.addWidget(self.create_filter1(), 1, 0, 1, 1)
-        filter_layout.addWidget(self.create_filter2(), 1, 1, 1, 1)
+        filter_matrix_btn_layout = QtGui.QVBoxLayout()
+        self.grid.addLayout(filter_matrix_btn_layout, 0, 3, 4, 2)
+        filter_matrix_widget = QtGui.QWidget()
+        filter_matrix_btn_layout.addWidget(filter_matrix_widget)
+        self.filter_matrix_layout = QtGui.QStackedLayout()
+        filter_matrix_widget.setLayout(self.filter_matrix_layout)
+        self.filter_matrix_layout.addWidget(self.create_filters())
+        self.filter_matrix_layout.addWidget(self.create_mod_widgets())
 
         btn_layout = QtGui.QHBoxLayout()
-        filter_layout.addLayout(btn_layout, 2, 0, 1, 2)
-        open_mod = SquareButton(self, color=QtCore.Qt.darkGreen, max_size=(20, 20))
-        open_mod.setEnabled(False)
+        filter_matrix_btn_layout.addLayout(btn_layout)
+        open_mod = SquareButton(self, color=QtCore.Qt.darkGreen, max_size=(20, 16))
         btn_layout.addWidget(open_mod)
-        btn_layout.addWidget(Label(self, 'Mod Matrix Editor', QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter))
+        filter_matrix_lbl = Label(self, 'Mod Matrix Editor', QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
+        btn_layout.addWidget(filter_matrix_lbl)
+        filter_matrix_cycle = cycle((0, 1))
+        filter_matrix_cycle.next()
+        filter_matrix_labels = 'Mod Matrix Editor', 'Filters'
 
-        open_arp = SquareButton(self, color=QtCore.Qt.darkGreen, max_size=(20, 20))
+        filter_matrix_opacity = QtGui.QGraphicsOpacityEffect()
+        filter_matrix_opacity.setOpacity(1)
+        filter_matrix_widget.setGraphicsEffect(filter_matrix_opacity)
+        def set_filter_matrix_widget(id):
+            def set_opacity(op, delta):
+                filter_matrix_opacity.setOpacity(op)
+                if op <= 0:
+                    self.filter_matrix_layout.setCurrentIndex(id)
+                    filter_matrix_lbl.setText(filter_matrix_labels[id])
+                    delta = 1
+                elif op >= 1:
+                    return
+                op += .2*delta
+                QtCore.QTimer.singleShot(20, lambda op=op, delta=delta: set_opacity(op, delta))
+            delta = -1
+            id = id.next()
+            set_opacity(.8, delta)
+
+        open_mod.clicked.connect(lambda state, id=filter_matrix_cycle: set_filter_matrix_widget(id))
+
+        open_arp = SquareButton(self, color=QtCore.Qt.darkGreen, max_size=(20, 16))
         btn_layout.addWidget(open_arp)
         open_arp.setEnabled(False)
         btn_layout.addWidget(Label(self, 'Arpeggiator Pattern Editor', QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter))
@@ -805,6 +832,17 @@ class Editor(QtGui.QMainWindow):
         if scancode in note_scancodes:
             note = note_scancodes.index(scancode)+36
             self.keyboard.keys[note].release()
+
+    def create_filters(self):
+        container = QtGui.QWidget()
+        container.setContentsMargins(-3, -3, -3, -3)
+        filter_layout = QtGui.QGridLayout()
+        container.setLayout(filter_layout)
+        filter_layout.setRowMinimumHeight(0, 60)
+        filter_layout.addWidget(self.create_filter_sel(), 0, 0, 2, 2)
+        filter_layout.addWidget(self.create_filter1(), 1, 0, 1, 1)
+        filter_layout.addWidget(self.create_filter2(), 1, 1, 1, 1)
+        return container
 
     def create_key_config(self):
         def set_channel(chan):
@@ -867,21 +905,21 @@ class Editor(QtGui.QMainWindow):
         pattern_layout.addWidget(Label(self, 'Pattern'))
         arp_patterns = [
                         'User', 
-                        '●○●●●○●●●○●●●○●●', 
-                        '●○●○●○○●●○●○●○○●', 
-                        '●○●○●○●●●○●○●○●●', 
-                        '●○●●●○●○●○●●●○●○', 
-                        '●○●○●●○●●○●○●●○●', 
-                        '●●○●○●●○●●○●○●●○', 
-                        '●○●○●○●○●●○●○●○●', 
-                        '●○●○●○●●○●○●●○●○', 
-                        '●●●○●●●○●●●○●●●○', 
-                        '●●○●●○●●○●●○●●●○', 
-                        '●●○●●○●●○●●○●○●○', 
-                        '●●○●●○●○●●○●●○●○', 
-                        '●○●○●○●○●●○●○●●●', 
-                        '●○○●○○●○○●○○●○○●', 
-                        '●○●○●○●○●○○●●○●○', 
+                        '●○●●|●○●●|●○●●|●○●●', 
+                        '●○●○|●○○●|●○●○|●○○●', 
+                        '●○●○|●○●●|●○●○|●○●●', 
+                        '●○●●|●○●○|●○●●|●○●○', 
+                        '●○●○|●●○●|●○●○|●●○●', 
+                        '●●○●|○●●○|●●○●|○●●○', 
+                        '●○●○|●○●○|●●○●|○●○●', 
+                        '●○●○|●○●●|○●○●|●○●○', 
+                        '●●●○|●●●○|●●●○|●●●○', 
+                        '●●○●|●○●●|○●●○|●●●○', 
+                        '●●○●|●○●●|○●●○|●○●○', 
+                        '●●○●|●○●○|●●○●|●○●○', 
+                        '●○●○|●○●○|●●○●|○●●●', 
+                        '●○○●|○○●○|○●○○|●○○●', 
+                        '●○●○|●○●○|●○○●|●○●○', 
                         ]
         arp_patterns = [QtCore.QString().fromUtf8(p) for p in arp_patterns]
         pattern = BlofeldCombo(self, self.params.Arpeggiator_Pattern, values=arp_patterns, name='')
@@ -1077,7 +1115,61 @@ class Editor(QtGui.QMainWindow):
         main_layout.addWidget(self.create_effect_2())
         main_layout.addWidget(self.create_arp())
 
+        mod_widget = QtGui.QWidget()
+        mod_widget.setContentsMargins(-3, -3, -3, -3)
+        mod_layout = QtGui.QHBoxLayout()
+        mod_widget.setLayout(mod_layout)
+        stack_layout.addWidget(mod_widget)
+
+#        stack_layout.setCurrentIndex(1)
+
         return stack_layout
+
+    def create_mod_widgets(self):
+        widget = QtGui.QWidget()
+        widget.setContentsMargins(-3, -3, -3, -3)
+        layout = QtGui.QVBoxLayout()
+        widget.setLayout(layout)
+        layout.addWidget(self.create_modifiers())
+        layout.addWidget(self.create_mod_matrix())
+        return widget
+
+    def create_modifiers(self):
+        frame = Frame(self, 'Modifiers')
+        layout = QtGui.QGridLayout()
+        frame.setLayout(layout)
+
+        for m in range(1, 5):
+            src_a = BlofeldCombo(self, getattr(self.params, 'Modifier_{}_Source_A'.format(m)), name='')
+            oper = BlofeldCombo(self, getattr(self.params, 'Modifier_{}_Operation'.format(m)), name='')
+            src_b = BlofeldCombo(self, getattr(self.params, 'Modifier_{}_Source_B'.format(m)), name='')
+            const = BlofeldCombo(self, getattr(self.params, 'Modifier_{}_Constant'.format(m)), name='')
+            layout.addWidget(src_a, m, 0)
+            layout.addWidget(oper, m, 1)
+            layout.addWidget(src_b, m, 2)
+            layout.addWidget(const, m, 3)
+
+        return frame
+
+    def create_mod_matrix(self):
+        frame = Frame(self, 'Modulation Matrix')
+        layout = QtGui.QVBoxLayout()
+        frame.setLayout(layout)
+
+        mod_id = 1
+        for r in range(16):
+            line = QtGui.QHBoxLayout()
+            layout.addLayout(line)
+            src = BlofeldCombo(self, getattr(self.params, 'Modulation_{}_Source'.format(mod_id)), name='')
+            amount = BlofeldSlider(self, getattr(self.params, 'Modulation_{}_Amount'.format(mod_id)), orientation=HORIZONTAL, inverted=True, name='')
+            dest = BlofeldCombo(self, getattr(self.params, 'Modulation_{}_Destination'.format(mod_id)), name='')
+            line.addWidget(src)
+            line.addWidget(amount)
+            line.addWidget(dest)
+            mod_id += 1
+
+        return frame
+
 
     def create_glide(self):
         frame = Frame(self, 'Glide')

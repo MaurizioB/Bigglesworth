@@ -60,7 +60,7 @@ What works
 What doesn't work
 ~~~~~~~~~~~~~~~~~
 
--  Arpeggiator and Modulation matrix, since they're not there yet :)
+-  Arpeggiator User Pattern editor, since it's not there yet :)
 -  Everything related to sound saving (rename, saving current sound
    parameters, ordering)
 
