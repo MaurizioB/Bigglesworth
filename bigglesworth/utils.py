@@ -18,6 +18,8 @@ def get_status(s):
         if k&s:
             return status_dict[k]
 
+def cursors(id):
+    return cursor_list[id]
 
 
 

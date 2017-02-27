@@ -57,10 +57,9 @@ What works
    Buffer", not for Multi Mode.
 -  Virtual keyboard.
 
-What doesn't work
-~~~~~~~~~~~~~~~~~
+What doesn't work (yet)
+~~~~~~~~~~~~~~~~~~~~~~~
 
--  Arpeggiator User Pattern editor, since it's not there yet :)
 -  Everything related to sound saving (rename, saving current sound
    parameters, ordering)
 

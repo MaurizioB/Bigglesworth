@@ -408,6 +408,7 @@ def main():
     app.setOrganizationName('jidesk')
     app.setApplicationName('Blofix')
 #    app.setQuitOnLastWindowClosed(False)
+    cursor_list.extend((QtCore.Qt.SizeAllCursor, UpCursorClass(), DownCursorClass(), LeftCursorClass(), RightCursorClass()))
     blofix = Librarian(app)
     blofix.show()
     sys.exit(app.exec_())

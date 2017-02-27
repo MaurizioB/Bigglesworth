@@ -12,9 +12,14 @@ def local_path(name):
 #with open('blofeld_params', 'rb') as _params_file:
 #    sound_params = pickle.load(_params_file)
 
+LEGATO = 0
+RANDOM = 0
 RANGE, VALUE, NAME, SHORTNAME, FAMILY, VARNAME = range(6)
 SRC_LIBRARY, SRC_BLOFELD = 0, 1
 EMPTY, STORED, DUMPED, MOVED, EDITED = [0, 1, 3, 4, 8]
+MOVEUP, MOVEDOWN, MOVELEFT, MOVERIGHT, MOVE = range(5)
+MoveCursor, UpCursor, DownCursor, LeftCursor, RightCursor = range(5)
+cursor_list = []
 status_dict = {
           EMPTY: 'Empty', 
           STORED: 'Stored', 
@@ -89,6 +94,50 @@ class AdvParam(object):
             print e
             print 'Parameters malformed (format: {}): {} ({:08b})'.format(self.fmt, data, data)
 
+arp_step_types = [
+               'normal', 
+               'pause', 
+               'previous', 
+               'first', 
+               'last', 
+               'first+last', 
+               'chord', 
+               'random', 
+               ]
+
+arp_step_accents = [
+                 'silent', 
+                 '/4', 
+                 '/3', 
+                 '/2', 
+                 '*1', 
+                 '*2', 
+                 '*3', 
+                 '*4', 
+                 ]
+
+arp_step_timings = [
+                 'random', 
+                 '-3', 
+                 '-2', 
+                 '-1', 
+                 '+0', 
+                 '+1', 
+                 '+2', 
+                 '+3', 
+                 ]
+
+arp_step_lengths = [
+                 'legato', 
+                 '-3', 
+                 '-2', 
+                 '-1', 
+                 '+0', 
+                 '+1', 
+                 '+2', 
+                 '+3', 
+                 ]
+
 class ParamsClass(object):
     param_values_nt = namedtuple('param_values_nt', 'range values name short_name family attr')
     param_names_nt = namedtuple('param_names_nt', 'range values name short_name family attr id')
@@ -100,6 +149,10 @@ class ParamsClass(object):
                 v = AdvParam('0uuu000a', u=('Unisono', ['off', 'dual', '3', '4', '5', '6']), a=('Allocation', ['Poly','Mono']))
             elif i in [196, 208, 220, 232]:
                 v = AdvParam('0ttmmmmm', t=('Trigger', ['normal', 'single']), m=('Mode', ['ADSR', 'ADS1DS2R', 'One Shot', 'Loop S1S2', 'Loop All']))
+            elif i in list(range(327, 343)):
+                v = AdvParam('0sssgaaa', s=('Step', arp_step_types), g=('Glide', ['off', 'on']), a=('Accent', arp_step_accents))
+            elif i in list(range(343, 359)):
+                v = AdvParam('0lll0ttt', l=('Length', arp_step_lengths), t=('Timing', arp_step_timings))
             param_list.append(param_values_nt(r, v, n, s, f, a))
             param_names[a] = param_names_nt(r, v, n, s, f, a, i)
 

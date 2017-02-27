@@ -196,12 +196,11 @@ class DownArrowWidget(BaseDisplayWidget):
     arrow.lineTo(4, -2)
     arrow.lineTo(0, 2)
     arrow.closeSubpath()
-    def __init__(self, parent):
+    def __init__(self, parent, padding=2):
         BaseDisplayWidget.__init__(self, parent)
-        width = self.arrow.boundingRect().width()+2
-        height = self.arrow.boundingRect().height()+2
+        width = self.arrow.boundingRect().width()+padding
+        height = self.arrow.boundingRect().height()+padding
         self.setMinimumSize(width, height)
-#        self.setMaximumSize(width+2, height+2)
         self.setMaximumSize(width, height)
         self.setSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Minimum)
 
@@ -239,16 +238,6 @@ class LabelTextWidget(BaseTextWidget):
         self.font = QtGui.QFont('Fira Sans', 22)
         self.font_metrics = QtGui.QFontMetrics(self.font)
         self.setMinimumSize(self.font_metrics.width(self.text), self.font_metrics.height())
-
-class SmallLabelTextWidget(BaseTextWidget):
-    def __init__(self, text, parent, fixed=False):
-        BaseTextWidget.__init__(self, text, parent)
-        self.font = QtGui.QFont('Fira Sans', 12)
-        self.font_metrics = QtGui.QFontMetrics(self.font)
-        self.setMinimumSize(self.font_metrics.width(self.text), self.font_metrics.height())
-        self.setMaximumHeight(self.font_metrics.height())
-        if fixed:
-            self.setMaximumWidth(self.font_metrics.width(self.text))
 
 class SmallTextWidget(BaseTextWidget):
     def __init__(self, text, parent):
@@ -298,6 +287,742 @@ class DisplayHSpacer(QtGui.QGraphicsWidget):
 #    def paint(self, painter, *args, **kwargs):
 #        painter.drawRect(self.rect())
 
+class SmallLabelTextWidget(BaseTextWidget):
+    def __init__(self, text, parent, fixed=False, font_size=12, max_size=None, bold=False):
+        BaseTextWidget.__init__(self, text, parent)
+        self.font = QtGui.QFont('Fira Sans', font_size, weight=QtGui.QFont.DemiBold if bold else QtGui.QFont.Normal)
+        self.font_metrics = QtGui.QFontMetrics(self.font)
+        self.setMinimumSize(self.font_metrics.width(self.text), self.font_metrics.height())
+        self.setMaximumHeight(self.font_metrics.height())
+        if fixed:
+            self.setMaximumWidth(self.font_metrics.width(self.text) if max_size is None else max_size)
+
+class DisplayComboLabelClass(BaseTextWidget):
+    def __init__(self, parent):
+        BaseDisplayWidget.__init__(self, parent)
+        self.currentIndex = 0
+        self.count = len(self.value_list)
+        self.text_align = QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter
+        self.font = QtGui.QFont('Fira Sans', 9)
+        self.font_metrics = QtGui.QFontMetrics(self.font)
+        self.setMinimumSize(max([self.font_metrics.width(txt) for txt in self.value_list if isinstance(txt, QtCore.QString)]), self.font_metrics.height())
+#        self.setMaximumSize(self.minimumSize())
+#        if fixed:
+#            self.setMaximumWidth(self.font_metrics.width(self.text) if max_size is None else max_size)
+
+    def setCurrentIndex(self, index):
+        if not 0 <= index < self.count: return
+        self.currentIndex = index
+        self.update()
+
+    def paint(self, painter, *args, **kwargs):
+#        painter.drawRect(self.rect())
+        painter.setRenderHints(QtGui.QPainter.Antialiasing)
+        painter.setPen(self.pen)
+        painter.setBrush(self.brush)
+        item = self.value_list[self.currentIndex]
+        if isinstance(item, QtCore.QString):
+            painter.setFont(self.font)
+            painter.drawText(self.rect(), self.text_align, item)
+        else:
+            item_rect = item.boundingRect()
+            painter.translate((self.rect().width()-item_rect.width())/2+1, (self.rect().height()-item_rect.height())/2)
+            painter.drawPath(item)
+
+class StepTypeComboLabel(DisplayComboLabelClass):
+    value_list = [
+                 '●', 
+                 '○', 
+                 '◀', 
+                 '▼', 
+                 '▲', 
+                 ]
+    value_list = map(QtCore.QString.fromUtf8, value_list)
+    firstlast = QtGui.QPainterPath()
+    firstlast.moveTo(4, 0)
+    firstlast.lineTo(8, 4)
+    firstlast.lineTo(0, 4)
+    firstlast.closeSubpath()
+    firstlast.moveTo(0, 6)
+    firstlast.lineTo(8, 6)
+    firstlast.lineTo(4, 10)
+    firstlast.closeSubpath()
+    value_list.append(firstlast)
+    chord = QtGui.QPainterPath()
+    chord.moveTo(4, 0)
+    chord.lineTo(4, 8)
+    chord.addEllipse(0, 4, 4, 2)
+    chord.addEllipse(0, 7, 4, 2)
+    value_list.append(chord)
+    value_list.append(QtCore.QString.fromUtf8('?'))
+
+class AccentComboLabel(DisplayComboLabelClass):
+    value_list = ['sil.', '/4', '/3', '/2', '*1', '*2', '*3', '*4', ]
+    value_list = map(QtCore.QString.fromUtf8, value_list)
+
+class TimingComboLabel(DisplayComboLabelClass):
+    value_list = ['rnd', '-3', '-2', '-1', '+0', '+1', '+2', '+3', ]
+    value_list = map(QtCore.QString.fromUtf8, value_list)
+
+class LengthComboLabel(DisplayComboLabelClass):
+    value_list = ['leg.', '-3', '-2', '-1', '+0', '+1', '+2', '+3', ]
+    value_list = map(QtCore.QString.fromUtf8, value_list)
+
+class DisplayButton(QtGui.QGraphicsWidget):
+    on_pen = on_brush = QtGui.QColor(30, 50, 40)
+    off_pen = QtGui.QColor(160, 180, 170)
+    off_brush = QtGui.QColor(QtCore.Qt.transparent)
+    pen = off_pen
+    brush = off_brush
+    normal_frame_border_pen = QtGui.QColor(220, 220, 220, 220)
+    normal_frame_border_brush = QtGui.QColor(220, 220, 220, 120)
+    focus_frame_border_pen = QtGui.QColor(180, 180, 180, 180)
+    focus_frame_border_brush = QtGui.QColor(200, 200, 200, 180)
+    frame_border_pen = normal_frame_border_pen
+    frame_border_brush = normal_frame_border_brush
+    toggled = QtCore.pyqtSignal(bool)
+
+    def __init__(self, parent, state=False):
+        QtGui.QGraphicsWidget.__init__(self, parent)
+        self.setAcceptHoverEvents(True)
+        self._setState(state)
+
+    def hoverEnterEvent(self, event):
+        self.frame_border_pen = self.focus_frame_border_pen
+        self.frame_border_brush = self.focus_frame_border_brush
+        self.update()
+
+    def hoverLeaveEvent(self, event):
+        self.frame_border_pen = self.normal_frame_border_pen
+        self.frame_border_brush = self.normal_frame_border_brush
+        self.update()
+
+    def mousePressEvent(self, event):
+        pass
+
+    def mouseReleaseEvent(self, event):
+        if not self.isUnderMouse(): return
+        self.setState(not self.state)
+
+    def _setState(self, state):
+        self.state = state
+        if state:
+            self.pen = self.on_pen
+            self.brush = self.on_brush
+        else:
+            self.pen = self.off_pen
+            self.brush = self.off_brush
+        self.update()
+
+    def setState(self, state):
+        self._setState(state)
+        self.toggled.emit(self.state)
+
+    def paint(self, painter, *args, **kwargs):
+        painter.setRenderHints(QtGui.QPainter.Antialiasing)
+        painter.save()
+        painter.translate(.5, .5)
+        painter.setPen(self.frame_border_pen)
+        painter.setBrush(self.frame_border_brush)
+        painter.drawRect(0, 0, self.boundingRect().width()-1, self.boundingRect().height()-1)
+        painter.restore()
+        painter.setPen(self.pen)
+        painter.setBrush(self.brush)
+        painter.translate((self.boundingRect().width()-self.path.boundingRect().width())/2, (self.boundingRect().height()-self.path.boundingRect().height())/2)
+        painter.drawPath(self.path)
+
+class GlideDisplayButton(DisplayButton):
+    def __init__(self, parent):
+        DisplayButton.__init__(self, parent)
+        self.path = QtGui.QPainterPath()
+        self.path.arcTo(0, -3.5, 9, 7, 180, 90)
+        self.path.arcTo(1, 3.5, 7, 9, 90, -90)
+        self.path.arcTo(-1, 4.5, 9, 7, 0, 90)
+        self.path.arcTo(0, -4.5, 7, 9, 270, -90)
+#        self.path.lineTo(0, 8)
+
+class DisplayCombo(QtGui.QGraphicsWidget):
+    pen = brush = QtGui.QColor(30, 50, 40)
+    normal_frame_border_pen = QtGui.QColor(220, 220, 220, 220)
+    normal_frame_border_brush = QtGui.QColor(220, 220, 220, 120)
+    focus_frame_border_pen = QtGui.QColor(180, 180, 180, 180)
+    focus_frame_border_brush = QtGui.QColor(200, 200, 200, 180)
+    frame_border_pen = normal_frame_border_pen
+    frame_border_brush = normal_frame_border_brush
+    currentIndexChanged = QtCore.pyqtSignal(int)
+
+    def __init__(self, parent, widget_class):
+        QtGui.QGraphicsWidget.__init__(self, parent)
+        self.setAcceptHoverEvents(True)
+        self.padding = 2
+        self.currentIndex = 0
+        self.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Minimum)
+        self.layout = QtGui.QGraphicsGridLayout()
+        self.setLayout(self.layout)
+        self.value_lbl = widget_class(self)
+        self.count = self.value_lbl.count
+        self.layout.addItem(self.value_lbl, 0, 0, 2, 1)
+        self.up_arrow = UpArrowWidget(self, 0)
+        self.up_arrow.setOpacity(0)
+        self.layout.addItem(self.up_arrow, 0, 1, QtCore.Qt.AlignBottom)
+        self.down_arrow = DownArrowWidget(self, 0)
+        self.down_arrow.setOpacity(0)
+        self.layout.addItem(self.down_arrow, 1, 1, QtCore.Qt.AlignTop)
+        self.layout.setContentsMargins(2, 1, 2, 1)
+
+    def hoverEnterEvent(self, event):
+        self.frame_border_pen = self.focus_frame_border_pen
+        self.frame_border_brush = self.focus_frame_border_brush
+        self.up_arrow.setOpacity(1)
+        self.down_arrow.setOpacity(1)
+        self.update()
+
+    def hoverLeaveEvent(self, event):
+        self.frame_border_pen = self.normal_frame_border_pen
+        self.frame_border_brush = self.normal_frame_border_brush
+        self.up_arrow.setOpacity(0)
+        self.down_arrow.setOpacity(0)
+        self.update()
+
+    def wheelEvent(self, event):
+        delta = 1 if event.delta() > 0 else -1
+        self.setCurrentIndex(self.currentIndex+delta)
+        
+
+    def mousePressEvent(self, event):
+        pass
+
+    def mouseReleaseEvent(self, event):
+        if self.up_arrow.geometry().contains(event.pos()):
+            if self.currentIndex == self.count-1: return
+            delta = 1
+        elif self.down_arrow.geometry().contains(event.pos()):
+            if self.currentIndex == 0: return
+            delta = -1
+        else:
+            return
+        self.setCurrentIndex(self.currentIndex+delta)
+
+    def _setCurrentIndex(self, index):
+        if index < 0: index = 0
+        elif index >= self.count: index = self.count-1
+        self.currentIndex = index
+        self.value_lbl.setCurrentIndex(index)
+
+    def setCurrentIndex(self, index):
+        self._setCurrentIndex(index)
+        self.currentIndexChanged.emit(self.currentIndex)
+        self.update()
+
+    def paint(self, painter, *args, **kwargs):
+        painter.setRenderHints(QtGui.QPainter.Antialiasing)
+        painter.translate(.5, .5)
+        painter.setPen(self.frame_border_pen)
+        painter.setBrush(self.frame_border_brush)
+        painter.drawRect(0, 0, self.boundingRect().width()-1, self.boundingRect().height()-1)
+#        painter.translate(self.rect().center())
+#        painter.drawPath(self.arrow)
+
+
+class ArpStepWidget(QtGui.QGraphicsWidget):
+    default_pen = QtGui.QColor(10, 30, 20)
+    active_pen = QtGui.QColor(QtCore.Qt.red)
+    silent_pen = QtGui.QColor(QtCore.Qt.lightGray)
+    pen = normal_pen = default_pen
+    normal_brush = QtGui.QColor(30, 50, 40, 220)
+    silent_brush = QtGui.QColor(30, 50, 40, 80)
+    brush = normal_brush
+    unit = 10
+    accent = 4
+    display_timing = timing = 4
+    display_length = length = 4
+    next = None
+    move_action = None
+    shape_rect = QtCore.QRectF(0, 0, 70, 90)
+    shape_rect_path = QtGui.QPainterPath()
+    shape_rect_path.addRect(shape_rect)
+    shape_size = QtCore.QSizeF(shape_rect.width(), shape_rect.height())
+
+    accentChanged = QtCore.pyqtSignal(int)
+    lengthChanged = QtCore.pyqtSignal(int)
+    timingChanged = QtCore.pyqtSignal(int)
+
+    def __init__(self, parent=None):
+        QtGui.QGraphicsWidget.__init__(self, parent)
+        self.setAcceptHoverEvents(True)
+        self.rect = QtCore.QRectF(0, 35, 40, 10)
+        self.top_rect = QtCore.QRectF(0, 25, 40, 10)
+        self.bottom_rect = QtCore.QRectF(0, 45, 40, 10)
+        self.left_rect = QtCore.QRectF(0, 35, 10, 10)
+        self.right_rect = QtCore.QRectF(30, 35, 10, 10)
+
+    def size(self):
+        return self.shape_size
+
+    def boundingRect(self):
+        if self.length != LEGATO:
+            return QtCore.QRectF(0, 0, self.shape_size.width(), self.shape_size.height())
+        if self.next.timing > 4:
+            units = self.next.timing-4
+        else:
+            units = 0
+        width = self.size().width() + units*self.unit
+        return QtCore.QRectF(0, 0, width, self.size().height())
+
+    def shape(self):
+        return self.shape_rect_path
+
+    def hoverEnterEvent(self, event):
+        pass
+
+    def mouseMoveEvent(self, event):
+#        print 'move {}'.format(event.pos())
+        if self.move_action is None: return
+        if self.move_action == MOVEUP:
+            delta = int((self.rect.top()-event.pos().y())/self.unit)
+            accent = self.accent+delta
+            if self.accent < 4:
+                accent = 4
+            elif accent < 4:
+                self.move_action = MOVEDOWN
+                self.setCursor(cursors(DownCursor))
+                return
+            elif accent > 7:
+                accent = 7
+            self.setAccent(accent)
+        elif self.move_action == MOVEDOWN:
+            delta = int((self.rect.bottom()-event.pos().y())/self.unit)
+            accent = self.accent+delta
+            if self.accent > 4:
+                accent = 4
+            elif accent > 4:
+                self.move_action = MOVEUP
+                self.setCursor(cursors(UpCursor))
+                return
+            elif accent < 0:
+                accent = 0
+            self.setAccent(accent)
+        elif self.move_action == MOVELEFT:
+            delta = int((self.rect.left()+event.pos().x())/self.unit)
+            timing = self.timing+delta
+            if timing < 1:
+                timing = 1
+            elif timing > 7:
+                timing = 7
+            if timing < self.timing and self.length > 0:
+                length = self.length + 1
+                if length >= 7:
+                    length = 7
+                self.setLength(length)
+            elif timing > self.timing and self.length > 0:
+                length = self.length - 1
+                if length <= 1:
+                    length = 1
+                self.setLength(length)
+            self.setTiming(timing)
+        elif self.move_action == MOVERIGHT:
+            delta = int((event.pos().x()-self.rect.right())/self.unit)
+            length = self.length+delta
+            if length < 1:
+                length = 1
+            if length > 7:
+                length = 7
+            self.setLength(length)
+        else:
+            delta_x = int((event.pos().x()-self.rect.center().x())/self.unit)
+            timing = self.timing+delta_x
+            if timing > 7:
+                timing = 7
+            elif timing < 1:
+                timing = 1
+            self.setTiming(timing)
+            delta_y = int((self.rect.center().y()-event.pos().y())/self.unit)
+            accent = self.accent+delta_y
+            if accent > 7:
+                accent = 7
+            elif accent < 0:
+                accent = 0
+            self.setAccent(accent)
+
+    def mousePressEvent(self, event):
+        pass
+
+    def mouseReleaseEvent(self, event):
+        self.setMoveAction(None)
+
+    def setMoveAction(self, action):
+        self.move_action = action
+
+    def hoverMoveEvent(self, event):
+        pos = event.pos()
+        if QtGui.QApplication.mouseButtons() & QtCore.Qt.LeftButton: return
+        for item in self.collidingItems():
+            item.setZValue(0)
+        self.setZValue(1)
+        if self.top_rect.contains(pos):
+            self.pen = self.active_pen
+            self.setCursor(cursors(UpCursor))
+            self.setMoveAction(MOVEUP)
+        elif self.bottom_rect.contains(pos):
+            self.pen = self.active_pen
+            self.setCursor(cursors(DownCursor))
+            self.setMoveAction(MOVEDOWN)
+        elif self.rect.contains(pos):
+            self.pen = self.active_pen
+            if self.left_rect.contains(pos):
+                self.setCursor(cursors(LeftCursor))
+                self.setMoveAction(MOVELEFT)
+            elif self.right_rect.contains(pos):
+                self.setCursor(cursors(RightCursor))
+                self.setMoveAction(MOVERIGHT)
+            else:
+                self.setCursor(cursors(MoveCursor))
+                self.setMoveAction(MOVE)
+        elif self.right_rect.contains(pos):
+            self.setCursor(cursors(RightCursor))
+            self.setMoveAction(MOVERIGHT)
+        else:
+            self.pen = self.normal_pen
+            self.unsetCursor()
+            self.setMoveAction(None)
+        self.update()
+
+    def hoverLeaveEvent(self, event):
+        self.pen = self.normal_pen
+        self.update()
+
+    def setTiming(self, timing):
+        if self.timing != timing:
+            if timing == RANDOM:
+                display_timing = 4
+            else:
+                if self.timing == RANDOM:
+                    display_timing = timing-4
+                else:
+                    display_timing = timing
+            self.setX(self.x()+(display_timing-self.timing)*self.unit)
+        self.timing = timing
+        if self.length == LEGATO:
+            self.update_legato()
+        self.update_rect()
+        self.prepareGeometryChange()
+        self.timingChanged.emit(self.timing)
+
+    def setLength(self, length):
+        self.length = length
+        if length == LEGATO:
+            self.update_legato()
+        else:
+#            self.display_length = length
+            self.rect.setWidth(length*self.unit)
+        self.update_rect()
+        self.lengthChanged.emit(self.length)
+
+    def setAccent(self, accent):
+        if accent > 7:
+            accent = 7
+        elif accent < 0:
+            accent = 0
+        self.accent = accent
+        if accent >= 4:
+            self.rect.setTop(35-self.unit*(accent-4))
+            self.rect.setBottom(45)
+        elif accent >= 0:
+            self.rect.setTop(35)
+            self.rect.setBottom(85-self.unit*accent)
+        if accent == 0:
+            self.normal_pen = self.silent_pen
+            self.brush = self.silent_brush
+        else:
+            self.normal_pen = self.default_pen
+            self.brush = self.normal_brush
+        
+        if self.move_action is None:
+            self.pen = self.normal_pen
+        self.update_rect()
+        self.accentChanged.emit(self.accent)
+
+    def update_rect(self):
+        top = self.rect.top()
+        bottom = self.rect.bottom()
+        self.top_rect.moveBottom(top)
+        self.bottom_rect.moveTop(bottom)
+        self.left_rect.moveLeft(self.rect.left())
+        self.left_rect.setTop(top)
+        self.left_rect.setBottom(bottom)
+        if self.length in [1, 2]:
+            self.left_rect.setWidth(5)
+            self.right_rect.moveLeft(self.rect.right())
+        else:
+            self.left_rect.setWidth(10)
+            self.right_rect.moveRight(self.rect.right())
+        self.right_rect.setTop(top)
+        self.right_rect.setBottom(bottom)
+        self.update()
+
+    def setNext(self, item):
+        item.timingChanged.connect(self.update_legato)
+        self.next = item
+
+    def update_legato(self, _=None):
+        if self.length != LEGATO or self.next is None: return
+        if self.next.timing == 0:
+            next_timing = 4
+        else:
+            next_timing = self.next.timing
+        self.rect.setWidth((7-self.timing+next_timing)*self.unit)
+        self.update()
+
+    def paint(self, painter, *args, **kwargs):
+#        painter.drawRect(self.boundingRect())
+#        painter.drawRect(self.right_rect)
+        painter.setPen(self.pen)
+        painter.setBrush(self.brush)
+        painter.setRenderHints(QtGui.QPainter.Antialiasing)
+        painter.drawRect(self.rect)
+
+class StepLine(BaseDisplayWidget):
+    def __init__(self, parent, short=False):
+        BaseDisplayWidget.__init__(self, parent)
+        self.pen = QtGui.QPen(self.pen)
+        self.pen.setStyle(QtCore.Qt.DotLine)
+        self.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Expanding)
+        self.setMaximumWidth(3)
+        if short:
+            self.paint = self.paintShort
+
+    def paintShort(self, painter, *args, **kwargs):
+        painter.setPen(self.pen)
+        painter.drawLine(0, 10, 0, self.rect().height()-15)
+
+    def paint(self, painter, *args, **kwargs):
+        painter.setPen(self.pen)
+        painter.drawLine(0, 0, 0, self.rect().height())
+
+class ArpStepObject(QtCore.QObject):
+    valueChanged = QtCore.pyqtSignal(int)
+    def __init__(self, parent):
+        self.main = parent
+        self.value = 0
+        QtCore.QObject.__init__(self, parent)
+
+    def _setValue(self, value):
+        self.value = value
+        self.main.blockSignals(True)
+        self.valueChanged.emit(value)
+        self.main.blockSignals(False)
+
+class ArpEditor(QtGui.QGraphicsView):
+    border_grad = QtGui.QConicalGradient(QtCore.QPointF(.5, .5), 45)
+    border_grad.setCoordinateMode(QtGui.QConicalGradient.ObjectBoundingMode)
+    _up = QtGui.QColor(80, 80, 80)
+    _left = QtGui.QColor(80, 80, 80)
+    _right = QtGui.QColor(120, 120, 120)
+    _down = QtGui.QColor(200, 200, 200)
+    border_grad.setColorAt(0, _up)
+    border_grad.setColorAt(.249, _up)
+    border_grad.setColorAt(.25, _left)
+    border_grad.setColorAt(.5, _left)
+    border_grad.setColorAt(.501, _down)
+    border_grad.setColorAt(.749, _down)
+    border_grad.setColorAt(.75, _right)
+    border_grad.setColorAt(.99, _right)
+    border_grad.setColorAt(1, _up)
+    border_pen = QtGui.QPen(border_grad, 1)
+    bgd_brush = QtGui.QBrush(QtGui.QColor(240, 250, 250))
+    timing_pen = QtGui.QPen(QtCore.Qt.black, 2)
+    timing_pen.setStyle(QtCore.Qt.DotLine)
+    scene_rect = QtCore.QRectF(0, 0, 1150, 120)
+
+    def __init__(self, parent):
+        QtGui.QGraphicsView.__init__(self, parent)
+        self.main = parent
+        self.setFrameStyle(0)
+        self.scene = QtGui.QGraphicsScene(self)
+        self.setRenderHints(QtGui.QPainter.Antialiasing)
+        self.setScene(self.scene)
+        self.setStyleSheet('background: transparent')
+#        self.shadow = QtGui.QGraphicsDropShadowEffect()
+#        self.shadow.setBlurRadius(4)
+#        self.shadow.setOffset(1, 1)
+#        self.shadow.setColor(QtGui.QColor(100, 100, 100, 150))
+        self.create_layout()
+        self.setMinimumSize(600, 160)
+        self.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
+
+        for step in range(16):
+            step_object = ArpStepObject(self)
+            step_object.valueChanged.connect(lambda value, step=step: self.step_type_list[step]._setCurrentIndex(value))
+            parent.object_dict['Arp_Pattern_Step_Glide_Accent_{}'.format(step+1)].add(step_object, 'Step')
+            glide_object = ArpStepObject(self)
+            glide_object.valueChanged.connect(lambda state, step=step: self.glide_list[step]._setState(state))
+            parent.object_dict['Arp_Pattern_Step_Glide_Accent_{}'.format(step+1)].add(glide_object, 'Glide')
+            accent_object = ArpStepObject(self)
+            accent_object.valueChanged.connect(lambda value, step=step: self.step_list[step].setAccent(value))
+            parent.object_dict['Arp_Pattern_Step_Glide_Accent_{}'.format(step+1)].add(accent_object, 'Accent')
+            timing_object = ArpStepObject(self)
+            timing_object.valueChanged.connect(lambda value, step=step: self.step_list[step].setTiming(value))
+            parent.object_dict['Arp_Pattern_Timing_Length_{}'.format(step+1)].add(timing_object, 'Timing')
+            length_object = ArpStepObject(self)
+            length_object.valueChanged.connect(lambda value, step=step: self.step_list[step].setLength(value))
+            parent.object_dict['Arp_Pattern_Timing_Length_{}'.format(step+1)].add(length_object, 'Length')
+#        self.valueChanged.connect(lambda value: setattr(self.main, self.attr, value))
+#        parent.object_dict[attr].add(self, sub_par)
+#        self.indexChanged.connect(lambda id: setattr(self.main, self.attr, id if sub_par is None else (id, sub_par)))
+
+
+    def create_layout(self):
+        self.step_list = []
+        self.step_type_list = []
+        self.glide_list = []
+
+        panel = QtGui.QGraphicsWidget()
+        self.panel = panel
+        panel.setContentsMargins(0, 0, 0, 0)
+        self.scene.addItem(panel)
+        layout = QtGui.QGraphicsGridLayout()
+        self.layout = layout
+        layout.setRowMinimumHeight(1, 60)
+        panel.setLayout(layout)
+        arp_widget = QtGui.QGraphicsWidget()
+        self.arp_widget = arp_widget
+        self.scene.addItem(arp_widget)
+        arp_widget.setTransform(QtGui.QTransform.fromScale(.4, 60/90.))
+
+        step_item = None
+        for step in range(16):
+            prev_item = step_item
+            step_item = ArpStepWidget(arp_widget)
+            if prev_item is not None:
+                prev_item.setNext(step_item)
+            step_item.accentChanged.connect(lambda v, step=step: self.step_accent_change(step, v))
+            step_item.lengthChanged.connect(lambda v, step=step: self.step_length_change(step, v))
+            step_item.timingChanged.connect(lambda v, step=step: self.step_timing_change(step, v))
+            self.step_list.append(step_item)
+#            self.scene.addItem(step_item)
+            step_item.setX(step_item.size().width()*(step+1))
+        first_item = self.step_list[0]
+        self.reference_step = first_item
+        step_item.setNext(first_item)
+        last_item = step_item
+
+        first_fake_item = ArpStepWidget(arp_widget)
+#        first_fake_item.boundingRect = lambda: QtCore.QRectF(20, 0, 40, first_fake_item.shape_size.height())
+#        self.scene.addItem(first_fake_item)
+        first_fake_item.setNext(first_item)
+        first_fake_item.setEnabled(False)
+        first_fake_item.setX(first_item.x()-first_item.size().width())
+        first_fake_item.setOpacity(.3)
+        last_item.accentChanged.connect(first_fake_item.setAccent)
+        last_item.lengthChanged.connect(first_fake_item.setLength)
+        last_item.timingChanged.connect(first_fake_item.setTiming)
+
+        last_fake_item = ArpStepWidget(arp_widget)
+#        self.scene.addItem(last_fake_item)
+        last_fake_item.setNext(first_item)
+        last_fake_item.setEnabled(False)
+        last_fake_item.setX(last_item.size().width()+last_item.x())
+        last_fake_item.setOpacity(.3)
+        first_item.accentChanged.connect(last_fake_item.setAccent)
+        first_item.lengthChanged.connect(last_fake_item.setLength)
+        first_item.timingChanged.connect(last_fake_item.setTiming)
+
+        step_lbl = SmallLabelTextWidget('Step', panel, fixed=True, font_size=10)
+        layout.addItem(step_lbl, 2, 0)
+        layout.addItem(SmallLabelTextWidget('Accent', panel, fixed=True, font_size=10), 3, 0)
+        layout.addItem(SmallLabelTextWidget('Glide', panel, fixed=True, font_size=10), 4, 0)
+        layout.addItem(SmallLabelTextWidget('Timing', panel, fixed=True, font_size=10), 5, 0)
+        layout.addItem(SmallLabelTextWidget('Length', panel, fixed=True, font_size=10), 6, 0)
+
+        for step in range(16):
+            col = step + 1
+
+            is_downbeat = False if divmod(step, 4)[1] != 0 else True
+            step_n = SmallLabelTextWidget(str(col), panel, font_size=9, bold=is_downbeat)
+            layout.addItem(step_n, 0, col)
+
+            step_line = StepLine(panel, short=not is_downbeat)
+            layout.addItem(step_line, 1, col)
+
+            step_combo = DisplayCombo(panel, StepTypeComboLabel)
+            step_combo.currentIndexChanged.connect(lambda step_type, step=step: self.step_type_change(step, step_type))
+            self.step_type_list.append(step_combo)
+            layout.addItem(step_combo, 2, col)
+
+            accent_combo = DisplayCombo(panel, AccentComboLabel)
+            accent_combo.currentIndexChanged.connect(lambda accent, step=step: self.step_list[step].setAccent(accent))
+            self.step_list[step].accentChanged.connect(lambda accent, combo=accent_combo: combo._setCurrentIndex(accent))
+            layout.addItem(accent_combo, 3, col)
+
+            glide_btn = GlideDisplayButton(panel)
+            glide_btn.toggled.connect(lambda glide, step=step: self.step_glide_change(step, glide))
+            self.glide_list.append(glide_btn)
+            layout.addItem(glide_btn, 4, col)
+
+            timing_combo = DisplayCombo(panel, TimingComboLabel)
+            timing_combo.currentIndexChanged.connect(lambda timing, step=step: self.step_list[step].setTiming(timing))
+            self.step_list[step].timingChanged.connect(lambda timing, combo=timing_combo: combo._setCurrentIndex(timing))
+            layout.addItem(timing_combo, 5, col)
+
+            length_combo = DisplayCombo(panel, LengthComboLabel)
+            length_combo.currentIndexChanged.connect(lambda timing, step=step: self.step_list[step].setLength(timing))
+            self.step_list[step].lengthChanged.connect(lambda timing, combo=length_combo: combo._setCurrentIndex(timing))
+            layout.addItem(length_combo, 6, col)
+
+        self.bound_ref = step_lbl, length_combo
+        self.size_ref = layout.itemAt(2, 1), layout.itemAt(2, 2)
+
+    def boundaries(self):
+        return QtCore.QRectF(self.bound_ref[0].x(), 0, self.bound_ref[1].x()+self.bound_ref[1].boundingRect().width(), self.bound_ref[1].y()+self.bound_ref[1].boundingRect().height())
+
+    def step_ratio(self):
+        diff = self.size_ref[1].x()-self.size_ref[0].x()
+        return diff/self.reference_step.boundingRect().width()
+
+    def step_accent_change(self, step, accent):
+        if not self.signalsBlocked():
+            setattr(self.main, 'Arp_Pattern_Step_Glide_Accent_{}'.format(step+1), (accent, 'Accent'))
+
+    def step_length_change(self, step, length):
+        if not self.signalsBlocked():
+            setattr(self.main, 'Arp_Pattern_Timing_Length_{}'.format(step+1), (length, 'Length'))
+
+    def step_timing_change(self, step, timing):
+        if not self.signalsBlocked():
+            setattr(self.main, 'Arp_Pattern_Timing_Length_{}'.format(step+1), (timing, 'Timing'))
+
+    def step_type_change(self, step, step_type):
+        if not self.signalsBlocked():
+            setattr(self.main, 'Arp_Pattern_Step_Glide_Accent_{}'.format(step+1), (step_type, 'Step'))
+
+    def step_glide_change(self, step, glide):
+        if not self.signalsBlocked():
+            setattr(self.main, 'Arp_Pattern_Step_Glide_Accent_{}'.format(step+1), (glide, 'Glide'))
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter(self.viewport())
+        qp.setRenderHints(QtGui.QPainter.Antialiasing)
+        qp.translate(.5, .5)
+        qp.setPen(self.border_pen)
+        qp.setBrush(self.bgd_brush)
+        qp.drawRoundedRect(self.border_rect, 4, 4)
+        qp.end()
+        QtGui.QGraphicsView.paintEvent(self, event)
+
+    def resizeEvent(self, event):
+        width = self.width()
+        height = self.height()
+        self.border_rect = QtCore.QRect(0, 0, width-1, height-1)
+#        self.display_rect = self.border_rect.adjusted(2, 2, -2, -2)
+        self.panel.setGeometry(QtCore.QRectF(0, 0, width-2, height-2))
+        self.panel.layout().setGeometry(QtCore.QRectF(0, -10, width-2, height-2))
+        self.arp_widget.setY(self.layout.itemAt(1, 1).y())
+        self.scene.setSceneRect(self.boundaries())
+        ratio = self.step_ratio()
+        self.arp_widget.setTransform(QtGui.QTransform.fromScale(ratio, 60/90.))
+        self.arp_widget.setX(self.layout.itemAt(1, 1).x()-self.reference_step.x()*ratio)
+        self.update()
+
 
 class BlofeldDisplay(QtGui.QGraphicsView):
     border_grad = QtGui.QConicalGradient(QtCore.QPointF(.5, .5), 45)
@@ -317,6 +1042,9 @@ class BlofeldDisplay(QtGui.QGraphicsView):
     border_grad.setColorAt(1, _up)
     border_pen = QtGui.QPen(border_grad, 1)
     bgd_brush = QtGui.QBrush(QtGui.QColor(240, 250, 250))
+    frame_border_pen = QtGui.QColor(220, 220, 220, 220)
+    frame_border_brush = QtGui.QColor(220, 220, 220, 120)
+
     def __init__(self, parent):
         QtGui.QGraphicsView.__init__(self, parent)
         self.main = parent
@@ -572,8 +1300,8 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         qp.setPen(self.border_pen)
         qp.setBrush(self.bgd_brush)
         qp.drawRoundedRect(self.border_rect, 4, 4)
-        qp.setPen(QtGui.QColor(220, 220, 220, 220))
-        qp.setBrush(QtGui.QColor(220, 220, 220, 50))
+        qp.setPen(self.frame_border_pen)
+        qp.setBrush(self.frame_border_brush)
         qp.drawRoundedRect(self.cat_rect, 4, 4)
         qp.drawRoundedRect(self.bank_rect, 4, 4)
         qp.drawRoundedRect(self.prog_rect, 4, 4)
@@ -615,68 +1343,6 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         self.cat_name.text = categories[sound.cat]
         self.update()
         self.panel.update()
-
-class BlofeldDisplayz(QtGui.QWidget):
-    border_grad = QtGui.QConicalGradient(QtCore.QPointF(.5, .5), 45)
-    border_grad.setCoordinateMode(QtGui.QConicalGradient.ObjectBoundingMode)
-    _up = QtGui.QColor(180, 180, 180)
-    _left = QtGui.QColor(80, 80, 80)
-    _right = QtGui.QColor(120, 120, 120)
-    _down = QtGui.QColor(200, 200, 200)
-    border_grad.setColorAt(0, _up)
-    border_grad.setColorAt(.249, _up)
-    border_grad.setColorAt(.25, _left)
-    border_grad.setColorAt(.5, _left)
-    border_grad.setColorAt(.501, _down)
-    border_grad.setColorAt(.749, _down)
-    border_grad.setColorAt(.75, _right)
-    border_grad.setColorAt(.99, _right)
-    border_grad.setColorAt(1, _up)
-    border_pen = QtGui.QPen(border_grad, 1)
-    fgd_brush = QtGui.QBrush(QtGui.QColor(240, 250, 250))
-    def __init__(self, parent):
-        QtGui.QWidget.__init__(self, parent)
-        self._font_db = QtGui.QFontDatabase()
-#        self._font_db.addApplicationFont(local_path('erbos.ttf'))
-#        self.name_font = QtGui.QFont('Erbos Draco 1st Open NBP', 16)
-        self._font_db.addApplicationFont(local_path('FiraSans-Regular.ttf'))
-        self.name_font = QtGui.QFont('Fira Sans', 22)
-        self.name_font_metrics = QtGui.QFontMetrics(self.name_font)
-        self.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Expanding)
-        self.name = '...'
-
-    def setName(self, name):
-        self.name = name
-        self.text_rect = QtCore.QRect(self.display_rect.x()+2, self.display_rect.y()+2, self.name_font_metrics.width(self.name), self.display_rect.height()-2)
-        self.update()
-
-    def paintEvent(self, event):
-        qp = QtGui.QPainter()
-        qp.begin(self)
-        qp.setRenderHints(QtGui.QPainter.Antialiasing)
-        qp.translate(.5, .5)
-
-        qp.setPen(self.border_pen)
-        qp.setBrush(self.fgd_brush)
-        qp.drawRoundedRect(self.border_rect, 2, 2)
-        qp.drawRoundedRect(self.display_rect, 2, 2)
-
-        qp.setPen(QtCore.Qt.lightGray)
-        qp.setFont(self.name_font)
-        qp.drawText(self.text_rect.adjusted(1, 1, 1, 1), 0, self.name)
-
-        qp.setPen(QtCore.Qt.black)
-        qp.setFont(self.name_font)
-        qp.drawText(self.text_rect, 0, self.name)
-
-        qp.end()
-
-    def resizeEvent(self, event):
-        width = self.width()
-        height = self.height()
-        self.border_rect = QtCore.QRect(0, 0, width-1, height-1)
-        self.display_rect = self.border_rect.adjusted(2, 2, -2, -2)
-        self.text_rect = QtCore.QRect(self.display_rect.x()+2, self.display_rect.y()+2, self.name_font_metrics.width(self.name), self.display_rect.height()-2)
 
 class Editor(QtGui.QMainWindow):
     object_dict = {attr:ParamObject(param_tuple) for attr, param_tuple in Params.param_names.items()}
@@ -776,27 +1442,47 @@ class Editor(QtGui.QMainWindow):
 
         open_arp = SquareButton(self, color=QtCore.Qt.darkGreen, max_size=(20, 16))
         btn_layout.addWidget(open_arp)
-        open_arp.setEnabled(False)
-        btn_layout.addWidget(Label(self, 'Arpeggiator Pattern Editor', QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter))
+        adv_arp_lbl = Label(self, 'Arpeggiator Pattern Editor', QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
+        btn_layout.addWidget(adv_arp_lbl)
+
+        adv_arp_widget = QtGui.QWidget()
+        self.adv_arp_layout = self.create_adv()
+        adv_arp_widget.setLayout(self.adv_arp_layout)
+        adv_arp_cycle = cycle((0, 1))
+        adv_arp_cycle.next()
+        adv_arp_labels = 'Arpeggiator Pattern Editor', 'Effects and Arpeggiator'
+        adv_arp_opacity = QtGui.QGraphicsOpacityEffect()
+        adv_arp_opacity.setOpacity(1)
+        adv_arp_widget.setGraphicsEffect(adv_arp_opacity)
+        def set_adv_arp_widget(id):
+            def set_opacity(op, delta):
+                adv_arp_opacity.setOpacity(op)
+                if op <= 0:
+                    self.adv_arp_layout.setCurrentIndex(id)
+                    adv_arp_lbl.setText(adv_arp_labels[id])
+                    delta = 1
+                elif op >= 1:
+                    return
+                op += .2*delta
+                QtCore.QTimer.singleShot(20, lambda op=op, delta=delta: set_opacity(op, delta))
+            delta = -1
+            id = id.next()
+            set_opacity(.8, delta)
+
+        open_arp.clicked.connect(lambda state, id=adv_arp_cycle: set_adv_arp_widget(id))
 
         lower_layout = QtGui.QGridLayout()
         self.grid.addLayout(lower_layout, 4, 0, 1, 5)
         lower_layout.addLayout(self.create_envelopes(), 0, 0, 2, 1)
-        lower_layout.addLayout(self.create_adv(), 0, 1, 1, 2)
+
+        lower_layout.addWidget(adv_arp_widget, 0, 1, 1, 2)
+
+
         self.keyboard = Piano(self, key_list=note_keys)
         self.keyboard.noteEvent.connect(self.send_note)
         lower_layout.addWidget(self.keyboard, 1, 1)
         lower_layout.addWidget(self.create_key_config(), 1, 2)
         
-#        self.grid.addLayout(self.create_envelopes(), 4, 0, 3, 2)
-#        
-#        self.grid.addLayout(self.create_adv(), 4, 2, 1, 4)
-#
-#        self.keyboard = Piano(self, key_list=note_keys)
-#        self.keyboard.noteEvent.connect(self.send_note)
-#
-#        self.grid.addWidget(self.keyboard, 5, 2, 1, 3)
-#        self.grid.addWidget(self.create_key_config(), 5, 5, 1, 1)
 
     def __getattr__(self, attr):
         try:
@@ -1115,15 +1801,25 @@ class Editor(QtGui.QMainWindow):
         main_layout.addWidget(self.create_effect_2())
         main_layout.addWidget(self.create_arp())
 
-        mod_widget = QtGui.QWidget()
-        mod_widget.setContentsMargins(-3, -3, -3, -3)
-        mod_layout = QtGui.QHBoxLayout()
-        mod_widget.setLayout(mod_layout)
-        stack_layout.addWidget(mod_widget)
+        arp_widget = QtGui.QWidget()
+        arp_widget.setContentsMargins(-3, -3, -3, -3)
+        stack_layout.addWidget(arp_widget)
+        arp_widget.setLayout(self.create_arp_editor())
 
 #        stack_layout.setCurrentIndex(1)
 
         return stack_layout
+
+    def create_arp_editor(self):
+        layout = QtGui.QGridLayout()
+        self.arp_editor = ArpEditor(self)
+        layout.addWidget(self.arp_editor, 0, 0, 1, 16)
+
+#        for c in range(16):
+#            combo = Combo(self, value_list=[str(v) for v in range(8)])
+#            layout.addWidget(combo, 1, c)
+#            combo.indexChanged.connect(lambda v, step=c: self.arp_editor.step_list[step].setLength(v))
+        return layout
 
     def create_mod_widgets(self):
         widget = QtGui.QWidget()

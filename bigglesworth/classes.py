@@ -5,6 +5,93 @@ import midifile
 
 from const import *
 
+class DirCursorClass(QtGui.QCursor):
+    limit_pen = QtGui.QPen(QtCore.Qt.black, 2)
+    limit_pen.setCapStyle(QtCore.Qt.RoundCap)
+    arrow_pen = QtGui.QPen(QtCore.Qt.black, 1)
+    arrow_pen.setCapStyle(QtCore.Qt.RoundCap)
+    brush = QtGui.QBrush(QtCore.Qt.black)
+
+class UpCursorClass(DirCursorClass):
+    def __init__(self):
+        pixmap = QtGui.QPixmap(32, 32)
+        pixmap.fill(QtCore.Qt.transparent)
+        qp = QtGui.QPainter(pixmap)
+        qp.setRenderHints(QtGui.QPainter.Antialiasing)
+        qp.translate(.5, .5)
+        qp.setPen(self.limit_pen)
+        qp.drawLine(0, 1, 15, 1)
+        qp.setPen(self.arrow_pen)
+        qp.setBrush(self.brush)
+        path = QtGui.QPainterPath()
+        path.moveTo(7.5, 1)
+        path.lineTo(12, 8)
+        path.lineTo(3, 8)
+        path.closeSubpath()
+        qp.drawPath(path)
+        del qp
+        DirCursorClass.__init__(self, pixmap, 8, 1)
+
+class DownCursorClass(DirCursorClass):
+    def __init__(self):
+        pixmap = QtGui.QPixmap(32, 32)
+        pixmap.fill(QtCore.Qt.transparent)
+        qp = QtGui.QPainter(pixmap)
+        qp.setRenderHints(QtGui.QPainter.Antialiasing)
+        qp.translate(.5, .5)
+        qp.setPen(self.limit_pen)
+        qp.drawLine(0, 8, 15, 8)
+        qp.setPen(self.arrow_pen)
+        qp.setBrush(self.brush)
+        path = QtGui.QPainterPath()
+        path.moveTo(3, 1)
+        path.lineTo(12, 1)
+        path.lineTo(7.5, 7)
+        path.closeSubpath()
+        qp.drawPath(path)
+        del qp
+        DirCursorClass.__init__(self, pixmap, 8, 8)
+
+class LeftCursorClass(DirCursorClass):
+    def __init__(self):
+        pixmap = QtGui.QPixmap(32, 32)
+        pixmap.fill(QtCore.Qt.transparent)
+        qp = QtGui.QPainter(pixmap)
+        qp.setRenderHints(QtGui.QPainter.Antialiasing)
+        qp.translate(.5, .5)
+        qp.setPen(self.limit_pen)
+        qp.drawLine(1, 0, 1, 15)
+        qp.setPen(self.arrow_pen)
+        qp.setBrush(self.brush)
+        path = QtGui.QPainterPath()
+        path.moveTo(1, 7.5)
+        path.lineTo(8, 12)
+        path.lineTo(8, 3)
+        path.closeSubpath()
+        qp.drawPath(path)
+        del qp
+        DirCursorClass.__init__(self, pixmap, 1, 8)
+
+class RightCursorClass(DirCursorClass):
+    def __init__(self):
+        pixmap = QtGui.QPixmap(32, 32)
+        pixmap.fill(QtCore.Qt.transparent)
+        qp = QtGui.QPainter(pixmap)
+        qp.setRenderHints(QtGui.QPainter.Antialiasing)
+        qp.translate(.5, .5)
+        qp.setPen(self.limit_pen)
+        qp.drawLine(8, 0, 8, 15)
+        qp.setPen(self.arrow_pen)
+        qp.setBrush(self.brush)
+        path = QtGui.QPainterPath()
+        path.moveTo(1, 3)
+        path.lineTo(1, 12)
+        path.lineTo(7, 7.5)
+        path.closeSubpath()
+        qp.drawPath(path)
+        del qp
+        DirCursorClass.__init__(self, pixmap, 8, 8)
+
 class Sound(QtCore.QObject):
     bankChanged = QtCore.pyqtSignal(int)
     progChanged = QtCore.pyqtSignal(int)
@@ -14,15 +101,17 @@ class Sound(QtCore.QObject):
     edited = QtCore.pyqtSignal(int)
     def __init__(self, data=None, source=SRC_LIBRARY):
         QtCore.QObject.__init__(self)
-        self._bank = data[0]
-        self._prog = data[1]
-        self._data = data[2:]
         if data is not None:
+            self._bank = data[0]
+            self._prog = data[1]
+            self._data = data[2:]
             self._name = ''.join([str(unichr(l)) for l in self.data[363:379]]).strip()
             self._cat = self.data[379]
             self.source = source
             self._state = STORED|(source<<1)
         else:
+            self._bank = self._prog = 0
+            self._data = []
             self._name = 'None'
             self._cat = None
             self.source = SRC_LIBRARY
@@ -332,7 +421,10 @@ class SortedLibrary(object):
                     by_alpha['0..9'].append(p)
                 by_cat[p.cat].append(p)
         self.by_cat = by_cat
-        self.by_alpha = by_alpha
+        self.by_alpha = {}
+        for letter, sound_list in by_alpha.items():
+            self.by_alpha[letter] = sorted(sound_list, key=lambda s: s.name.lower())
+
 
 
 
