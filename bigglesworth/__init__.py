@@ -14,11 +14,12 @@ from utils import *
 
 from editor import Editor
 
-class Librarian(QtGui.QMainWindow):
-    dump_waiter = QtCore.pyqtSignal()
-    def __init__(self, parent=None):
-        QtGui.QMainWindow.__init__(self, parent=None)
-        load_ui(self, 'main.ui')
+class BigglesworthObject(QtCore.QObject):
+    input_conn_state = QtCore.pyqtSignal(bool)
+    output_conn_state_change = QtCore.pyqtSignal(bool)
+    def __init__(self, app):
+        QtCore.QObject.__init__(self)
+        self.app = app
         self.font_db = QtGui.QFontDatabase()
         self.font_db.addApplicationFont(local_path('FiraSans-Regular.ttf'))
 
@@ -27,10 +28,46 @@ class Librarian(QtGui.QMainWindow):
         self.alsa.moveToThread(self.alsa_thread)
         self.alsa.stopped.connect(self.alsa_thread.quit)
         self.alsa_thread.started.connect(self.alsa.run)
-        self.alsa.midi_signal.connect(self.alsa_midi_event)
-        self.alsa.port_start.connect(self.new_alsa_port)
+#        self.alsa.midi_signal.connect(self.alsa_midi_event)
+        self.graph.port_start.connect(self.new_alsa_port)
         self.alsa.conn_register.connect(self.alsa_conn_event)
         self.alsa_thread.start()
+
+        self.seq = self.alsa.seq
+        self.input = self.alsa.input
+        self.output = self.alsa.output
+
+        self.librarian = Librarian(self)
+        self.globals = Globals(self.librarian)
+        self.globals.setModal(True)
+        self.globals.buttonBox.button(QtGui.QDialogButtonBox.Reset).clicked.connect(self.librarian.globals_request)
+        self.editor = self.librarian.editor
+        self.output_conn_state_change.connect(self.editor.midi_output_state)
+        self.librarian.show()
+
+    def new_alsa_port(self, port):
+        if port.client.name == 'Blofeld' and port.name == 'Blofeld MIDI 1':
+            port.connect(self.input)
+            self.output.connect(port)
+
+    def alsa_conn_event(self, conn, state):
+        if conn.dest == self.input:
+            pass
+        elif conn.src == self.output:
+            self.output_conn_state_change.emit(False if not len(self.output.connections.output) else True)
+
+
+class Librarian(QtGui.QMainWindow):
+    dump_waiter = QtCore.pyqtSignal()
+    parameter_change = QtCore.pyqtSignal(int, int, int)
+    def __init__(self, main):
+        QtGui.QMainWindow.__init__(self, parent=None)
+        load_ui(self, 'main.ui')
+
+        self.main = main
+        self.alsa = self.main.alsa
+        self.alsa.midi_signal.connect(self.alsa_midi_event)
+        self.graph = self.main.graph
         self.seq = self.alsa.seq
         self.input = self.alsa.input
         self.output = self.alsa.output
@@ -40,6 +77,7 @@ class Librarian(QtGui.QMainWindow):
         self.loading_complete = False
         self.blofeld_library = Library()
         self.editor = Editor(self)
+        self.parameter_change.connect(self.editor.receive_value)
         self.edit_mode = False
 
         self.dump_timer = QtCore.QTimer()
@@ -57,6 +95,7 @@ class Librarian(QtGui.QMainWindow):
         self.midi_connect()
 
         self.device_btn.clicked.connect(self.device_request)
+        self.globals_btn.clicked.connect(self.globals_request)
         self.dump_btn.clicked.connect(self.dump_request)
         self.bank_dump_combo.currentIndexChanged.connect(lambda b: self.sound_dump_combo.setEnabled(True if b != 0 else False))
         self.edit_btn.toggled.connect(self.edit_mode_set)
@@ -218,6 +257,12 @@ class Librarian(QtGui.QMainWindow):
         self.seq.output_event(req.get_event())
         self.seq.drain_output()
 
+    def globals_request(self):
+        req = SysExEvent(1, [0xF0, 0x3e, 0x13, 0x0, GLBR, 0xf7])
+        req.source = self.seq.client_id, 1
+        self.seq.output_event(req.get_event())
+        self.seq.drain_output()
+
     def dump_request(self):
         bank = self.bank_dump_combo.currentIndex()
         sound = self.sound_dump_combo.currentIndex()
@@ -318,17 +363,36 @@ class Librarian(QtGui.QMainWindow):
 
 
     def alsa_midi_event(self, event):
-#        print 'receiving event: {}'.format(event)
         if event.type == SYSEX:
-            if event.sysex[4] == SNDD:
+#            print 'receiving event: {}'.format(len(event.sysex))
+#            print event.sysex
+            sysex_type = event.sysex[4]
+            if sysex_type == SNDD:
                 self.sound_dump(event)
+            elif sysex_type == SNDP:
+                self.sysex_parameter(event.sysex[5:])
+            elif sysex_type == GLBD:
+                self.main.globals.setData(event.sysex)
             elif len(event.sysex) == 15 and event.sysex[3:5] == [6, 2]:
-                self.device_response(event.sysex)
-        elif event.type == CTRL and event.data1 == 0:
-            self.blofeld_current = event.data2, self.blofeld_current[1]
+                self.device_response(event.sysex[5:-1])
+        elif event.type == CTRL:
+            if event.data1 == 0:
+                self.blofeld_current = event.data2, self.blofeld_current[1]
+            else:
+                self.ctrl_parameter(event.data1, event.data2)
         elif event.type == PROGRAM:
             self.blofeld_current = self.blofeld_current[0], event.data2
             self.blofeld_sounds_table.selectRow(self.blofeld_model_proxy.mapFromSource(self.blofeld_model.index(self.blofeld_current[0]*128+self.blofeld_current[1], 0)).row())
+
+    def sysex_parameter(self, data):
+        location = data[0]
+        index = data[1]*128+data[2]
+        value = data[3]
+        self.parameter_change.emit(location, index, value)
+
+    def ctrl_parameter(self, param_id, value):
+        if param_id in ctrl2sysex:
+            self.parameter_change.emit(0, ctrl2sysex[param_id], value)
 
     def device_response(self, sysex):
         if sysex[5] == 0x3e:
@@ -349,6 +413,12 @@ class Librarian(QtGui.QMainWindow):
                                       'Device info:\n\nManufacturer: {}\nModel: {}\nType: {}\nVersion: {}'.format(
                                        dev_man, dev_model, dev_type, dev_version))
 
+    def globals_dump(self, data):
+        globals = self.main.globals
+        globals.autoEdit_chk.setEnabled(data[35])
+        globals.contrast_spin.setValue(data[39])
+        globals.cat_combo.setCurrentIndex(data[56])
+        globals.show()
 
     def sound_dump(self, sound_event):
         sound = Sound(sound_event.sysex[5:390], SRC_BLOFELD)
@@ -396,21 +466,16 @@ class Librarian(QtGui.QMainWindow):
 #        QtCore.QTimer.singleShot(200, lambda: self.sound_request(0, prog+1))
 
 
-    def new_alsa_port(self, port):
-        pass
-
-    def alsa_conn_event(self, conn, state):
-        pass
-
 
 def main():
-    app = QtGui.QApplication(sys.argv)
+    argv = sys.argv[:]
+    argv[0] = 'Bigglesworth'
+    app = QtGui.QApplication(argv)
     app.setOrganizationName('jidesk')
-    app.setApplicationName('Blofix')
+    app.setApplicationName('Bigglesworth')
 #    app.setQuitOnLastWindowClosed(False)
     cursor_list.extend((QtCore.Qt.SizeAllCursor, UpCursorClass(), DownCursorClass(), LeftCursorClass(), RightCursorClass()))
-    blofix = Librarian(app)
-    blofix.show()
+    bigglesworth = BigglesworthObject(app)
     sys.exit(app.exec_())
     print 'Blofix has been quit!'
 

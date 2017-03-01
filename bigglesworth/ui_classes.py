@@ -861,6 +861,9 @@ class SquareButton(QtGui.QAbstractButton):
     unactive_color = QtGui.QBrush(unactive_grad)
     unactive_pressed_pen = QtGui.QPen(unactive_pressed_border, 1)
     unactive_pressed_color = QtGui.QBrush(unactive_pressed_grad)
+    enabled_text_pen = QtGui.QPen(QtCore.Qt.white)
+    disabled_text_pen = QtGui.QPen(QtCore.Qt.gray)
+    text_pen = enabled_text_pen
 #    unactive_pen, unactive_color, unactive_pressed_pen, unactive_pressed_color = get_btn_colors.__func__((150, 150, 150))
 
     base_width = 40
@@ -939,8 +942,10 @@ class SquareButton(QtGui.QAbstractButton):
         if not state:
             self.current_color = self.unactive_color
             self.current_pen = self.unactive_pen
+            self.text_pen = self.disabled_text_pen
             self.repaint()
         else:
+            self.text_pen = self.enabled_text_pen
             self.toggle_states(self.isChecked())
 
     def toggle_states(self, state):
@@ -1008,7 +1013,7 @@ class SquareButton(QtGui.QAbstractButton):
         qp.setBrush(self.current_color)
         qp.drawRoundedRect(self.button_rect, 2, 2)
         if self.name:
-            qp.setPen(QtCore.Qt.white)
+            qp.setPen(self.text_pen)
             qp.setFont(self.label_font)
             qp.drawText(0, self.button_rect.height()+self.spacing, self.width()-1, self.label_font_metrics.height(), QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter, self.name)
         qp.end()
@@ -1326,7 +1331,7 @@ class Envelope(QtGui.QWidget):
 
     def setValue(self, value_dict):
         for name, value in value_dict.items():
-            getattr(self, 'set{}'.format(name.replace('_', '')))(value)
+            getattr(self, 'set{}'.format(name.replace(' ', '')))(value)
 
     def setAttack(self, value):
         if value < 0:

@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Blofix</string>
+   <string>Blofeld Librarian</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
@@ -21,6 +21,13 @@
        <widget class="QPushButton" name="device_btn">
         <property name="text">
          <string>Device</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="globals_btn">
+        <property name="text">
+         <string>Globals</string>
         </property>
        </widget>
       </item>
@@ -213,11 +220,6 @@
      </widget>
     </item>
    </layout>
-   <zorder>blofeld_sounds_table</zorder>
-   <zorder>horizontalLayoutWidget</zorder>
-   <zorder>horizontalLayoutWidget_2</zorder>
-   <zorder>label_2</zorder>
-   <zorder>horizontalLayoutWidget_3</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">

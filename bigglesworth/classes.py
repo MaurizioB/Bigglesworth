@@ -1,9 +1,14 @@
 from string import uppercase, ascii_letters
+from collections import namedtuple
+from bisect import bisect_left
 
 from PyQt4 import QtCore, QtGui
+
 import midifile
 
+from midiutils import SysExEvent
 from const import *
+from utils import load_ui
 
 class DirCursorClass(QtGui.QCursor):
     limit_pen = QtGui.QPen(QtCore.Qt.black, 2)
@@ -406,6 +411,172 @@ class LoadingWindow(QtGui.QDialog):
 
     def closeEvent(self, event):
         event.ignore()
+
+class PopupSpin(QtGui.QDoubleSpinBox):
+    indexChanged = QtCore.pyqtSignal(int)
+    def __init__(self, parent):
+        self.indexMinimum = 1
+        self.indexMaximum = len(popup_values) - 1
+        self.indexRange = self.indexMinimum, self.indexMaximum
+        QtGui.QDoubleSpinBox.__init__(self, parent)
+        self.setRange(.1, 15.5)
+        self.setSuffix('s')
+        self.setDecimals(1)
+        self.setSingleStep(.1)
+        self.index = 0
+        self.setIndex(1)
+
+    def stepBy(self, steps):
+        new_index = self.index + steps
+        if new_index > self.indexMaximum:
+            new_index = self.indexMaximum
+        elif new_index < self.indexMinimum:
+            new_index = self.indexMinimum
+        self.setIndex(new_index)
+
+    def setIndex(self, index):
+        if not self.indexMinimum <= index <= self.indexMaximum: return
+        self.index = index
+        self.indexChanged.emit(index)
+        self.setValue(popup_values[index])
+
+    def validate(self, text, pos):
+        res = QtGui.QDoubleSpinBox.validate(self, text, pos)
+        if res in (QtGui.QValidator.Invalid, QtGui.QValidator.Intermediate):
+            return res
+        new_value = QtGui.QDoubleSpinBox.valueFromText(self, text)
+        if not popup_values[self.indexMinimum] <= new_value <= popup_values[self.indexMaximum]:
+            return QtGui.QValidator.Invalid, res[1]
+        return res
+
+    def valueFromText(self, text):
+        new_value = QtGui.QDoubleSpinBox.valueFromText(self, text)
+        pos = bisect_left(popup_values, new_value)
+        if pos == 1:
+            self.index = pos
+            self.indexChanged.emit(pos)
+            return popup_values[0]
+        if pos == len(popup_values):
+            self.index = pos
+            self.indexChanged.emit(pos)
+            return popup_values[-1]
+        before = popup_values[pos-1]
+        after = popup_values[pos]
+        if after-new_value < new_value-before:
+            self.index = after
+            self.indexChanged.emit(after)
+            return after
+        self.index = before
+        self.indexChanged.emit(before)
+        return before
+
+class Globals(QtGui.QDialog):
+    def __init__(self, parent=None):
+        QtGui.QDialog.__init__(self, parent)
+        load_ui(self, 'globals.ui')
+        pt = namedtuple('pt', 'index delta')
+        pt.__new__.__defaults__ = (0, )
+        self.main = parent
+        self.sysex = []
+        self.data = []
+        self.receiving = False
+        self.general_layout = self.general_group.layout()
+        self.system_layout = self.system_group.layout()
+        self.midi_layout = self.midi_group.layout()
+        self.layouts = self.general_layout, self.system_layout, self.midi_layout
+
+        self.buttonBox.button(QtGui.QDialogButtonBox.Reset).setText('Reload from Blofeld')
+        self.buttonBox.button(QtGui.QDialogButtonBox.Apply).clicked.connect(self.send_data)
+
+        self.transp_spin.valueChanged.connect(lambda value: self.transp_spin.setPrefix('+' if value >= 0 else ''))
+        self.transp_spin.valueChanged.emit(self.transp_spin.value())
+        self.param_dict = {
+                           self.volume_spin: pt(55), 
+                           self.cat_combo: pt(56), 
+                           self.tune_spin: pt(40, 376), 
+                           self.transp_spin: pt(41, -64), 
+                           self.freeBtn_combo: pt(59), 
+                           self.devId_spin: pt(37), 
+                           self.autoEdit_chk: pt(35), 
+                           self.contrast_spin: pt(39), 
+                           self.popup_spin: pt(38), 
+                           self.velocity_combo: pt(50), 
+                           self.pedal_combo: pt(60), 
+                           self.channel_spin: pt(36), 
+                           self.clock_combo: pt(48), 
+                           self.pgmSend_chk: pt(46), 
+                           self.localCtrl_chk: pt(57), 
+                           self.ctrlSend_combo: pt(44), 
+                           self.ctrlReceive_chk: pt(45), 
+                           self.ctrlW_spin: pt(51), 
+                           self.ctrlX_spin: pt(52), 
+                           self.ctrlY_spin: pt(53), 
+                           self.ctrlZ_spin: pt(54), 
+                           }
+        for w in self.param_dict:
+            if isinstance(w, QtGui.QSpinBox):
+                w.valueChanged.connect(self.editData)
+            elif isinstance(w, PopupSpin):
+                w.indexChanged.connect(self.editData)
+            elif isinstance(w, QtGui.QComboBox):
+                w.currentIndexChanged.connect(self.editData)
+            else:
+                w.toggled.connect(self.editData)
+
+
+    def editData(self, value):
+        if self.receiving: return
+        value = int(value)
+        self.data[self.param_dict[self.sender()].index] = value
+
+    def get_column_size_request(self, column):
+        width = 0
+        for layout in self.layouts:
+            for row in range(layout.rowCount()):
+                item = layout.itemAtPosition(row, column)
+                if not item: continue
+                width = max(item.sizeHint().width(), width)
+        return width
+
+    def showEvent(self, event):
+        widget_width = max(self.get_column_size_request(1), self.get_column_size_request(4))
+        label_width = max(self.get_column_size_request(0), self.get_column_size_request(3))
+        for layout in self.layouts:
+            layout.setColumnMinimumWidth(1, widget_width)
+            layout.setColumnMinimumWidth(4, widget_width)
+            layout.setColumnMinimumWidth(0, label_width)
+            layout.setColumnMinimumWidth(3, label_width)
+
+    def setData(self, sysex):
+        self.sysex = sysex
+        data = sysex[5:-2]
+        self.receiving = True
+        if self.data:
+            for i, v in enumerate(self.data):
+                if v != data[i]:
+                    print 'value {} changed from {} to {}'.format(i, v, data[i])
+        for w, p in self.param_dict.items():
+            if isinstance(w, QtGui.QSpinBox):
+                w.setValue(data[p.index] + p.delta)
+            elif isinstance(w, PopupSpin):
+                w.setIndex(data[p.index])
+            elif isinstance(w, QtGui.QComboBox):
+                w.setCurrentIndex(data[p.index])
+            else:
+                w.setChecked(data[p.index])
+
+        self.data = data
+        self.receiving = False
+        self.show()
+
+    def send_data(self):
+        self.sysex[5:-2] = self.data
+        self.sysex[-2] = 0x7f
+        req = SysExEvent(1, self.sysex)
+        req.source = self.main.alsa.output.client.id, self.main.alsa.output.id
+        self.main.seq.output_event(req.get_event())
+        self.main.seq.drain_output()
+
 
 class SortedLibrary(object):
     def __init__(self, library):

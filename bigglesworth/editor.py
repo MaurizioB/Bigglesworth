@@ -118,6 +118,7 @@ class BlofeldDial(Dial):
         self.valueChanged.connect(lambda value: setattr(self.main, self.attr, value))
 
 class BlofeldCombo(Combo):
+    internalUpdate = QtCore.pyqtSignal(int)
     def __init__(self, parent, param_tuple, sub_par=None, *args, **kwargs):
         if len(param_tuple) == 7:
             full_range, values, name, short_name, family, attr, id = param_tuple
@@ -136,6 +137,10 @@ class BlofeldCombo(Combo):
         self.attr = attr
         self.main = parent
         self.indexChanged.connect(lambda id: setattr(self.main, self.attr, id if sub_par is None else (id, sub_par)))
+
+    def _setValue(self, id):
+        Combo._setValue(self, id)
+        self.internalUpdate.emit(id)
 
 class BlofeldEnv(Envelope):
     def __init__(self, parent, env_name, *args, **kwargs):
@@ -372,6 +377,7 @@ class DisplayButton(QtGui.QGraphicsWidget):
     on_pen = on_brush = QtGui.QColor(30, 50, 40)
     off_pen = QtGui.QColor(160, 180, 170)
     off_brush = QtGui.QColor(QtCore.Qt.transparent)
+    text_pen = on_pen
     pen = off_pen
     brush = off_brush
     normal_frame_border_pen = QtGui.QColor(220, 220, 220, 220)
@@ -380,7 +386,10 @@ class DisplayButton(QtGui.QGraphicsWidget):
     focus_frame_border_brush = QtGui.QColor(200, 200, 200, 180)
     frame_border_pen = normal_frame_border_pen
     frame_border_brush = normal_frame_border_brush
+    path = None
+    text = None
     toggled = QtCore.pyqtSignal(bool)
+    clicked = QtCore.pyqtSignal()
 
     def __init__(self, parent, state=False):
         QtGui.QGraphicsWidget.__init__(self, parent)
@@ -402,6 +411,7 @@ class DisplayButton(QtGui.QGraphicsWidget):
 
     def mouseReleaseEvent(self, event):
         if not self.isUnderMouse(): return
+        self.clicked.emit()
         self.setState(not self.state)
 
     def _setState(self, state):
@@ -428,18 +438,99 @@ class DisplayButton(QtGui.QGraphicsWidget):
         painter.restore()
         painter.setPen(self.pen)
         painter.setBrush(self.brush)
-        painter.translate((self.boundingRect().width()-self.path.boundingRect().width())/2, (self.boundingRect().height()-self.path.boundingRect().height())/2)
-        painter.drawPath(self.path)
+        if self.path and not self.text:
+            painter.translate((self.boundingRect().width()-self.path.boundingRect().width())/2, (self.boundingRect().height()-self.path.boundingRect().height())/2)
+            painter.drawPath(self.path)
+        elif self.text and not self.path:
+            painter.setPen(self.text_pen)
+            painter.setFont(self.font)
+            painter.translate((self.boundingRect().width()-self.font_metrics.width(self.text))/2, 0)
+            painter.drawText(0, self.font_metrics.height(), self.text)
+        elif self.text and self.path:
+            br_height = self.boundingRect().height()
+            br_width = self.boundingRect().width()
+            path_width = self.path.boundingRect().width()
+            delta_y = (br_height-self.path.boundingRect().height())/2
+            painter.translate((br_width-path_width-self.font_metrics.width(self.text))/2-2, delta_y)
+            painter.drawPath(self.path)
+            painter.translate((path_width+4), -delta_y)
+            painter.setPen(self.text_pen)
+            painter.setFont(self.font)
+            painter.drawText(0, self.font_metrics.height()-.5, self.text)
 
 class GlideDisplayButton(DisplayButton):
-    def __init__(self, parent):
+    path = QtGui.QPainterPath()
+    path.arcTo(0, -3.5, 9, 7, 180, 90)
+    path.arcTo(1, 3.5, 7, 9, 90, -90)
+    path.arcTo(-1, 4.5, 9, 7, 0, 90)
+    path.arcTo(0, -4.5, 7, 9, 270, -90)
+    def __init__(self, parent, step, glide_list):
         DisplayButton.__init__(self, parent)
-        self.path = QtGui.QPainterPath()
-        self.path.arcTo(0, -3.5, 9, 7, 180, 90)
-        self.path.arcTo(1, 3.5, 7, 9, 90, -90)
-        self.path.arcTo(-1, 4.5, 9, 7, 0, 90)
-        self.path.arcTo(0, -4.5, 7, 9, 270, -90)
-#        self.path.lineTo(0, 8)
+        self.step = step
+        self.glide_list = glide_list
+        self.siblings = [None for i in range(16)]
+
+    def mouseMoveEvent(self, event):
+        if not self.isUnderMouse():
+            item = self.scene().itemAt(self.mapToScene(event.pos()))
+            if not isinstance(item, self.__class__): return
+            index = self.glide_list.index(item)
+            if self.siblings[index] == None:
+                self.siblings[index] = item.state
+                item._setState(self.state)
+                item.hoverEnterEvent(None)
+            if index > self.step:
+                for i in range(self.step+1, index+1):
+                    if self.siblings[i] == None:
+                        self.siblings[i] = self.glide_list[i].state
+                        self.glide_list[i].hoverEnterEvent(None)
+                    self.glide_list[i]._setState(self.state)
+                for i in range(index+1, len(self.glide_list)):
+                    if self.siblings[i] != None:
+                        self.glide_list[i]._setState(self.siblings[i])
+                        self.glide_list[i].hoverLeaveEvent(None)
+                        self.siblings[i] = None
+                for i in range(self.step):
+                    if self.siblings[i] != None:
+                        self.glide_list[i]._setState(self.siblings[i])
+                        self.glide_list[i].hoverLeaveEvent(None)
+                        self.siblings[i] = None
+            else:
+                for i in range(index):
+                    if self.siblings[i] != None:
+                        self.glide_list[i]._setState(self.siblings[i])
+                        self.glide_list[i].hoverLeaveEvent(None)
+                        self.siblings[i] = None
+                for i in range(index, self.step):
+                    if self.siblings[i] == None:
+                        self.siblings[i] = self.glide_list[i].state
+                        self.glide_list[i].hoverEnterEvent(None)
+                    self.glide_list[i]._setState(self.state)
+                for i in range(self.step+1, len(self.glide_list)):
+                    if self.siblings[i] != None:
+                        self.glide_list[i]._setState(self.siblings[i])
+                        self.glide_list[i].hoverLeaveEvent(None)
+                        self.siblings[i] = None
+            return
+        for i, state in enumerate(self.siblings):
+            if state is None: continue
+            self.glide_list[i].hoverLeaveEvent(None)
+            self.glide_list[i]._setState(state)
+        self.siblings = [None for i in range(16)]
+
+    def mouseReleaseEvent(self, event):
+        if not self.isUnderMouse():
+            if self.siblings.count(None) == len(self.siblings): return
+            for i, state in enumerate(self.siblings):
+                if state is None:
+                    continue
+                self.glide_list[i].hoverLeaveEvent(None)
+                self.glide_list[i].setState(self.state)
+            self.siblings = [None for i in range(16)]
+            return
+        self.setState(not self.state)
+        self.siblings = [None for i in range(16)]
+
 
 class DisplayCombo(QtGui.QGraphicsWidget):
     pen = brush = QtGui.QColor(30, 50, 40)
@@ -451,7 +542,7 @@ class DisplayCombo(QtGui.QGraphicsWidget):
     frame_border_brush = normal_frame_border_brush
     currentIndexChanged = QtCore.pyqtSignal(int)
 
-    def __init__(self, parent, widget_class):
+    def __init__(self, parent, label_class):
         QtGui.QGraphicsWidget.__init__(self, parent)
         self.setAcceptHoverEvents(True)
         self.padding = 2
@@ -459,7 +550,7 @@ class DisplayCombo(QtGui.QGraphicsWidget):
         self.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Minimum)
         self.layout = QtGui.QGraphicsGridLayout()
         self.setLayout(self.layout)
-        self.value_lbl = widget_class(self)
+        self.value_lbl = label_class(self)
         self.count = self.value_lbl.count
         self.layout.addItem(self.value_lbl, 0, 0, 2, 1)
         self.up_arrow = UpArrowWidget(self, 0)
@@ -477,11 +568,21 @@ class DisplayCombo(QtGui.QGraphicsWidget):
         self.down_arrow.setOpacity(1)
         self.update()
 
+    def highlight(self):
+        self.frame_border_pen = self.focus_frame_border_pen
+        self.frame_border_brush = self.focus_frame_border_brush
+        self.update()
+
     def hoverLeaveEvent(self, event):
         self.frame_border_pen = self.normal_frame_border_pen
         self.frame_border_brush = self.normal_frame_border_brush
         self.up_arrow.setOpacity(0)
         self.down_arrow.setOpacity(0)
+        self.update()
+
+    def unhighlight(self):
+        self.frame_border_pen = self.normal_frame_border_pen
+        self.frame_border_brush = self.normal_frame_border_brush
         self.update()
 
     def wheelEvent(self, event):
@@ -523,11 +624,95 @@ class DisplayCombo(QtGui.QGraphicsWidget):
 #        painter.translate(self.rect().center())
 #        painter.drawPath(self.arrow)
 
+class ArpDisplayComboClass(DisplayCombo):
+    def __init__(self, parent, label_class, step, combo_list):
+        DisplayCombo.__init__(self, parent, label_class)
+        self.step = step
+        self.combo_list = combo_list
+        self.siblings = [None for i in range(16)]
+
+    def mouseMoveEvent(self, event):
+        if not self.isUnderMouse():
+            item = self.scene().itemAt(self.mapToScene(event.pos()))
+            if not isinstance(item, self.__class__): return
+            index = self.combo_list.index(item)
+            if self.siblings[index] == None:
+                self.siblings[index] = item.currentIndex
+                item._setCurrentIndex(self.currentIndex)
+                item.highlight()
+            if index > self.step:
+                for i in range(self.step+1, index+1):
+                    if self.siblings[i] == None:
+                        self.siblings[i] = self.combo_list[i].currentIndex
+                        self.combo_list[i].highlight()
+                    self.combo_list[i]._setCurrentIndex(self.currentIndex)
+                for i in range(index+1, len(self.combo_list)):
+                    if self.siblings[i] != None:
+                        self.combo_list[i]._setCurrentIndex(self.siblings[i])
+                        self.combo_list[i].unhighlight()
+                        self.siblings[i] = None
+                for i in range(self.step):
+                    if self.siblings[i] != None:
+                        self.combo_list[i]._setCurrentIndex(self.siblings[i])
+                        self.combo_list[i].unhighlight()
+                        self.siblings[i] = None
+            else:
+                for i in range(index):
+                    if self.siblings[i] != None:
+                        self.combo_list[i]._setCurrentIndex(self.siblings[i])
+                        self.combo_list[i].unhighlight()
+                        self.siblings[i] = None
+                for i in range(index, self.step):
+                    if self.siblings[i] == None:
+                        self.siblings[i] = self.combo_list[i].currentIndex
+                        self.combo_list[i].highlight()
+                    self.combo_list[i]._setCurrentIndex(self.currentIndex)
+                for i in range(self.step+1, len(self.combo_list)):
+                    if self.siblings[i] != None:
+                        self.combo_list[i]._setCurrentIndex(self.siblings[i])
+                        self.combo_list[i].unhighlight()
+                        self.siblings[i] = None
+            return
+        for i, value in enumerate(self.siblings):
+            if value is None: continue
+            self.combo_list[i].unhighlight()
+            self.combo_list[i]._setCurrentIndex(value)
+        self.siblings = [None for i in range(16)]
+
+    def mouseReleaseEvent(self, event):
+        if not self.isUnderMouse():
+            if self.siblings.count(None) == len(self.siblings): return
+            for i, value in enumerate(self.siblings):
+                if value is None:
+                    continue
+                self.combo_list[i].unhighlight()
+                self.combo_list[i].setCurrentIndex(self.currentIndex)
+            self.siblings = [None for i in range(16)]
+            return
+        self.siblings = [None for i in range(16)]
+        DisplayCombo.mouseReleaseEvent(self, event)
+
+
+class StepTypeCombo(ArpDisplayComboClass):
+    def __init__(self, parent, step, combo_list):
+        ArpDisplayComboClass.__init__(self, parent, StepTypeComboLabel, step, combo_list)
+
+class AccentCombo(ArpDisplayComboClass):
+    def __init__(self, parent, step, combo_list):
+        ArpDisplayComboClass.__init__(self, parent, AccentComboLabel, step, combo_list)
+
+class TimingCombo(ArpDisplayComboClass):
+    def __init__(self, parent, step, combo_list):
+        ArpDisplayComboClass.__init__(self, parent, TimingComboLabel, step, combo_list)
+
+class LengthCombo(ArpDisplayComboClass):
+    def __init__(self, parent, step, combo_list):
+        ArpDisplayComboClass.__init__(self, parent, LengthComboLabel, step, combo_list)
 
 class ArpStepWidget(QtGui.QGraphicsWidget):
     default_pen = QtGui.QColor(10, 30, 20)
     active_pen = QtGui.QColor(QtCore.Qt.red)
-    silent_pen = QtGui.QColor(QtCore.Qt.lightGray)
+    silent_pen = QtGui.QColor(QtCore.Qt.gray)
     pen = normal_pen = default_pen
     normal_brush = QtGui.QColor(30, 50, 40, 220)
     silent_brush = QtGui.QColor(30, 50, 40, 80)
@@ -842,10 +1027,6 @@ class ArpEditor(QtGui.QGraphicsView):
         self.setRenderHints(QtGui.QPainter.Antialiasing)
         self.setScene(self.scene)
         self.setStyleSheet('background: transparent')
-#        self.shadow = QtGui.QGraphicsDropShadowEffect()
-#        self.shadow.setBlurRadius(4)
-#        self.shadow.setOffset(1, 1)
-#        self.shadow.setColor(QtGui.QColor(100, 100, 100, 150))
         self.create_layout()
         self.setMinimumSize(600, 160)
         self.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
@@ -874,6 +1055,9 @@ class ArpEditor(QtGui.QGraphicsView):
     def create_layout(self):
         self.step_list = []
         self.step_type_list = []
+        self.accent_list = []
+        self.length_list = []
+        self.timing_list = []
         self.glide_list = []
 
         panel = QtGui.QGraphicsWidget()
@@ -912,7 +1096,7 @@ class ArpEditor(QtGui.QGraphicsView):
         first_fake_item.setNext(first_item)
         first_fake_item.setEnabled(False)
         first_fake_item.setX(first_item.x()-first_item.size().width())
-        first_fake_item.setOpacity(.3)
+        first_fake_item.setOpacity(.2)
         last_item.accentChanged.connect(first_fake_item.setAccent)
         last_item.lengthChanged.connect(first_fake_item.setLength)
         last_item.timingChanged.connect(first_fake_item.setTiming)
@@ -922,7 +1106,7 @@ class ArpEditor(QtGui.QGraphicsView):
         last_fake_item.setNext(first_item)
         last_fake_item.setEnabled(False)
         last_fake_item.setX(last_item.size().width()+last_item.x())
-        last_fake_item.setOpacity(.3)
+        last_fake_item.setOpacity(.2)
         first_item.accentChanged.connect(last_fake_item.setAccent)
         first_item.lengthChanged.connect(last_fake_item.setLength)
         first_item.timingChanged.connect(last_fake_item.setTiming)
@@ -944,33 +1128,48 @@ class ArpEditor(QtGui.QGraphicsView):
             step_line = StepLine(panel, short=not is_downbeat)
             layout.addItem(step_line, 1, col)
 
-            step_combo = DisplayCombo(panel, StepTypeComboLabel)
+            step_combo = StepTypeCombo(panel, step, self.step_type_list)
             step_combo.currentIndexChanged.connect(lambda step_type, step=step: self.step_type_change(step, step_type))
             self.step_type_list.append(step_combo)
             layout.addItem(step_combo, 2, col)
 
-            accent_combo = DisplayCombo(panel, AccentComboLabel)
+            accent_combo = AccentCombo(panel, step, self.accent_list)
             accent_combo.currentIndexChanged.connect(lambda accent, step=step: self.step_list[step].setAccent(accent))
             self.step_list[step].accentChanged.connect(lambda accent, combo=accent_combo: combo._setCurrentIndex(accent))
+            self.accent_list.append(accent_combo)
             layout.addItem(accent_combo, 3, col)
 
-            glide_btn = GlideDisplayButton(panel)
+            glide_btn = GlideDisplayButton(panel, step, self.glide_list)
             glide_btn.toggled.connect(lambda glide, step=step: self.step_glide_change(step, glide))
             self.glide_list.append(glide_btn)
             layout.addItem(glide_btn, 4, col)
 
-            timing_combo = DisplayCombo(panel, TimingComboLabel)
+            timing_combo = TimingCombo(panel, step, self.timing_list)
             timing_combo.currentIndexChanged.connect(lambda timing, step=step: self.step_list[step].setTiming(timing))
             self.step_list[step].timingChanged.connect(lambda timing, combo=timing_combo: combo._setCurrentIndex(timing))
+            self.timing_list.append(timing_combo)
             layout.addItem(timing_combo, 5, col)
 
-            length_combo = DisplayCombo(panel, LengthComboLabel)
+            length_combo = LengthCombo(panel, step, self.length_list)
             length_combo.currentIndexChanged.connect(lambda timing, step=step: self.step_list[step].setLength(timing))
             self.step_list[step].lengthChanged.connect(lambda timing, combo=length_combo: combo._setCurrentIndex(timing))
+            self.length_list.append(length_combo)
             layout.addItem(length_combo, 6, col)
 
         self.bound_ref = step_lbl, length_combo
         self.size_ref = layout.itemAt(2, 1), layout.itemAt(2, 2)
+
+        self.panel_shadow = QtGui.QGraphicsDropShadowEffect()
+        self.panel_shadow.setBlurRadius(4)
+        self.panel_shadow.setOffset(1, 1)
+        self.panel_shadow.setColor(QtGui.QColor(100, 100, 100, 150))
+        self.panel.setGraphicsEffect(self.panel_shadow)
+
+        self.arp_shadow = QtGui.QGraphicsDropShadowEffect()
+        self.arp_shadow.setBlurRadius(4)
+        self.arp_shadow.setOffset(1, 1)
+        self.arp_shadow.setColor(QtGui.QColor(100, 100, 100, 150))
+        self.arp_widget.setGraphicsEffect(self.arp_shadow)
 
     def boundaries(self):
         return QtCore.QRectF(self.bound_ref[0].x(), 0, self.bound_ref[1].x()+self.bound_ref[1].boundingRect().width(), self.bound_ref[1].y()+self.bound_ref[1].boundingRect().height())
@@ -1023,6 +1222,45 @@ class ArpEditor(QtGui.QGraphicsView):
         self.arp_widget.setX(self.layout.itemAt(1, 1).x()-self.reference_step.x()*ratio)
         self.update()
 
+class MidiDisplayButton(DisplayButton):
+    def __init__(self, parent):
+        self.path = QtGui.QPainterPath()
+        self.path.addEllipse(0, 0, 11, 11)
+        self.path.addEllipse(2, 5, .5, .5)
+        self.path.addEllipse(2.878, 2.878, .5, .5)
+        self.path.addEllipse(5.25, 2, .5, .5)
+        self.path.addEllipse(7.878, 2.878, .5, .5)
+        self.path.addEllipse(9, 5, .5, .5)
+        self.font = QtGui.QFont('Fira Sans', 11, QtGui.QFont.Light)
+        self.font_metrics = QtGui.QFontMetrics(self.font)
+        self.text = 'MIDI'
+        DisplayButton.__init__(self, parent)
+#        self._setState(False)
+        self.brush = self.off_brush
+        self.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Expanding)
+        self.setToolTip('Open MIDI connections dialog\n(right click for direct access menu)')
+        self.led_timer = QtCore.QTimer()
+        self.led_timer.setSingleShot(True)
+        self.led_timer.setInterval(500)
+        self.led_timer.timeout.connect(self.reset)
+        self.midi_in_pen = QtGui.QPen(QtCore.Qt.darkRed)
+
+    def setState(self, state):
+        pass
+
+    def reset(self):
+        self.pen = self.off_pen
+        self.update()
+
+    def midi_out(self):
+        self.pen = self.on_pen
+        self.led_timer.start()
+        self.update()
+
+    def midi_in(self):
+        self.pen = self.midi_in_pen
+        self.led_timer.start()
+        self.update()
 
 class BlofeldDisplay(QtGui.QGraphicsView):
     border_grad = QtGui.QConicalGradient(QtCore.QPointF(.5, .5), 45)
@@ -1067,20 +1305,8 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         layout = QtGui.QGraphicsGridLayout()
         layout.setSpacing(0)
         panel.setLayout(layout)
-
-        self.edit_mode_label = SmallLabelTextWidget('Sound mode Edit buffer', panel)
-#        self.edit_mode_label.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-        layout.addItem(self.edit_mode_label, 0, 0)
-        self.prog_name = LabelTextWidget('Mini moog super', panel)
-        layout.addItem(self.prog_name, 1, 0)
-
-        self.status_bar = QtGui.QGraphicsGridLayout()
-        layout.addItem(self.status_bar, 2, 0)
-        status_lbl = SmallLabelTextWidget('Status:', panel, fixed=True)
-        self.status_bar.addItem(status_lbl, 0, 0, QtCore.Qt.AlignLeft)
-
-        self.status = SmallLabelTextWidget('Ready', panel)
-        self.status_bar.addItem(self.status, 0, 1, QtCore.Qt.AlignLeft)
+        layout.setColumnSpacing(0, 4)
+        layout.setColumnSpacing(1, 8)
 
         side = QtGui.QGraphicsGridLayout()
         side.setVerticalSpacing(1)
@@ -1144,11 +1370,31 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         self.cat_dn = DownArrowWidget(panel)
         cat_arrows.addItem(self.cat_dn, 1, 0)
 
+        self.edit_mode_label = SmallLabelTextWidget('Sound mode Edit buffer', panel)
+#        self.edit_mode_label.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        layout.addItem(self.edit_mode_label, 0, 2)
+        self.prog_name = LabelTextWidget('Mini moog super', panel)
+        layout.addItem(self.prog_name, 1, 2)
+
+        self.status_bar = QtGui.QGraphicsGridLayout()
+        layout.addItem(self.status_bar, 2, 2, 1, 2)
+        status_lbl = SmallLabelTextWidget('Status:', panel, fixed=True)
+        self.status_bar.addItem(status_lbl, 0, 0, QtCore.Qt.AlignLeft)
+
+        self.status = SmallLabelTextWidget('Ready', panel)
+        self.status_bar.addItem(self.status, 0, 1, QtCore.Qt.AlignLeft)
+
+        self.midi_btn = MidiDisplayButton(panel)
+        layout.addItem(self.midi_btn, 0, 3)
+
         self.panel.setGraphicsEffect(self.shadow)
 
     def mouseReleaseEvent(self, event):
         item = self.scene.itemAt(event.pos())
         if item is None: return
+        if isinstance(item, DisplayButton):
+            QtGui.QGraphicsView.mouseReleaseEvent(self, event)
+            return
         sound = self.main.sound
         bank = sound.bank
         prog = sound.prog
@@ -1199,36 +1445,13 @@ class BlofeldDisplay(QtGui.QGraphicsView):
             prog = sound.prog
         else:
             return
-#        else:
-#            if event.button() == QtCore.Qt.RightButton:
-#                if item == self.prog_name:
-#                    res = self.main.sorted_library_menu.exec_(event.globalPos())
-#                    if not res: return
-#                    self.main.setSound(*res.data().toPyObject(), pgm_send=True)
-#                    return
-#                elif item == self.bank:
-#                    res = self.main.sorted_library_menu.actions()[0].menu().exec_(event.globalPos())
-#                    if not res: return
-#                    self.main.setSound(*res.data().toPyObject(), pgm_send=True)
-#                    return
-#                elif item == self.prog:
-#                    res = self.main.sorted_library_menu.actions()[0].menu().actions()[bank].menu().exec_(event.globalPos())
-#                    if not res: return
-#                    self.main.setSound(*res.data().toPyObject(), pgm_send=True)
-#                    return
-#                elif item in [self.cat_label, self.cat_name]:
-#                    res = self.main.sorted_library_menu.actions()[1].menu().exec_(event.globalPos())
-#                    if not res: return
-#                    self.main.setSound(*res.data().toPyObject(), pgm_send=True)
-#                    return
-#                else:
-#                    return
-#            else:
-#                return
         self.main.setSound(bank, prog, pgm_send=True)
 
     def contextMenuEvent(self, event):
         item = self.scene.itemAt(event.pos())
+        if isinstance(item, MidiDisplayButton):
+            self.show_midi_menu(event.pos())
+            return
         if item not in [self.prog_name, self.bank, self.prog, self.cat_label, self.cat_name]:
             return
         bank = self.main.sound.bank
@@ -1292,6 +1515,77 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         else:
             return
         self.main.setSound(bank, prog, pgm_send=True)
+
+    def show_midi_menu(self, pos):
+        menu = QtGui.QMenu()
+        in_menu = QtGui.QMenu()
+        menu.addMenu(in_menu)
+        out_menu = QtGui.QMenu()
+        menu.addMenu(out_menu)
+        in_clients = False
+        out_clients = False
+        in_menu_connections = 0
+        out_menu_connections = 0
+        for client in [self.main.graph.client_id_dict[cid] for cid in sorted(self.main.graph.client_id_dict.keys())]:
+            in_port_list = []
+            out_port_list = []
+            for port in client.ports:
+                if port.hidden or port.client == self.main.input.client:
+                    continue
+                if port.is_output:
+                    in_port_list.append(port)
+                if port.is_input:
+                    out_port_list.append(port)
+            if in_port_list:
+                in_clients = True
+                client_menu = QtGui.QMenu(client.name, menu)
+                in_menu.addMenu(client_menu)
+                for port in in_port_list:
+                    port_item = QtGui.QAction(port.name, in_menu)
+                    port_item.setData(port)
+                    port_item.setCheckable(True)
+                    if any([True for conn in port.connections.output if conn.dest==self.main.input]):
+                        port_item.setChecked(True)
+                        setBold(client_menu.menuAction())
+                        in_menu_connections += 1
+                    client_menu.addAction(port_item)
+            if out_port_list:
+                out_clients = True
+                client_menu = QtGui.QMenu(client.name, menu)
+                out_menu.addMenu(client_menu)
+                for port in out_port_list:
+                    port_item = QtGui.QAction(port.name, out_menu)
+                    port_item.setData(port)
+                    port_item.setCheckable(True)
+                    if any([True for conn in port.connections.input if conn.src==self.main.output]):
+                        port_item.setChecked(True)
+                        setBold(client_menu.menuAction())
+                        out_menu_connections += 1
+                    client_menu.addAction(port_item)
+        if not in_clients:
+            in_menu.setTitle('Input (no clients)')
+            in_menu.setEnabled(False)
+        else:
+            in_menu.setTitle('Input ({})'.format(in_menu_connections))
+        if not out_clients:
+            out_menu.setTitle('Output (no clients)')
+            out_menu.setEnabled(False)
+        else:
+            out_menu.setTitle('Output ({})'.format(out_menu_connections))
+        res = menu.exec_(self.mapToGlobal(pos))
+        if not res: return
+        if res.parent() == in_menu:
+            port = res.data().toPyObject()
+            if res.isChecked():
+                port.connect(self.main.input)
+            else:
+                port.disconnect(self.main.input)
+        elif res.parent() == out_menu:
+            port = res.data().toPyObject()
+            if res.isChecked():
+                self.main.output.connect(port)
+            else:
+                self.main.output.disconnect(port)
 
     def paintEvent(self, event):
         qp = QtGui.QPainter(self.viewport())
@@ -1365,7 +1659,10 @@ class Editor(QtGui.QMainWindow):
         self.blofeld_library = self.main.blofeld_library
         self.create_sorted_library()
         self.alsa = self.main.alsa
+        self.input = self.alsa.input
+        self.output = self.alsa.output
         self.seq = self.main.seq
+        self.graph = self.main.graph
         self.channel = 0
         self.octave = 0
         self.params = Params
@@ -1385,6 +1682,8 @@ class Editor(QtGui.QMainWindow):
         logo_widget = QtGui.QLabel()
         logo_widget.setPixmap(QtGui.QPixmap().fromImage(logo))
         logo_widget.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        logo_widget.setToolTip('Right click here for...')
+        logo_widget.contextMenuEvent = self.menuEvent
         display_layout.addWidget(logo_widget, 1, 2, QtCore.Qt.AlignBottom|QtCore.Qt.AlignRight)
 
         amp_layout = QtGui.QVBoxLayout()
@@ -1505,6 +1804,18 @@ class Editor(QtGui.QMainWindow):
             raise e
 #            raise NameError('{} attribute does not exist!'.format(attr))
 
+    def menuEvent(self, event):
+        menu = QtGui.QMenu()
+        about_item = QtGui.QAction('About Mr. Bigglesworth...', menu)
+        menu.addAction(about_item)
+        res = menu.exec_(event.globalPos())
+        if not res: return
+        QtGui.QMessageBox.information(self, 'Ahem...', 'Sorry, I\'m not ready yet!')
+
+    def midi_output_state(self, state):
+        self.pgm_send_btn.setEnabled(state)
+        self.midi_send_btn.setEnabled(state)
+
     def keyPressEvent(self, event):
         if event.isAutoRepeat(): return
         scancode = event.nativeScanCode()
@@ -1590,6 +1901,7 @@ class Editor(QtGui.QMainWindow):
         layout.addLayout(pattern_layout, 1, 0)
         pattern_layout.addWidget(Label(self, 'Pattern'))
         arp_patterns = [
+                        'off', 
                         'User', 
                         '●○●●|●○●●|●○●●|●○●●', 
                         '●○●○|●○○●|●○●○|●○○●', 
@@ -1691,6 +2003,19 @@ class Editor(QtGui.QMainWindow):
         self.sorted_library_menu = menu
         self.sorted_library = sorted_library
 
+    def receive_value(self, location, index, value):
+        attr = Params[index].attr
+        old_send = self.send
+        self.send = False
+        setattr(self, attr, value)
+        for env in self.envelopes:
+            env.compute_envelope()
+            env.update()
+        self.set_effect_1_widgets()
+        self.set_effect_2_widgets()
+        self.send = old_send
+        self.display.midi_btn.midi_in()
+
     def send_value(self, attr, value):
         location = 0
         par_id = Params.index_from_attr(attr)
@@ -1701,12 +2026,14 @@ class Editor(QtGui.QMainWindow):
         req.source = self.alsa.output.client.id, self.alsa.output.id
         self.seq.output_event(req.get_event())
         self.seq.drain_output()
+        self.display.midi_btn.midi_out()
 
     def send_ctrl(self, param, value):
         ctrl_event = CtrlEvent(1, self.channel, param, value)
         ctrl_event.source = self.alsa.output.client.id, self.alsa.output.id
         self.seq.output_event(ctrl_event.get_event())
         self.seq.drain_output()
+        self.display.midi_btn.midi_out()
 
     def send_note(self, note, state):
         note = note+self.octave*12
@@ -1717,6 +2044,7 @@ class Editor(QtGui.QMainWindow):
         note_event.source = self.alsa.output.client.id, self.alsa.output.id
         self.seq.output_event(note_event.get_event())
         self.seq.drain_output()
+        self.display.midi_btn.midi_out()
 
     def setSound(self, bank, prog, pgm_send=False):
         sound = self.blofeld_library[bank, prog]
@@ -1752,10 +2080,10 @@ class Editor(QtGui.QMainWindow):
         self.pgm_send_btn.toggled.connect(lambda state: setattr(self, 'pgm_send', state))
         self.pgm_send_btn.toggled.connect(lambda state: self.display.statusUpdate('PGM send: {}'.format('enabled' if state else 'disabled')))
         layout.addWidget(self.pgm_send_btn, 0, 1)
-        self.send_btn = SquareButton(self, 'MIDI send', checkable=True, checked=False)
-        self.send_btn.toggled.connect(lambda state: setattr(self, 'send', state))
-        self.send_btn.toggled.connect(lambda state: self.display.statusUpdate('MIDI send: {}'.format('enabled' if state else 'disabled')))
-        layout.addWidget(self.send_btn, 1, 1)
+        self.midi_send_btn = SquareButton(self, 'MIDI send', checkable=True, checked=False)
+        self.midi_send_btn.toggled.connect(lambda state: setattr(self, 'send', state))
+        self.midi_send_btn.toggled.connect(lambda state: self.display.statusUpdate('MIDI send: {}'.format('enabled' if state else 'disabled')))
+        layout.addWidget(self.midi_send_btn, 1, 1)
 
         return layout
 
@@ -2345,8 +2673,8 @@ class Editor(QtGui.QMainWindow):
         grid = QtGui.QGridLayout()
         frame.setLayout(grid)
         mode = BlofeldCombo(self, self.params.Filter_Envelope_Mode, sub_par='Mode')
-        mode.indexChanged.connect(env.setEnvelope)
-        mode.indexChanged.connect(set_enabled)
+        mode.internalUpdate.connect(env.setEnvelope)
+        mode.internalUpdate.connect(set_enabled)
         grid.addWidget(mode, 0, 0, 1, 1, QtCore.Qt.AlignBottom)
         trigger = BlofeldCombo(self, self.params.Filter_Envelope_Mode, sub_par='Trigger')
         grid.addWidget(trigger, 1, 0, 1, 1)
@@ -2414,8 +2742,8 @@ class Editor(QtGui.QMainWindow):
         grid = QtGui.QGridLayout()
         frame.setLayout(grid)
         mode = BlofeldCombo(self, self.params.Amplifier_Envelope_Mode, sub_par='Mode')
-        mode.indexChanged.connect(env.setEnvelope)
-        mode.indexChanged.connect(set_enabled)
+        mode.internalUpdate.connect(env.setEnvelope)
+        mode.internalUpdate.connect(set_enabled)
         grid.addWidget(mode, 0, 0, 1, 1, QtCore.Qt.AlignBottom)
         trigger = BlofeldCombo(self, self.params.Amplifier_Envelope_Mode, sub_par='Trigger')
         grid.addWidget(trigger, 1, 0, 1, 1)
@@ -2483,8 +2811,8 @@ class Editor(QtGui.QMainWindow):
         grid = QtGui.QGridLayout()
         frame.setLayout(grid)
         mode = BlofeldCombo(self, self.params.Envelope_3_Mode, sub_par='Mode')
-        mode.indexChanged.connect(env.setEnvelope)
-        mode.indexChanged.connect(set_enabled)
+        mode.internalUpdate.connect(env.setEnvelope)
+        mode.internalUpdate.connect(set_enabled)
         grid.addWidget(mode, 0, 0, 1, 1, QtCore.Qt.AlignBottom)
         trigger = BlofeldCombo(self, self.params.Envelope_3_Mode, sub_par='Trigger')
         grid.addWidget(trigger, 1, 0, 1, 1)
@@ -2552,8 +2880,8 @@ class Editor(QtGui.QMainWindow):
         grid = QtGui.QGridLayout()
         frame.setLayout(grid)
         mode = BlofeldCombo(self, self.params.Envelope_4_Mode, sub_par='Mode')
-        mode.indexChanged.connect(env.setEnvelope)
-        mode.indexChanged.connect(set_enabled)
+        mode.internalUpdate.connect(env.setEnvelope)
+        mode.internalUpdate.connect(set_enabled)
         grid.addWidget(mode, 0, 0, 1, 1, QtCore.Qt.AlignBottom)
         trigger = BlofeldCombo(self, self.params.Envelope_4_Mode, sub_par='Trigger')
         grid.addWidget(trigger, 1, 0, 1, 1)
