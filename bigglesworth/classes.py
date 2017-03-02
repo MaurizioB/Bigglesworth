@@ -472,13 +472,14 @@ class PopupSpin(QtGui.QDoubleSpinBox):
 
 class Globals(QtGui.QDialog):
     def __init__(self, parent=None):
-        QtGui.QDialog.__init__(self, parent)
+        QtGui.QDialog.__init__(self, parent=None)
         load_ui(self, 'globals.ui')
         pt = namedtuple('pt', 'index delta')
         pt.__new__.__defaults__ = (0, )
         self.main = parent
         self.sysex = []
         self.data = []
+        self.original_data = []
         self.receiving = False
         self.general_layout = self.general_group.layout()
         self.system_layout = self.system_group.layout()
@@ -487,6 +488,7 @@ class Globals(QtGui.QDialog):
 
         self.buttonBox.button(QtGui.QDialogButtonBox.Reset).setText('Reload from Blofeld')
         self.buttonBox.button(QtGui.QDialogButtonBox.Apply).clicked.connect(self.send_data)
+        self.accepted.connect(self.check_changes)
 
         self.transp_spin.valueChanged.connect(lambda value: self.transp_spin.setPrefix('+' if value >= 0 else ''))
         self.transp_spin.valueChanged.emit(self.transp_spin.value())
@@ -566,8 +568,13 @@ class Globals(QtGui.QDialog):
                 w.setChecked(data[p.index])
 
         self.data = data
+        self.original_data = data[:]
         self.receiving = False
         self.show()
+
+    def check_changes(self):
+        if self.data != self.original_data:
+            self.send_data()
 
     def send_data(self):
         self.sysex[5:-2] = self.data

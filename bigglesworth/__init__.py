@@ -15,7 +15,7 @@ from utils import *
 from editor import Editor
 
 class BigglesworthObject(QtCore.QObject):
-    input_conn_state = QtCore.pyqtSignal(bool)
+    input_conn_state_change = QtCore.pyqtSignal(bool)
     output_conn_state_change = QtCore.pyqtSignal(bool)
     def __init__(self, app):
         QtCore.QObject.__init__(self)
@@ -52,7 +52,7 @@ class BigglesworthObject(QtCore.QObject):
 
     def alsa_conn_event(self, conn, state):
         if conn.dest == self.input:
-            pass
+            self.input_conn_state_change.emit(False if not len(self.output.connections.output) else True)
         elif conn.src == self.output:
             self.output_conn_state_change.emit(False if not len(self.output.connections.output) else True)
 
