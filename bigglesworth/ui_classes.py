@@ -1908,18 +1908,25 @@ class ListView(QtGui.QListView):
         self.setMask(bmp)
 
 class Combo(QtGui.QWidget):
-    border_grad = QtGui.QConicalGradient(QtCore.QPointF(.5, .5), 45)
-    border_grad.setCoordinateMode(QtGui.QConicalGradient.ObjectBoundingMode)
-    border_grad.setColorAt(0, QtCore.Qt.darkGray)
-    border_grad.setColorAt(.25, QtCore.Qt.darkGray)
-    border_grad.setColorAt(.251, QtCore.Qt.gray)
-    border_grad.setColorAt(.5, QtCore.Qt.gray)
-    border_grad.setColorAt(.501, QtCore.Qt.white)
-    border_grad.setColorAt(.75, QtCore.Qt.white)
-    border_grad.setColorAt(.751, QtCore.Qt.lightGray)
-    border_grad.setColorAt(.99, QtCore.Qt.lightGray)
-    border_grad.setColorAt(1, QtCore.Qt.darkGray)
-    border_pen = QtGui.QPen(border_grad, 1)
+    _enabled_border_grad = QtGui.QConicalGradient(QtCore.QPointF(.5, .5), 45)
+    _enabled_border_grad.setCoordinateMode(QtGui.QConicalGradient.ObjectBoundingMode)
+    _enabled_border_grad.setColorAt(0, QtCore.Qt.darkGray)
+    _enabled_border_grad.setColorAt(.25, QtCore.Qt.darkGray)
+    _enabled_border_grad.setColorAt(.251, QtCore.Qt.gray)
+    _enabled_border_grad.setColorAt(.5, QtCore.Qt.gray)
+    _enabled_border_grad.setColorAt(.501, QtCore.Qt.white)
+    _enabled_border_grad.setColorAt(.75, QtCore.Qt.white)
+    _enabled_border_grad.setColorAt(.751, QtCore.Qt.lightGray)
+    _enabled_border_grad.setColorAt(.99, QtCore.Qt.lightGray)
+    _enabled_border_grad.setColorAt(1, QtCore.Qt.darkGray)
+    _disabled_border_grad = QtGui.QConicalGradient(QtCore.QPointF(.5, .5), 45)
+    _disabled_border_grad.setCoordinateMode(QtGui.QConicalGradient.ObjectBoundingMode)
+    for stop, color in _enabled_border_grad.stops():
+        _disabled_border_grad.setColorAt(stop, color.darker())
+    _enabled_border_pen = QtGui.QPen(_enabled_border_grad, 1)
+    _disabled_border_pen = QtGui.QPen(_disabled_border_grad, 1)
+    _border_pens = _disabled_border_pen, _enabled_border_pen
+    border_pen = _border_pens[1]
     arrow_grad = QtGui.QConicalGradient(QtCore.QPointF(.5, .5), -90)
     arrow_grad.setCoordinateMode(QtGui.QConicalGradient.ObjectBoundingMode)
     arrow_grad.setColorAt(0, QtCore.Qt.white)
@@ -1941,6 +1948,10 @@ class Combo(QtGui.QWidget):
     label_rect = None
     font = QtGui.QFont('Decorative', 10, QtGui.QFont.Bold)
     label_font = QtGui.QFont('Decorative', 9, QtGui.QFont.Bold)
+    _label_pen_enabled = QtGui.QPen(QtCore.Qt.white)
+    _label_pen_disabled = QtGui.QPen(QtCore.Qt.darkGray)
+    _label_pen_colors = _label_pen_disabled, _label_pen_enabled
+    label_pen = _label_pen_colors[1]
     indexChanged = QtCore.pyqtSignal(int)
     def __init__(self, parent=None, value_list=None, name='', wheel_dir=True, default=0):
         QtGui.QWidget.__init__(self, parent)
@@ -1988,6 +1999,13 @@ class Combo(QtGui.QWidget):
         if self.list.isVisible():
             self.list.hide()
 
+    def changeEvent(self, event):
+        if not event.type() == QtCore.QEvent.EnabledChange: return
+        state = self.isEnabled()
+        self.label_pen = self._label_pen_colors[state]
+        self.border_pen = self._border_pens[state]
+        self.update()
+
     def event(self, event):
         if event.type() == QtCore.QEvent.ToolTip and self.combo_rect.contains(event.pos()):
             QtGui.QToolTip.showText(event.globalPos(), self.current, self, self.combo_rect)
@@ -2013,7 +2031,7 @@ class Combo(QtGui.QWidget):
         qp.drawRoundedRect(self.combo_rect, 2, 2)
 
         qp.setFont(self.font)
-        qp.setPen(QtCore.Qt.white)
+        qp.setPen(self.label_pen)
 #        qp.drawText(self.combo_padding, 0, self.width()-self.combo_padding, self.height(), QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter, self.current)
         qp.drawText(self.combo_text_rect, QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter, self.current)
 

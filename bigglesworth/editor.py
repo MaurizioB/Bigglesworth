@@ -1113,8 +1113,8 @@ class ArpEditor(QtGui.QGraphicsView):
 
         step_lbl = SmallLabelTextWidget('Step', panel, fixed=True, font_size=10)
         layout.addItem(step_lbl, 2, 0)
-        layout.addItem(SmallLabelTextWidget('Accent', panel, fixed=True, font_size=10), 3, 0)
-        layout.addItem(SmallLabelTextWidget('Glide', panel, fixed=True, font_size=10), 4, 0)
+        layout.addItem(SmallLabelTextWidget('Glide', panel, fixed=True, font_size=10), 3, 0)
+        layout.addItem(SmallLabelTextWidget('Accent', panel, fixed=True, font_size=10), 4, 0)
         layout.addItem(SmallLabelTextWidget('Timing', panel, fixed=True, font_size=10), 5, 0)
         layout.addItem(SmallLabelTextWidget('Length', panel, fixed=True, font_size=10), 6, 0)
 
@@ -1133,16 +1133,16 @@ class ArpEditor(QtGui.QGraphicsView):
             self.step_type_list.append(step_combo)
             layout.addItem(step_combo, 2, col)
 
+            glide_btn = GlideDisplayButton(panel, step, self.glide_list)
+            glide_btn.toggled.connect(lambda glide, step=step: self.step_glide_change(step, glide))
+            self.glide_list.append(glide_btn)
+            layout.addItem(glide_btn, 3, col)
+
             accent_combo = AccentCombo(panel, step, self.accent_list)
             accent_combo.currentIndexChanged.connect(lambda accent, step=step: self.step_list[step].setAccent(accent))
             self.step_list[step].accentChanged.connect(lambda accent, combo=accent_combo: combo._setCurrentIndex(accent))
             self.accent_list.append(accent_combo)
-            layout.addItem(accent_combo, 3, col)
-
-            glide_btn = GlideDisplayButton(panel, step, self.glide_list)
-            glide_btn.toggled.connect(lambda glide, step=step: self.step_glide_change(step, glide))
-            self.glide_list.append(glide_btn)
-            layout.addItem(glide_btn, 4, col)
+            layout.addItem(accent_combo, 4, col)
 
             timing_combo = TimingCombo(panel, step, self.timing_list)
             timing_combo.currentIndexChanged.connect(lambda timing, step=step: self.step_list[step].setTiming(timing))
@@ -2202,7 +2202,7 @@ class Editor(QtGui.QMainWindow):
         frame.setLayout(layout)
 
         switch = BlofeldButton(self, self.params.Glide, checkable=True, name='')
-        layout.addWidget(switch, alignment=QtCore.Qt.AlignBottom)
+        layout.addWidget(switch, alignment=QtCore.Qt.AlignHCenter)
 
         glide = BlofeldDial(self, self.params.Glide_Rate, name='Amount', size=32)
         layout.addWidget(glide)
