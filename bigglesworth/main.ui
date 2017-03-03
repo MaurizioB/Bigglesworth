@@ -161,7 +161,7 @@
       <item>
        <widget class="QPushButton" name="edit_btn">
         <property name="text">
-         <string>Edit mode</string>
+         <string>&amp;Edit mode</string>
         </property>
         <property name="checkable">
          <bool>true</bool>
@@ -173,10 +173,23 @@
     <item row="2" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout_3">
       <item>
+       <widget class="QLabel" name="label_5">
+        <property name="text">
+         <string>&amp;Seach filter</string>
+        </property>
+        <property name="buddy">
+         <cstring>search_edit</cstring>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QLineEdit" name="search_edit"/>
       </item>
       <item>
        <widget class="QPushButton" name="search_clear_btn">
+        <property name="toolTip">
+         <string>Clear filter</string>
+        </property>
         <property name="text">
          <string>x</string>
         </property>
@@ -185,7 +198,7 @@
       <item>
        <widget class="QCheckBox" name="search_filter_chk">
         <property name="text">
-         <string>Filter</string>
+         <string>&amp;Filter results</string>
         </property>
        </widget>
       </item>
@@ -232,6 +245,14 @@
    </property>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="deviceAction">
+   <property name="text">
+    <string>Device</string>
+   </property>
+   <property name="toolTip">
+    <string>Request device information</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

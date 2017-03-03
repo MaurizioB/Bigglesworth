@@ -1241,7 +1241,7 @@ class MidiDisplayButton(DisplayButton):
         self.setToolTip('Open MIDI connections dialog\n(right click for direct access menu)')
         self.led_timer = QtCore.QTimer()
         self.led_timer.setSingleShot(True)
-        self.led_timer.setInterval(500)
+        self.led_timer.setInterval(256)
         self.led_timer.timeout.connect(self.reset)
         self.midi_in_pen = QtGui.QPen(QtCore.Qt.darkRed)
 
@@ -1422,7 +1422,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         elif item == self.cat_up:
             while True:
                 if cat >= len(categories)-1: return
-                cat_list = self.main.sorted_library.by_cat[cat+1]
+                cat_list = self.main.blofeld_library.sorted.by_cat[cat+1]
                 if not len(cat_list):
                     cat += 1
                     continue
@@ -1434,7 +1434,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         elif item == self.cat_dn:
             while True:
                 if cat < 1: return
-                cat_list = self.main.sorted_library.by_cat[cat-1]
+                cat_list = self.main.library.sorted.by_cat[cat-1]
                 if not len(cat_list):
                     cat -= 1
                     continue
@@ -1452,26 +1452,24 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         if isinstance(item, MidiDisplayButton):
             self.show_midi_menu(event.pos())
             return
-        if item not in [self.prog_name, self.bank, self.prog, self.cat_label, self.cat_name]:
-            return
         bank = self.main.sound.bank
         if item == self.prog_name:
-            res = self.main.sorted_library_menu.exec_(event.globalPos())
+            res = self.main.blofeld_library.menu.exec_(event.globalPos())
             if not res: return
             self.main.setSound(*res.data().toPyObject(), pgm_send=True)
             return
-        elif item == self.bank:
-            res = self.main.sorted_library_menu.actions()[0].menu().exec_(event.globalPos())
+        elif self.bank_rect.contains(event.pos()):
+            res = self.main.blofeld_library.menu.actions()[0].menu().exec_(event.globalPos())
             if not res: return
             self.main.setSound(*res.data().toPyObject(), pgm_send=True)
             return
-        elif item == self.prog:
-            res = self.main.sorted_library_menu.actions()[0].menu().actions()[bank].menu().exec_(event.globalPos())
+        elif self.prog_rect.contains(event.pos()):
+            res = self.main.blofeld_library.menu.actions()[0].menu().actions()[bank].menu().exec_(event.globalPos())
             if not res: return
             self.main.setSound(*res.data().toPyObject(), pgm_send=True)
             return
-        elif item in [self.cat_label, self.cat_name]:
-            res = self.main.sorted_library_menu.actions()[1].menu().exec_(event.globalPos())
+        elif self.cat_rect.contains(event.pos()):
+            res = self.main.blofeld_library.menu.actions()[1].menu().exec_(event.globalPos())
             if not res: return
             self.main.setSound(*res.data().toPyObject(), pgm_send=True)
             return
@@ -1503,7 +1501,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
             cat += delta
             while True:
                 if not 0 <= cat <= len(categories)-1: return
-                cat_list = self.main.sorted_library.by_cat[cat]
+                cat_list = self.main.blofeld_library.sorted.by_cat[cat]
                 if not len(cat_list):
                     cat += delta
                     continue
@@ -1526,7 +1524,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         out_clients = False
         in_menu_connections = 0
         out_menu_connections = 0
-        for client in [self.main.graph.client_id_dict[cid] for cid in sorted(self.main.graph.client_id_dict.keys())]:
+        for client in [self.main.alsa.graph.client_id_dict[cid] for cid in sorted(self.main.alsa.graph.client_id_dict.keys())]:
             in_port_list = []
             out_port_list = []
             for port in client.ports:
@@ -1544,7 +1542,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
                     port_item = QtGui.QAction(port.name, in_menu)
                     port_item.setData(port)
                     port_item.setCheckable(True)
-                    if any([True for conn in port.connections.output if conn.dest==self.main.input]):
+                    if any([True for conn in port.connections.output if conn.dest==self.main.alsa.input]):
                         port_item.setChecked(True)
                         setBold(client_menu.menuAction())
                         in_menu_connections += 1
@@ -1557,7 +1555,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
                     port_item = QtGui.QAction(port.name, out_menu)
                     port_item.setData(port)
                     port_item.setCheckable(True)
-                    if any([True for conn in port.connections.input if conn.src==self.main.output]):
+                    if any([True for conn in port.connections.input if conn.src==self.main.alsa.output]):
                         port_item.setChecked(True)
                         setBold(client_menu.menuAction())
                         out_menu_connections += 1
@@ -1639,13 +1637,16 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         self.panel.update()
 
 class Editor(QtGui.QMainWindow):
+    midi_event = QtCore.pyqtSignal(object)
+    program_change = QtCore.pyqtSignal(int, int)
+    show_librarian = QtCore.pyqtSignal()
     object_dict = {attr:ParamObject(param_tuple) for attr, param_tuple in Params.param_names.items()}
     with open(local_path('blofeld_efx'), 'rb') as _fx:
         efx_params = pickle.load(_fx)
     with open(local_path('blofeld_efx_ranges'), 'rb') as _fx:
         efx_ranges = pickle.load(_fx)
 
-    def __init__(self, parent):
+    def __init__(self, main):
         QtGui.QMainWindow.__init__(self, parent=None)
         load_ui(self, 'editor.ui')
         self.setContentsMargins(2, 2, 2, 2)
@@ -1653,15 +1654,11 @@ class Editor(QtGui.QMainWindow):
         pal.setColor(self.backgroundRole(), QtGui.QColor(20, 20, 20))
         self.setPalette(pal)
 
-        self.main = parent
-        self.sorted_library = None
-        self.sorted_library_menu = None
+        self.main = main
         self.blofeld_library = self.main.blofeld_library
-        self.create_sorted_library()
         self.alsa = self.main.alsa
         self.input = self.alsa.input
         self.output = self.alsa.output
-        self.seq = self.main.seq
         self.graph = self.main.graph
         self.channel = 0
         self.octave = 0
@@ -1678,13 +1675,19 @@ class Editor(QtGui.QMainWindow):
         self.grid.addLayout(display_layout, 0, 1, 1, 2)
         display_layout.addLayout(self.create_display(), 0, 0, 2, 1)
         display_layout.addWidget(HSpacer(max_width=24), 0, 1)
+
+        side_layout = QtGui.QGridLayout()
+        display_layout.addLayout(side_layout, 1, 2)
+        library_btn = SquareButton(self, color=QtCore.Qt.darkGreen, name='Library')
+        library_btn.clicked.connect(self.show_librarian)
+        side_layout.addWidget(library_btn)
         logo = QtGui.QIcon(local_path('logo.svg')).pixmap(QtCore.QSize(160, 160)).toImage()
         logo_widget = QtGui.QLabel()
         logo_widget.setPixmap(QtGui.QPixmap().fromImage(logo))
         logo_widget.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
         logo_widget.setToolTip('Right click here for...')
         logo_widget.contextMenuEvent = self.menuEvent
-        display_layout.addWidget(logo_widget, 1, 2, QtCore.Qt.AlignBottom|QtCore.Qt.AlignRight)
+        side_layout.addWidget(logo_widget, 1, 0, 1, 2, QtCore.Qt.AlignBottom|QtCore.Qt.AlignRight)
 
         amp_layout = QtGui.QVBoxLayout()
         amp_layout.addWidget(self.create_amplifier())
@@ -1804,13 +1807,19 @@ class Editor(QtGui.QMainWindow):
             raise e
 #            raise NameError('{} attribute does not exist!'.format(attr))
 
+    def showEvent(self, event):
+        if self.blofeld_library.menu is None:
+            self.blofeld_library.create_menu()
+
     def menuEvent(self, event):
         menu = QtGui.QMenu()
+        menu.addAction(self.main.globalsAction)
         about_item = QtGui.QAction('About Mr. Bigglesworth...', menu)
         menu.addAction(about_item)
         res = menu.exec_(event.globalPos())
         if not res: return
-        QtGui.QMessageBox.information(self, 'Ahem...', 'Sorry, I\'m not ready yet!')
+        elif res == about_item:
+            QtGui.QMessageBox.information(self, 'Ahem...', 'Sorry, I\'m not ready yet!')
 
     def midi_output_state(self, state):
         self.pgm_send_btn.setEnabled(state)
@@ -1957,51 +1966,51 @@ class Editor(QtGui.QMainWindow):
 
         return frame
 
-    def create_sorted_library(self):
-        sorted_library = SortedLibrary(self.blofeld_library)
-        del self.sorted_library_menu
-        menu = QtGui.QMenu()
-        by_bank = QtGui.QMenu('By bank', menu)
-        menu.addMenu(by_bank)
-        for id, bank in enumerate(sorted_library.by_bank):
-            if not any(bank): continue
-            bank_menu = QtGui.QMenu(uppercase[id], by_bank)
-            by_bank.addMenu(bank_menu)
-            for sound in bank:
-                if sound is None: continue
-                item = QtGui.QAction('{:03} {}'.format(sound.prog+1, sound.name), bank_menu)
-                item.setData((sound.bank, sound.prog))
-                bank_menu.addAction(item)
-        by_cat = QtGui.QMenu('By category', menu)
-        menu.addMenu(by_cat)
-        for cid, cat in enumerate(categories):
-            cat_menu = QtGui.QMenu(by_cat)
-            by_cat.addMenu(cat_menu)
-            cat_len = 0
-            for sound in sorted_library.by_cat[cid]:
-                cat_len += 1
-                item = QtGui.QAction(sound.name, cat_menu)
-                item.setData((sound.bank, sound.prog))
-                cat_menu.addAction(item)
-            if not len(cat_menu.actions()):
-                cat_menu.setEnabled(False)
-            cat_menu.setTitle('{} ({})'.format(cat, cat_len))
-        by_alpha = QtGui.QMenu('Alphabetical', menu)
-        menu.addMenu(by_alpha)
-        for alpha in sorted(sorted_library.by_alpha.keys()):
-            alpha_menu = QtGui.QMenu(by_alpha)
-            by_alpha.addMenu(alpha_menu)
-            alpha_len = 0
-            for sound in sorted_library.by_alpha[alpha]:
-                alpha_len += 1
-                item = QtGui.QAction(sound.name, alpha_menu)
-                item.setData((sound.bank, sound.prog))
-                alpha_menu.addAction(item)
-            if not len(alpha_menu.actions()):
-                alpha_menu.setEnabled(False)
-            alpha_menu.setTitle('{} ({})'.format(alpha, alpha_len))
-        self.sorted_library_menu = menu
-        self.sorted_library = sorted_library
+#    def create_sorted_library(self):
+#        sorted_library = SortedLibrary(self.blofeld_library)
+#        del self.sorted_library_menu
+#        menu = QtGui.QMenu()
+#        by_bank = QtGui.QMenu('By bank', menu)
+#        menu.addMenu(by_bank)
+#        for id, bank in enumerate(sorted_library.by_bank):
+#            if not any(bank): continue
+#            bank_menu = QtGui.QMenu(uppercase[id], by_bank)
+#            by_bank.addMenu(bank_menu)
+#            for sound in bank:
+#                if sound is None: continue
+#                item = QtGui.QAction('{:03} {}'.format(sound.prog+1, sound.name), bank_menu)
+#                item.setData((sound.bank, sound.prog))
+#                bank_menu.addAction(item)
+#        by_cat = QtGui.QMenu('By category', menu)
+#        menu.addMenu(by_cat)
+#        for cid, cat in enumerate(categories):
+#            cat_menu = QtGui.QMenu(by_cat)
+#            by_cat.addMenu(cat_menu)
+#            cat_len = 0
+#            for sound in sorted_library.by_cat[cid]:
+#                cat_len += 1
+#                item = QtGui.QAction(sound.name, cat_menu)
+#                item.setData((sound.bank, sound.prog))
+#                cat_menu.addAction(item)
+#            if not len(cat_menu.actions()):
+#                cat_menu.setEnabled(False)
+#            cat_menu.setTitle('{} ({})'.format(cat, cat_len))
+#        by_alpha = QtGui.QMenu('Alphabetical', menu)
+#        menu.addMenu(by_alpha)
+#        for alpha in sorted(sorted_library.by_alpha.keys()):
+#            alpha_menu = QtGui.QMenu(by_alpha)
+#            by_alpha.addMenu(alpha_menu)
+#            alpha_len = 0
+#            for sound in sorted_library.by_alpha[alpha]:
+#                alpha_len += 1
+#                item = QtGui.QAction(sound.name, alpha_menu)
+#                item.setData((sound.bank, sound.prog))
+#                alpha_menu.addAction(item)
+#            if not len(alpha_menu.actions()):
+#                alpha_menu.setEnabled(False)
+#            alpha_menu.setTitle('{} ({})'.format(alpha, alpha_len))
+#        self.sorted_library_menu = menu
+#        self.sorted_library = sorted_library
 
     def receive_value(self, location, index, value):
         attr = Params[index].attr
@@ -2022,17 +2031,11 @@ class Editor(QtGui.QMainWindow):
         par_high, par_low = divmod(par_id, 128)
 #        print par_high, par_low, value
         
-        req = SysExEvent(1, [0xF0, 0x3e, 0x13, 0x00, 0x20, location, par_high, par_low, value, 0xf7])
-        req.source = self.alsa.output.client.id, self.alsa.output.id
-        self.seq.output_event(req.get_event())
-        self.seq.drain_output()
+        self.midi_event.emit(SysExEvent(1, [0xF0, 0x3e, 0x13, 0x00, 0x20, location, par_high, par_low, value, 0xf7]))
         self.display.midi_btn.midi_out()
 
     def send_ctrl(self, param, value):
-        ctrl_event = CtrlEvent(1, self.channel, param, value)
-        ctrl_event.source = self.alsa.output.client.id, self.alsa.output.id
-        self.seq.output_event(ctrl_event.get_event())
-        self.seq.drain_output()
+        self.midi_event.emit(CtrlEvent(1, self.channel, param, value))
         self.display.midi_btn.midi_out()
 
     def send_note(self, note, state):
@@ -2041,9 +2044,7 @@ class Editor(QtGui.QMainWindow):
             note_event = NoteOnEvent(1, self.channel, note, state)
         else:
             note_event = NoteOffEvent(1, self.channel, note)
-        note_event.source = self.alsa.output.client.id, self.alsa.output.id
-        self.seq.output_event(note_event.get_event())
-        self.seq.drain_output()
+        self.midi_event.emit(note_event)
         self.display.midi_btn.midi_out()
 
     def setSound(self, bank, prog, pgm_send=False):
@@ -2070,20 +2071,21 @@ class Editor(QtGui.QMainWindow):
         self.notify = True
         self.display.setSound()
         if pgm_send and self.pgm_send_btn.isChecked():
-            self.main.program_change_request(sound.bank, sound.prog)
+            self.display.midi_btn.midi_out()
+            self.program_change.emit(sound.bank, sound.prog)
 
     def create_display(self):
         layout = QtGui.QGridLayout()
         self.display = BlofeldDisplay(self)
         layout.addWidget(self.display, 0, 0, 2, 1)
-        self.pgm_send_btn = SquareButton(self, 'PGM send', checkable=True, checked=False)
-        self.pgm_send_btn.toggled.connect(lambda state: setattr(self, 'pgm_send', state))
-        self.pgm_send_btn.toggled.connect(lambda state: self.display.statusUpdate('PGM send: {}'.format('enabled' if state else 'disabled')))
-        layout.addWidget(self.pgm_send_btn, 0, 1)
         self.midi_send_btn = SquareButton(self, 'MIDI send', checkable=True, checked=False)
         self.midi_send_btn.toggled.connect(lambda state: setattr(self, 'send', state))
         self.midi_send_btn.toggled.connect(lambda state: self.display.statusUpdate('MIDI send: {}'.format('enabled' if state else 'disabled')))
-        layout.addWidget(self.midi_send_btn, 1, 1)
+        layout.addWidget(self.midi_send_btn, 0, 1)
+        self.pgm_send_btn = SquareButton(self, 'PGM send', checkable=True, checked=False)
+        self.pgm_send_btn.toggled.connect(lambda state: setattr(self, 'pgm_send', state))
+        self.pgm_send_btn.toggled.connect(lambda state: self.display.statusUpdate('PGM send: {}'.format('enabled' if state else 'disabled')))
+        layout.addWidget(self.pgm_send_btn, 1, 1)
 
         return layout
 

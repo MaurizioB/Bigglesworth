@@ -15,6 +15,10 @@ from utils import *
 from editor import Editor
 
 class BigglesworthObject(QtCore.QObject):
+    globals_event = QtCore.pyqtSignal(object)
+    device_event = QtCore.pyqtSignal(object)
+    sound_dump = QtCore.pyqtSignal(object)
+    parameter_change = QtCore.pyqtSignal(int, int, int)
     input_conn_state_change = QtCore.pyqtSignal(bool)
     output_conn_state_change = QtCore.pyqtSignal(bool)
     def __init__(self, app):
@@ -28,7 +32,8 @@ class BigglesworthObject(QtCore.QObject):
         self.alsa.moveToThread(self.alsa_thread)
         self.alsa.stopped.connect(self.alsa_thread.quit)
         self.alsa_thread.started.connect(self.alsa.run)
-#        self.alsa.midi_signal.connect(self.alsa_midi_event)
+
+        self.alsa.midi_event.connect(self.midi_event_received)
         self.graph.port_start.connect(self.new_alsa_port)
         self.alsa.conn_register.connect(self.alsa_conn_event)
         self.alsa_thread.start()
@@ -36,13 +41,49 @@ class BigglesworthObject(QtCore.QObject):
         self.seq = self.alsa.seq
         self.input = self.alsa.input
         self.output = self.alsa.output
+        self.midi_connect()
+
+        self.deviceAction = QtGui.QAction(self)
+        self.deviceAction.triggered.connect(self.device_request)
+        self.globalsAction = QtGui.QAction('Global parameters...', self)
+        self.globalsAction.triggered.connect(self.globals_request)
+
+        self.blofeld_current = [None, None]
+        self.blofeld_model = LibraryModel()
+        self.blofeld_library = Library(self.blofeld_model)
+
+        self.loader = LoadingThread(self, self.blofeld_library)
+        self.loader_thread = QtCore.QThread()
+        self.loader.moveToThread(self.loader_thread)
+        self.loader_thread.started.connect(self.loader.run)
+
 
         self.librarian = Librarian(self)
-        self.globals = Globals(self.librarian)
-        self.globals.setModal(True)
-        self.globals.buttonBox.button(QtGui.QDialogButtonBox.Reset).clicked.connect(self.librarian.globals_request)
-        self.editor = self.librarian.editor
+        self.device_event.connect(lambda event: self.device_response(event, self.librarian))
+        self.sound_dump.connect(self.librarian.sound_dump)
+        self.loader.loaded.connect(self.librarian.create_proxy)
+        self.loader.loaded.connect(self.librarian.create_proxy)
+        self.loading_win = LoadingWindow(self.librarian)
+        self.librarian.shown.connect(self.loading_win.show)
+        self.loading_win.shown.connect(self.loader_thread.start)
+        self.loader.loaded.connect(self.loading_win.hide)
+
+        self.librarian.midi_event.connect(self.output_event)
+        self.librarian.program_change.connect(self.program_change_request)
+
+        self.editor = Editor(self)
+        self.librarian.activate_editor.connect(self.activate_editor)
+        self.editor.show_librarian.connect(lambda: [self.librarian.show(), self.librarian.activateWindow()])
+        self.editor.midi_event.connect(self.output_event)
+        self.editor.program_change.connect(self.program_change_request)
+        self.parameter_change.connect(self.editor.receive_value)
         self.output_conn_state_change.connect(self.editor.midi_output_state)
+
+        self.globals = Globals(self)
+        self.globals_event.connect(self.activate_globals)
+        self.globals.setModal(True)
+        self.globals.buttonBox.button(QtGui.QDialogButtonBox.Reset).clicked.connect(self.globals_request)
+
         self.librarian.show()
 
     def new_alsa_port(self, port):
@@ -56,28 +97,110 @@ class BigglesworthObject(QtCore.QObject):
         elif conn.src == self.output:
             self.output_conn_state_change.emit(False if not len(self.output.connections.output) else True)
 
+    def midi_connect(self):
+        for cid, client in self.graph.client_id_dict.items():
+            if client.name == 'Blofeld':
+                self.graph.port_id_dict[cid][0].connect(self.seq.client_id, self.input.id)
+                self.graph.port_id_dict[self.seq.client_id][self.output.id].connect(cid, 0)
+                break
+
+    def program_change_request(self, bank, prog):
+        self.output_event(CtrlEvent(1, 0, 0, bank))
+        self.output_event(ProgramEvent(1, 0, prog))
+
+    def output_event(self, event):
+        alsa_event = event.get_event()
+        alsa_event.source = self.output.client.id, self.output.id
+        self.seq.output_event(alsa_event)
+        self.seq.drain_output()
+
+    def midi_event_received(self, event):
+        if event.type == SYSEX:
+#            print 'receiving event: {}'.format(len(event.sysex))
+#            print event.sysex
+            sysex_type = event.sysex[4]
+            if sysex_type == SNDD:
+                self.sound_dump.emit(event.sysex[5:390])
+            elif sysex_type == SNDP:
+                self.sysex_parameter(event.sysex[5:])
+            elif sysex_type == GLBD:
+                self.globals_event.emit(event.sysex)
+#                self.main.globals.setData(event.sysex)
+            elif len(event.sysex) == 15 and event.sysex[3:5] == [6, 2]:
+                self.device_event.emit(event.sysex)
+#                self.device_response(event.sysex)
+        elif event.type == CTRL:
+            if event.data1 == 0:
+                self.blofeld_current[0] = event.data2
+            else:
+                self.ctrl_parameter(event.data1, event.data2)
+        elif event.type == PROGRAM:
+            self.blofeld_current[1] = event.data2
+            if None in self.blofeld_current: return
+            self.librarian.blofeld_sounds_table.selectRow(self.librarian.blofeld_model_proxy.mapFromSource(self.blofeld_model.index(self.blofeld_current[0]*128+self.blofeld_current[1], 0)).row())
+
+    def sysex_parameter(self, data):
+        location = data[0]
+        index = data[1]*128+data[2]
+        value = data[3]
+        self.parameter_change.emit(location, index, value)
+
+    def ctrl_parameter(self, param_id, value):
+        if param_id in ctrl2sysex:
+            self.parameter_change.emit(0, ctrl2sysex[param_id], value)
+
+    def activate_editor(self, bank, prog):
+        self.editor.show()
+        self.editor.setSound(bank, prog)
+        self.editor.activateWindow()
+
+    def activate_globals(self, data):
+        self.globals.setData(data)
+
+    def device_request(self):
+        self.output_event(SysExEvent(1, [0xF0, 0x7e, 0x7f, 0x6, 0x1, 0xf7]))
+
+    def globals_request(self):
+        self.output_event(SysExEvent(1, [0xF0, 0x3e, 0x13, 0x0, GLBR, 0xf7]))
+
+    def device_response(self, sysex, parent):
+        if sysex[5] == 0x3e:
+            dev_man = 'Waldorf Music'
+        else:
+            dev_man = 'Unknown'
+        if sysex[6:8] == [0x13, 0x0]:
+            dev_model = 'Blofeld'
+        else:
+            dev_model = 'Unknown'
+        if sysex[8:10] == [0, 0]:
+            dev_type = 'Blofeld Desktop'
+        else:
+            dev_type = 'Blofeld Keyboard'
+        dev_version = ''.join([str(unichr(l)) for l in sysex[10:14]]).strip()
+        
+        QtGui.QMessageBox.information(parent, 'Device informations', 
+                                      'Device info:\n\nManufacturer: {}\nModel: {}\nType: {}\nVersion: {}'.format(
+                                       dev_man, dev_model, dev_type, dev_version))
+
 
 class Librarian(QtGui.QMainWindow):
+    shown = QtCore.pyqtSignal()
+    program_change = QtCore.pyqtSignal(int, int)
+    midi_event = QtCore.pyqtSignal(object)
     dump_waiter = QtCore.pyqtSignal()
-    parameter_change = QtCore.pyqtSignal(int, int, int)
+    activate_editor = QtCore.pyqtSignal(int, int)
     def __init__(self, main):
         QtGui.QMainWindow.__init__(self, parent=None)
         load_ui(self, 'main.ui')
 
         self.main = main
-        self.alsa = self.main.alsa
-        self.alsa.midi_signal.connect(self.alsa_midi_event)
-        self.graph = self.main.graph
-        self.seq = self.alsa.seq
-        self.input = self.alsa.input
-        self.output = self.alsa.output
 
-        self.blofeld_current = None, None
-        self.loading_win = LoadingWindow(self)
+        self.blofeld_model = self.main.blofeld_model
+        self.blofeld_library = self.main.blofeld_library
+        self.blofeld_current = self.main.blofeld_current
+        self.blofeld_model.itemChanged.connect(self.sound_update)
+
         self.loading_complete = False
-        self.blofeld_library = Library()
-        self.editor = Editor(self)
-        self.parameter_change.connect(self.editor.receive_value)
         self.edit_mode = False
 
         self.dump_timer = QtCore.QTimer()
@@ -91,11 +214,18 @@ class Librarian(QtGui.QMainWindow):
         self.dump_win.rejected.connect(lambda: setattr(self, 'dump_active', False))
         self.dump_win.rejected.connect(self.dump_timer.stop)
 
-        self.create_models()
-        self.midi_connect()
+        self.bank_dump_combo.addItems(['All']+[l for l in uppercase[:8]])
+        self.sound_dump_combo.addItems(['All']+[str(s) for s in range(1, 129)])
+        self.bank_filter_combo.addItems(['All']+[l for l in uppercase[:8]])
+        self.cat_filter_combo.addItem('All')
+        for cat in categories:
+            self.cat_filter_combo.addItem(cat, cat)
+        self.bank_filter_combo.currentIndexChanged.connect(lambda index: self.blofeld_model_proxy.setMultiFilter(BANK, index))
+        self.bank_filter_combo.currentIndexChanged.connect(self.bank_list_update)
+        self.cat_filter_combo.currentIndexChanged.connect(lambda index: self.blofeld_model_proxy.setMultiFilter(CATEGORY, index))
 
-        self.device_btn.clicked.connect(self.device_request)
-        self.globals_btn.clicked.connect(self.globals_request)
+        self.device_btn.clicked.connect(self.main.deviceAction.trigger)
+        self.globals_btn.clicked.connect(self.main.globalsAction.trigger)
         self.dump_btn.clicked.connect(self.dump_request)
         self.bank_dump_combo.currentIndexChanged.connect(lambda b: self.sound_dump_combo.setEnabled(True if b != 0 else False))
         self.edit_btn.toggled.connect(self.edit_mode_set)
@@ -108,14 +238,18 @@ class Librarian(QtGui.QMainWindow):
 #        self.blofeld_model.dataChanged.connect(self.sound_update)
 #        self.blofeld_model.itemChanged.connect(self.sound_update)
         self.installEventFilter(self)
+        self.search_edit.installEventFilter(self)
 
     def showEvent(self, event):
-        if not self.loading_win.isVisible() and not self.loading_complete:
-            QtCore.QTimer.singleShot(10, self.loading_win.show)
+        if not self.loading_complete:
+            QtCore.QTimer.singleShot(10, self.shown.emit)
 
     def eventFilter(self, source, event):
-        if event.type() == QtCore.QEvent.KeyPress and event.key() == QtCore.Qt.Key_F5:
-            self.dump_request()
+        if event.type() == QtCore.QEvent.KeyPress:
+            if event.key() == QtCore.Qt.Key_F5:
+                self.dump_request()
+            elif event.key() == QtCore.Qt.Key_Escape and source == self.search_edit:
+                self.search_edit.setText('')
         return QtGui.QMainWindow.eventFilter(self, source, event)
 
 
@@ -126,9 +260,10 @@ class Librarian(QtGui.QMainWindow):
         self.blofeld_sounds_table.setSelectionMode(QtGui.QTableView.SingleSelection if state else QtGui.QTableView.ContiguousSelection)
 
     def search_filter_set(self, state):
-        return
         if not state:
-            self.filter_update()
+            self.blofeld_model_proxy.setTextFilter('')
+        self.search_filter(self.search_edit.text())
+        return
 
     def search_filter(self, text):
         filter =  self.search_filter_chk.isChecked()
@@ -143,7 +278,7 @@ class Librarian(QtGui.QMainWindow):
     def sound_doubleclick(self, index):
         if self.edit_mode: return
         sound = self.blofeld_model.item(self.blofeld_model_proxy.mapToSource(index).row(), SOUND).data(SoundRole).toPyObject()
-        self.program_change_request(sound.bank, sound.prog)
+        self.program_change.emit(sound.bank, sound.prog)
 
     def right_click(self, event):
         if event.button() != QtCore.Qt.RightButton: return
@@ -168,9 +303,7 @@ class Librarian(QtGui.QMainWindow):
         menu.setMinimumWidth(frame_delta+QtGui.QFontMetrics(header.font()).width(header.text()))
         res = menu.exec_(event.globalPos())
         if res == edit_item:
-            self.editor.show()
-            self.editor.setSound(sound.bank, sound.prog)
-            self.editor.activateWindow()
+            self.activate_editor.emit(sound.bank, sound.prog)
 
     def sound_drop_event(self, event):
         def rename(sound_range):
@@ -234,34 +367,9 @@ class Librarian(QtGui.QMainWindow):
             item.setText(get_status(item.data(EditedRole).toPyObject()))
             setBold(item)
 
-    def midi_connect(self):
-        for cid, client in self.graph.client_id_dict.items():
-            if client.name == 'Blofeld':
-                self.graph.port_id_dict[cid][0].connect(self.seq.client_id, self.input.id)
-                self.graph.port_id_dict[self.seq.client_id][self.output.id].connect(cid, 0)
-                break
-
-    def output_event(self, event):
-        alsa_event = event.get_event()
-        alsa_event.source = self.output.client.id, self.output.id
-        self.seq.output_event(alsa_event)
-        self.seq.drain_output()
-
     def program_change_request(self, bank, prog):
-        self.output_event(CtrlEvent(1, 0, 0, bank))
-        self.output_event(ProgramEvent(1, 0, prog))
-
-    def device_request(self):
-        req = SysExEvent(1, [0xF0, 0x7e, 0x7f, 0x6, 0x1, 0xf7])
-        req.source = self.seq.client_id, 1
-        self.seq.output_event(req.get_event())
-        self.seq.drain_output()
-
-    def globals_request(self):
-        req = SysExEvent(1, [0xF0, 0x3e, 0x13, 0x0, GLBR, 0xf7])
-        req.source = self.seq.client_id, 1
-        self.seq.output_event(req.get_event())
-        self.seq.drain_output()
+        self.midi_event.emit(CtrlEvent(1, 0, 0, bank))
+        self.midi_event.emit(ProgramEvent(1, 0, prog))
 
     def dump_request(self):
         bank = self.bank_dump_combo.currentIndex()
@@ -283,30 +391,26 @@ class Librarian(QtGui.QMainWindow):
         
 
     def sound_request(self, bank, sound):
-        req = SysExEvent(1, [0xF0, 0x3e, 0x13, 0x0, 0x0, bank, sound, 0x7f, 0xf7])
-        req.source = self.seq.client_id, 1
-        self.seq.output_event(req.get_event())
-        self.seq.drain_output()
+        self.midi_event.emit(SysExEvent(1, [0xF0, 0x3e, 0x13, 0x0, 0x0, bank, sound, 0x7f, 0xf7]))
 
-    def create_models(self):
-        self.bank_dump_combo.addItems(['All']+[l for l in uppercase[:8]])
-        self.sound_dump_combo.addItems(['All']+[str(s) for s in range(1, 129)])
+#    def create_models(self):
+#        self.bank_dump_combo.addItems(['All']+[l for l in uppercase[:8]])
+#        self.sound_dump_combo.addItems(['All']+[str(s) for s in range(1, 129)])
+#
+#        self.bank_filter_combo.addItems(['All']+[l for l in uppercase[:8]])
+#        self.cat_filter_combo.addItem('All')
+#        for cat in categories:
+#            self.cat_filter_combo.addItem(cat, cat)
+#        self.bank_filter_combo.currentIndexChanged.connect(lambda index: self.blofeld_model_proxy.setMultiFilter(BANK, index))
+#        self.bank_filter_combo.currentIndexChanged.connect(self.bank_list_update)
+#        self.cat_filter_combo.currentIndexChanged.connect(lambda index: self.blofeld_model_proxy.setMultiFilter(CATEGORY, index))
 
-        self.bank_filter_combo.addItems(['All']+[l for l in uppercase[:8]])
-        self.cat_filter_combo.addItem('All')
-        for cat in categories:
-            self.cat_filter_combo.addItem(cat, cat)
-        self.bank_filter_combo.currentIndexChanged.connect(lambda index: self.blofeld_model_proxy.setMultiFilter(BANK, index))
-        self.bank_filter_combo.currentIndexChanged.connect(self.bank_list_update)
-        self.cat_filter_combo.currentIndexChanged.connect(lambda index: self.blofeld_model_proxy.setMultiFilter(CATEGORY, index))
-
-    def set_models(self, model, library):
+    def create_proxy(self):
         self.loading_complete = True
-        self.blofeld_library = self.editor.blofeld_library = library
-        self.editor.create_sorted_library()
-        self.blofeld_model = model
-        self.blofeld_model.setHorizontalHeaderLabels(sound_headers)
-        self.blofeld_model.itemChanged.connect(self.sound_update)
+#        self.blofeld_library = self.editor.blofeld_library = library
+##        self.editor.create_sorted_library()
+#        self.blofeld_model = model
+#        self.blofeld_model.itemChanged.connect(self.sound_update)
         self.blofeld_model_proxy = LibraryProxy()
         self.blofeld_model_proxy.setSourceModel(self.blofeld_model)
         self.blofeld_sounds_table.setModel(self.blofeld_model_proxy)
@@ -324,27 +428,27 @@ class Librarian(QtGui.QMainWindow):
     def bank_list_update(self, bank):
         self.cat_count_update()
 
-    def filter_update(self, id=None):
-        bank_filter = self.bank_filter_combo.currentIndex()
-        cat_filter = self.cat_filter_combo.currentIndex()
-        self.blofeld_model_proxy.setMultiFilter(bank_filter-1, cat_filter-1)
-        return
-        print 'filtering with {} and {}'.format(bank_filter, cat_filter)
-        if bank_filter == 0 and cat_filter == 0:
-            for r in range(self.blofeld_model.rowCount()):
-                self.blofeld_sounds_table.setRowHidden(r, False)
-            print 'done'
-            return
-        print 'what'
-        for r in range(self.blofeld_model.rowCount()):
-            self.blofeld_sounds_table.setRowHidden(
-                                                   r, 
-                                                   False if (
-                                                             bank_filter == 0 or self.blofeld_model.index(r, 0).data(BankRole).toPyObject() == bank_filter-1
-                                                             ) and (
-                                                             cat_filter == 0 or self.blofeld_model.index(r, 4).data(CatRole).toPyObject() == cat_filter-1
-                                                             ) else True
-                                                   )
+#    def filter_update(self, id=None):
+#        bank_filter = self.bank_filter_combo.currentIndex()
+#        cat_filter = self.cat_filter_combo.currentIndex()
+#        self.blofeld_model_proxy.setMultiFilter(bank_filter-1, cat_filter-1)
+#        return
+#        print 'filtering with {} and {}'.format(bank_filter, cat_filter)
+#        if bank_filter == 0 and cat_filter == 0:
+#            for r in range(self.blofeld_model.rowCount()):
+#                self.blofeld_sounds_table.setRowHidden(r, False)
+#            print 'done'
+#            return
+#        print 'what'
+#        for r in range(self.blofeld_model.rowCount()):
+#            self.blofeld_sounds_table.setRowHidden(
+#                                                   r, 
+#                                                   False if (
+#                                                             bank_filter == 0 or self.blofeld_model.index(r, 0).data(BankRole).toPyObject() == bank_filter-1
+#                                                             ) and (
+#                                                             cat_filter == 0 or self.blofeld_model.index(r, 4).data(CatRole).toPyObject() == cat_filter-1
+#                                                             ) else True
+#                                                   )
 
     def cat_count_update(self):
         cat_len = [0 for cat_id in categories]
@@ -362,56 +466,6 @@ class Librarian(QtGui.QMainWindow):
                                                ))
 
 
-    def alsa_midi_event(self, event):
-        if event.type == SYSEX:
-#            print 'receiving event: {}'.format(len(event.sysex))
-#            print event.sysex
-            sysex_type = event.sysex[4]
-            if sysex_type == SNDD:
-                self.sound_dump(event)
-            elif sysex_type == SNDP:
-                self.sysex_parameter(event.sysex[5:])
-            elif sysex_type == GLBD:
-                self.main.globals.setData(event.sysex)
-            elif len(event.sysex) == 15 and event.sysex[3:5] == [6, 2]:
-                self.device_response(event.sysex[5:-1])
-        elif event.type == CTRL:
-            if event.data1 == 0:
-                self.blofeld_current = event.data2, self.blofeld_current[1]
-            else:
-                self.ctrl_parameter(event.data1, event.data2)
-        elif event.type == PROGRAM:
-            self.blofeld_current = self.blofeld_current[0], event.data2
-            self.blofeld_sounds_table.selectRow(self.blofeld_model_proxy.mapFromSource(self.blofeld_model.index(self.blofeld_current[0]*128+self.blofeld_current[1], 0)).row())
-
-    def sysex_parameter(self, data):
-        location = data[0]
-        index = data[1]*128+data[2]
-        value = data[3]
-        self.parameter_change.emit(location, index, value)
-
-    def ctrl_parameter(self, param_id, value):
-        if param_id in ctrl2sysex:
-            self.parameter_change.emit(0, ctrl2sysex[param_id], value)
-
-    def device_response(self, sysex):
-        if sysex[5] == 0x3e:
-            dev_man = 'Waldorf Music'
-        else:
-            dev_man = 'Unknown'
-        if sysex[6:8] == [0x13, 0x0]:
-            dev_model = 'Blofeld'
-        else:
-            dev_model = 'Unknown'
-        if sysex[8:10] == [0, 0]:
-            dev_type = 'Blofeld Desktop'
-        else:
-            dev_type = 'Blofeld Keyboard'
-        dev_version = ''.join([str(unichr(l)) for l in sysex[10:14]]).strip()
-        
-        QtGui.QMessageBox.information(self, 'Device informations', 
-                                      'Device info:\n\nManufacturer: {}\nModel: {}\nType: {}\nVersion: {}'.format(
-                                       dev_man, dev_model, dev_type, dev_version))
 
     def globals_dump(self, data):
         globals = self.main.globals
@@ -421,7 +475,7 @@ class Librarian(QtGui.QMainWindow):
         globals.show()
 
     def sound_dump(self, sound_event):
-        sound = Sound(sound_event.sysex[5:390], SRC_BLOFELD)
+        sound = Sound(sound_event, SRC_BLOFELD)
         if sound.bank > 25:
             if None in self.blofeld_current:
                 #you'll ask what to do with incoming sysex, we don't know where it goes
@@ -432,9 +486,11 @@ class Librarian(QtGui.QMainWindow):
         bank, prog = sound.bank, sound.prog
         self.blofeld_library.addSound(sound)
 
-        self.cat_count_update()
-        self.blofeld_sounds_table.resizeColumnToContents(2)
-        if not self.dump_active: return
+        if not self.dump_active:
+            self.cat_count_update()
+            self.blofeld_sounds_table.resizeColumnToContents(2)
+            self.blofeld_sounds_table.resizeColumnToContents(5)
+            return
         dump_all = True if self.bank_dump_combo.currentIndex()==0 else False
         if prog >= 127:
             if dump_all:
@@ -442,6 +498,8 @@ class Librarian(QtGui.QMainWindow):
                 if bank >= 8:
                     self.dump_active = False
                     self.dump_win.done(1)
+                    self.cat_count_update()
+                    self.blofeld_sounds_table.resizeColumnToContents(2)
                     return
                 prog = -1
             else:

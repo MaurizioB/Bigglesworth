@@ -11,7 +11,7 @@ class AlsaMidi(QtCore.QObject):
     conn_register = QtCore.pyqtSignal(object, bool)
     graph_changed = QtCore.pyqtSignal()
     stopped = QtCore.pyqtSignal()
-    midi_signal = QtCore.pyqtSignal(object)
+    midi_event = QtCore.pyqtSignal(object)
 
     def __init__(self, main):
         QtCore.QObject.__init__(self)
@@ -68,7 +68,7 @@ class AlsaMidi(QtCore.QObject):
                                         ]:
                         try:
                             newev = MidiEvent.from_alsa(event)
-                            self.midi_signal.emit(newev)
+                            self.midi_event.emit(newev)
 #                            print newev
                         except Exception as e:
                             print 'event {} unrecognized'.format(event)
@@ -98,7 +98,7 @@ class AlsaMidi(QtCore.QObject):
             else:
                 sysex = MidiEvent.from_alsa(event)
                 sysex.sysex = self.buffer
-                self.midi_signal.emit(sysex)
+                self.midi_event.emit(sysex)
                 self.buffer = []
         except Exception as Err:
             print len(self.buffer)

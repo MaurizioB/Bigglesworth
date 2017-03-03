@@ -253,23 +253,50 @@ class DumpWin(QtGui.QDialog):
         self.progress.setValue(0)
         QtGui.QDialog.show(self)
 
+class SortedLibrary(object):
+    def __init__(self, library):
+        self.by_bank = library.data
+        self.by_cat = {i:[] for i in range(len(categories))}
+        self.by_alpha = {l:[] for l in ['0..9']+list(uppercase)}
+
+    def reload(self):
+        by_cat = {i:[] for i in range(len(categories))}
+        by_alpha = {l:[] for l in ['0..9']+list(uppercase)}
+        for b, progs in enumerate(self.by_bank):
+            for p in progs:
+                if p is None: continue
+                if p.name[0] in ascii_letters:
+                    by_alpha[p.name[0].upper()].append(p)
+                else:
+                    by_alpha['0..9'].append(p)
+                by_cat[p.cat].append(p)
+        self.by_cat = by_cat
+        self.by_alpha = {}
+        for letter, sound_list in by_alpha.items():
+            self.by_alpha[letter] = sorted(sound_list, key=lambda s: s.name.lower())
+
 
 class Library(QtCore.QObject):
-    def __init__(self, parent=None, banks=26):
+    def __init__(self, model, parent=None, banks=26):
         QtCore.QObject.__init__(self, parent)
 #        self.data = [[Sound(b, p) for p in range(128)] for b in range(banks)]
-        self.data = [[None for p in range(128)] for b in range(banks)]
-        self.sound_index = {}
-#        self.cat_count = {cat:[0 for b in banks] for c in categories}
-        self.cat_count = [{c:0 for c in categories} for b in range(banks)]
-
-    def setModel(self, model):
         self.model = model
+        self.banks = banks
+        self.model.cleared.connect(self.clear)
+        self.clear()
+        self.sorted = SortedLibrary(self)
+        self.menu = None
+#        self.create_menu()
+
+    def clear(self):
+        self.data = [[None for p in range(128)] for b in range(self.banks)]
+        self.sound_index = {}
+        self.cat_count = [{c:0 for c in categories} for b in range(self.banks)]
 
     def sound(self, bank, prog):
         return self.data[bank][prog]
 
-    def addSound(self, sound):
+    def _addSound(self, sound):
         bank = sound.bank
         prog = sound.prog
         self.data[bank][prog] = sound
@@ -308,14 +335,70 @@ class Library(QtCore.QObject):
         found = self.model.findItems('{}{:03}'.format(uppercase[bank], prog+1), QtCore.Qt.MatchFixedString, 0)
         if found:
             self.model.takeRow(found[0].row())
+
         self.model.appendRow([index_item, bank_item, prog_item, name_item, cat_item, status_item, sound_item])
+
+    def addSound(self, sound):
+        self._addSound(sound)
+        self.sort()
+        self.create_menu()
+
+    def addSoundBulk(self, sound_list):
+        for sound in sound_list:
+            self._addSound(sound)
+        self.sort()
+
+    def sort(self):
         self.model.sort(2)
         self.model.sort(1)
+        self.sorted.reload()
 
+    def create_menu(self):
+        del self.menu
+        menu = QtGui.QMenu()
+        by_bank = QtGui.QMenu('By bank', menu)
+        menu.addMenu(by_bank)
+        for id, bank in enumerate(self.sorted.by_bank):
+            if not any(bank): continue
+            bank_menu = QtGui.QMenu(uppercase[id], by_bank)
+            by_bank.addMenu(bank_menu)
+            for sound in bank:
+                if sound is None: continue
+                item = QtGui.QAction('{:03} {}'.format(sound.prog+1, sound.name), bank_menu)
+                item.setData((sound.bank, sound.prog))
+                bank_menu.addAction(item)
+        by_cat = QtGui.QMenu('By category', menu)
+        menu.addMenu(by_cat)
+        for cid, cat in enumerate(categories):
+            cat_menu = QtGui.QMenu(by_cat)
+            by_cat.addMenu(cat_menu)
+            cat_len = 0
+            for sound in self.sorted.by_cat[cid]:
+                cat_len += 1
+                item = QtGui.QAction(sound.name, cat_menu)
+                item.setData((sound.bank, sound.prog))
+                cat_menu.addAction(item)
+            if not len(cat_menu.actions()):
+                cat_menu.setEnabled(False)
+            cat_menu.setTitle('{} ({})'.format(cat, cat_len))
+        by_alpha = QtGui.QMenu('Alphabetical', menu)
+        menu.addMenu(by_alpha)
+        for alpha in sorted(self.sorted.by_alpha.keys()):
+            alpha_menu = QtGui.QMenu(by_alpha)
+            by_alpha.addMenu(alpha_menu)
+            alpha_len = 0
+            for sound in self.sorted.by_alpha[alpha]:
+                alpha_len += 1
+                item = QtGui.QAction(sound.name, alpha_menu)
+                item.setData((sound.bank, sound.prog))
+                alpha_menu.addAction(item)
+            if not len(alpha_menu.actions()):
+                alpha_menu.setEnabled(False)
+            alpha_menu.setTitle('{} ({})'.format(alpha, alpha_len))
+        self.menu = menu
 
     def soundSetCategory(self, cat_item, bank, cat):
         cat_item.setData(cat, CatRole)
-        
 
     def __getitem__(self, req):
         if not isinstance(req, tuple):
@@ -324,8 +407,15 @@ class Library(QtCore.QObject):
 
 
 class LibraryModel(QtGui.QStandardItemModel):
+    cleared = QtCore.pyqtSignal()
     def __init__(self, parent=None):
         QtGui.QStandardItemModel.__init__(self, 0, 7, parent)
+        self.setHorizontalHeaderLabels(sound_headers)
+
+    def clear(self):
+        QtGui.QStandardItemModel.clear(self)
+        self.setHorizontalHeaderLabels(sound_headers)
+        self.cleared.emit()
 
     def sound(self, index):
         return self.item(index.row(), 6).data(SoundRole).toPyObject()
@@ -366,25 +456,26 @@ class LibraryProxy(QtGui.QSortFilterProxyModel):
         return False
 
 class LoadingThread(QtCore.QObject):
-    loaded = QtCore.pyqtSignal(object, object)
-    def __init__(self, parent):
+    loaded = QtCore.pyqtSignal()
+    def __init__(self, parent, library):
         QtCore.QObject.__init__(self)
-        self.blofeld_model = LibraryModel()
-        self.blofeld_library = Library()
-        self.blofeld_library.setModel(self.blofeld_model)
+        self.library = library
 
     def run(self):
         pattern = midifile.read_midifile(local_path('presets/blofeld_fact_080103/blofeld_fact_080103.mid'))
         track = pattern[0]
         _ = 0
+        sound_list = []
         for event in track:
             if isinstance(event, midifile.SysexEvent):
-                self.blofeld_library.addSound(Sound(event.data[6:391]))
+                sound_list.append(Sound(event.data[6:391]))
                 _ += 1
-#                if _ == 208: break
-        self.loaded.emit(self.blofeld_model, self.blofeld_library)
+#                if _ == 210: break
+        self.library.addSoundBulk(sound_list)
+        self.loaded.emit()
 
 class LoadingWindow(QtGui.QDialog):
+    shown = QtCore.pyqtSignal()
     def __init__(self, parent=None):
         self.main = parent
         QtGui.QDialog.__init__(self, parent)
@@ -392,19 +483,19 @@ class LoadingWindow(QtGui.QDialog):
         self.setModal(True)
         grid = QtGui.QGridLayout(self)
         loading_lbl = QtGui.QLabel('Loading local presets, please wait')
-        grid.addWidget(loading_lbl, 0, 0, 0, 0)
+        grid.addWidget(loading_lbl, 0, 0)
         self.loading = False
-        self.loader = LoadingThread(self)
-        self.loader_thread = QtCore.QThread()
-        self.loader.moveToThread(self.loader_thread)
-        self.loader_thread.started.connect(self.loader.run)
-        self.loader.loaded.connect(self.set_models)
-        self.loader.loaded.connect(self.main.set_models)
+#        self.loader = LoadingThread(self)
+#        self.loader_thread = QtCore.QThread()
+#        self.loader.moveToThread(self.loader_thread)
+#        self.loader_thread.started.connect(self.loader.run)
+#        self.loader.loaded.connect(self.set_models)
+#        self.loader.loaded.connect(self.main.set_models)
 
     def showEvent(self, event):
         if not self.loading:
-            QtCore.QTimer.singleShot(100, self.loader_thread.start)
             self.loading = True
+            QtCore.QTimer.singleShot(100, self.shown.emit)
 
     def set_models(self, model, library):
         self.hide()
@@ -471,12 +562,16 @@ class PopupSpin(QtGui.QDoubleSpinBox):
         return before
 
 class Globals(QtGui.QDialog):
-    def __init__(self, parent=None):
+    midi_event = QtCore.pyqtSignal(object)
+    def __init__(self, main):
         QtGui.QDialog.__init__(self, parent=None)
         load_ui(self, 'globals.ui')
         pt = namedtuple('pt', 'index delta')
         pt.__new__.__defaults__ = (0, )
-        self.main = parent
+        self.main = main
+        self.graph = main.graph
+        self.input = main.input
+        self.output = main.output
         self.sysex = []
         self.data = []
         self.original_data = []
@@ -486,9 +581,14 @@ class Globals(QtGui.QDialog):
         self.midi_layout = self.midi_group.layout()
         self.layouts = self.general_layout, self.system_layout, self.midi_layout
 
-        self.buttonBox.button(QtGui.QDialogButtonBox.Reset).setText('Reload from Blofeld')
-        self.buttonBox.button(QtGui.QDialogButtonBox.Apply).clicked.connect(self.send_data)
+        self.resetBtn = self.buttonBox.button(QtGui.QDialogButtonBox.Reset)
+        self.resetBtn.setText('Reload from Blofeld')
+        self.applyBtn = self.buttonBox.button(QtGui.QDialogButtonBox.Apply)
+        self.applyBtn.clicked.connect(self.send_data)
+        self.okBtn = self.buttonBox.button(QtGui.QDialogButtonBox.Ok)
         self.accepted.connect(self.check_changes)
+        self.main.input_conn_state_change.connect(self.conn_check)
+        self.main.output_conn_state_change.connect(self.conn_check)
 
         self.transp_spin.valueChanged.connect(lambda value: self.transp_spin.setPrefix('+' if value >= 0 else ''))
         self.transp_spin.valueChanged.emit(self.transp_spin.value())
@@ -525,7 +625,6 @@ class Globals(QtGui.QDialog):
             else:
                 w.toggled.connect(self.editData)
 
-
     def editData(self, value):
         if self.receiving: return
         value = int(value)
@@ -548,6 +647,14 @@ class Globals(QtGui.QDialog):
             layout.setColumnMinimumWidth(4, widget_width)
             layout.setColumnMinimumWidth(0, label_width)
             layout.setColumnMinimumWidth(3, label_width)
+        self.conn_check()
+
+    def conn_check(self, *args):
+        input = any((True for conn in self.input.connections if not conn.hidden))
+        output = any((True for conn in self.output.connections if not conn.hidden))
+        self.resetBtn.setEnabled(True if all((input, output)) else False)
+        self.applyBtn.setEnabled(True if output else False)
+        self.okBtn.setEnabled(True if output else False)
 
     def setData(self, sysex):
         self.sysex = sysex
@@ -579,29 +686,9 @@ class Globals(QtGui.QDialog):
     def send_data(self):
         self.sysex[5:-2] = self.data
         self.sysex[-2] = 0x7f
-        req = SysExEvent(1, self.sysex)
-        req.source = self.main.alsa.output.client.id, self.main.alsa.output.id
-        self.main.seq.output_event(req.get_event())
-        self.main.seq.drain_output()
+        self.midi_event.emit(SysExEvent(1, self.sysex))
 
 
-class SortedLibrary(object):
-    def __init__(self, library):
-        self.by_bank = library.data
-        by_cat = {i:[] for i in range(len(categories))}
-        by_alpha = {l:[] for l in ['0..9']+list(uppercase)}
-        for b, progs in enumerate(library.data):
-            for p in progs:
-                if p is None: continue
-                if p.name[0] in ascii_letters:
-                    by_alpha[p.name[0].upper()].append(p)
-                else:
-                    by_alpha['0..9'].append(p)
-                by_cat[p.cat].append(p)
-        self.by_cat = by_cat
-        self.by_alpha = {}
-        for letter, sound_list in by_alpha.items():
-            self.by_alpha[letter] = sorted(sound_list, key=lambda s: s.name.lower())
 
 
 
