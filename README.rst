@@ -1,7 +1,7 @@
 Bigglesworth
 ============
 
-.. figure:: https://cloud.githubusercontent.com/assets/523596/23536073/e25f7e08-ffc2-11e6-9af5-dfd48cd2e906.jpg
+.. figure:: https://cloud.githubusercontent.com/assets/523596/23536074/e2759486-ffc2-11e6-9350-7b3eb916c389.jpg
    :alt: Screenshot
 
    Screenshot
