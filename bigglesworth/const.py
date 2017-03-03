@@ -246,6 +246,8 @@ ProgRole = BankRole + 1
 SoundRole = ProgRole + 1
 CatRole = SoundRole + 1
 EditedRole = CatRole + 1
+PortRole = EditedRole + 1
+ClientRole = PortRole + 1
 
 note_scancodes = [
                   52, 39, 53, 40, 54, 55, 42, 56, 43, 57, 44, 58,

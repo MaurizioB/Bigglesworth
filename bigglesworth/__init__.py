@@ -19,9 +19,9 @@ class BigglesworthObject(QtCore.QObject):
     device_event = QtCore.pyqtSignal(object)
     sound_dump = QtCore.pyqtSignal(object)
     parameter_change = QtCore.pyqtSignal(int, int, int)
-    input_conn_state_change = QtCore.pyqtSignal(bool)
-    output_conn_state_change = QtCore.pyqtSignal(bool)
-    def __init__(self, app):
+    input_conn_state_change = QtCore.pyqtSignal(int)
+    output_conn_state_change = QtCore.pyqtSignal(int)
+    def __init__(self, app, argv):
         QtCore.QObject.__init__(self)
         self.app = app
         self.font_db = QtGui.QFontDatabase()
@@ -52,7 +52,11 @@ class BigglesworthObject(QtCore.QObject):
         self.blofeld_model = LibraryModel()
         self.blofeld_library = Library(self.blofeld_model)
 
-        self.loader = LoadingThread(self, self.blofeld_library)
+        if len(argv) > 1 and argv[1].isdigit():
+            limit = int(argv[1])
+        else:
+            limit = None
+        self.loader = LoadingThread(self, self.blofeld_library, limit)
         self.loader_thread = QtCore.QThread()
         self.loader.moveToThread(self.loader_thread)
         self.loader_thread.started.connect(self.loader.run)
@@ -78,13 +82,20 @@ class BigglesworthObject(QtCore.QObject):
         self.editor.program_change.connect(self.program_change_request)
         self.parameter_change.connect(self.editor.receive_value)
         self.output_conn_state_change.connect(self.editor.midi_output_state)
+        self.input_conn_state_change.connect(self.editor.midi_input_state)
 
-        self.globals = Globals(self)
+        self.globals = Globals(self, self.librarian)
+        self.globals.midi_event.connect(self.output_event)
         self.globals_event.connect(self.activate_globals)
-        self.globals.setModal(True)
         self.globals.buttonBox.button(QtGui.QDialogButtonBox.Reset).clicked.connect(self.globals_request)
 
         self.librarian.show()
+        self.midiwidget = MidiWidget(self)
+        self.mididialog = MidiDialog(self, self.editor)
+        self.editor.show_midi_dialog.connect(self.mididialog.show)
+
+        self.settings_dialog = SettingsDialog(self, self.librarian)
+#        self.settings_dialog.show()
 
     def new_alsa_port(self, port):
         if port.client.name == 'Blofeld' and port.name == 'Blofeld MIDI 1':
@@ -93,9 +104,9 @@ class BigglesworthObject(QtCore.QObject):
 
     def alsa_conn_event(self, conn, state):
         if conn.dest == self.input:
-            self.input_conn_state_change.emit(False if not len(self.output.connections.output) else True)
+            self.input_conn_state_change.emit(len([c for c in self.input.connections.input if not c.hidden]))
         elif conn.src == self.output:
-            self.output_conn_state_change.emit(False if not len(self.output.connections.output) else True)
+            self.output_conn_state_change.emit(len([c for c in self.output.connections.output if not c.hidden]))
 
     def midi_connect(self):
         for cid, client in self.graph.client_id_dict.items():
@@ -533,7 +544,7 @@ def main():
     app.setApplicationName('Bigglesworth')
 #    app.setQuitOnLastWindowClosed(False)
     cursor_list.extend((QtCore.Qt.SizeAllCursor, UpCursorClass(), DownCursorClass(), LeftCursorClass(), RightCursorClass()))
-    bigglesworth = BigglesworthObject(app)
+    bigglesworth = BigglesworthObject(app, argv)
     sys.exit(app.exec_())
     print 'Blofix has been quit!'
 

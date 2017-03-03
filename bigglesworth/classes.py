@@ -8,7 +8,178 @@ import midifile
 
 from midiutils import SysExEvent
 from const import *
-from utils import load_ui
+from utils import load_ui, setBold
+
+class MidiWidget(QtGui.QWidget):
+    def __init__(self, main):
+        QtGui.QDialog.__init__(self, parent=None)
+        self.main = main
+
+        layout = QtGui.QGridLayout()
+        self.setLayout(layout)
+        self.input_lbl = QtGui.QLabel('INPUT')
+        layout.addWidget(self.input_lbl, 0, 0)
+        self.input_listview = QtGui.QListView(self)
+        self.input_listview.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.input_listview.setEditTriggers(QtGui.QListView.NoEditTriggers)
+        layout.addWidget(self.input_listview, 1, 0, QtCore.Qt.AlignHCenter)
+        line = QtGui.QFrame()
+        line.setFrameShape(QtGui.QFrame.VLine)
+        layout.addWidget(line, 0, 1, 2, 1)
+        self.output_lbl = QtGui.QLabel('OUTPUT')
+        layout.addWidget(self.output_lbl, 0, 2, QtCore.Qt.AlignHCenter)
+        self.output_listview = QtGui.QListView(self)
+        self.output_listview.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.output_listview.setEditTriggers(QtGui.QListView.NoEditTriggers)
+        layout.addWidget(self.output_listview, 1, 2)
+        self.refresh_btn = QtGui.QPushButton('Refresh')
+        layout.addWidget(self.refresh_btn, 2, 0, 1, 3)
+
+        self.graph = self.main.graph
+        self.input = self.main.input
+        self.output = self.main.output
+        self.graph.graph_changed.connect(self.refresh_all)
+        self.refresh_all()
+        self.refresh_btn.clicked.connect(self.refresh_all)
+
+        self.input_listview.doubleClicked.connect(self.port_connect_toggle)
+        self.output_listview.doubleClicked.connect(self.port_connect_toggle)
+        self.input_listview.customContextMenuRequested.connect(self.port_menu)
+        self.output_listview.customContextMenuRequested.connect(self.port_menu)
+
+    def _get_port_from_item_data(self, model, index):
+        return self.graph.port_id_dict[model.data(index, ClientRole).toInt()[0]][model.data(index, PortRole).toInt()[0]]
+
+    def port_menu(self, pos):
+        sender = self.sender()
+        model = sender.model()
+        index = sender.indexAt(pos)
+        item = model.item(index.row())
+        actions = []
+        if item.isEnabled():
+            port = self._get_port_from_item_data(model, index)
+            if (sender == self.input_listview and self.input in [conn.dest for conn in port.connections.output]) or\
+                (sender == self.output_listview and self.output in [conn.src for conn in port.connections.input]):
+                disconnect_action = QtGui.QAction('Disconnect', self)
+                disconnect_action.triggered.connect(lambda: self.port_connect_toggle(index, sender))
+                actions.append(disconnect_action)
+            else:
+                connect_action = QtGui.QAction('Connect', self)
+                connect_action.triggered.connect(lambda: self.port_connect_toggle(index, sender))
+                actions.append(connect_action)
+            sep = QtGui.QAction(self)
+            sep.setSeparator(True)
+            actions.append(sep)
+        disconnect_all_action = QtGui.QAction('Disconnect all', self)
+        actions.append(disconnect_all_action)
+        if sender == self.input_listview:
+            disconnect_all_action.triggered.connect(lambda: self.input.disconnect_all())
+        elif sender == self.output_listview:
+            disconnect_all_action.triggered.connect(lambda: self.output.disconnect_all())
+
+        menu = QtGui.QMenu()
+        menu.addActions(actions)
+        menu.exec_(sender.mapToGlobal(pos))
+
+    def port_connect_toggle(self, index, sender=None):
+        if sender is None:
+            sender = self.sender()
+        if sender == self.input_listview:
+            port = self._get_port_from_item_data(self.input_model, index)
+            if self.input in [conn.dest for conn in port.connections.output]:
+                port.disconnect(self.input)
+            else:
+                port.connect(self.input)
+        elif sender == self.output_listview:
+            port = self._get_port_from_item_data(self.output_model, index)
+            if self.output in [conn.src for conn in port.connections.input]:
+                self.output.disconnect(port)
+            else:
+                self.output.connect(port)
+
+    def refresh_all(self):
+        self.input_model = QtGui.QStandardItemModel()
+        self.input_listview.setModel(self.input_model)
+        self.output_model = QtGui.QStandardItemModel()
+        self.output_listview.setModel(self.output_model)
+        for client in [self.graph.client_id_dict[cid] for cid in sorted(self.graph.client_id_dict.keys())]:
+            in_port_list = []
+            out_port_list = []
+            for port in client.ports:
+                if port.hidden or port.client == self.main.input.client:
+                    continue
+                if port.is_output:
+                    in_port_list.append(port)
+                if port.is_input:
+                    out_port_list.append(port)
+            if len(in_port_list):
+                in_client_item = QtGui.QStandardItem('{} ({})'.format(client.name, client.id))
+                self.input_model.appendRow(in_client_item)
+                in_client_item.setEnabled(False)
+                for port in in_port_list:
+                    in_item = QtGui.QStandardItem('  {}'.format(port.name))
+                    in_item.setData(QtCore.QVariant(client.id), ClientRole)
+                    in_item.setData(QtCore.QVariant(port.id), PortRole)
+                    self.input_model.appendRow(in_item)
+                    if any([conn for conn in port.connections.output if conn.dest == self.input]):
+                        in_item.setData(QtGui.QBrush(QtCore.Qt.blue), QtCore.Qt.ForegroundRole)
+                        setBold(in_item)
+                    else:
+                        in_item.setData(QtGui.QBrush(QtCore.Qt.black), QtCore.Qt.ForegroundRole)
+                        setBold(in_item, False)
+            if len(out_port_list):
+                out_client_item = QtGui.QStandardItem('{} ({})'.format(client.name, client.id))
+                self.output_model.appendRow(out_client_item)
+                out_client_item.setEnabled(False)
+                for port in out_port_list:
+                    out_item = QtGui.QStandardItem('  {}'.format(port.name))
+                    out_item.setData(QtCore.QVariant(client.id), ClientRole)
+                    out_item.setData(QtCore.QVariant(port.id), PortRole)
+                    self.output_model.appendRow(out_item)
+                    if any([conn for conn in port.connections.input if conn.src == self.output]):
+                        out_item.setData(QtGui.QBrush(QtCore.Qt.blue), QtCore.Qt.ForegroundRole)
+                        setBold(out_item)
+                    else:
+                        out_item.setData(QtGui.QBrush(QtCore.Qt.black), QtCore.Qt.ForegroundRole)
+                        setBold(out_item, False)
+
+        cx_text = [
+                   (self.input.connections.input, self.input_lbl, 'INPUT'), 
+                   (self.output.connections.output, self.output_lbl, 'OUTPUT'), 
+                   ]
+        for cx, lbl, ptxt in cx_text:
+            n_conn = len([conn for conn in cx if not conn.hidden])
+            cx_txt = ptxt
+            if not n_conn:
+                cx_txt += ' (not connected)'
+            elif n_conn == 1:
+                cx_txt += ' (1 connection)'
+            else:
+                cx_txt += ' ({} connections)'.format(n_conn)
+            lbl.setText(cx_txt)
+
+class MidiDialog(QtGui.QDialog):
+    def __init__(self, main, parent):
+        QtGui.QDialog.__init__(self, parent)
+        self.main = main
+        self.setModal(True)
+        layout = QtGui.QVBoxLayout()
+        self.setLayout(layout)
+
+    def show(self):
+        self.layout().addWidget(self.main.midiwidget)
+        QtGui.QDialog.show(self)
+
+class SettingsDialog(QtGui.QDialog):
+    def __init__(self, main, parent):
+        QtGui.QDialog.__init__(self, parent)
+        self.main = main
+        self.setModal(True)
+        load_ui(self, 'settings.ui')
+
+    def show(self):
+        self.midi_groupbox.layout().addWidget(self.main.midiwidget)
+        QtGui.QDialog.show(self)
 
 class DirCursorClass(QtGui.QCursor):
     limit_pen = QtGui.QPen(QtCore.Qt.black, 2)
@@ -457,20 +628,21 @@ class LibraryProxy(QtGui.QSortFilterProxyModel):
 
 class LoadingThread(QtCore.QObject):
     loaded = QtCore.pyqtSignal()
-    def __init__(self, parent, library):
+    def __init__(self, parent, library, limit=None):
+        self.limit = limit
         QtCore.QObject.__init__(self)
         self.library = library
 
     def run(self):
         pattern = midifile.read_midifile(local_path('presets/blofeld_fact_080103/blofeld_fact_080103.mid'))
         track = pattern[0]
-        _ = 0
+        i = 0
         sound_list = []
         for event in track:
             if isinstance(event, midifile.SysexEvent):
                 sound_list.append(Sound(event.data[6:391]))
-                _ += 1
-#                if _ == 210: break
+                i += 1
+                if i == self.limit: break
         self.library.addSoundBulk(sound_list)
         self.loaded.emit()
 
@@ -563,11 +735,13 @@ class PopupSpin(QtGui.QDoubleSpinBox):
 
 class Globals(QtGui.QDialog):
     midi_event = QtCore.pyqtSignal(object)
-    def __init__(self, main):
-        QtGui.QDialog.__init__(self, parent=None)
-        load_ui(self, 'globals.ui')
+    def __init__(self, main, parent):
         pt = namedtuple('pt', 'index delta')
         pt.__new__.__defaults__ = (0, )
+        QtGui.QDialog.__init__(self, parent)
+        load_ui(self, 'globals.ui')
+        self.setModal(True)
+
         self.main = main
         self.graph = main.graph
         self.input = main.input
@@ -660,10 +834,10 @@ class Globals(QtGui.QDialog):
         self.sysex = sysex
         data = sysex[5:-2]
         self.receiving = True
-        if self.data:
-            for i, v in enumerate(self.data):
-                if v != data[i]:
-                    print 'value {} changed from {} to {}'.format(i, v, data[i])
+#        if self.data:
+#            for i, v in enumerate(self.data):
+#                if v != data[i]:
+#                    print 'value {} changed from {} to {}'.format(i, v, data[i])
         for w, p in self.param_dict.items():
             if isinstance(w, QtGui.QSpinBox):
                 w.setValue(data[p.index] + p.delta)

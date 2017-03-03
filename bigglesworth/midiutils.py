@@ -718,6 +718,12 @@ class Connection(QtCore.QObject):
             self.graph.conn_deleted(self)
             return '(destroyed) Conn ({}:{}) > ({}:{})'.format(self.src.client.id, self.src.id, self.dest.client.id, self.dest.id)
 
+    def delete(self):
+        try:
+            self.seq.disconnect_ports(self.src.addr, self.dest.addr)
+        except alsaseq.SequencerError:
+            print 'Disconnect not successful'
+
 class Port(QtCore.QObject):
     connection = QtCore.pyqtSignal(object, object)
     disconnection = QtCore.pyqtSignal(object, object)

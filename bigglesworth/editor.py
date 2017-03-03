@@ -1222,6 +1222,54 @@ class ArpEditor(QtGui.QGraphicsView):
         self.arp_widget.setX(self.layout.itemAt(1, 1).x()-self.reference_step.x()*ratio)
         self.update()
 
+class MidiInDisplayButton(DisplayButton):
+    path = QtGui.QPainterPath()
+    path.moveTo(0, 3)
+    path.lineTo(5, 3)
+    path.arcMoveTo(3, 0, 6, 6, 135)
+    path.arcTo(3, 0, 6, 6, 135, -270)
+    path.translate(.5, 0)
+    type_txt = 'input'
+    def __init__(self, parent):
+        self.font = QtGui.QFont('Fira Sans', 11, QtGui.QFont.Light)
+        self.font_metrics = QtGui.QFontMetrics(self.font)
+        self.text = '0'
+        DisplayButton.__init__(self, parent)
+        self.normal_frame_border_pen = self.normal_frame_border_pen.lighter(105)
+        self.normal_frame_border_brush = self.normal_frame_border_brush.lighter(125)
+        self.frame_border_pen = self.normal_frame_border_pen
+        self.frame_border_brush = self.normal_frame_border_brush
+        self.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Maximum)
+        self.setMinimumHeight(max(self.path.boundingRect().height(), self.font_metrics.height()))
+        self.setMaximumWidth(self.path.boundingRect().width()+self.font_metrics.width('0')*3+4)
+        self.setAcceptHoverEvents(False)
+        self.brush = self.off_brush
+        self.setConn(0)
+
+    def setConn(self, conn):
+        self.text = str(conn)
+        if conn:
+            if conn > 1:
+                tooltip = 'MIDI {} connected to {} ports'.format(self.type_txt, conn)
+            else:
+                tooltip = 'MIDI {} connected to 1 port'.format(self.type_txt)
+            self.pen = self.on_pen
+            self.text_pen = self.on_pen
+        else:
+            tooltip = 'MIDI {} not connected'.format(self.type_txt)
+            self.pen = self.off_pen
+            self.text_pen = self.off_pen
+        self.setToolTip(tooltip)
+        self.update()
+
+class MidiOutDisplayButton(MidiInDisplayButton):
+    path = QtGui.QPainterPath()
+    path.arcMoveTo(0, 0, 6, 6, 45)
+    path.arcTo(0, 0, 6, 6, 45, 270)
+    path.moveTo(4, 3)
+    path.lineTo(8, 3)
+    type_txt = 'output'
+
 class MidiDisplayButton(DisplayButton):
     def __init__(self, parent):
         self.path = QtGui.QPainterPath()
@@ -1237,7 +1285,14 @@ class MidiDisplayButton(DisplayButton):
         DisplayButton.__init__(self, parent)
 #        self._setState(False)
         self.brush = self.off_brush
-        self.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Expanding)
+        self.normal_frame_border_pen = self.normal_frame_border_pen.lighter(105)
+        self.normal_frame_border_brush = self.normal_frame_border_brush.lighter(125)
+        self.focus_frame_border_brush = self.focus_frame_border_brush.lighter(125)
+        self.frame_border_pen = self.normal_frame_border_pen
+        self.frame_border_brush = self.normal_frame_border_brush
+        self.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.Maximum)
+        self.setMinimumHeight(max(self.path.boundingRect().height(), self.font_metrics.height()))
+#        self.setMaximumHeight(32)
         self.setToolTip('Open MIDI connections dialog\n(right click for direct access menu)')
         self.led_timer = QtCore.QTimer()
         self.led_timer.setSingleShot(True)
@@ -1384,16 +1439,27 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         self.status = SmallLabelTextWidget('Ready', panel)
         self.status_bar.addItem(self.status, 0, 1, QtCore.Qt.AlignLeft)
 
+        buttons_layout = QtGui.QGraphicsGridLayout()
+        layout.addItem(buttons_layout, 0, 3, 2, 1)
         self.midi_btn = MidiDisplayButton(panel)
-        layout.addItem(self.midi_btn, 0, 3)
+        buttons_layout.addItem(self.midi_btn, 0, 0, 1, 2)
+        self.midi_in = MidiInDisplayButton(panel)
+        buttons_layout.addItem(self.midi_in, 1, 0)
+        self.midi_out = MidiOutDisplayButton(panel)
+        buttons_layout.addItem(self.midi_out, 1, 1)
+        spacer = DisplayVSpacer(panel)
+        spacer.setMaximumHeight(1000)
+        spacer.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Maximum)
+        buttons_layout.addItem(spacer, 2, 0)
 
         self.panel.setGraphicsEffect(self.shadow)
 
     def mouseReleaseEvent(self, event):
         item = self.scene.itemAt(event.pos())
         if item is None: return
-        if isinstance(item, DisplayButton):
-            QtGui.QGraphicsView.mouseReleaseEvent(self, event)
+        if isinstance(item, MidiDisplayButton):
+            self.main.show_midi_dialog.emit()
+#            QtGui.QGraphicsView.mouseReleaseEvent(self, event)
             return
         sound = self.main.sound
         bank = sound.bank
@@ -1449,8 +1515,14 @@ class BlofeldDisplay(QtGui.QGraphicsView):
 
     def contextMenuEvent(self, event):
         item = self.scene.itemAt(event.pos())
-        if isinstance(item, MidiDisplayButton):
+        if item == self.midi_btn:
             self.show_midi_menu(event.pos())
+            return
+        elif item == self.midi_in:
+            self.show_midi_menu(event.pos(), output=False)
+            return
+        elif item == self.midi_out:
+            self.show_midi_menu(event.pos(), input=False)
             return
         bank = self.main.sound.bank
         if item == self.prog_name:
@@ -1514,12 +1586,19 @@ class BlofeldDisplay(QtGui.QGraphicsView):
             return
         self.main.setSound(bank, prog, pgm_send=True)
 
-    def show_midi_menu(self, pos):
+    def show_midi_menu(self, pos, input=True, output=True):
         menu = QtGui.QMenu()
+
         in_menu = QtGui.QMenu()
+        in_disconnect = QtGui.QAction('Disconnect all', in_menu)
+        in_menu.addAction(in_disconnect)
         menu.addMenu(in_menu)
+
         out_menu = QtGui.QMenu()
+        out_disconnect = QtGui.QAction('Disconnect all', out_menu)
+        out_menu.addAction(out_disconnect)
         menu.addMenu(out_menu)
+
         in_clients = False
         out_clients = False
         in_menu_connections = 0
@@ -1570,9 +1649,29 @@ class BlofeldDisplay(QtGui.QGraphicsView):
             out_menu.setEnabled(False)
         else:
             out_menu.setTitle('Output ({})'.format(out_menu_connections))
-        res = menu.exec_(self.mapToGlobal(pos))
+
+        if not in_menu_connections:
+            in_disconnect.setEnabled(False)
+        if not out_menu_connections:
+            out_disconnect.setEnabled(False)
+
+        if input and output:
+            res = menu.exec_(self.mapToGlobal(pos))
+        elif input:
+            res = in_menu.exec_(self.mapToGlobal(pos))
+        else:
+            res = out_menu.exec_(self.mapToGlobal(pos))
+
         if not res: return
-        if res.parent() == in_menu:
+        if res == in_disconnect:
+            for conn in self.main.input.connections:
+                if conn.hidden: continue
+                conn.delete()
+        elif res == out_disconnect:
+            for conn in self.main.output.connections:
+                if conn.hidden: continue
+                conn.delete()
+        elif res.parent() == in_menu:
             port = res.data().toPyObject()
             if res.isChecked():
                 port.connect(self.main.input)
@@ -1639,6 +1738,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
 class Editor(QtGui.QMainWindow):
     midi_event = QtCore.pyqtSignal(object)
     program_change = QtCore.pyqtSignal(int, int)
+    show_midi_dialog = QtCore.pyqtSignal()
     show_librarian = QtCore.pyqtSignal()
     object_dict = {attr:ParamObject(param_tuple) for attr, param_tuple in Params.param_names.items()}
     with open(local_path('blofeld_efx'), 'rb') as _fx:
@@ -1821,9 +1921,13 @@ class Editor(QtGui.QMainWindow):
         elif res == about_item:
             QtGui.QMessageBox.information(self, 'Ahem...', 'Sorry, I\'m not ready yet!')
 
-    def midi_output_state(self, state):
-        self.pgm_send_btn.setEnabled(state)
-        self.midi_send_btn.setEnabled(state)
+    def midi_output_state(self, conn):
+        self.pgm_send_btn.setEnabled(conn)
+        self.midi_send_btn.setEnabled(conn)
+        self.display.midi_out.setConn(conn)
+
+    def midi_input_state(self, conn):
+        self.display.midi_in.setConn(conn)
 
     def keyPressEvent(self, event):
         if event.isAutoRepeat(): return
