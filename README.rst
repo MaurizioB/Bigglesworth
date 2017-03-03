@@ -1,8 +1,10 @@
 Bigglesworth
 ============
 
-|Screenshot|
+.. figure:: https://cloud.githubusercontent.com/assets/523596/23536073/e25f7e08-ffc2-11e6-9af5-dfd48cd2e906.jpg
+   :alt: Screenshot
 
+   Screenshot
 | Bigglesworth is a GNU/Linux editor and librarian for the Waldorf
 Blofeld synthesizer.
 | This is an early version, some of the features are not available yet.
@@ -55,7 +57,9 @@ What works
 -  Sound dumping (single, bank or full).
 -  Sound parameters sending for the current sound in "Sound Mode Edit
    Buffer", not for Multi Mode.
--  Virtual keyboard.
+-  Virtual keyboard from the Editor window.
+-  Global parameters send/receive (requires USB connection the Desktop
+   version, since both input and output MIDI is required)
 
 What doesn't work (yet)
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -67,7 +71,7 @@ Future
 ~~~~~~
 
 Apart from completing what is in the *What doesn't work* section above
-and fixing the whole Editor window, I'll add: - MIDI configuration
+and fixing the whole Editor window, I'll add: - full MIDI connection
 panel, with auto-connect features - Factory/User library, even with
 different custom libraries (older versions, etc.) - MIDI input and
 mapping, to allow the use of an external control surface, also using a
@@ -82,15 +86,12 @@ Known issues
 
 Since I'm still in the middle of the development, a lot of (unexpected)
 things still happen. Anyway. - some scaled dials don't look very good -
-the base font might not be installed on your system, I'm still looking
-for the best font for the interface, then I'll include in the repository
-- the whole Editor window layout is temporary and resizing is allowed.
-This means that the controls can be ugly and in unexpected places - the
-Librarian doesn't know the current sound if you don't manually change it
-from the Blofeld, this means that if you manually send a sound dump from
-the Blofeld, it will not know what to do with it. If you want to edit a
-sound coming from the Blofeld, you have to select it by changing at
-least 2 sounds from it (I suppose it's a bug).
-
-.. |Screenshot| image:: https://cloud.githubusercontent.com/assets/523596/23189288/8c5b8948-f892-11e6-8677-aa0b565ff32f.jpg
-   :target: https://cloud.githubusercontent.com/assets/523596/23169061/a8af598c-f84a-11e6-88eb-71d16c906ee8.jpg
+the base font family might not be installed on your system, I'm still
+looking for the best font for the interface, then I'll include in the
+repository - the whole Editor window layout is temporary and resizing is
+allowed. This means that the controls can be ugly and in unexpected
+places - the Librarian doesn't know the current sound if you don't
+manually change it from the Blofeld, this means that if you manually
+send a sound dump from the Blofeld, it will not know what to do with it.
+If you want to edit a sound coming from the Blofeld, you have to select
+it by changing at least 2 sounds from it (I suppose it's a bug).
