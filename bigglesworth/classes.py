@@ -18,11 +18,11 @@ class MidiWidget(QtGui.QWidget):
         layout = QtGui.QGridLayout()
         self.setLayout(layout)
         self.input_lbl = QtGui.QLabel('INPUT')
-        layout.addWidget(self.input_lbl, 0, 0)
+        layout.addWidget(self.input_lbl, 0, 0, QtCore.Qt.AlignHCenter)
         self.input_listview = QtGui.QListView(self)
         self.input_listview.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.input_listview.setEditTriggers(QtGui.QListView.NoEditTriggers)
-        layout.addWidget(self.input_listview, 1, 0, QtCore.Qt.AlignHCenter)
+        layout.addWidget(self.input_listview, 1, 0)
         line = QtGui.QFrame()
         line.setFrameShape(QtGui.QFrame.VLine)
         layout.addWidget(line, 0, 1, 2, 1)
@@ -52,9 +52,10 @@ class MidiWidget(QtGui.QWidget):
 
     def showEvent(self, event):
         if self.input_model.rowCount():
-            self.input_listview.setMinimumHeight(self.input_listview.sizeHintForRow(0)*8)
+            self.input_listview.setMinimumHeight(self.input_listview.sizeHintForRow(0)*12)
         elif self.input_model.rowCount():
-            self.output_listview.setMinimumHeight(self.output_listview.sizeHintForRow(0)*8)
+            self.output_listview.setMinimumHeight(self.output_listview.sizeHintForRow(0)*12)
+        self.setMinimumWidth(400)
 
     def port_menu(self, pos):
         sender = self.sender()
