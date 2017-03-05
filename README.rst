@@ -38,12 +38,6 @@ main directory:
 
     $ ./Bigglesworth
 
-If it doesn't work, just browse to the bigglesworth directory and run:
-
-::
-
-    $ python __init__.py
-
 A small window will show, listing the latest version of the presets from
 Waldorf, from here you can edit a sound by right clicking on it.
 
@@ -58,18 +52,20 @@ version doesn't have a MIDI out port.
 What works
 ~~~~~~~~~~
 
--  Sound dumping (single, bank or full).
--  Sound parameters sending for the current sound in "Sound Mode Edit Buffer", 
-   not for Multi Mode.
--  Virtual keyboard from the Editor window.
--  Global parameters send/receive (requires USB connection the Desktop version,
-   since both input and output MIDI is required)
+- Sound dumping (single, bank or full).
+- Sound parameters sending for the current sound in "Sound Mode Edit Buffer", 
+  not for Multi Mode.
+- Virtual keyboard from the Editor window.
+- Global parameters send/receive (requires USB connection the Desktop version,
+  since both input and output MIDI is required)
+- MIDI connections (through menu and dialog), remember connections
 
 What doesn't work (yet)
 ~~~~~~~~~~~~~~~~~~~~~~~
 
--  Everything related to sound saving (rename, saving current sound parameters, 
-   ordering)
+- Multi Mode editing
+- Everything related to sound saving (rename, saving current sound parameters, 
+  ordering)
 
 Future
 ~~~~~~
@@ -77,7 +73,6 @@ Future
 Apart from completing what is in the *What doesn't work* section above
 and fixing the whole Editor window, I'll add:
 
-- full MIDI connection panel, with auto-connect features
 - Factory/User library, even with custom libraries (older versions, etc.)
 - MIDI input and mapping, to allow the use of an external control surface, also
   using a "live mode": a simple MIDI interface for the control surface, without
@@ -87,23 +82,24 @@ and fixing the whole Editor window, I'll add:
 - arpeggiator template library
 - WaveTable management (and editing?); but I'm afraid I'll need the sampling 
   license for that...
+- Online shared sound presets
 - coffee maker
 
 Known issues
 ------------
 
 Since I'm still in the middle of the development, a lot of (unexpected)
-things still happen. Anyway.
+things still happen... Anyway.
 
 - some scaled dials don't look very good
 - the base font family might not be installed on your system, I'm still 
   looking for the best font for the interface, then I'll include in the
   repository 
 - the whole Editor window layout is temporary and resizing is allowed. This
-  means that the controls can be ugly and in unexpected places
+  means that the controls can look ugly and in unexpected places
 - the Librarian doesn't know the current sound if you don't manually change it 
   from the Blofeld, this means that if you manually send a sound dump from the 
   Blofeld, it will not know what to do with it.
   If you want to edit a sound coming from the Blofeld, you have to select it by
-  changing at least 2 sounds from it (I suppose it's a bug).
+  changing at least 2 sounds from it (I suppose it's a firmware bug).
 

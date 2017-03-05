@@ -237,12 +237,25 @@ class BaseTextWidget(BaseDisplayWidget):
         painter.setFont(self.font)
         painter.drawText(self.rect(), self.text_align, self.text)
 
-class LabelTextWidget(BaseTextWidget):
+class ProgLabelTextWidget(BaseTextWidget):
     def __init__(self, text, parent):
         BaseTextWidget.__init__(self, text, parent)
         self.font = QtGui.QFont('Fira Sans', 22)
         self.font_metrics = QtGui.QFontMetrics(self.font)
         self.setMinimumSize(self.font_metrics.width(self.text), self.font_metrics.height())
+        while len(self.text) < 16:
+            self.text += ' '
+        self.text = QtCore.QString.fromUtf8(self.text)
+        self.text_list = QtCore.QStringList([l for l in self.text])
+
+    def setChar(self, pos, char):
+        if char == 127:
+            readable = QtCore.QString.fromUtf8('°')
+        else:
+            readable = QtCore.QString(unichr(char))
+        self.text_list[pos] = readable
+        self.text = self.text_list.join('')
+        self.update()
 
 class SmallTextWidget(BaseTextWidget):
     def __init__(self, text, parent):
@@ -273,6 +286,10 @@ class CatTextWidget(SmallTextWidget):
         self.setMinimumSize(width, self.font_metrics.height())
         self.setMaximumSize(width, self.font_metrics.height())
         self.text_align = QtCore.Qt.AlignRight
+
+    def setCat(self, cat):
+        self.text = categories[cat]
+        self.update()
 
 class DisplayVSpacer(QtGui.QGraphicsWidget):
     def __init__(self, parent, size=2):
@@ -984,7 +1001,7 @@ class StepLine(BaseDisplayWidget):
         painter.setPen(self.pen)
         painter.drawLine(0, 0, 0, self.rect().height())
 
-class ArpStepObject(QtCore.QObject):
+class FakeObject(QtCore.QObject):
     valueChanged = QtCore.pyqtSignal(int)
     def __init__(self, parent):
         self.main = parent
@@ -1032,19 +1049,19 @@ class ArpEditor(QtGui.QGraphicsView):
         self.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.MinimumExpanding)
 
         for step in range(16):
-            step_object = ArpStepObject(self)
+            step_object = FakeObject(self)
             step_object.valueChanged.connect(lambda value, step=step: self.step_type_list[step]._setCurrentIndex(value))
             parent.object_dict['Arp_Pattern_Step_Glide_Accent_{}'.format(step+1)].add(step_object, 'Step')
-            glide_object = ArpStepObject(self)
+            glide_object = FakeObject(self)
             glide_object.valueChanged.connect(lambda state, step=step: self.glide_list[step]._setState(state))
             parent.object_dict['Arp_Pattern_Step_Glide_Accent_{}'.format(step+1)].add(glide_object, 'Glide')
-            accent_object = ArpStepObject(self)
+            accent_object = FakeObject(self)
             accent_object.valueChanged.connect(lambda value, step=step: self.step_list[step].setAccent(value))
             parent.object_dict['Arp_Pattern_Step_Glide_Accent_{}'.format(step+1)].add(accent_object, 'Accent')
-            timing_object = ArpStepObject(self)
+            timing_object = FakeObject(self)
             timing_object.valueChanged.connect(lambda value, step=step: self.step_list[step].setTiming(value))
             parent.object_dict['Arp_Pattern_Timing_Length_{}'.format(step+1)].add(timing_object, 'Timing')
-            length_object = ArpStepObject(self)
+            length_object = FakeObject(self)
             length_object.valueChanged.connect(lambda value, step=step: self.step_list[step].setLength(value))
             parent.object_dict['Arp_Pattern_Timing_Length_{}'.format(step+1)].add(length_object, 'Length')
 #        self.valueChanged.connect(lambda value: setattr(self.main, self.attr, value))
@@ -1226,9 +1243,9 @@ class MidiInDisplayButton(DisplayButton):
     path = QtGui.QPainterPath()
     path.moveTo(0, 3)
     path.lineTo(5, 3)
-    path.arcMoveTo(3, 0, 6, 6, 135)
-    path.arcTo(3, 0, 6, 6, 135, -270)
-    path.translate(.5, 0)
+    path.arcMoveTo(3, 0, 5.5, 6, 135)
+    path.arcTo(3, 0, 5.5, 6, 135, -270)
+#    path.translate(.5, 0)
     type_txt = 'input'
     def __init__(self, parent):
         self.font = QtGui.QFont('Fira Sans', 11, QtGui.QFont.Light)
@@ -1264,8 +1281,8 @@ class MidiInDisplayButton(DisplayButton):
 
 class MidiOutDisplayButton(MidiInDisplayButton):
     path = QtGui.QPainterPath()
-    path.arcMoveTo(0, 0, 6, 6, 45)
-    path.arcTo(0, 0, 6, 6, 45, 270)
+    path.arcMoveTo(0, 0, 5.5, 6, 45)
+    path.arcTo(0, 0, 5.5, 6, 45, 270)
     path.moveTo(4, 3)
     path.lineTo(8, 3)
     type_txt = 'output'
@@ -1351,7 +1368,14 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         self.shadow.setColor(QtGui.QColor(100, 100, 100, 150))
         self.create_layout()
         self.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.Preferred)
-#        self.setViewportUpdateMode(QtGui.QGraphicsView.FullViewportUpdate)
+
+        for char in range(16):
+            char_object = FakeObject(self)
+            char_object.valueChanged.connect(lambda value, char=char: self.prog_name.setChar(char, value))
+            parent.object_dict['Name_Char_{:02}'.format(char)].add(char_object)
+        cat_object = FakeObject(self)
+        cat_object.valueChanged.connect(lambda value: self.cat_name.setCat(value))
+        parent.object_dict['Category'].add(cat_object)
 
     def create_layout(self):
         panel = QtGui.QGraphicsWidget()
@@ -1428,7 +1452,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         self.edit_mode_label = SmallLabelTextWidget('Sound mode Edit buffer', panel)
 #        self.edit_mode_label.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         layout.addItem(self.edit_mode_label, 0, 2)
-        self.prog_name = LabelTextWidget('Mini moog super', panel)
+        self.prog_name = ProgLabelTextWidget('Mini moog super', panel)
         layout.addItem(self.prog_name, 1, 2)
 
         self.status_bar = QtGui.QGraphicsGridLayout()
@@ -1722,24 +1746,27 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         self.statusUpdate('{} changed: {}'.format(param.name, value))
 
     def statusUpdate(self, text):
-        self.status.text = text
+        self.status.text = QtCore.QString.fromUtf8(text)
         self.update()
         self.panel.update()
 
     def setSound(self):
         sound = self.main.sound
-        self.prog_name.text = sound.name
+#        self.prog_name.text = sound.name
         self.bank.text = uppercase[sound.bank]
         self.prog.text = '{:03}'.format(sound.prog+1)
-        self.cat_name.text = categories[sound.cat]
+#        self.cat_name.text = categories[sound.cat]
         self.update()
         self.panel.update()
 
 class Editor(QtGui.QMainWindow):
     midi_event = QtCore.pyqtSignal(object)
     program_change = QtCore.pyqtSignal(int, int)
+    midi_send = QtCore.pyqtSignal(bool)
+    pgm_send = QtCore.pyqtSignal(bool)
     show_midi_dialog = QtCore.pyqtSignal()
     show_librarian = QtCore.pyqtSignal()
+
     object_dict = {attr:ParamObject(param_tuple) for attr, param_tuple in Params.param_names.items()}
     with open(local_path('blofeld_efx'), 'rb') as _fx:
         efx_params = pickle.load(_fx)
@@ -1763,7 +1790,6 @@ class Editor(QtGui.QMainWindow):
         self.channel = 0
         self.octave = 0
         self.params = Params
-        self.pgm_send = False
         self.send = False
         self.notify = True
         self.envelopes = []
@@ -1818,8 +1844,8 @@ class Editor(QtGui.QMainWindow):
         btn_layout.addWidget(open_mod)
         filter_matrix_lbl = Label(self, 'Mod Matrix Editor', QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
         btn_layout.addWidget(filter_matrix_lbl)
-        filter_matrix_cycle = cycle((0, 1))
-        filter_matrix_cycle.next()
+        self.filter_matrix_cycle = cycle((0, 1))
+        self.filter_matrix_cycle.next()
         filter_matrix_labels = 'Mod Matrix Editor', 'Filters'
 
         filter_matrix_opacity = QtGui.QGraphicsOpacityEffect()
@@ -1840,7 +1866,7 @@ class Editor(QtGui.QMainWindow):
             id = id.next()
             set_opacity(.8, delta)
 
-        open_mod.clicked.connect(lambda state, id=filter_matrix_cycle: set_filter_matrix_widget(id))
+        open_mod.clicked.connect(lambda state, id=self.filter_matrix_cycle: set_filter_matrix_widget(id))
 
         open_arp = SquareButton(self, color=QtCore.Qt.darkGreen, max_size=(20, 16))
         btn_layout.addWidget(open_arp)
@@ -2185,10 +2211,12 @@ class Editor(QtGui.QMainWindow):
         self.midi_send_btn = SquareButton(self, 'MIDI send', checkable=True, checked=False)
         self.midi_send_btn.toggled.connect(lambda state: setattr(self, 'send', state))
         self.midi_send_btn.toggled.connect(lambda state: self.display.statusUpdate('MIDI send: {}'.format('enabled' if state else 'disabled')))
+        self.midi_send_btn.toggled.connect(self.midi_send.emit)
         layout.addWidget(self.midi_send_btn, 0, 1)
         self.pgm_send_btn = SquareButton(self, 'PGM send', checkable=True, checked=False)
-        self.pgm_send_btn.toggled.connect(lambda state: setattr(self, 'pgm_send', state))
+#        self.pgm_send_btn.toggled.connect(lambda state: setattr(self, 'pgm_send', state))
         self.pgm_send_btn.toggled.connect(lambda state: self.display.statusUpdate('PGM send: {}'.format('enabled' if state else 'disabled')))
+        self.pgm_send_btn.toggled.connect(self.pgm_send.emit)
         layout.addWidget(self.pgm_send_btn, 1, 1)
 
         return layout

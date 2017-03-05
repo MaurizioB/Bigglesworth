@@ -7058,7 +7058,7 @@ S'}'
 p3124
 S'~'
 p3125
-S'\x7f'
+S'\xc2\xb0'
 p3126
 tp3127
 aS'Name Char 00'

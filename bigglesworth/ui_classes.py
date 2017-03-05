@@ -1298,6 +1298,7 @@ class Envelope(QtGui.QWidget):
         self.font_metrics = QtGui.QFontMetrics(QtGui.QFont('Decorative', 10, QtGui.QFont.Bold))
         self.create_cursors()
         self.reset_envelope()
+        self.env_rect = QtCore.QRectF(12, 4, self.width()-25, self.height()-9)
 
     def create_cursors(self):
         self.sustain_line = EnvelopeLine(self, 'Sustain', QtCore.Qt.SizeVerCursor)

@@ -50,6 +50,12 @@ class MidiWidget(QtGui.QWidget):
     def _get_port_from_item_data(self, model, index):
         return self.graph.port_id_dict[model.data(index, ClientRole).toInt()[0]][model.data(index, PortRole).toInt()[0]]
 
+    def showEvent(self, event):
+        if self.input_model.rowCount():
+            self.input_listview.setMinimumHeight(self.input_listview.sizeHintForRow(0)*8)
+        elif self.input_model.rowCount():
+            self.output_listview.setMinimumHeight(self.output_listview.sizeHintForRow(0)*8)
+
     def port_menu(self, pos):
         sender = self.sender()
         model = sender.model()
@@ -113,11 +119,18 @@ class MidiWidget(QtGui.QWidget):
                 if port.is_input:
                     out_port_list.append(port)
             if len(in_port_list):
-                in_client_item = QtGui.QStandardItem('{} ({})'.format(client.name, client.id))
+                in_client_item = QtGui.QStandardItem(client.name)
+                in_client_item.setData('<b>Client:</b> {c}<br/><b>Address:</b> {cid}'.format(c=client.name, cid=client.id), QtCore.Qt.ToolTipRole)
                 self.input_model.appendRow(in_client_item)
                 in_client_item.setEnabled(False)
                 for port in in_port_list:
                     in_item = QtGui.QStandardItem('  {}'.format(port.name))
+                    in_item.setData('<b>Client:</b> {c}<br/><b>Port:</b> {p}<br/><b>Address:</b> {cid}:{pid}'.format(
+                                                                                                               c=client.name, 
+                                                                                                               p=port.name, 
+                                                                                                               cid=client.id, 
+                                                                                                               pid=port.id), 
+                                                                                                               QtCore.Qt.ToolTipRole)
                     in_item.setData(QtCore.QVariant(client.id), ClientRole)
                     in_item.setData(QtCore.QVariant(port.id), PortRole)
                     self.input_model.appendRow(in_item)
@@ -128,11 +141,18 @@ class MidiWidget(QtGui.QWidget):
                         in_item.setData(QtGui.QBrush(QtCore.Qt.black), QtCore.Qt.ForegroundRole)
                         setBold(in_item, False)
             if len(out_port_list):
-                out_client_item = QtGui.QStandardItem('{} ({})'.format(client.name, client.id))
+                out_client_item = QtGui.QStandardItem(client.name)
+                out_client_item.setData('<b>Client:</b> {c}<br/><b>Address:</b> {cid}'.format(c=client.name, cid=client.id), QtCore.Qt.ToolTipRole)
                 self.output_model.appendRow(out_client_item)
                 out_client_item.setEnabled(False)
                 for port in out_port_list:
                     out_item = QtGui.QStandardItem('  {}'.format(port.name))
+                    out_item.setData('<b>Client:</b> {c}<br/><b>Port:</b> {p}<br/><b>Address:</b> {cid}:{pid}'.format(
+                                                                                                               c=client.name, 
+                                                                                                               p=port.name, 
+                                                                                                               cid=client.id, 
+                                                                                                               pid=port.id), 
+                                                                                                               QtCore.Qt.ToolTipRole)
                     out_item.setData(QtCore.QVariant(client.id), ClientRole)
                     out_item.setData(QtCore.QVariant(port.id), PortRole)
                     self.output_model.appendRow(out_item)
@@ -173,13 +193,32 @@ class MidiDialog(QtGui.QDialog):
 class SettingsDialog(QtGui.QDialog):
     def __init__(self, main, parent):
         QtGui.QDialog.__init__(self, parent)
-        self.main = main
-        self.setModal(True)
         load_ui(self, 'settings.ui')
+        self.main = main
+        self.settings = main.settings
+        self.setModal(True)
+#        self.tabWidget.setTabEnabled(0, False)
 
-    def show(self):
+    def exec_(self):
+        self.library_doubleclick_combo.setCurrentIndex(self.main.library_doubleclick)
+
+        self.editor_pgm_send_combo.setCurrentIndex(self.main.editor_remember_states[PGMSEND])
+        self.editor_midi_send_combo.setCurrentIndex(self.main.editor_remember_states[MIDISEND])
+        self.editor_remember_chk.setChecked(self.main.editor_remember)
+
         self.midi_groupbox.layout().addWidget(self.main.midiwidget)
-        QtGui.QDialog.show(self)
+        self.blofeld_autoconnect_chk.setChecked(self.main.blofeld_autoconnect)
+        self.remember_connections_chk.setChecked(self.main.remember_connections)
+        res = QtGui.QDialog.exec_(self)
+        if not res: return
+        self.main.blofeld_autoconnect = self.blofeld_autoconnect_chk.isChecked()
+        self.main.remember_connections = self.remember_connections_chk.isChecked()
+        self.main.library_doubleclick = self.library_doubleclick_combo.currentIndex()
+        self.main.editor_remember = self.editor_remember_chk.isChecked()
+        if self.editor_remember_chk.isChecked():
+            self.main.editor_remember_states = [self.main.editor.pgm_send_btn.isChecked(), self.main.editor.midi_send_btn.isChecked()]
+        else:
+            self.main.editor_remember_states = [bool(self.editor_pgm_send_combo.currentIndex()), bool(self.editor_midi_send_combo.currentIndex())]
 
 class DirCursorClass(QtGui.QCursor):
     limit_pen = QtGui.QPen(QtCore.Qt.black, 2)
@@ -281,7 +320,7 @@ class Sound(QtCore.QObject):
             self._bank = data[0]
             self._prog = data[1]
             self._data = data[2:]
-            self._name = ''.join([str(unichr(l)) for l in self.data[363:379]]).strip()
+            self._name = ''.join([str(unichr(l)) for l in self.data[363:379]])
             self._cat = self.data[379]
             self.source = source
             self._state = STORED|(source<<1)
@@ -350,7 +389,12 @@ class Sound(QtCore.QObject):
 
     @name.setter
     def name(self, name):
+        while len(name) < 16:
+            name += ' '
+        if len(name) > 16:
+            name = name[:16]
         self._name = name
+        self.data[363:379] = [ord(l) for l in name]
         self.nameChanged.emit(name)
         self.state = EDITED
         print 'changed name'
@@ -833,6 +877,7 @@ class Globals(QtGui.QDialog):
     def setData(self, sysex):
         self.sysex = sysex
         data = sysex[5:-2]
+        print data[:34]
         self.receiving = True
 #        if self.data:
 #            for i, v in enumerate(self.data):
@@ -861,6 +906,170 @@ class Globals(QtGui.QDialog):
         self.sysex[5:-2] = self.data
         self.sysex[-2] = 0x7f
         self.midi_event.emit(SysExEvent(1, self.sysex))
+
+class SettingsGroup(object):
+    def __init__(self, settings, name=None):
+        self._settings = settings
+        self._group = settings.group()
+        for k in settings.childKeys():
+            value = settings.value(k).toPyObject()
+            if isinstance(value, QtCore.QStringList):
+                _value = []
+                for v in value:
+                    try:
+                        v = str(v)
+                        if v.isdigit():
+                            v = int(v)
+                        elif v == 'true':
+                            v = True
+                        elif v == 'false':
+                            v = False
+                        else:
+                            v = float(v)
+                    except Exception as e:
+                        print e
+                    _value.append(v)
+                value = _value
+            elif isinstance(value, QtCore.QString):
+                value = str(value)
+                if value == 'true':
+                    value = True
+                elif value == 'false':
+                    value = False
+                elif self._is_int(value):
+                    value = int(value)
+                else:
+                    try:
+                        value = float(value)
+                    except:
+                        pass
+            setattr(self, self._decode(str(k)), value)
+        if len(self._group):
+            for g in settings.childGroups():
+                settings.beginGroup(g)
+                setattr(self, 'g{}'.format(self._decode(g)), SettingsGroup(settings))
+                settings.endGroup()
+        self._done = True
+
+    def _is_int(self, value):
+        try:
+            int(value)
+            return True
+        except:
+            return False
+
+    def _encode(self, txt):
+        txt = txt.replace('__', '::')
+        txt = txt.replace('_', ' ')
+        txt = txt.replace('::', '_')
+        return txt
+
+    def _decode(self, txt):
+        txt = txt.replace('_', '__')
+        txt = txt.replace(' ', '_')
+        return txt
+
+    def createGroup(self, name):
+        self._settings.beginGroup(self._group)
+        self._settings.beginGroup(name)
+        gname = 'g{}'.format(self._decode(name))
+        setattr(self, gname, SettingsGroup(self._settings))
+        self._settings.endGroup()
+        self._settings.endGroup()
+
+    def __setattr__(self, name, value):
+        if '_done' in self.__dict__.keys():
+            if not isinstance(value, SettingsGroup):
+                dname = self._encode(name)
+                if len(self._group):
+                    self._settings.beginGroup(self._group)
+                    self._settings.setValue(dname, value)
+                    self._settings.endGroup()
+                else:
+                    self._settings.setValue(dname, value)
+                super(SettingsGroup, self).__setattr__(name, value)
+            else:
+                super(SettingsGroup, self).__setattr__(name, value)
+        else:
+            super(SettingsGroup, self).__setattr__(name, value)
+
+    def __getattr__(self, name):
+        def save_func(value):
+            self._settings.beginGroup(self._group)
+            self._settings.setValue(self._encode(name[4:]), value)
+            self._settings.endGroup()
+            setattr(self, name[4:], value)
+            return value
+        if name.startswith('set_'):
+            obj = type('setter', (object, ), {})()
+            obj.__class__.__call__ = lambda x, y=None: setattr(self, name[4:], y)
+            return obj
+        if not name.startswith('get_'):
+            return
+        try:
+            orig = super(SettingsGroup, self).__getattribute__(name[4:])
+            if isinstance(orig, bool):
+                obj = type(type(orig).__name__, (object,), {'value': orig})()
+                obj.__class__.__call__ = lambda x,  y=None, save=False, orig=orig: orig
+                obj.__class__.__len__ = lambda x: orig
+                obj.__class__.__eq__ = lambda x, y: True if x.value==y else False
+            else:
+                obj = type(type(orig).__name__, (type(orig), ), {})(orig)
+                obj.__class__.__call__ = lambda x, y=None, save=False, orig=orig: orig
+            return obj
+        except AttributeError:
+            print 'Setting {} not found, returning default'.format(name[4:])
+            obj = type('obj', (object,), {})()
+            obj.__class__.__call__ = lambda x, y=None, save=False:y if not save else save_func(y)
+            return obj
+
+class SettingsObj(object):
+    def __init__(self, settings):
+        self._settings = settings
+        self._sdata = []
+        self._load()
+        self._done = True
+
+    def _load(self):
+        for d in self._sdata:
+            delattr(self, d)
+        self._sdata = []
+        self._settings.sync()
+        self.gGeneral = SettingsGroup(self._settings)
+        self._sdata.append('gGeneral')
+        for g in self._settings.childGroups():
+            self._settings.beginGroup(g)
+            gname = 'g{}'.format(self._decode(g))
+            self._sdata.append(gname)
+            setattr(self, gname, SettingsGroup(self._settings))
+            self._settings.endGroup()
+
+    def __getattr__(self, name):
+        if not (name.startswith('g') and name[1] in uppercase):
+            raise AttributeError(name)
+        name = name[1:]
+        self._settings.beginGroup(name)
+        gname = 'g{}'.format(self._decode(name))
+        self._sdata.append(gname)
+        new_group = SettingsGroup(self._settings)
+        setattr(self, gname, new_group)
+        self._settings.endGroup()
+        return new_group
+
+    def sync(self):
+        self._settings.sync()
+
+    def createGroup(self, name):
+        self._settings.beginGroup(name)
+        gname = 'g{}'.format(self._decode(name))
+        self._sdata.append(gname)
+        setattr(self, gname, SettingsGroup(self._settings))
+        self._settings.endGroup()
+
+    def _decode(self, txt):
+        txt = txt.replace('_', '__')
+        txt = txt.replace(' ', '_')
+        return txt
 
 
 

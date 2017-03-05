@@ -198,7 +198,7 @@
       <item>
        <widget class="QCheckBox" name="search_filter_chk">
         <property name="text">
-         <string>&amp;Filter results</string>
+         <string>Filter &amp;results</string>
         </property>
        </widget>
       </item>
@@ -243,14 +243,28 @@
      <height>17</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <addaction name="settingsAction"/>
+    <addaction name="separator"/>
+    <addaction name="quitAction"/>
+   </widget>
+   <addaction name="menuFile"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <action name="deviceAction">
+  <action name="settingsAction">
    <property name="text">
-    <string>Device</string>
+    <string>&amp;Preferences...</string>
    </property>
-   <property name="toolTip">
-    <string>Request device information</string>
+  </action>
+  <action name="quitAction">
+   <property name="text">
+    <string>&amp;Quit</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
    </property>
   </action>
  </widget>

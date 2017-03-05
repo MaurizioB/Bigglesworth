@@ -24,6 +24,10 @@ class BigglesworthObject(QtCore.QObject):
     def __init__(self, app, argv):
         QtCore.QObject.__init__(self)
         self.app = app
+        self.qsettings = QtCore.QSettings()
+        self.settings = SettingsObj(self.qsettings)
+
+#        self.app.lastWindowClosed.connect(self.save_settings)
         self.font_db = QtGui.QFontDatabase()
         self.font_db.addApplicationFont(local_path('FiraSans-Regular.ttf'))
 
@@ -63,6 +67,7 @@ class BigglesworthObject(QtCore.QObject):
 
 
         self.librarian = Librarian(self)
+        self.librarian.quitAction.triggered.connect(self.app.quit)
         self.device_event.connect(lambda event: self.device_response(event, self.librarian))
         self.sound_dump.connect(self.librarian.sound_dump)
         self.loader.loaded.connect(self.librarian.create_proxy)
@@ -76,10 +81,14 @@ class BigglesworthObject(QtCore.QObject):
         self.librarian.program_change.connect(self.program_change_request)
 
         self.editor = Editor(self)
+        self.editor.pgm_send_btn.setChecked(self.editor_remember_states[PGMSEND])
+        self.editor.midi_send_btn.setChecked(self.editor_remember_states[MIDISEND])
         self.librarian.activate_editor.connect(self.activate_editor)
         self.editor.show_librarian.connect(lambda: [self.librarian.show(), self.librarian.activateWindow()])
         self.editor.midi_event.connect(self.output_event)
         self.editor.program_change.connect(self.program_change_request)
+        self.editor.pgm_send.connect(lambda state: self.set_editor_remember(PGMSEND, state))
+        self.editor.midi_send.connect(lambda state: self.set_editor_remember(MIDISEND, state))
         self.parameter_change.connect(self.editor.receive_value)
         self.output_conn_state_change.connect(self.editor.midi_output_state)
         self.input_conn_state_change.connect(self.editor.midi_input_state)
@@ -95,25 +104,168 @@ class BigglesworthObject(QtCore.QObject):
         self.editor.show_midi_dialog.connect(self.mididialog.show)
 
         self.settings_dialog = SettingsDialog(self, self.librarian)
+        self.librarian.settingsAction.triggered.connect(self.show_settings)
 #        self.settings_dialog.show()
 
+    def show_settings(self):
+        self.settings_dialog.exec_()
+
+    @property
+    def library_doubleclick(self):
+        try:
+            return self._library_doubleclick
+        except:
+            self._library_doubleclick = self.settings.gGeneral.get_Library_doubleclick(3, True)
+            return self._library_doubleclick
+
+    @library_doubleclick.setter
+    def library_doubleclick(self, value):
+        self.settings.gGeneral.set_Library_doubleclick(value)
+        self._library_doubleclick = value
+
+    @property
+    def autoconnect(self):
+        try:
+            return self._autoconnect
+        except:
+            self._autoconnect = self.settings.gMIDI.get_Autoconnect({INPUT: set(), OUTPUT: set()}, True)
+            return self._autoconnect
+
+    @property
+    def blofeld_autoconnect(self):
+        try:
+            return self._blofeld_autoconnect
+        except:
+            self._blofeld_autoconnect = self.settings.gMIDI.get_Blofeld_autoconnect(True, True)
+            return self._blofeld_autoconnect
+
+    @blofeld_autoconnect.setter
+    def blofeld_autoconnect(self, value):
+        self.settings.gMIDI.set_Blofeld_autoconnect(value)
+        self._blofeld_autoconnect = value
+
+    @property
+    def remember_connections(self):
+        try:
+            return self._remember_connections
+        except:
+            self._remember_connections = self.settings.gMIDI.get_Remember_connections(True, True)
+            return self._remember_connections
+
+    @remember_connections.setter
+    def remember_connections(self, value):
+        self.settings.gMIDI.set_Remember_connections(value)
+        self._remember_connections = value
+
+    @property
+    def editor_remember(self):
+        try:
+            return self._editor_remember
+        except:
+            self._editor_remember = self.settings.gEditor.get_Remember(True, True)
+            return self._editor_remember
+
+    @editor_remember.setter
+    def editor_remember(self, value):
+        self.settings.gEditor.set_Remember(value)
+        self._editor_remember = value
+
+    @property
+    def editor_remember_states(self):
+        try:
+            return self._editor_remember_states
+        except:
+            self._editor_remember_states = self.settings.gEditor.get_Remember_states(list((True, True)), True)
+            return self._editor_remember_states
+
+    @editor_remember_states.setter
+    def editor_remember_states(self, value):
+        self.settings.gEditor.set_Remember_states(value)
+        self._editor_remember_states = value
+
+    @property
+    def editor_appearance_remember(self):
+        try:
+            return self._editor_appearance_remember
+        except:
+            self._editor_appearance_remember = self.settings.gEditor.get_Remember_Appearance(True, True)
+            return self._editor_appearance_remember
+
+    @editor_appearance_remember.setter
+    def editor_appearance_remember(self, value):
+        self._editor_appearance_remember = self.settings.gEditor.set_Remember_Appearance(value)
+        self._editor_appearance_remember = value
+
+    @property
+    def editor_appearance_filter_matrix(self):
+        try:
+            return self._editor_appearance_filter_matrix
+        except:
+            self._editor_appearance_filter_matrix = self.settings.gEditor.get_Remember_Appearance_FilterMatrix(0, True)
+            return self._editor_appearance_filter_matrix
+
+    @editor_appearance_filter_matrix.setter
+    def editor_appearance_filter_matrix(self, value):
+        self._editor_appearance_filter_matrix = self.settings.gEditor.set_Remember_Appearance_FilterMatrix(value)
+        self._editor_appearance_filter_matrix = value
+
+
+    def set_editor_remember(self, _type, state):
+        if not self.editor_remember: return
+        current = self.editor_remember_states[:]
+        current[_type] = state
+        self.editor_remember_states = current
+
     def new_alsa_port(self, port):
-        if port.client.name == 'Blofeld' and port.name == 'Blofeld MIDI 1':
+        if self.blofeld_autoconnect and port.client.name == 'Blofeld' and port.name == 'Blofeld MIDI 1':
             port.connect(self.input)
+            self.output.connect(port)
+        if not self.remember_connections: return
+        port_fmt = '{}:{}'.format(port.client.name, port.name)
+        if port.is_output and port_fmt in self.autoconnect[INPUT]:
+            port.connect(self.input)
+        if port.is_input and port_fmt in self.autoconnect[OUTPUT]:
             self.output.connect(port)
 
     def alsa_conn_event(self, conn, state):
         if conn.dest == self.input:
-            self.input_conn_state_change.emit(len([c for c in self.input.connections.input if not c.hidden]))
+            conn_list = [c for c in self.input.connections.input if not c.hidden]
+            self.input_conn_state_change.emit(len(conn_list))
+            if self.remember_connections:
+                port_fmt = '{}:{}'.format(conn.src.client.name, conn.src.name)
+                if port_fmt == 'Blofeld:Blofeld MIDI 1': return
+                if state:
+                    self.autoconnect[INPUT] = self.autoconnect[INPUT] | set([port_fmt])
+                else:
+                    self.autoconnect[INPUT].discard(port_fmt)
+                self.settings.gMIDI.set_Autoconnect(self.autoconnect)
         elif conn.src == self.output:
-            self.output_conn_state_change.emit(len([c for c in self.output.connections.output if not c.hidden]))
+            conn_list = [c for c in self.output.connections.output if not c.hidden]
+            self.output_conn_state_change.emit(len(conn_list))
+            if self.remember_connections:
+                port_fmt = '{}:{}'.format(conn.dest.client.name, conn.dest.name)
+                if port_fmt == 'Blofeld:Blofeld MIDI 1': return
+                if state:
+                    self.autoconnect[OUTPUT] = self.autoconnect[OUTPUT] | set([port_fmt])
+                else:
+                    self.autoconnect[OUTPUT].discard(port_fmt)
+                self.settings.gMIDI.set_Autoconnect(self.autoconnect)
 
     def midi_connect(self):
+        if not (self.blofeld_autoconnect or self.remember_connections): return
         for cid, client in self.graph.client_id_dict.items():
-            if client.name == 'Blofeld':
+            if self.blofeld_autoconnect and client.name == 'Blofeld' and len(client.ports) == 1 and client.ports[0].name == 'Blofeld MIDI 1':
                 self.graph.port_id_dict[cid][0].connect(self.seq.client_id, self.input.id)
                 self.graph.port_id_dict[self.seq.client_id][self.output.id].connect(cid, 0)
-                break
+                continue
+            if not self.remember_connections: continue
+            for port in client.ports:
+                port_fmt = '{}:{}'.format(client.name, port.name)
+                if port.is_output and port_fmt in self.autoconnect[INPUT]:
+                    port.connect(self.input)
+                if port.is_input and port_fmt in self.autoconnect[OUTPUT]:
+                    self.output.connect(port)
+
 
     def program_change_request(self, bank, prog):
         self.output_event(CtrlEvent(1, 0, 0, bank))
@@ -192,6 +344,9 @@ class BigglesworthObject(QtCore.QObject):
         QtGui.QMessageBox.information(parent, 'Device informations', 
                                       'Device info:\n\nManufacturer: {}\nModel: {}\nType: {}\nVersion: {}'.format(
                                        dev_man, dev_model, dev_type, dev_version))
+
+    def save_settings(self):
+        print self.connections
 
 
 class Librarian(QtGui.QMainWindow):
@@ -288,8 +443,16 @@ class Librarian(QtGui.QMainWindow):
 
     def sound_doubleclick(self, index):
         if self.edit_mode: return
+        behaviour = self.main.library_doubleclick
+        if behaviour == 0: return
         sound = self.blofeld_model.item(self.blofeld_model_proxy.mapToSource(index).row(), SOUND).data(SoundRole).toPyObject()
-        self.program_change.emit(sound.bank, sound.prog)
+        if behaviour == 1:
+            self.program_change.emit(sound.bank, sound.prog)
+        elif behaviour == 2:
+            self.activate_editor(sound.bank, sound.prog)
+        else:
+            self.program_change.emit(sound.bank, sound.prog)
+            self.activate_editor.emit(sound.bank, sound.prog)
 
     def right_click(self, event):
         if event.button() != QtCore.Qt.RightButton: return
