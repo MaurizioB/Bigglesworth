@@ -217,9 +217,19 @@ class SettingsDialog(QtGui.QDialog):
         self.main.library_doubleclick = self.library_doubleclick_combo.currentIndex()
         self.main.editor_remember = self.editor_remember_chk.isChecked()
         if self.editor_remember_chk.isChecked():
-            self.main.editor_remember_states = [self.main.editor.pgm_send_btn.isChecked(), self.main.editor.midi_send_btn.isChecked()]
+            self.main.editor_remember_states = [
+                                                self.main.editor.pgm_receive_btn.isChecked(), 
+                                                self.main.editor.midi_receive_btn.isChecked(), 
+                                                self.main.editor.pgm_send_btn.isChecked(), 
+                                                self.main.editor.midi_send_btn.isChecked(), 
+                                                ]
         else:
-            self.main.editor_remember_states = [bool(self.editor_pgm_send_combo.currentIndex()), bool(self.editor_midi_send_combo.currentIndex())]
+            self.main.editor_remember_states = [
+                                                bool(self.editor_pgm_receive_combo.currentIndex()), 
+                                                bool(self.editor_midi_receive_combo.currentIndex()), 
+                                                bool(self.editor_pgm_send_combo.currentIndex()), 
+                                                bool(self.editor_midi_send_combo.currentIndex()), 
+                                                ]
 
 class DirCursorClass(QtGui.QCursor):
     limit_pen = QtGui.QPen(QtCore.Qt.black, 2)

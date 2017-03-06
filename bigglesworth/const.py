@@ -12,6 +12,7 @@ def local_path(name):
 #with open('blofeld_params', 'rb') as _params_file:
 #    sound_params = pickle.load(_params_file)
 
+QWIDGETSIZE_MAX = ((1 << 24) - 1)
 INPUT, OUTPUT = 0, 1
 LEGATO = 0
 RANDOM = 0
@@ -19,7 +20,7 @@ RANGE, VALUE, NAME, SHORTNAME, FAMILY, VARNAME = range(6)
 SRC_LIBRARY, SRC_BLOFELD = 0, 1
 EMPTY, STORED, DUMPED, MOVED, EDITED = [0, 1, 3, 4, 8]
 
-PGMSEND, MIDISEND = 0, 1
+PGMRECEIVE, MIDIRECEIVE, PGMSEND, MIDISEND = range(4)
 MOVEUP, MOVEDOWN, MOVELEFT, MOVERIGHT, MOVE = range(5)
 
 MoveCursor, UpCursor, DownCursor, LeftCursor, RightCursor = range(5)

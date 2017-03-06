@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="general_tab">
       <attribute name="title">
@@ -32,6 +32,9 @@
          <layout class="QGridLayout" name="gridLayout_4">
           <item row="0" column="0">
            <layout class="QFormLayout" name="formLayout_2">
+            <property name="fieldGrowthPolicy">
+             <enum>QFormLayout::ExpandingFieldsGrow</enum>
+            </property>
             <item row="0" column="0">
              <widget class="QLabel" name="doubleClickOnASoundWillLabel">
               <property name="text">
@@ -84,82 +87,175 @@
           <string>MIDI options</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_6">
-          <item row="0" column="0">
-           <layout class="QFormLayout" name="formLayout_3">
-            <property name="fieldGrowthPolicy">
-             <enum>QFormLayout::ExpandingFieldsGrow</enum>
+          <item row="1" column="1">
+           <widget class="QFrame" name="send_frame">
+            <property name="enabled">
+             <bool>false</bool>
             </property>
-            <item row="0" column="0">
-             <widget class="QLabel" name="rememberLastStateLabel">
-              <property name="text">
-               <string>Remember last state</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QCheckBox" name="editor_remember_chk"/>
-            </item>
-            <item row="1" column="0">
-             <widget class="QLabel" name="programSendStatusLabel">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-              <property name="text">
-               <string>Program Send default status</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QComboBox" name="editor_pgm_send_combo">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-              <property name="currentIndex">
-               <number>1</number>
-              </property>
-              <item>
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Sunken</enum>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_3">
+             <item>
+              <widget class="QLabel" name="label_2">
                <property name="text">
-                <string>Off</string>
+                <string>Send:</string>
                </property>
-              </item>
-              <item>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <layout class="QFormLayout" name="formLayout_3">
+               <property name="fieldGrowthPolicy">
+                <enum>QFormLayout::ExpandingFieldsGrow</enum>
+               </property>
+               <item row="0" column="0">
+                <widget class="QLabel" name="programSendStatusLabel">
+                 <property name="text">
+                  <string>Program Send default status</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QComboBox" name="editor_pgm_send_combo">
+                 <property name="currentIndex">
+                  <number>1</number>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>Off</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>On</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="mIDISendDefaultStatusLabel">
+                 <property name="text">
+                  <string>MIDI Send default status</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="KComboBox" name="editor_midi_send_combo">
+                 <property name="currentIndex">
+                  <number>1</number>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>Off</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>On</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QFrame" name="receive_frame">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Sunken</enum>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_4">
+             <item>
+              <widget class="QLabel" name="label_3">
                <property name="text">
-                <string>On</string>
+                <string>Receive:</string>
                </property>
-              </item>
-             </widget>
-            </item>
-            <item row="2" column="0">
-             <widget class="QLabel" name="mIDISendDefaultStatusLabel">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-              <property name="text">
-               <string>MIDI Send default status</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <widget class="KComboBox" name="editor_midi_send_combo">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-              <property name="currentIndex">
-               <number>1</number>
-              </property>
-              <item>
-               <property name="text">
-                <string>Off</string>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
                </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>On</string>
+              </widget>
+             </item>
+             <item>
+              <layout class="QFormLayout" name="formLayout_7">
+               <property name="fieldGrowthPolicy">
+                <enum>QFormLayout::ExpandingFieldsGrow</enum>
                </property>
-              </item>
-             </widget>
-            </item>
-           </layout>
+               <item row="0" column="0">
+                <widget class="QLabel" name="programSendStatusLabel_2">
+                 <property name="text">
+                  <string>Program Receive default status</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QComboBox" name="editor_pgm_receive_combo">
+                 <property name="currentIndex">
+                  <number>1</number>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>Off</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>On</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="mIDISendDefaultStatusLabel_2">
+                 <property name="text">
+                  <string>MIDI Receive default status</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="KComboBox" name="editor_midi_receive_combo">
+                 <property name="currentIndex">
+                  <number>1</number>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>Off</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>On</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item row="0" column="0" colspan="2">
+           <widget class="QCheckBox" name="editor_remember_chk">
+            <property name="text">
+             <string>Remember last state</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -387,64 +483,32 @@
   <connection>
    <sender>editor_remember_chk</sender>
    <signal>toggled(bool)</signal>
-   <receiver>editor_pgm_send_combo</receiver>
+   <receiver>receive_frame</receiver>
    <slot>setDisabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>179</x>
-     <y>284</y>
+     <x>238</x>
+     <y>206</y>
     </hint>
     <hint type="destinationlabel">
-     <x>205</x>
-     <y>232</y>
+     <x>127</x>
+     <y>260</y>
     </hint>
    </hints>
   </connection>
   <connection>
    <sender>editor_remember_chk</sender>
    <signal>toggled(bool)</signal>
-   <receiver>editor_midi_send_combo</receiver>
+   <receiver>send_frame</receiver>
    <slot>setDisabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>179</x>
-     <y>284</y>
+     <x>238</x>
+     <y>206</y>
     </hint>
     <hint type="destinationlabel">
-     <x>205</x>
-     <y>258</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>editor_remember_chk</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>programSendStatusLabel</receiver>
-   <slot>setDisabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>179</x>
-     <y>284</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>91</x>
-     <y>231</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>editor_remember_chk</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>mIDISendDefaultStatusLabel</receiver>
-   <slot>setDisabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>179</x>
-     <y>284</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>197</x>
-     <y>257</y>
+     <x>349</x>
+     <y>260</y>
     </hint>
    </hints>
   </connection>

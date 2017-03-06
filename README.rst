@@ -53,8 +53,8 @@ What works
 ~~~~~~~~~~
 
 - Sound dumping (single, bank or full).
-- Sound parameters sending for the current sound in "Sound Mode Edit Buffer", 
-  not for Multi Mode.
+- Sound parameters send/receive for the current sound in *"Sound Mode Edit
+  Buffer"*, not for Multi Mode.
 - Virtual keyboard from the Editor window.
 - Global parameters send/receive (requires USB connection the Desktop version,
   since both input and output MIDI is required)

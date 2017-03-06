@@ -19,6 +19,7 @@ class BigglesworthObject(QtCore.QObject):
     device_event = QtCore.pyqtSignal(object)
     sound_dump = QtCore.pyqtSignal(object)
     parameter_change = QtCore.pyqtSignal(int, int, int)
+    pgm_change_received = QtCore.pyqtSignal(int, int)
     input_conn_state_change = QtCore.pyqtSignal(int)
     output_conn_state_change = QtCore.pyqtSignal(int)
     def __init__(self, app, argv):
@@ -81,12 +82,17 @@ class BigglesworthObject(QtCore.QObject):
         self.librarian.program_change.connect(self.program_change_request)
 
         self.editor = Editor(self)
+        self.editor.pgm_receive_btn.setChecked(self.editor_remember_states[PGMRECEIVE])
+        self.editor.midi_receive_btn.setChecked(self.editor_remember_states[MIDIRECEIVE])
         self.editor.pgm_send_btn.setChecked(self.editor_remember_states[PGMSEND])
         self.editor.midi_send_btn.setChecked(self.editor_remember_states[MIDISEND])
         self.librarian.activate_editor.connect(self.activate_editor)
+        self.pgm_change_received.connect(self.editor.pgm_change_received)
         self.editor.show_librarian.connect(lambda: [self.librarian.show(), self.librarian.activateWindow()])
         self.editor.midi_event.connect(self.output_event)
         self.editor.program_change.connect(self.program_change_request)
+        self.editor.pgm_receive.connect(lambda state: self.set_editor_remember(PGMRECEIVE, state))
+        self.editor.midi_receive.connect(lambda state: self.set_editor_remember(MIDIRECEIVE, state))
         self.editor.pgm_send.connect(lambda state: self.set_editor_remember(PGMSEND, state))
         self.editor.midi_send.connect(lambda state: self.set_editor_remember(MIDISEND, state))
         self.parameter_change.connect(self.editor.receive_value)
@@ -175,7 +181,7 @@ class BigglesworthObject(QtCore.QObject):
         try:
             return self._editor_remember_states
         except:
-            self._editor_remember_states = self.settings.gEditor.get_Remember_states(list((True, True)), True)
+            self._editor_remember_states = self.settings.gEditor.get_Remember_states(list((True, True, True, True)), True)
             return self._editor_remember_states
 
     @editor_remember_states.setter
@@ -301,6 +307,7 @@ class BigglesworthObject(QtCore.QObject):
             self.blofeld_current[1] = event.data2
             if None in self.blofeld_current: return
             self.librarian.blofeld_sounds_table.selectRow(self.librarian.blofeld_model_proxy.mapFromSource(self.blofeld_model.index(self.blofeld_current[0]*128+self.blofeld_current[1], 0)).row())
+            self.pgm_change_received.emit(*self.blofeld_current)
 
     def sysex_parameter(self, data):
         location = data[0]
@@ -405,6 +412,8 @@ class Librarian(QtGui.QMainWindow):
 #        self.blofeld_model.itemChanged.connect(self.sound_update)
         self.installEventFilter(self)
         self.search_edit.installEventFilter(self)
+        self.search_filter_chk.installEventFilter(self)
+
 
     def showEvent(self, event):
         if not self.loading_complete:
@@ -416,6 +425,8 @@ class Librarian(QtGui.QMainWindow):
                 self.dump_request()
             elif event.key() == QtCore.Qt.Key_Escape and source == self.search_edit:
                 self.search_edit.setText('')
+        if source == self.search_filter_chk and event.type() == QtCore.QEvent.FocusIn and event.reason() == QtCore.Qt.OtherFocusReason:
+            self.search_edit.setFocus()
         return QtGui.QMainWindow.eventFilter(self, source, event)
 
 
@@ -449,7 +460,7 @@ class Librarian(QtGui.QMainWindow):
         if behaviour == 1:
             self.program_change.emit(sound.bank, sound.prog)
         elif behaviour == 2:
-            self.activate_editor(sound.bank, sound.prog)
+            self.activate_editor.emit(sound.bank, sound.prog)
         else:
             self.program_change.emit(sound.bank, sound.prog)
             self.activate_editor.emit(sound.bank, sound.prog)

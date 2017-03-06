@@ -145,6 +145,9 @@ class BlofeldCombo(Combo):
 class BlofeldEnv(Envelope):
     def __init__(self, parent, env_name, *args, **kwargs):
         Envelope.__init__(self, parent, *args, **kwargs)
+        self.anim = QtCore.QPropertyAnimation(self, 'geometry')
+        self.anim.setDuration(50)
+        self.anim.finished.connect(self.checkAnimation)
         self.normal = True
         self.changing = False
         parent.object_dict['{}_Attack'.format(env_name)].add(self)
@@ -167,17 +170,50 @@ class BlofeldEnv(Envelope):
             self.normal_layout = self.parent().layout()
             self.index = self.normal_layout.getItemPosition(self.normal_layout.indexOf(self))
             self.setWindowFlags(QtCore.Qt.FramelessWindowHint|QtCore.Qt.Tool|QtCore.Qt.ToolTip)
-            self.setFixedSize(240, 120)
-            self.move(self.parent().mapToGlobal(self.normal_pos))
+            self.setMaximumSize(QtCore.QSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX))
+#            self.resize(100, 80)
+#            self.setFixedSize(240, 120)
+            Envelope.move(self, self.parent().mapToGlobal(self.normal_pos))
             self.show()
+            self.changing = True
             self.activateWindow()
             self.normal = False
-            self.changing = True
             self.setShowPoints(True)
+            desktop = QtGui.QApplication.desktop().availableGeometry(self)
+            geo = QtCore.QRect(self.x(), self.y(), 240, 120)
+            if not desktop.contains(geo, True):
+                if geo.x() < desktop.x():
+                    x = desktop.x()
+                elif geo.right() > desktop.right():
+                    x = desktop.right()-geo.width()
+                else:
+                    x = geo.x()
+                if geo.y() < desktop.y():
+                    y = desktop.y()
+                elif geo.bottom() > desktop.bottom():
+                    y = desktop.bottom()-geo.height()
+                else:
+                    y = geo.y()
+#                self.move(x, y)
+            else:
+                x = self.x()
+                y = self.y()
+            self.anim.setStartValue(self.geometry())
+            self.anim.setEndValue(QtCore.QRect(x, y, 240, 120))
+            self.anim.start()
+
+    def checkAnimation(self):
+        if self.anim.direction() == QtCore.QPropertyAnimation.Forward:
+            if not self.underMouse():
+                self.normalize()
+        else:
+            self.anim.setDirection(QtCore.QPropertyAnimation.Forward)
+            self.normalize()
 
     def activateWindow(self):
-        Envelope.activateWindow(self)
-        QtCore.QTimer.singleShot(10, self.setMaximized)
+#        Envelope.activateWindow(self)
+        self.setFocus(QtCore.Qt.ActiveWindowFocusReason)
+        QtCore.QTimer.singleShot(50, self.setMaximized)
 
     def normalize(self):
         self.setFixedSize(68, 40)
@@ -186,11 +222,17 @@ class BlofeldEnv(Envelope):
         self.normal = True
         self.normal_pos = self.pos()
         self.setShowPoints(False)
+        Envelope.activateWindow(self)
+        self.raise_()
 
     def leaveEvent(self, event):
         if self.changing: return
         if not self.normal:
-            self.normalize()
+            self.anim.setDirection(QtCore.QPropertyAnimation.Backward)
+            if not self.anim.state() == QtCore.QPropertyAnimation.Running:
+                self.anim.start()
+#            self.normalize()
+
 
 class BaseDisplayWidget(QtGui.QGraphicsWidget):
     pen = brush = QtGui.QColor(30, 50, 40)
@@ -1762,6 +1804,8 @@ class BlofeldDisplay(QtGui.QGraphicsView):
 class Editor(QtGui.QMainWindow):
     midi_event = QtCore.pyqtSignal(object)
     program_change = QtCore.pyqtSignal(int, int)
+    midi_receive = QtCore.pyqtSignal(bool)
+    pgm_receive = QtCore.pyqtSignal(bool)
     midi_send = QtCore.pyqtSignal(bool)
     pgm_send = QtCore.pyqtSignal(bool)
     show_midi_dialog = QtCore.pyqtSignal()
@@ -1821,9 +1865,16 @@ class Editor(QtGui.QMainWindow):
         amp_layout.addWidget(self.create_common())
         self.grid.addLayout(amp_layout, 2, 0, 2, 1)
 
-        self.grid.addWidget(self.create_osc1(), 1, 1)
-        self.grid.addWidget(self.create_osc2(), 2, 1)
-        self.grid.addWidget(self.create_osc3(), 3, 1)
+        osc1 = self.create_osc1()
+        self.grid.addWidget(osc1, 1, 1)
+        osc2 = self.create_osc2()
+        self.grid.addWidget(osc2, 2, 1)
+        osc3 = self.create_osc3()
+        self.grid.addWidget(osc3, 3, 1)
+        col_max = max([self.osc1_limit_wt.width(), self.osc2_limit_wt.width(), self.osc2_sync.width()])
+        btn_col = osc1.layout().getItemPosition(osc1.layout().indexOf(self.osc1_limit_wt))[1]
+        for osc in (osc1, osc2, osc3):
+            osc.layout().setColumnMinimumWidth(btn_col, col_max)
 
         self.grid.addWidget(self.create_lfo1(), 1, 2)
         self.grid.addWidget(self.create_lfo2(), 2, 2)
@@ -1840,7 +1891,7 @@ class Editor(QtGui.QMainWindow):
 
         btn_layout = QtGui.QHBoxLayout()
         filter_matrix_btn_layout.addLayout(btn_layout)
-        open_mod = SquareButton(self, color=QtCore.Qt.darkGreen, max_size=(20, 16))
+        open_mod = SquareButton(self, color=QtCore.Qt.darkGreen, size=(20, 16))
         btn_layout.addWidget(open_mod)
         filter_matrix_lbl = Label(self, 'Mod Matrix Editor', QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
         btn_layout.addWidget(filter_matrix_lbl)
@@ -1868,7 +1919,7 @@ class Editor(QtGui.QMainWindow):
 
         open_mod.clicked.connect(lambda state, id=self.filter_matrix_cycle: set_filter_matrix_widget(id))
 
-        open_arp = SquareButton(self, color=QtCore.Qt.darkGreen, max_size=(20, 16))
+        open_arp = SquareButton(self, color=QtCore.Qt.darkGreen, size=(20, 16))
         btn_layout.addWidget(open_arp)
         adv_arp_lbl = Label(self, 'Arpeggiator Pattern Editor', QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
         btn_layout.addWidget(adv_arp_lbl)
@@ -2010,14 +2061,14 @@ class Editor(QtGui.QMainWindow):
 
         notes_off_layout = QtGui.QHBoxLayout()
         layout.addLayout(notes_off_layout, 1, 1, 1, 2)
-        all_notes_off = SquareButton(self, color=QtCore.Qt.darkRed, max_size=12)
+        all_notes_off = SquareButton(self, color=QtCore.Qt.darkRed, size=12)
         all_notes_off.clicked.connect(lambda: self.send_ctrl(123, 0))
         notes_off_layout.addWidget(all_notes_off)
         notes_off_layout.addWidget(Label(self, 'All notes OFF'), QtCore.Qt.AlignLeft)
 
         sounds_off_layout = QtGui.QHBoxLayout()
         layout.addLayout(sounds_off_layout, 2, 1, 1, 2)
-        all_sounds_off = SquareButton(self, color=QtCore.Qt.darkRed, max_size=12)
+        all_sounds_off = SquareButton(self, color=QtCore.Qt.darkRed, size=12)
         all_sounds_off.clicked.connect(lambda: self.send_ctrl(120, 0))
         sounds_off_layout.addWidget(all_sounds_off)
         sounds_off_layout.addWidget(Label(self, 'All sounds OFF'), QtCore.Qt.AlignLeft)
@@ -2072,7 +2123,7 @@ class Editor(QtGui.QMainWindow):
         tempo_layout.addWidget(clock)
         length = BlofeldCombo(self, self.params.Arpeggiator_Ptn_Length, name='Length')
         tempo_layout.addWidget(length)
-        ptn_reset = BlofeldButton(self, self.params.Arpeggiator_Ptn_Reset, checkable=True, max_size=(20, 20), name='Reset')
+        ptn_reset = BlofeldButton(self, self.params.Arpeggiator_Ptn_Reset, checkable=True, size=20, name='Reset')
         tempo_layout.addWidget(ptn_reset)
 
         note_layout = QtGui.QHBoxLayout()
@@ -2143,6 +2194,7 @@ class Editor(QtGui.QMainWindow):
 #        self.sorted_library = sorted_library
 
     def receive_value(self, location, index, value):
+        if not self.midi_receive_btn.isChecked(): return
         attr = Params[index].attr
         old_send = self.send
         self.send = False
@@ -2177,6 +2229,10 @@ class Editor(QtGui.QMainWindow):
         self.midi_event.emit(note_event)
         self.display.midi_btn.midi_out()
 
+    def pgm_change_received(self, bank, prog):
+        if self.pgm_receive_btn.isChecked():
+            self.setSound(bank, prog, False)
+
     def setSound(self, bank, prog, pgm_send=False):
         sound = self.blofeld_library[bank, prog]
         if sound is None: return
@@ -2207,17 +2263,41 @@ class Editor(QtGui.QMainWindow):
     def create_display(self):
         layout = QtGui.QGridLayout()
         self.display = BlofeldDisplay(self)
-        layout.addWidget(self.display, 0, 0, 2, 1)
-        self.midi_send_btn = SquareButton(self, 'MIDI send', checkable=True, checked=False)
+        layout.addWidget(self.display, 0, 0, 4, 1)
+
+        layout.addWidget(Section(self, border=True, alpha=255), 0, 1, 2, 2)
+
+        layout.addWidget(Section(self, border=True, alpha=255), 2, 1, 2, 2)
+        in_path = QtGui.QPainterPath()
+        in_path.moveTo(0, 3)
+        in_path.lineTo(5, 3)
+        in_path.arcMoveTo(3, 0, 5.5, 6, 135)
+        in_path.arcTo(3, 0, 5.5, 6, 135, -270)
+        layout.addWidget(Label(self, 'IN', path=in_path, label_pos=BOTTOM), 0, 1, 2, 1)
+        self.pgm_receive_btn = SquareButton(self, 'PGM receive', checkable=True, checked=False, size=12, label_pos=RIGHT)
+        self.pgm_receive_btn.toggled.connect(lambda state: self.display.statusUpdate('PGM receive: {}'.format('enabled' if state else 'disabled')))
+        self.pgm_receive_btn.toggled.connect(self.pgm_receive.emit)
+        layout.addWidget(self.pgm_receive_btn, 0, 2)
+        self.midi_receive_btn = SquareButton(self, 'MIDI receive', checkable=True, checked=False, size=12, label_pos=RIGHT)
+        self.midi_receive_btn.toggled.connect(lambda state: self.display.statusUpdate('MIDI receive: {}'.format('enabled' if state else 'disabled')))
+        self.midi_receive_btn.toggled.connect(self.midi_receive.emit)
+        layout.addWidget(self.midi_receive_btn, 1, 2)
+
+        out_path = QtGui.QPainterPath()
+        out_path.arcMoveTo(0, 0, 5.5, 6, 45)
+        out_path.arcTo(0, 0, 5.5, 6, 45, 270)
+        out_path.moveTo(4, 3)
+        out_path.lineTo(8, 3)
+        layout.addWidget(Label(self, 'OUT', path=out_path, label_pos=BOTTOM), 2, 1, 2, 1)
+        self.pgm_send_btn = SquareButton(self, 'PGM send', checkable=True, checked=False, size=12, label_pos=RIGHT)
+        self.pgm_send_btn.toggled.connect(lambda state: self.display.statusUpdate('PGM send: {}'.format('enabled' if state else 'disabled')))
+        self.pgm_send_btn.toggled.connect(self.pgm_send.emit)
+        layout.addWidget(self.pgm_send_btn, 2, 2)
+        self.midi_send_btn = SquareButton(self, 'MIDI send', checkable=True, checked=False, size=12, label_pos=RIGHT)
         self.midi_send_btn.toggled.connect(lambda state: setattr(self, 'send', state))
         self.midi_send_btn.toggled.connect(lambda state: self.display.statusUpdate('MIDI send: {}'.format('enabled' if state else 'disabled')))
         self.midi_send_btn.toggled.connect(self.midi_send.emit)
-        layout.addWidget(self.midi_send_btn, 0, 1)
-        self.pgm_send_btn = SquareButton(self, 'PGM send', checkable=True, checked=False)
-#        self.pgm_send_btn.toggled.connect(lambda state: setattr(self, 'pgm_send', state))
-        self.pgm_send_btn.toggled.connect(lambda state: self.display.statusUpdate('PGM send: {}'.format('enabled' if state else 'disabled')))
-        self.pgm_send_btn.toggled.connect(self.pgm_send.emit)
-        layout.addWidget(self.pgm_send_btn, 1, 1)
+        layout.addWidget(self.midi_send_btn, 3, 2)
 
         return layout
 
@@ -2233,12 +2313,13 @@ class Editor(QtGui.QMainWindow):
 #        layout.addWidget(Label(self, 'Hold'), 0, 2, 1, 1)
         pitch_layout = QtGui.QGridLayout()
         layout.addLayout(pitch_layout)
-        pitch_layout.addWidget(VSpacer(min_height=12), 0, 0, 1, 1)
-        pitch_layout.addWidget(Label(self, 'Pitch'), 1, 0, 1, 1)
-        pitch_amount = BlofeldDial(self, self.params.Osc_Pitch_Amount, size=24)
-        pitch_layout.addWidget(pitch_amount, 1, 1, 1, 1)
-        pitch_src = BlofeldCombo(self, self.params.Osc_Pitch_Source)
-        pitch_layout.addWidget(pitch_src, 2, 0, 1, 2)
+        pitch_layout.addWidget(Section(self, border=True, alpha=255), 1, 0, 2, 2)
+        pitch_layout.addWidget(VSpacer(min_height=20), 0, 0, 1, 1)
+        pitch_src = BlofeldCombo(self, self.params.Osc_Pitch_Source, name='Pitch Source')
+        pitch_layout.addWidget(pitch_src, 1, 0, 1, 2)
+        pitch_layout.addWidget(Label(self, 'Pitch\nAmount'), 2, 0)
+        pitch_amount = BlofeldDial(self, self.params.Osc_Pitch_Amount, size=24, name='')
+        pitch_layout.addWidget(pitch_amount, 2, 1)
 
         uni_layout = QtGui.QGridLayout()
         layout.addLayout(uni_layout)
@@ -2606,7 +2687,7 @@ class Editor(QtGui.QMainWindow):
         combos.addWidget(fm_amount, 2, 1, 2, 1, QtCore.Qt.AlignBottom)
 
         pan_label = Label(self, 'PAN')
-        combos.addWidget(Section(self, border=True), 4, 0, 2, 3)
+        combos.addWidget(Section(self, border=True, alpha=255), 4, 0, 2, 3)
         combos.addWidget(pan_label, 4, 0)
         pan_source = BlofeldCombo(self, self.params.Filter_1_Pan_Source, name='')
         combos.addWidget(pan_source, 5, 0)
@@ -2623,7 +2704,7 @@ class Editor(QtGui.QMainWindow):
         return frame
 
     def create_filter2(self):
-        frame = Frame(self, '1')
+        frame = Frame(self, '2')
         grid = QtGui.QGridLayout()
         frame.setLayout(grid)
         frame.setContentsMargins(2, 2, 2, 2)
@@ -2671,7 +2752,7 @@ class Editor(QtGui.QMainWindow):
         combos.addWidget(fm_amount, 2, 1, 2, 1, QtCore.Qt.AlignBottom)
 
         pan_label = Label(self, 'PAN')
-        combos.addWidget(Section(self, border=True), 4, 0, 2, 3)
+        combos.addWidget(Section(self, border=True, alpha=255), 4, 0, 2, 3)
         combos.addWidget(pan_label, 4, 0)
         pan_source = BlofeldCombo(self, self.params.Filter_2_Pan_Source, name='')
         combos.addWidget(pan_source, 5, 0)
@@ -2781,15 +2862,6 @@ class Editor(QtGui.QMainWindow):
         return frame
 
     def create_filter_env(self):
-        def show_env(event):
-            pos = env.mapToGlobal(QtCore.QPoint(0, 0))
-            env.setWindowFlags(QtCore.Qt.FramelessWindowHint|QtCore.Qt.Tool|QtCore.Qt.ToolTip)
-            env.setFixedSize(240, 120)
-            env.move(pos)
-            env.show()
-            env.activateWindow()
-        def hide_env(event):
-            env.setWindowFlags(QtCore.Qt.Widget)
         def set_enabled(id):
             if id == 0:
                 for w in (attack_level, decay2, sustain2):
@@ -2850,15 +2922,6 @@ class Editor(QtGui.QMainWindow):
         return frame
 
     def create_amp_env(self):
-        def show_env(event):
-            pos = env.mapToGlobal(QtCore.QPoint(0, 0))
-            env.setWindowFlags(QtCore.Qt.FramelessWindowHint|QtCore.Qt.Tool|QtCore.Qt.ToolTip)
-            env.setFixedSize(240, 120)
-            env.move(pos)
-            env.show()
-            env.activateWindow()
-        def hide_env(event):
-            env.setWindowFlags(QtCore.Qt.Widget)
         def set_enabled(id):
             if id == 0:
                 for w in (attack_level, decay2, sustain2):
@@ -2919,15 +2982,6 @@ class Editor(QtGui.QMainWindow):
         return frame
 
     def create_env_3(self):
-        def show_env(event):
-            pos = env.mapToGlobal(QtCore.QPoint(0, 0))
-            env.setWindowFlags(QtCore.Qt.FramelessWindowHint|QtCore.Qt.Tool|QtCore.Qt.ToolTip)
-            env.setFixedSize(240, 120)
-            env.move(pos)
-            env.show()
-            env.activateWindow()
-        def hide_env(event):
-            env.setWindowFlags(QtCore.Qt.Widget)
         def set_enabled(id):
             if id == 0:
                 for w in (attack_level, decay2, sustain2):
@@ -2988,15 +3042,6 @@ class Editor(QtGui.QMainWindow):
         return frame
 
     def create_env_4(self):
-        def show_env(event):
-            pos = env.mapToGlobal(QtCore.QPoint(0, 0))
-            env.setWindowFlags(QtCore.Qt.FramelessWindowHint|QtCore.Qt.Tool|QtCore.Qt.ToolTip)
-            env.setFixedSize(240, 120)
-            env.move(pos)
-            env.show()
-            env.activateWindow()
-        def hide_env(event):
-            env.setWindowFlags(QtCore.Qt.Widget)
         def set_enabled(id):
             if id == 0:
                 for w in (attack_level, decay2, sustain2):
@@ -3086,16 +3131,29 @@ class Editor(QtGui.QMainWindow):
         return frame
 
     def create_osc1(self):
+        def set_enable(index):
+            if index == 0:
+                for w in widget_list:
+                    w.setEnabled(False)
+            elif index == 1:
+                for w in widget_list:
+                    w.setEnabled(False if w==limit_wt else True)
+            elif index in (2, 3, 4):
+                for w in widget_list:
+                    w.setEnabled(False if w in normal_disable else True)
+            else:
+                for w in widget_list:
+                    w.setEnabled(True)
         frame = Frame(self, 'OSC 1')
-        layout = QtGui.QHBoxLayout()
+        frame.setContentsMargins(2, 2, 2, 2)
+        layout = QtGui.QGridLayout()
         frame.setLayout(layout)
 
-        left = QtGui.QVBoxLayout()
-        layout.addLayout(left)
         line1 = QtGui.QHBoxLayout()
-        left.addLayout(line1)
+        layout.addLayout(line1, 1, 0)
 
         shape = BlofeldCombo(self, self.params.Osc_1_Shape)
+        shape.indexChanged.connect(set_enable)
         line1.addWidget(shape)
         brill = BlofeldDial(self, self.params.Osc_1_Brilliance, size=32)
         line1.addWidget(brill)
@@ -3103,7 +3161,7 @@ class Editor(QtGui.QMainWindow):
         line1.addWidget(keytrack)
 
         line2 = QtGui.QHBoxLayout()
-        left.addLayout(line2)
+        layout.addLayout(line2, 2, 0)
 
         octave = BlofeldDial(self, self.params.Osc_1_Octave, size=32)
         line2.addWidget(octave)
@@ -3114,42 +3172,59 @@ class Editor(QtGui.QMainWindow):
         bend = BlofeldDial(self, self.params.Osc_1_Bend_Range, center=True, size=32, default=64)
         line2.addWidget(bend)
 
-        right = QtGui.QGridLayout()
-        layout.addLayout(right)
 
-        right.addWidget(Section(self), 0, 0, 3, 2)
-        right.addWidget(Section(self), 0, 2, 3, 1)
+        layout.addWidget(Section(self, border=True, alpha=255), 0, 1, 3, 2)
+        layout.addWidget(Section(self, border=True, alpha=255), 0, 3, 3, 1)
         pwm_label = Label(self, 'PWM')
-        right.addWidget(pwm_label, 0, 0, 1, 2)
+        layout.addWidget(pwm_label, 0, 1, 1, 2)
         fm_label = Label(self, 'FM')
-        right.addWidget(fm_label, 0, 2, 1, 1)
+        layout.addWidget(fm_label, 0, 3, 1, 1)
 
         pwm_source = BlofeldCombo(self, self.params.Osc_1_PWM_Source, name='Source')
-        right.addWidget(pwm_source, 1, 0, 1, 2)
+        layout.addWidget(pwm_source, 1, 1, 1, 2)
+        pulsewidth = BlofeldDial(self, self.params.Osc_1_Pulsewidth, name='Width')
+        layout.addWidget(pulsewidth, 2, 1)
+        pwm_amount = BlofeldDial(self, self.params.Osc_1_PWM_Amount, name='Amount')
+        layout.addWidget(pwm_amount, 2, 2)
+
         fm_source = BlofeldCombo(self, self.params.Osc_1_FM_Source, name='Source')
-        right.addWidget(fm_source, 1, 2, 1, 1)
-        pulsewidth = BlofeldDial(self, self.params.Osc_1_Pulsewidth, size=24, name='Width')
-        right.addWidget(pulsewidth, 2, 0, 1, 1)
-        pwm_amount = BlofeldDial(self, self.params.Osc_1_PWM_Amount, size=24, name='Amount')
-        right.addWidget(pwm_amount, 2, 1, 1, 1)
-        fm_amount = BlofeldDial(self, self.params.Osc_1_FM_Amount, size=24, name='Amount')
-        right.addWidget(fm_amount, 2, 2, 1, 1)
+        layout.addWidget(fm_source, 1, 3)
+        fm_amount = BlofeldDial(self, self.params.Osc_1_FM_Amount, name='Amount')
+        layout.addWidget(fm_amount, 2, 3)
+
         limit_wt = BlofeldButton(self, self.params.Osc_1_Limit_WT, checkable=True, name='Limit WT', inverted=True)
-        right.addWidget(limit_wt, 0, 3, 2, 1)
+        layout.addWidget(limit_wt, 1, 4, 2, 1, QtCore.Qt.AlignVCenter|QtCore.Qt.AlignHCenter)
+        self.osc1_limit_wt = limit_wt
+
+        widget_list = brill, keytrack, octave, semitone, detune, bend, pwm_label, pwm_source, pulsewidth, pwm_amount, fm_label, fm_source, fm_amount, limit_wt
+        normal_disable = pwm_label, pwm_source, pulsewidth, pwm_amount, fm_label, fm_source, fm_amount, limit_wt
 
         return frame
 
     def create_osc2(self):
+        def set_enable(index):
+            if index == 0:
+                for w in widget_list+(self.osc2_sync, ):
+                    w.setEnabled(False)
+            elif index == 1:
+                for w in widget_list+(self.osc2_sync, ):
+                    w.setEnabled(False if w==limit_wt else True)
+            elif index in (2, 3, 4):
+                for w in widget_list+(self.osc2_sync, ):
+                    w.setEnabled(False if w in normal_disable else True)
+            else:
+                for w in widget_list+(self.osc2_sync, ):
+                    w.setEnabled(True)
         frame = Frame(self, 'OSC 2')
-        layout = QtGui.QHBoxLayout()
+        frame.setContentsMargins(2, 2, 2, 2)
+        layout = QtGui.QGridLayout()
         frame.setLayout(layout)
 
-        left = QtGui.QVBoxLayout()
-        layout.addLayout(left)
         line1 = QtGui.QHBoxLayout()
-        left.addLayout(line1)
+        layout.addLayout(line1, 1, 0)
 
         shape = BlofeldCombo(self, self.params.Osc_2_Shape)
+        shape.indexChanged.connect(set_enable)
         line1.addWidget(shape)
         brill = BlofeldDial(self, self.params.Osc_2_Brilliance, size=32)
         line1.addWidget(brill)
@@ -3157,7 +3232,7 @@ class Editor(QtGui.QMainWindow):
         line1.addWidget(keytrack)
 
         line2 = QtGui.QHBoxLayout()
-        left.addLayout(line2)
+        layout.addLayout(line2, 2, 0)
 
         octave = BlofeldDial(self, self.params.Osc_2_Octave, size=32)
         line2.addWidget(octave)
@@ -3168,42 +3243,56 @@ class Editor(QtGui.QMainWindow):
         bend = BlofeldDial(self, self.params.Osc_2_Bend_Range, center=True, size=32, default=64)
         line2.addWidget(bend)
 
-        right = QtGui.QGridLayout()
-        layout.addLayout(right)
 
-        right.addWidget(Section(self), 0, 0, 3, 2)
-        right.addWidget(Section(self), 0, 2, 3, 1)
+        layout.addWidget(Section(self, border=True, alpha=255), 0, 1, 3, 2)
+        layout.addWidget(Section(self, border=True, alpha=255), 0, 3, 3, 1)
         pwm_label = Label(self, 'PWM')
-        right.addWidget(pwm_label, 0, 0, 1, 2)
+        layout.addWidget(pwm_label, 0, 1, 1, 2)
         fm_label = Label(self, 'FM')
-        right.addWidget(fm_label, 0, 2, 1, 1)
+        layout.addWidget(fm_label, 0, 3, 1, 1)
 
         pwm_source = BlofeldCombo(self, self.params.Osc_2_PWM_Source, name='Source')
-        right.addWidget(pwm_source, 1, 0, 1, 2)
+        layout.addWidget(pwm_source, 1, 1, 1, 2)
+        pulsewidth = BlofeldDial(self, self.params.Osc_2_Pulsewidth, name='Width')
+        layout.addWidget(pulsewidth, 2, 1)
+        pwm_amount = BlofeldDial(self, self.params.Osc_2_PWM_Amount, name='Amount')
+        layout.addWidget(pwm_amount, 2, 2)
+
         fm_source = BlofeldCombo(self, self.params.Osc_2_FM_Source, name='Source')
-        right.addWidget(fm_source, 1, 2, 1, 1)
-        pulsewidth = BlofeldDial(self, self.params.Osc_2_Pulsewidth, size=24, name='Width')
-        right.addWidget(pulsewidth, 2, 0, 1, 1)
-        pwm_amount = BlofeldDial(self, self.params.Osc_2_PWM_Amount, size=24, name='Amount')
-        right.addWidget(pwm_amount, 2, 1, 1, 1)
-        fm_amount = BlofeldDial(self, self.params.Osc_2_FM_Amount, size=24, name='Amount')
-        right.addWidget(fm_amount, 2, 2, 1, 1)
+        layout.addWidget(fm_source, 1, 3)
+        fm_amount = BlofeldDial(self, self.params.Osc_2_FM_Amount, name='Amount')
+        layout.addWidget(fm_amount, 2, 3)
+
         limit_wt = BlofeldButton(self, self.params.Osc_2_Limit_WT, checkable=True, name='Limit WT', inverted=True)
-        right.addWidget(limit_wt, 1, 3, 2, 1, QtCore.Qt.AlignHCenter)
+        layout.addWidget(limit_wt, 1, 4, 2, 1, QtCore.Qt.AlignVCenter|QtCore.Qt.AlignHCenter)
+        self.osc2_limit_wt = limit_wt
+
+        widget_list = brill, keytrack, octave, semitone, detune, bend, pwm_label, pwm_source, pulsewidth, pwm_amount, fm_label, fm_source, fm_amount, limit_wt
+        normal_disable = pwm_label, pwm_source, pulsewidth, pwm_amount, fm_label, fm_source, fm_amount, limit_wt
 
         return frame
 
     def create_osc3(self):
+        def set_enable(index):
+            if index == 0:
+                for w in widget_list:
+                    w.setEnabled(False)
+            elif index == 1:
+                for w in widget_list:
+                    w.setEnabled(False if w==limit_wt else True)
+            elif index in (2, 3, 4):
+                for w in widget_list:
+                    w.setEnabled(False if w in normal_disable else True)
         frame = Frame(self, 'OSC 3')
-        layout = QtGui.QHBoxLayout()
+        frame.setContentsMargins(2, 2, 2, 2)
+        layout = QtGui.QGridLayout()
         frame.setLayout(layout)
 
-        left = QtGui.QVBoxLayout()
-        layout.addLayout(left)
         line1 = QtGui.QHBoxLayout()
-        left.addLayout(line1)
+        layout.addLayout(line1, 1, 0)
 
         shape = BlofeldCombo(self, self.params.Osc_3_Shape)
+        shape.indexChanged.connect(set_enable)
         line1.addWidget(shape)
         brill = BlofeldDial(self, self.params.Osc_3_Brilliance, size=32)
         line1.addWidget(brill)
@@ -3211,7 +3300,7 @@ class Editor(QtGui.QMainWindow):
         line1.addWidget(keytrack)
 
         line2 = QtGui.QHBoxLayout()
-        left.addLayout(line2)
+        layout.addLayout(line2, 2, 0)
 
         octave = BlofeldDial(self, self.params.Osc_3_Octave, size=32)
         line2.addWidget(octave)
@@ -3222,30 +3311,31 @@ class Editor(QtGui.QMainWindow):
         bend = BlofeldDial(self, self.params.Osc_3_Bend_Range, center=True, size=32, default=64)
         line2.addWidget(bend)
 
-        right = QtGui.QGridLayout()
-        layout.addLayout(right)
 
-        right.addWidget(Section(self), 0, 0, 3, 2)
-        right.addWidget(Section(self), 0, 2, 3, 1)
+        layout.addWidget(Section(self, border=True, alpha=255), 0, 1, 3, 2)
+        layout.addWidget(Section(self, border=True, alpha=255), 0, 3, 3, 1)
         pwm_label = Label(self, 'PWM')
-        right.addWidget(pwm_label, 0, 0, 1, 2)
+        layout.addWidget(pwm_label, 0, 1, 1, 2)
         fm_label = Label(self, 'FM')
-        right.addWidget(fm_label, 0, 2, 1, 1)
+        layout.addWidget(fm_label, 0, 3, 1, 1)
 
         pwm_source = BlofeldCombo(self, self.params.Osc_3_PWM_Source, name='Source')
-        right.addWidget(pwm_source, 1, 0, 1, 2)
-        fm_source = BlofeldCombo(self, self.params.Osc_3_FM_Source, name='Source')
-        right.addWidget(fm_source, 1, 2, 1, 1)
-        pulsewidth = BlofeldDial(self, self.params.Osc_3_Pulsewidth, size=24, name='Width')
-        right.addWidget(pulsewidth, 2, 0, 1, 1)
-        pwm_amount = BlofeldDial(self, self.params.Osc_3_PWM_Amount, size=24, name='Amount')
-        right.addWidget(pwm_amount, 2, 1, 1, 1)
-        fm_amount = BlofeldDial(self, self.params.Osc_3_FM_Amount, size=24, name='Amount')
-        right.addWidget(fm_amount, 2, 2, 1, 1)
-        right.addWidget(HSpacer(), 0, 3)
+        layout.addWidget(pwm_source, 1, 1, 1, 2)
+        pulsewidth = BlofeldDial(self, self.params.Osc_3_Pulsewidth, name='Width')
+        layout.addWidget(pulsewidth, 2, 1)
+        pwm_amount = BlofeldDial(self, self.params.Osc_3_PWM_Amount, name='Amount')
+        layout.addWidget(pwm_amount, 2, 2)
 
-        sync = BlofeldButton(self, self.params.Osc_2_Sync_to_O3, checkable=True, name='OSC2 sync')
-        right.addWidget(sync, 1, 3, 2, 1)
+        fm_source = BlofeldCombo(self, self.params.Osc_3_FM_Source, name='Source')
+        layout.addWidget(fm_source, 1, 3)
+        fm_amount = BlofeldDial(self, self.params.Osc_3_FM_Amount, name='Amount')
+        layout.addWidget(fm_amount, 2, 3)
+
+        self.osc2_sync = BlofeldButton(self, self.params.Osc_2_Sync_to_O3, checkable=True, name='OSC2\nsync')
+        layout.addWidget(self.osc2_sync, 1, 4, 2, 1, QtCore.Qt.AlignVCenter|QtCore.Qt.AlignHCenter)
+
+        widget_list = brill, keytrack, octave, semitone, detune, bend, pwm_label, pwm_source, pulsewidth, pwm_amount, fm_label, fm_source, fm_amount
+        normal_disable = pwm_label, pwm_source, pulsewidth, pwm_amount, fm_label, fm_source, fm_amount
 
         return frame
 

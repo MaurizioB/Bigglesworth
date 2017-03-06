@@ -194,13 +194,60 @@ class Piano(QtGui.QGraphicsView):
         self.fitInView(0, 0, self.key_range*20, 100, QtCore.Qt.IgnoreAspectRatio)
 
 class Label(QtGui.QWidget):
-    def __init__(self, parent=None, text='', text_align=QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter):
+    _pen_enabled = QtGui.QPen(QtCore.Qt.white)
+    _pen_disabled = QtGui.QPen(QtCore.Qt.darkGray)
+    _pen_colors = _pen_disabled, _pen_enabled
+    pen = _pen_colors[1]
+    path = QtGui.QPainterPath()
+    path_rect = QtCore.QRectF()
+#    label_pos = RIGHT
+    base_translate = QtCore.QPointF(0, 0)
+    def __init__(self, parent=None, text='', text_align=QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter, label_pos=RIGHT, path=None):
         QtGui.QWidget.__init__(self, parent)
         self.text = text
         self.text_align = text_align
         self.font = QtGui.QFont('Decorative', 9, QtGui.QFont.Bold)
         self.font_metrics = QtGui.QFontMetrics(self.font)
-        self.setMinimumSize(self.font_metrics.width(self.text)+1, self.font_metrics.height()+1)
+        text_split = text.split('\n')
+        text_height = self.font_metrics.height()*len(text_split)
+        text_width = max([self.font_metrics.width(t) for t in text_split])
+        self.label_rect = QtCore.QRectF(0, 0, text_width, text_height)
+#        self.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+        if path:
+            self.path = path
+            self.path_rect = self.path.boundingRect()
+        if not self.path_rect:
+            self.setMinimumSize(self.label_rect.width(), self.label_rect.height())
+        else:
+            self.label_pos = label_pos
+            if label_pos in (TOP, BOTTOM):
+                self.setMinimumSize(max(self.label_rect.width(), self.path_rect.width()), self.label_rect.height()+self.path_rect.height()+2)
+                self.label_rect.setWidth(max(self.label_rect.width(), self.path_rect.width()))
+            else:
+                self.setMinimumSize(self.label_rect.width()+self.path_rect.width()+2, max(self.label_rect.height(), self.path_rect.height()))
+                self.label_rect.setHeight(max(self.label_rect.height(), self.path_rect.height()))
+            if label_pos == TOP:
+                self.path_rect.moveTop(self.label_rect.bottom()+2)
+                if self.path_rect.width() < self.label_rect.width():
+                    self.path_rect.moveLeft((self.label_rect.width()-self.path_rect.width())/2)
+            elif label_pos == BOTTOM:
+                self.label_rect.moveTop(self.path_rect.bottom()+2)
+                if self.path_rect.width() < self.label_rect.width():
+                    self.path_rect.moveLeft((self.label_rect.width()-self.path_rect.width())/2)
+            elif label_pos == LEFT:
+                self.path_rect.moveLeft(self.label_rect.right()+2)
+                if self.path_rect.height() < self.label_rect.height():
+                    self.path_rect.moveTop((self.label_rect.height()-self.path_rect.height())/2)
+            else:
+                self.label_rect.moveLeft(self.path_rect.right()+2)
+                if self.path_rect.height() < self.label_rect.height():
+                    self.path_rect.moveTop((self.label_rect.height()-self.path_rect.height())/2)
+
+    def changeEvent(self, event):
+        if not event.type() == QtCore.QEvent.EnabledChange: return
+        state = self.isEnabled()
+        self.pen = self._pen_colors[state]
+        self.update()
 
     def setText(self, text):
         self.text = text
@@ -210,13 +257,22 @@ class Label(QtGui.QWidget):
         qp = QtGui.QPainter()
         qp.begin(self)
         qp.setRenderHints(QtGui.QPainter.Antialiasing)
-        qp.setPen(QtCore.Qt.white)
+        qp.translate(self.base_translate)
+        qp.setPen(self.pen)
 #        qp.drawRect(0, 0, self.width()-1, self.height()-1)
 
         qp.setFont(self.font)
-        qp.drawText(0, 0, self.width(), self.height(), self.text_align, self.text)
+        qp.drawText(self.label_rect, self.text_align, self.text)
+        if self.path:
+            qp.translate(self.path_rect.x(), self.path_rect.y())
+            qp.drawPath(self.path)
 
         qp.end()
+
+    def resizeEvent(self, event):
+        full_rect = self.label_rect.united(self.path_rect)
+        diff = QtCore.QRectF(0, 0, self.width(), self.height()).center()-full_rect.center()
+        self.base_translate = QtCore.QPointF(diff.x(), diff.y())
 
 class Section(QtGui.QWidget):
     def __init__(self, parent=None, color=None, alpha=None, width=0, height=0, border=False, border_color=None, label='', label_pos=TOP):
@@ -869,7 +925,7 @@ class SquareButton(QtGui.QAbstractButton):
     base_width = 40
     base_height = 20
 
-    def __init__(self, parent=None, name='', inverted=False, color=QtCore.Qt.green, checkable=False, checked=False, size=None, min_size=None, max_size=None):
+    def __init__(self, parent=None, name='', inverted=False, color=QtCore.Qt.green, checkable=False, checked=False, label_pos=BOTTOM, size=None):
         QtGui.QAbstractButton.__init__(self, parent=parent)
         self.label_font = QtGui.QFont('Decorative', 9, QtGui.QFont.Bold)
         self.label_font_metrics = QtGui.QFontMetrics(self.label_font)
@@ -895,40 +951,86 @@ class SquareButton(QtGui.QAbstractButton):
 #            checked ^= inverted
 #            self.current_pen = self.active_pen if checked else self.unactive_pen
 #            self.current_color = self.active_color if checked else self.unactive_color
+        if size:
+            if isinstance(size, tuple):
+                w, h = size
+            else:
+                w = h = size
+        else:
+            w = self.base_width
+            h = self.base_height
+        self.button_rect = QtCore.QRect(0, 0, w, h)
         self.name = name
         if name:
-            self.spacing = 4
-            self.label_rect = QtCore.QRect(0, 0, self.label_font_metrics.width(name), self.label_font_metrics.height())
+            spacing = 4
+            txt_split = name.split('\n')
+            txt_height = self.label_font_metrics.height()*len(txt_split)
+            txt_width = max([self.label_font_metrics.width(txt) for txt in txt_split])
+            self.label_rect = QtCore.QRect(0, 0, txt_width, txt_height)
+            if label_pos == BOTTOM:
+                self.label_rect.moveTop(self.button_rect.bottom()+spacing)
+                if self.label_rect.width() > self.button_rect.width():
+                    self.button_rect.moveLeft((self.label_rect.width()-self.button_rect.width())/2)
+                elif self.label_rect.width() < self.button_rect.width():
+                    self.label_rect.moveLeft((self.button_rect.width()-self.label_rect.width())/2)
+            elif label_pos == TOP:
+                self.button_rect.moveTop(self.label_rect.bottom()+spacing)
+                if self.label_rect.width() > self.button_rect.width():
+                    self.button_rect.moveLeft((self.label_rect.width()-self.button_rect.width())/2)
+                elif self.label_rect.width() < self.button_rect.width():
+                    self.label_rect.moveLeft((self.button_rect.width()-self.label_rect.width())/2)
+            elif label_pos == RIGHT:
+                self.label_rect.moveLeft(self.button_rect.right()+spacing)
+                if self.label_rect.height() < self.button_rect.height():
+                    self.label_rect.setHeight(self.button_rect.height())
+                elif self.label_rect.height() > self.button_rect.height():
+                    self.button_rect.moveTop((self.label_rect.height()-self.button_rect.height())/2)
+            else:
+                self.button_rect.moveLeft(self.label_rect.right()+spacing)
+                if self.label_rect.height() < self.button_rect.height():
+                    self.label_rect.setHeight(self.button_rect.height())
+                elif self.label_rect.height() > self.button_rect.height():
+                    self.button_rect.moveTop((self.label_rect.height()-self.button_rect.height())/2)
         else:
-            self.spacing = 0
             self.label_rect = QtCore.QRect(0, 0, 0, 0)
-        if size:
-            max_width = max((size[0], self.label_rect.width()))
-            self.setMinimumSize(max_width, size[1]+self.spacing+self.label_rect.height())
-            self.button_rect = QtCore.QRectF((max_width-max_width)/2., 0, size[0], size[1])
-        elif min_size:
-            if isinstance(min_size, tuple):
-                w, h = min_size
-            else:
-                w = h = min_size
-            max_width = max((w, self.label_rect.width()))
-            self.setMinimumSize(max_width, h+self.spacing+self.label_rect.height())
-            self.button_rect = QtCore.QRectF((max_width-max_width)/2., 0, w, h)
-            self.setSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
-        elif max_size:
-            if isinstance(max_size, tuple):
-                w, h = max_size
-            else:
-                w = h = max_size
-            max_width = max((w, self.label_rect.width()))
-            self.setMinimumSize(max_width, h+self.spacing+self.label_rect.height())
-            self.setMaximumSize(max_width, h+self.spacing+self.label_rect.height())
-            self.button_rect = QtCore.QRectF((max_width-w)/2., 0, w, h)
-#            self.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Fixed)
-        else:
-            max_width = max((self.base_width, self.label_rect.width()))
-            self.setMinimumSize(max_width, self.base_height+self.spacing+self.label_rect.height())
-            self.button_rect = QtCore.QRectF((max_width-self.base_width)/2., 0, self.base_width, self.base_height)
+        intersect = self.label_rect.united(self.button_rect)
+        self.setMinimumSize(intersect.width(), intersect.height())
+        self.setMaximumSize(intersect.width(), intersect.height())
+        self.button_rect.setRight(self.button_rect.right()-1)
+        self.button_rect.setBottom(self.button_rect.bottom()-1)
+#        if name:
+#            self.spacing = 4
+#            self.label_rect = QtCore.QRect(0, 0, self.label_font_metrics.width(name), self.label_font_metrics.height())
+#        else:
+#            self.spacing = 0
+#            self.label_rect = QtCore.QRect(0, 0, 0, 0)
+#        if size:
+#            max_width = max((size[0], self.label_rect.width()))
+#            self.setMinimumSize(max_width, size[1]+self.spacing+self.label_rect.height())
+#            self.button_rect = QtCore.QRectF((max_width-max_width)/2., 0, size[0], size[1])
+#        elif min_size:
+#            if isinstance(min_size, tuple):
+#                w, h = min_size
+#            else:
+#                w = h = min_size
+#            max_width = max((w, self.label_rect.width()))
+#            self.setMinimumSize(max_width, h+self.spacing+self.label_rect.height())
+#            self.button_rect = QtCore.QRectF((max_width-max_width)/2., 0, w, h)
+#            self.setSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
+#        elif max_size:
+#            if isinstance(max_size, tuple):
+#                w, h = max_size
+#            else:
+#                w = h = max_size
+#            max_width = max((w, self.label_rect.width()))
+#            self.setMinimumSize(max_width, h+self.spacing+self.label_rect.height())
+#            self.setMaximumSize(max_width, h+self.spacing+self.label_rect.height())
+#            self.button_rect = QtCore.QRectF((max_width-w)/2., 0, w, h)
+##            self.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Fixed)
+#        else:
+#            max_width = max((self.base_width, self.label_rect.width()))
+#            self.setMinimumSize(max_width, self.base_height+self.spacing+self.label_rect.height())
+#            self.button_rect = QtCore.QRectF((max_width-self.base_width)/2., 0, self.base_width, self.base_height)
 
 #    def setChecked(self, state):
 #        if self.inverted:
@@ -1015,7 +1117,7 @@ class SquareButton(QtGui.QAbstractButton):
         if self.name:
             qp.setPen(self.text_pen)
             qp.setFont(self.label_font)
-            qp.drawText(0, self.button_rect.height()+self.spacing, self.width()-1, self.label_font_metrics.height(), QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter, self.name)
+            qp.drawText(self.label_rect, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter, self.name)
         qp.end()
 
     def resizeEvent(self, event):
@@ -1855,7 +1957,7 @@ class ListView(QtGui.QListView):
             if geo.x() < desktop.x():
                 x = desktop.x()
             elif geo.right() > desktop.right():
-                x = desktop.x()+desktop.width()-self.width()
+                x = desktop.right()-self.width()
             else:
                 x = geo.x()
             if geo.y() < desktop.y():
@@ -1907,6 +2009,127 @@ class ListView(QtGui.QListView):
         qp.drawRoundedRect(0, 0, self.width(), self.height(), 4, 4)
         qp.end()
         self.setMask(bmp)
+
+#class NewCombo(QtGui.QComboBox):
+#    _enabled_border_grad = QtGui.QConicalGradient(QtCore.QPointF(.5, .5), 45)
+#    _enabled_border_grad.setCoordinateMode(QtGui.QConicalGradient.ObjectBoundingMode)
+#    _enabled_border_grad.setColorAt(0, QtCore.Qt.darkGray)
+#    _enabled_border_grad.setColorAt(.25, QtCore.Qt.darkGray)
+#    _enabled_border_grad.setColorAt(.251, QtCore.Qt.gray)
+#    _enabled_border_grad.setColorAt(.5, QtCore.Qt.gray)
+#    _enabled_border_grad.setColorAt(.501, QtCore.Qt.white)
+#    _enabled_border_grad.setColorAt(.75, QtCore.Qt.white)
+#    _enabled_border_grad.setColorAt(.751, QtCore.Qt.lightGray)
+#    _enabled_border_grad.setColorAt(.99, QtCore.Qt.lightGray)
+#    _enabled_border_grad.setColorAt(1, QtCore.Qt.darkGray)
+#    _disabled_border_grad = QtGui.QConicalGradient(QtCore.QPointF(.5, .5), 45)
+#    _disabled_border_grad.setCoordinateMode(QtGui.QConicalGradient.ObjectBoundingMode)
+#    for stop, color in _enabled_border_grad.stops():
+#        _disabled_border_grad.setColorAt(stop, color.darker())
+#    _enabled_border_pen = QtGui.QPen(_enabled_border_grad, 1)
+#    _disabled_border_pen = QtGui.QPen(_disabled_border_grad, 1)
+#    _border_pens = _disabled_border_pen, _enabled_border_pen
+#    border_pen = _border_pens[1]
+#    arrow_grad = QtGui.QConicalGradient(QtCore.QPointF(.5, .5), -90)
+#    arrow_grad.setCoordinateMode(QtGui.QConicalGradient.ObjectBoundingMode)
+#    arrow_grad.setColorAt(0, QtCore.Qt.white)
+#    arrow_grad.setColorAt(.3125, QtCore.Qt.white)
+#    arrow_grad.setColorAt(.413, QtCore.Qt.darkGray)
+#    arrow_grad.setColorAt(.6875, QtCore.Qt.darkGray)
+#    arrow_grad.setColorAt(.688, QtCore.Qt.gray)
+#    arrow_grad.setColorAt(.99, QtCore.Qt.gray)
+#    arrow_grad.setColorAt(1, QtCore.Qt.white)
+#    arrow_border = QtGui.QPen(arrow_grad, 1)
+#    arrow_color = QtGui.QColor(180, 180, 180)
+#    arrow = QtGui.QPainterPath()
+#    arrow.lineTo(8, 0)
+#    arrow.lineTo(4, 4)
+#    arrow.closeSubpath()
+#    arrow_size = 12
+#    combo_rect = QtCore.QRectF(0, 0, 1, 1)
+#    combo_text_rect = QtCore.QRectF(0, 0, 1, 1)
+#    label_rect = None
+#    font = QtGui.QFont('Decorative', 10, QtGui.QFont.Bold)
+#    label_font = QtGui.QFont('Decorative', 9, QtGui.QFont.Bold)
+#    _label_pen_enabled = QtGui.QPen(QtCore.Qt.white)
+#    _label_pen_disabled = QtGui.QPen(QtCore.Qt.darkGray)
+#    _label_pen_colors = _label_pen_disabled, _label_pen_enabled
+#    label_pen = _label_pen_colors[1]
+#    def __init__(self, parent=None, value_list=None, name='', wheel_dir=True, default=0):
+#        QtGui.QComboBox.__init__(self, parent)
+#        self.combo_padding = 2
+#        self.spacing = 4
+#        self.label_font_metrics = QtGui.QFontMetrics(QtGui.QFont('Decorative', 9, QtGui.QFont.Bold))
+#        self.font_metrics = QtGui.QFontMetrics(QtGui.QFont('Decorative', 10, QtGui.QFont.Bold))
+##        self.list = ListView(self)
+#        if name:
+#            self.name = name
+#            self.setMinimumSize(10, self.font_metrics.height()+self.label_font_metrics.height()+self.spacing+self.combo_padding*2)
+#            self.setMaximumHeight(self.font_metrics.height()+self.label_font_metrics.height()+self.spacing+self.combo_padding*2)
+#        else:
+#            self.name = None
+#            self.setMinimumSize(10, self.font_metrics.height()+self.combo_padding*2)
+#            self.setMaximumHeight(self.font_metrics.height()+self.combo_padding*2)
+#        self.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
+#        if value_list:
+#            self.add_items(value_list)
+#            if not 0 <= default <= len(value_list):
+#                default = 0
+#        else:
+#            self.current = 'None'
+#        self.setCurrentIndex(default)
+#        pal = self.palette()
+#        pal.setColor(self.backgroundRole(), QtGui.QColor(QtCore.Qt.gray))
+##        pal.setColor(self.foregroundRole(), QtGui.QColor(QtCore.Qt.red))
+#        self.setPalette(pal)
+#
+#    @property
+#    def value(self):
+#        return self.currentIndex()
+#
+#    @property
+#    def text_value(self):
+#        return self.currentText()
+#
+#
+#    def add_items(self, value_list):
+#        for item in value_list:
+#            self.addItem(item)
+#        max_length = max([self.font_metrics.width(txt)+self.combo_padding*2 for txt in value_list]+[self.label_font_metrics.width(self.name) if self.name else 0])
+#        self.setMinimumWidth(max_length+self.arrow_size)
+#        self.current = value_list[0]
+##        self.list.setMinimumWidth(self.minimumWidth())
+#
+#    def paintEvent(self, e):
+#        qp = QtGui.QPainter()
+#        qp.begin(self)
+#        qp.translate(.5, .5)
+#        qp.setRenderHints(QtGui.QPainter.Antialiasing)
+#        qp.setPen(self.border_pen)
+#        qp.drawRoundedRect(self.combo_rect, 2, 2)
+#
+#        qp.setFont(self.font)
+#        qp.setPen(self.label_pen)
+#        qp.drawText(self.combo_text_rect, QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter, self.current)
+#
+#        if self.label_rect:
+#            qp.setFont(self.label_font)
+#            qp.drawText(self.label_rect, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter, self.name)
+#
+#        qp.translate(self.width()-self.arrow_size, self.combo_rect.height()/2-2)
+#        qp.setPen(self.arrow_border)
+#        qp.setBrush(self.arrow_color)
+#        qp.drawPath(self.arrow)
+#
+#        qp.end()
+#
+#    def resizeEvent(self, event):
+#        if not self.name:
+#            self.combo_rect = QtCore.QRect(0, 0, self.width()-1, self.height()-1)
+#        else:
+#            self.combo_rect = QtCore.QRect(0, 0, self.width()-1, self.font_metrics.height()+self.combo_padding*2)
+#            self.label_rect = QtCore.QRect(0, self.combo_rect.height()+self.spacing, self.width()-1, self.font_metrics.height())
+#        self.combo_text_rect = QtCore.QRect(self.combo_rect.x()+self.combo_padding, 1, self.width()-self.combo_padding-self.arrow_size, self.combo_rect.height())
 
 class Combo(QtGui.QWidget):
     _enabled_border_grad = QtGui.QConicalGradient(QtCore.QPointF(.5, .5), 45)
