@@ -4,6 +4,7 @@
 import pickle
 from string import uppercase
 from itertools import cycle
+from random import randrange
 from PyQt4 import QtCore, QtGui
 
 from midiutils import *
@@ -1846,11 +1847,18 @@ class Editor(QtGui.QMainWindow):
         display_layout.addLayout(self.create_display(), 0, 0, 2, 1)
         display_layout.addWidget(HSpacer(max_width=24), 0, 1)
 
+
         side_layout = QtGui.QGridLayout()
         display_layout.addLayout(side_layout, 1, 2)
+
         library_btn = SquareButton(self, color=QtCore.Qt.darkGreen, name='Library')
         library_btn.clicked.connect(self.show_librarian)
         side_layout.addWidget(library_btn)
+
+        randomize_btn = SquareButton(self, color=QtCore.Qt.darkGreen, name='Randomize')
+        randomize_btn.clicked.connect(self.randomize)
+        side_layout.addWidget(randomize_btn, 0, 1)
+
         logo = QtGui.QIcon(local_path('logo.svg')).pixmap(QtCore.QSize(160, 160)).toImage()
         logo_widget = QtGui.QLabel()
         logo_widget.setPixmap(QtGui.QPixmap().fromImage(logo))
@@ -2232,6 +2240,22 @@ class Editor(QtGui.QMainWindow):
     def pgm_change_received(self, bank, prog):
         if self.pgm_receive_btn.isChecked():
             self.setSound(bank, prog, False)
+
+    def randomize(self):
+#        old_send = self.send
+#        self.send = False
+        self.notify = False
+        for p in self.params:
+            if p.attr is None: continue
+            try:
+                start, end, step = p.range
+                value = randrange(start, end+1, step)
+                setattr(self, p.attr, value)
+            except Exception as e:
+                print e
+
+#        self.send = old_send
+        self.notify = True
 
     def setSound(self, bank, prog, pgm_send=False):
         sound = self.blofeld_library[bank, prog]
