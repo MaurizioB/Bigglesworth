@@ -1861,6 +1861,7 @@ class Editor(QtGui.QMainWindow):
 
         logo = QtGui.QIcon(local_path('logo.svg')).pixmap(QtCore.QSize(160, 160)).toImage()
         logo_widget = QtGui.QLabel()
+        logo_widget.mouseDoubleClickEvent = self.logo_click
         logo_widget.setPixmap(QtGui.QPixmap().fromImage(logo))
         logo_widget.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
         logo_widget.setToolTip('Right click here for...')
@@ -2253,11 +2254,7 @@ class Editor(QtGui.QMainWindow):
         old_send = self.send
         self.send = False
         setattr(self, attr, value)
-        for env in self.envelopes:
-            env.compute_envelope()
-            env.update()
-        self.set_effect_1_widgets()
-        self.set_effect_2_widgets()
+        self.reset_advanced_widgets()
         self.send = old_send
         self.display.midi_btn.midi_in()
 
@@ -2288,8 +2285,6 @@ class Editor(QtGui.QMainWindow):
             self.setSound(bank, prog, False)
 
     def randomize(self):
-#        old_send = self.send
-#        self.send = False
         self.notify = False
         for p in self.params:
             if p.attr is None: continue
@@ -2299,8 +2294,7 @@ class Editor(QtGui.QMainWindow):
                 setattr(self, p.attr, value)
             except Exception as e:
                 print e
-
-#        self.send = old_send
+        self.reset_advanced_widgets()
         self.notify = True
 
     def setSound(self, bank, prog, pgm_send=False):
@@ -2318,17 +2312,21 @@ class Editor(QtGui.QMainWindow):
                     setattr(self, attr, p)
             except:
                 pass
-        for env in self.envelopes:
-            env.compute_envelope()
-            env.update()
-        self.set_effect_1_widgets()
-        self.set_effect_2_widgets()
+        self.reset_advanced_widgets()
         self.send = old_send
         self.notify = True
         self.display.setSound()
         if pgm_send and self.pgm_send_btn.isChecked():
             self.display.midi_btn.midi_out()
             self.program_change.emit(sound.bank, sound.prog)
+
+    def reset_advanced_widgets(self):
+        for env in self.envelopes:
+            env.compute_envelope()
+            env.update()
+        self.set_effect_1_widgets(self.effects_1_type.currentIndex)
+        self.set_effect_2_widgets(self.effects_2_type.currentIndex)
+        self.filter_routing_combo.indexChanged.emit(self.filter_routing_combo.currentIndex)
 
     def create_display(self):
         layout = QtGui.QGridLayout()
@@ -2559,9 +2557,9 @@ class Editor(QtGui.QMainWindow):
         line1 = QtGui.QHBoxLayout()
         layout.addLayout(line1)
         line1.addWidget(HSpacer(max_width=50))
-        efx_type = BlofeldCombo(self, self.params.Effect_1_Type)
-        efx_type.indexChanged.connect(self.set_effect_1_widgets)
-        line1.addWidget(efx_type)
+        self.effects_1_type = BlofeldCombo(self, self.params.Effect_1_Type)
+        self.effects_1_type.indexChanged.connect(self.set_effect_1_widgets)
+        line1.addWidget(self.effects_1_type)
         efx_mix = BlofeldDial(self, self.params.Effect_1_Mix, size=24)
         line1.addWidget(efx_mix)
 
@@ -2644,9 +2642,9 @@ class Editor(QtGui.QMainWindow):
         line1 = QtGui.QHBoxLayout()
         layout.addLayout(line1)
         line1.addWidget(HSpacer(max_width=50))
-        efx_type = BlofeldCombo(self, self.params.Effect_2_Type)
-        efx_type.indexChanged.connect(self.set_effect_2_widgets)
-        line1.addWidget(efx_type)
+        self.effects_2_type = BlofeldCombo(self, self.params.Effect_2_Type)
+        self.effects_2_type.indexChanged.connect(self.set_effect_2_widgets)
+        line1.addWidget(self.effects_2_type)
         efx_mix = BlofeldDial(self, self.params.Effect_2_Mix, size=24)
         line1.addWidget(efx_mix)
 
@@ -2701,13 +2699,13 @@ class Editor(QtGui.QMainWindow):
         frame.setLayout(grid)
         frame.setContentsMargins(2, 2, 2, 2)
 
-        combo = BlofeldCombo(self, self.params.Filter_Routing, name='')
+        self.filter_routing_combo = BlofeldCombo(self, self.params.Filter_Routing, name='')
         grid.addWidget(HSpacer(), 0, 0, 1, 1)
         grid.addWidget(Label(self, 'Routing '), 0, 1, 1, 1)
-        grid.addWidget(combo, 0, 2, 1, 1)
+        grid.addWidget(self.filter_routing_combo, 0, 2, 1, 1)
         routing = Routing(self, BOTTOM, BOTTOM, direction=EXT, orientation=HORIZONTAL, padding=(16, 4))
         grid.addWidget(routing, 1, 0, 1, 3)
-        combo.indexChanged.connect(lambda id: [routing.set_arrow(EXT if id == 0 else FROM), routing.update()])
+        self.filter_routing_combo.indexChanged.connect(lambda id: [routing.set_arrow(EXT if id == 0 else FROM), routing.update()])
         grid.addWidget(VSpacer())
 
         return frame
@@ -3203,6 +3201,12 @@ class Editor(QtGui.QMainWindow):
         noise.addWidget(BlofeldSlider(self, self.params.Mixer_Noise_Level, name='Noise'))
         grid.addWidget(BlofeldDial(self, self.params.Mixer_Noise_Balance, size=24, center=True, default=64, name='Bal'), 2, 4)
         return frame
+
+    def logo_click(self, event):
+        rect = QtCore.QRect(52, 12, 8, 8)
+        if not rect.contains(event.pos()): return
+        from commands import getoutput
+        getoutput('aplay {}'.format(local_path('.bw_secret')))
 
     def create_osc1(self):
         def set_enable(index):
