@@ -1,5 +1,5 @@
 from os import path
-from PyQt4 import uic
+from PyQt4 import QtCore, uic
 from const import *
 
 def get_next_cycle(cycle_obj):
@@ -21,6 +21,16 @@ def get_status(s):
 def cursors(id):
     return cursor_list[id]
 
+def getAlignMask(new, default):
+    if new & QtCore.Qt.AlignHorizontal_Mask:
+        halign = default & (not QtCore.Qt.AlignHorizontal_Mask) | new
+    else:
+        halign = default & QtCore.Qt.AlignHorizontal_Mask
+    if new & QtCore.Qt.AlignVertical_Mask:
+        valign = default & (not QtCore.Qt.AlignVertical_Mask) | new
+    else:
+        valign = default & QtCore.Qt.AlignVertical_Mask
+    return (halign|valign)
 
 
 

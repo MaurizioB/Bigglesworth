@@ -1888,75 +1888,119 @@ class Editor(QtGui.QMainWindow):
         self.grid.addWidget(self.create_lfo2(), 2, 2)
         self.grid.addWidget(self.create_lfo3(), 3, 2)
 
-        filter_matrix_btn_layout = QtGui.QVBoxLayout()
+        filter_matrix_btn_layout = QtGui.QGridLayout()
         self.grid.addLayout(filter_matrix_btn_layout, 0, 3, 4, 2)
-        filter_matrix_widget = QtGui.QWidget()
-        filter_matrix_btn_layout.addWidget(filter_matrix_widget)
-        self.filter_matrix_layout = QtGui.QStackedLayout()
-        filter_matrix_widget.setLayout(self.filter_matrix_layout)
-        self.filter_matrix_layout.addWidget(self.create_filters())
-        self.filter_matrix_layout.addWidget(self.create_mod_widgets())
+#        filter_matrix_widget = QtGui.QWidget()
+#        filter_matrix_btn_layout.addWidget(filter_matrix_widget)
+#        self.filter_matrix_layout = QtGui.QStackedLayout()
+#        filter_matrix_widget.setLayout(self.filter_matrix_layout)
+#        self.filter_matrix_layout.addWidget(self.create_filters())
+#        self.filter_matrix_layout.addWidget(self.create_mod_widgets())
+
+        filter_widget = self.create_filters()
+        filter_matrix_btn_layout.addWidget(filter_widget)
+        matrix_widget = self.create_mod_widgets()
+        filter_matrix_btn_layout.addWidget(matrix_widget, 0, 0)
 
         btn_layout = QtGui.QHBoxLayout()
-        filter_matrix_btn_layout.addLayout(btn_layout)
-        open_mod = SquareButton(self, color=QtCore.Qt.darkGreen, size=(20, 16))
+        filter_matrix_btn_layout.addLayout(btn_layout, 1, 0)
+        open_mod = SquareButton(self, color=QtCore.Qt.darkGreen, size=(20, 16), name='Mod Matrix Editor', label_pos=RIGHT, text_align=QtCore.Qt.AlignLeft)
         btn_layout.addWidget(open_mod)
-        filter_matrix_lbl = Label(self, 'Mod Matrix Editor', QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
-        btn_layout.addWidget(filter_matrix_lbl)
-        self.filter_matrix_cycle = cycle((0, 1))
-        self.filter_matrix_cycle.next()
+#        filter_matrix_lbl = Label(self, 'Mod Matrix Editor', QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
+#        btn_layout.addWidget(filter_matrix_lbl)
+        filter_matrix_cycle = cycle((0, 1))
+        filter_matrix_cycle.next()
         filter_matrix_labels = 'Mod Matrix Editor', 'Filters'
 
-        filter_matrix_opacity = QtGui.QGraphicsOpacityEffect()
-        filter_matrix_opacity.setOpacity(1)
-        filter_matrix_widget.setGraphicsEffect(filter_matrix_opacity)
-        def set_filter_matrix_widget(id):
-            def set_opacity(op, delta):
-                filter_matrix_opacity.setOpacity(op)
-                if op <= 0:
-                    self.filter_matrix_layout.setCurrentIndex(id)
-                    filter_matrix_lbl.setText(filter_matrix_labels[id])
-                    delta = 1
-                elif op >= 1:
-                    return
-                op += .2*delta
-                QtCore.QTimer.singleShot(20, lambda op=op, delta=delta: set_opacity(op, delta))
-            delta = -1
-            id = id.next()
-            set_opacity(.8, delta)
+        filter_opacity = QtGui.QGraphicsOpacityEffect()
+        filter_opacity.setOpacity(1)
+        filter_widget.setGraphicsEffect(filter_opacity)
+        filter_widget.raise_()
+        filter_opacity_anim = QtCore.QPropertyAnimation(filter_opacity, 'opacity')
+        filter_opacity_anim.setDuration(200)
 
-        open_mod.clicked.connect(lambda state, id=self.filter_matrix_cycle: set_filter_matrix_widget(id))
+        matrix_opacity = QtGui.QGraphicsOpacityEffect()
+        matrix_opacity.setOpacity(0)
+        matrix_widget.setGraphicsEffect(matrix_opacity)
+        matrix_opacity_anim = QtCore.QPropertyAnimation(matrix_opacity, 'opacity')
+        matrix_opacity_anim.setDuration(200)
+        filter_matrix_tuple = (filter_widget, filter_opacity_anim), (matrix_widget, matrix_opacity_anim)
 
-        open_arp = SquareButton(self, color=QtCore.Qt.darkGreen, size=(20, 16))
+        def filter_matrix_set(cycler):
+            id = cycler.next()
+            for i, (w, a) in enumerate(filter_matrix_tuple):
+                if i == id:
+                    a.setStartValue(0)
+                    a.setEndValue(1)
+                    a.start()
+                    w.raise_()
+                else:
+                    a.setStartValue(1)
+                    a.setEndValue(0)
+                    a.start()
+            open_mod.setText(filter_matrix_labels[id])
+
+        open_mod.clicked.connect(lambda state, cycler=filter_matrix_cycle: filter_matrix_set(cycler))
+
+        open_arp = SquareButton(self, color=QtCore.Qt.darkGreen, size=(20, 16), name='Arpeggiator Pattern Editor', label_pos=RIGHT, text_align=QtCore.Qt.AlignLeft)
         btn_layout.addWidget(open_arp)
-        adv_arp_lbl = Label(self, 'Arpeggiator Pattern Editor', QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
-        btn_layout.addWidget(adv_arp_lbl)
+#        adv_arp_lbl = Label(self, 'Arpeggiator Pattern Editor', QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
+#        btn_layout.addWidget(adv_arp_lbl)
 
         adv_arp_widget = QtGui.QWidget()
-        self.adv_arp_layout = self.create_adv()
-        adv_arp_widget.setLayout(self.adv_arp_layout)
+        adv_arp_widget.setContentsMargins(0, 0, 0, 0)
+        adv_arp_layout = QtGui.QGridLayout()
+        adv_arp_layout.setContentsMargins(0, 0, 0, 0)
+        adv_arp_widget.setLayout(adv_arp_layout)
         adv_arp_cycle = cycle((0, 1))
         adv_arp_cycle.next()
         adv_arp_labels = 'Arpeggiator Pattern Editor', 'Effects and Arpeggiator'
-        adv_arp_opacity = QtGui.QGraphicsOpacityEffect()
-        adv_arp_opacity.setOpacity(1)
-        adv_arp_widget.setGraphicsEffect(adv_arp_opacity)
-        def set_adv_arp_widget(id):
-            def set_opacity(op, delta):
-                adv_arp_opacity.setOpacity(op)
-                if op <= 0:
-                    self.adv_arp_layout.setCurrentIndex(id)
-                    adv_arp_lbl.setText(adv_arp_labels[id])
-                    delta = 1
-                elif op >= 1:
-                    return
-                op += .2*delta
-                QtCore.QTimer.singleShot(20, lambda op=op, delta=delta: set_opacity(op, delta))
-            delta = -1
-            id = id.next()
-            set_opacity(.8, delta)
 
-        open_arp.clicked.connect(lambda state, id=adv_arp_cycle: set_adv_arp_widget(id))
+        adv_widget = QtGui.QWidget()
+        adv_widget.setContentsMargins(0, 0, 0, 0)
+        adv_arp_layout.addWidget(adv_widget)
+        adv_layout = QtGui.QHBoxLayout()
+        adv_layout.setContentsMargins(0, 0, 0, 0)
+        adv_widget.setLayout(adv_layout)
+        adv_layout.addWidget(self.create_effect_1())
+        adv_layout.addWidget(self.create_effect_2())
+        adv_layout.addWidget(self.create_arp())
+
+        self.arp_editor = ArpEditor(self)
+        arp_widget = self.arp_editor
+        adv_arp_layout.addWidget(arp_widget, 0, 0)
+        arp_widget.setContentsMargins(0, 0, 0, 0)
+#        arp_widget.setLayout(self.create_arp_editor())
+
+        adv_opacity = QtGui.QGraphicsOpacityEffect()
+        adv_opacity.setOpacity(1)
+        adv_widget.setGraphicsEffect(adv_opacity)
+        adv_widget.raise_()
+        adv_opacity_anim = QtCore.QPropertyAnimation(adv_opacity, 'opacity')
+        adv_opacity_anim.setDuration(200)
+
+        arp_opacity = QtGui.QGraphicsOpacityEffect()
+        arp_opacity.setOpacity(0)
+        arp_widget.setGraphicsEffect(arp_opacity)
+        arp_opacity_anim = QtCore.QPropertyAnimation(arp_opacity, 'opacity')
+        arp_opacity_anim.setDuration(200)
+        adv_arp_tuple = (adv_widget, adv_opacity_anim), (arp_widget, arp_opacity_anim)
+
+        def adv_arp_set(cycler):
+            id = cycler.next()
+            for i, (w, a) in enumerate(adv_arp_tuple):
+                if i == id:
+                    a.setStartValue(0)
+                    a.setEndValue(1)
+                    a.start()
+                    w.raise_()
+                else:
+                    a.setStartValue(1)
+                    a.setEndValue(0)
+                    a.start()
+            open_arp.setText(adv_arp_labels[id])
+
+        open_arp.clicked.connect(lambda state, cycler=adv_arp_cycle: adv_arp_set(cycler))
 
         lower_layout = QtGui.QGridLayout()
         self.grid.addLayout(lower_layout, 4, 0, 1, 5)
@@ -2012,6 +2056,8 @@ class Editor(QtGui.QMainWindow):
         self.display.midi_out.setConn(conn)
 
     def midi_input_state(self, conn):
+        self.pgm_receive_btn.setEnabled(conn)
+        self.midi_receive_btn.setEnabled(conn)
         self.display.midi_in.setConn(conn)
 
     def keyPressEvent(self, event):
@@ -2221,7 +2267,7 @@ class Editor(QtGui.QMainWindow):
         par_high, par_low = divmod(par_id, 128)
 #        print par_high, par_low, value
         
-        self.midi_event.emit(SysExEvent(1, [0xF0, 0x3e, 0x13, 0x00, 0x20, location, par_high, par_low, value, 0xf7]))
+        self.midi_event.emit(SysExEvent(1, [INIT, IDW, IDE, self.main.blofeld_id, SNDP, location, par_high, par_low, value, END]))
         self.display.midi_btn.midi_out()
 
     def send_ctrl(self, param, value):
@@ -2299,10 +2345,12 @@ class Editor(QtGui.QMainWindow):
         in_path.arcTo(3, 0, 5.5, 6, 135, -270)
         layout.addWidget(Label(self, 'IN', path=in_path, label_pos=BOTTOM), 0, 1, 2, 1)
         self.pgm_receive_btn = SquareButton(self, 'PGM receive', checkable=True, checked=False, size=12, label_pos=RIGHT)
+        self.pgm_receive_btn.setEnabled(False)
         self.pgm_receive_btn.toggled.connect(lambda state: self.display.statusUpdate('PGM receive: {}'.format('enabled' if state else 'disabled')))
         self.pgm_receive_btn.toggled.connect(self.pgm_receive.emit)
         layout.addWidget(self.pgm_receive_btn, 0, 2)
         self.midi_receive_btn = SquareButton(self, 'MIDI receive', checkable=True, checked=False, size=12, label_pos=RIGHT)
+        self.midi_receive_btn.setEnabled(False)
         self.midi_receive_btn.toggled.connect(lambda state: self.display.statusUpdate('MIDI receive: {}'.format('enabled' if state else 'disabled')))
         self.midi_receive_btn.toggled.connect(self.midi_receive.emit)
         layout.addWidget(self.midi_receive_btn, 1, 2)
@@ -2314,10 +2362,12 @@ class Editor(QtGui.QMainWindow):
         out_path.lineTo(8, 3)
         layout.addWidget(Label(self, 'OUT', path=out_path, label_pos=BOTTOM), 2, 1, 2, 1)
         self.pgm_send_btn = SquareButton(self, 'PGM send', checkable=True, checked=False, size=12, label_pos=RIGHT)
+        self.pgm_send_btn.setEnabled(False)
         self.pgm_send_btn.toggled.connect(lambda state: self.display.statusUpdate('PGM send: {}'.format('enabled' if state else 'disabled')))
         self.pgm_send_btn.toggled.connect(self.pgm_send.emit)
         layout.addWidget(self.pgm_send_btn, 2, 2)
         self.midi_send_btn = SquareButton(self, 'MIDI send', checkable=True, checked=False, size=12, label_pos=RIGHT)
+        self.midi_send_btn.setEnabled(False)
         self.midi_send_btn.toggled.connect(lambda state: setattr(self, 'send', state))
         self.midi_send_btn.toggled.connect(lambda state: self.display.statusUpdate('MIDI send: {}'.format('enabled' if state else 'disabled')))
         self.midi_send_btn.toggled.connect(self.midi_send.emit)

@@ -15,6 +15,7 @@ from utils import *
 from editor import Editor
 
 class BigglesworthObject(QtCore.QObject):
+    midi_lock = QtCore.pyqtSignal(bool)
     globals_event = QtCore.pyqtSignal(object)
     device_event = QtCore.pyqtSignal(object)
     sound_dump = QtCore.pyqtSignal(object)
@@ -46,7 +47,6 @@ class BigglesworthObject(QtCore.QObject):
         self.seq = self.alsa.seq
         self.input = self.alsa.input
         self.output = self.alsa.output
-        self.midi_connect()
 
         self.deviceAction = QtGui.QAction(self)
         self.deviceAction.triggered.connect(self.device_request)
@@ -66,8 +66,12 @@ class BigglesworthObject(QtCore.QObject):
         self.loader.moveToThread(self.loader_thread)
         self.loader_thread.started.connect(self.loader.run)
 
+        self.midi_lock_status = False
+        self.midi_lock.connect(lambda state: setattr(self, 'midi_lock_status', state))
 
+        QtGui.QIcon.setThemeName(QtGui.QApplication.style().objectName())
         self.librarian = Librarian(self)
+        self.librarian.quitAction.setIcon(QtGui.QIcon.fromTheme('application-exit'))
         self.librarian.quitAction.triggered.connect(self.app.quit)
         self.device_event.connect(lambda event: self.device_response(event, self.librarian))
         self.sound_dump.connect(self.librarian.sound_dump)
@@ -111,10 +115,27 @@ class BigglesworthObject(QtCore.QObject):
 
         self.settings_dialog = SettingsDialog(self, self.librarian)
         self.librarian.settingsAction.triggered.connect(self.show_settings)
+        self.output_conn_state_change.connect(lambda conn: self.settings_dialog.detect_connections(OUTPUT, conn))
+        self.input_conn_state_change.connect(lambda conn: self.settings_dialog.detect_connections(INPUT, conn))
 #        self.settings_dialog.show()
+
+        self.midi_connect()
 
     def show_settings(self):
         self.settings_dialog.exec_()
+
+    @property
+    def blofeld_id(self):
+        try:
+            return self._blofeld_id
+        except:
+            self._blofeld_id = self.settings.gMIDI.get_Blofeld_ID(0x7f, True)
+            return self._blofeld_id
+
+    @blofeld_id.setter
+    def blofeld_id(self, value):
+        self.settings.gMIDI.set_Blofeld_ID(value)
+        self._blofeld_id = value
 
     @property
     def library_doubleclick(self):
@@ -325,13 +346,14 @@ class BigglesworthObject(QtCore.QObject):
         self.editor.activateWindow()
 
     def activate_globals(self, data):
+        if self.midi_lock_status: return
         self.globals.setData(data)
 
     def device_request(self):
-        self.output_event(SysExEvent(1, [0xF0, 0x7e, 0x7f, 0x6, 0x1, 0xf7]))
+        self.output_event(SysExEvent(1, [INIT, 0x7e, 0x7f, 0x6, 0x1, END]))
 
     def globals_request(self):
-        self.output_event(SysExEvent(1, [0xF0, 0x3e, 0x13, 0x0, GLBR, 0xf7]))
+        self.output_event(SysExEvent(1, [INIT, IDW, IDE, BROADCAST, GLBR, END]))
 
     def device_response(self, sysex, parent):
         if sysex[5] == 0x3e:
@@ -576,7 +598,7 @@ class Librarian(QtGui.QMainWindow):
         
 
     def sound_request(self, bank, sound):
-        self.midi_event.emit(SysExEvent(1, [0xF0, 0x3e, 0x13, 0x0, 0x0, bank, sound, 0x7f, 0xf7]))
+        self.midi_event.emit(SysExEvent(1, [INIT, IDW, IDE, self.main.device_id, SNDR, bank, sound, CHK, END]))
 
 #    def create_models(self):
 #        self.bank_dump_combo.addItems(['All']+[l for l in uppercase[:8]])

@@ -33,7 +33,12 @@ status_dict = {
           MOVED: 'Moved', 
           }
 
-
+INIT = 0xf0
+END = 0xf7
+BROADCAST = 0x7f
+CHK = 0x7f
+IDW = 0x3e
+IDE = 0x13
 SNDR = 0
 SNDD = 0x10
 SNDP = 0x20

@@ -6,6 +6,7 @@ from bisect import bisect_left
 from PyQt4 import QtCore, QtGui
 
 from midiutils import NoteIds, NoteNames
+from utils import getAlignMask
 
 ADSR, ADS1DS2R, ONESHOT, LOOPS1S2, LOOPALL = range(5)
 VERTICAL = QtCore.Qt.Vertical
@@ -924,8 +925,11 @@ class SquareButton(QtGui.QAbstractButton):
 
     base_width = 40
     base_height = 20
+    color = QtCore.Qt.green
+    _text_align = QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter
+    label_pos = BOTTOM
 
-    def __init__(self, parent=None, name='', inverted=False, color=QtCore.Qt.green, checkable=False, checked=False, label_pos=BOTTOM, size=None):
+    def __init__(self, parent=None, name='', inverted=False, color=color, checkable=False, checked=False, size=None, text_align=None, label_pos=label_pos):
         QtGui.QAbstractButton.__init__(self, parent=parent)
         self.label_font = QtGui.QFont('Decorative', 9, QtGui.QFont.Bold)
         self.label_font_metrics = QtGui.QFontMetrics(self.label_font)
@@ -961,6 +965,10 @@ class SquareButton(QtGui.QAbstractButton):
             h = self.base_height
         self.button_rect = QtCore.QRect(0, 0, w, h)
         self.name = name
+        if not text_align:
+            self.text_align = self._text_align
+        else:
+            self.text_align = getAlignMask(text_align, self._text_align)
         if name:
             spacing = 4
             txt_split = name.split('\n')
@@ -1036,6 +1044,10 @@ class SquareButton(QtGui.QAbstractButton):
 #        if self.inverted:
 #            state = not state
 #        QtGui.QAbstractButton.setChecked(self,state)
+
+    def setText(self, text):
+        self.name = text
+        self.update()
 
     def changeEvent(self, event):
         if not event.type() == QtCore.QEvent.EnabledChange: return
@@ -1117,7 +1129,7 @@ class SquareButton(QtGui.QAbstractButton):
         if self.name:
             qp.setPen(self.text_pen)
             qp.setFont(self.label_font)
-            qp.drawText(self.label_rect, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter, self.name)
+            qp.drawText(self.label_rect, self.text_align, self.name)
         qp.end()
 
     def resizeEvent(self, event):

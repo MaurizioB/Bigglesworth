@@ -198,7 +198,74 @@ class SettingsDialog(QtGui.QDialog):
         self.main = main
         self.settings = main.settings
         self.setModal(True)
-#        self.tabWidget.setTabEnabled(0, False)
+
+        self.previous = 0
+        self.connections = {INPUT: None, OUTPUT: None}
+        self.deviceID_spin.valueChanged.connect(lambda value: self.deviceID_hex_lbl.setText('({:02X}h)'.format(value)))
+        self.deviceID_spin.valueChanged.connect(self.check_broadcast)
+        self.broadcast_chk.toggled.connect(self.set_broadcast)
+        self.deviceID_detect_btn.clicked.connect(self.detect)
+        self.detect_msgbox = QtGui.QMessageBox(QtGui.QMessageBox.Information, 'Detecting Device ID', 'Waiting for the Blofeld to reply, please wait...', QtGui.QMessageBox.Abort, self)
+
+        self.detect_timer = QtCore.QTimer()
+        self.detect_timer.setInterval(5000)
+        self.detect_timer.setSingleShot(True)
+        self.detect_timer.timeout.connect(self.no_response)
+
+        self.no_response_msgbox = QtGui.QMessageBox(QtGui.QMessageBox.Warning, 'No response', 'We got no response from the Blofeld.\nPlease check MIDI connections or try to switch it off and on again.', QtGui.QMessageBox.Ok, self)
+
+    def detect(self):
+        self.main.midi_lock.emit(True)
+        self.main.globals_event.connect(self.detect_response)
+        self.main.globals_request()
+        self.detect_timer.start()
+        self.detect_msgbox.exec_()
+        self.detect_timer.stop()
+        self.main.midi_lock.emit(False)
+        self.main.globals_event.disconnect(self.detect_response)
+
+    def detect_response(self, data):
+        self.detect_timer.stop()
+        self.detect_msgbox.accept()
+        self.no_response_msgbox.accept()
+        id = data[42]
+        self.previous = id
+        if id == 127:
+            self.broadcast_chk.setChecked(True)
+            self.broadcast_chk.toggled.emit(True)
+        else:
+            self.deviceID_spin.setValue(id)
+
+    def no_response(self):
+        self.detect_msgbox.reject()
+        self.no_response_msgbox.exec_()
+
+    def detect_connections(self, dir, conn):
+        self.connections[dir] = conn
+        if self.connections[INPUT] and self.connections[OUTPUT]:
+            self.deviceID_detect_btn.setEnabled(True)
+        else:
+            self.deviceID_detect_btn.setEnabled(False)
+
+    def set_broadcast(self, state):
+        if state:
+            self.previous = self.deviceID_spin.value()
+            self.deviceID_spin.blockSignals(True)
+            self.deviceID_spin.setValue(127)
+            self.deviceID_hex_lbl.setText('({:02X}h)'.format(127))
+            self.deviceID_spin.blockSignals(False)
+        else:
+            self.deviceID_spin.setValue(self.previous)
+
+    def check_broadcast(self, value):
+        if value == 127:
+            self.broadcast_chk.blockSignals(True)
+            self.broadcast_chk.setChecked(True)
+            self.broadcast_chk.setEnabled(False)
+            self.broadcast_chk.blockSignals(False)
+        else:
+            self.broadcast_chk.setChecked(False)
+            self.broadcast_chk.setEnabled(True)
 
     def exec_(self):
         self.library_doubleclick_combo.setCurrentIndex(self.main.library_doubleclick)
@@ -208,13 +275,24 @@ class SettingsDialog(QtGui.QDialog):
         self.editor_remember_chk.setChecked(self.main.editor_remember)
 
         self.midi_groupbox.layout().addWidget(self.main.midiwidget)
+
+        id = self.main.blofeld_id
+        if id == 127:
+            self.broadcast_chk.setChecked(True)
+            self.broadcast_chk.toggled.emit(True)
+        else:
+            self.previous = id
+            self.deviceID_spin.setValue(id)
+            self.broadcast_chk.setChecked(False)
+            self.broadcast_chk.toggled.emit(False)
+
         self.blofeld_autoconnect_chk.setChecked(self.main.blofeld_autoconnect)
         self.remember_connections_chk.setChecked(self.main.remember_connections)
         res = QtGui.QDialog.exec_(self)
         if not res: return
-        self.main.blofeld_autoconnect = self.blofeld_autoconnect_chk.isChecked()
-        self.main.remember_connections = self.remember_connections_chk.isChecked()
+
         self.main.library_doubleclick = self.library_doubleclick_combo.currentIndex()
+
         self.main.editor_remember = self.editor_remember_chk.isChecked()
         if self.editor_remember_chk.isChecked():
             self.main.editor_remember_states = [
@@ -230,6 +308,11 @@ class SettingsDialog(QtGui.QDialog):
                                                 bool(self.editor_pgm_send_combo.currentIndex()), 
                                                 bool(self.editor_midi_send_combo.currentIndex()), 
                                                 ]
+
+        self.main.blofeld_id = self.deviceID_spin.value()
+        self.main.blofeld_autoconnect = self.blofeld_autoconnect_chk.isChecked()
+        self.main.remember_connections = self.remember_connections_chk.isChecked()
+
 
 class DirCursorClass(QtGui.QCursor):
     limit_pen = QtGui.QPen(QtCore.Qt.black, 2)
@@ -888,7 +971,6 @@ class Globals(QtGui.QDialog):
     def setData(self, sysex):
         self.sysex = sysex
         data = sysex[5:-2]
-        print data[:34]
         self.receiving = True
 #        if self.data:
 #            for i, v in enumerate(self.data):
