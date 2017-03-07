@@ -2513,7 +2513,7 @@ class Dial(QtGui.QWidget):
         self.dial_size = 1
         self.center = center
         self.show_bar = show_bar
-        self.value_list = value_list
+        self.value_list = [QtCore.QString.fromUtf8(s) for s in value_list]
         self.name = name
         self.scale = self.range/self.step if self.range/self.step <= 50 and scale else None
         self.cursor_mode = False
