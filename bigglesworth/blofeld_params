@@ -1645,4186 +1645,4191 @@ aa(lp796
 I4
 I1
 tp797
-ag533
-aS'Osc 3 Shape'
-p798
-aS'Shape'
+a(lp798
+g534
+ag535
+ag536
+ag537
+ag538
+aaS'Osc 3 Shape'
 p799
-aS'Osc 3'
+aS'Shape'
 p800
-aS'Osc_3_Shape'
+aS'Osc 3'
 p801
-aa(lp802
+aS'Osc_3_Shape'
+p802
+aa(lp803
 (I0
 I127
 I1
-tp803
+tp804
 ag526
 aS'Osc 3 Pulsewidth'
-p804
-aS'Pulsewidth'
 p805
-aS'Osc 3'
+aS'Pulsewidth'
 p806
-aS'Osc_3_Pulsewidth'
+aS'Osc 3'
 p807
-aa(lp808
+aS'Osc_3_Pulsewidth'
+p808
+aa(lp809
 (I0
 I30
 I1
-tp809
+tp810
 ag619
 aS'Osc 3 PWM Source'
-p810
-aS'PWM Source'
 p811
-aS'Osc 3'
+aS'PWM Source'
 p812
-aS'Osc_3_PWM_Source'
+aS'Osc 3'
 p813
-aa(lp814
+aS'Osc_3_PWM_Source'
+p814
+aa(lp815
 (I0
 I127
 I1
-tp815
+tp816
 ag181
 aS'Osc 3 PWM Amount'
-p816
-aS'PWM Amount'
 p817
-aS'Osc 3'
+aS'PWM Amount'
 p818
-aS'Osc_3_PWM_Amount'
+aS'Osc 3'
 p819
+aS'Osc_3_PWM_Amount'
+p820
 aag2
 ag2
 ag2
 ag2
-a(lp820
+a(lp821
 (I0
 I127
 I1
-tp821
+tp822
 ag526
 aS'Osc 3 Brilliance'
-p822
-aS'Brilliance'
 p823
-aS'Osc 3'
+aS'Brilliance'
 p824
-aS'Osc_3_Brilliance'
+aS'Osc 3'
 p825
-aa(lp826
+aS'Osc_3_Brilliance'
+p826
+aa(lp827
 (I0
 I1
 I1
-tp827
+tp828
 a(g664
 g663
-tp828
+tp829
 aS'Osc 2 Sync to O3'
-p829
-aS'Sync to O3'
 p830
-aS'Osc 2'
+aS'Sync to O3'
 p831
-aS'Osc_2_Sync_to_O3'
+aS'Osc 2'
 p832
-aa(lp833
+aS'Osc_2_Sync_to_O3'
+p833
+aa(lp834
 (I0
 I30
 I1
-tp834
+tp835
 ag619
 aS'Osc Pitch Source'
-p835
-aS'Source'
 p836
-aS'Osc Pitch'
+aS'Source'
 p837
-aS'Osc_Pitch_Source'
+aS'Osc Pitch'
 p838
-aa(lp839
+aS'Osc_Pitch_Source'
+p839
+aa(lp840
 (I0
 I127
 I1
-tp840
+tp841
 ag181
 aS'Osc Pitch Amount'
-p841
-aS'Amount'
 p842
-aS'Osc Pitch'
+aS'Amount'
 p843
-aS'Osc_Pitch_Amount'
+aS'Osc Pitch'
 p844
+aS'Osc_Pitch_Amount'
+p845
 aag2
-a(lp845
+a(lp846
 (I0
 I1
 I1
-tp846
-ag828
+tp847
+ag829
 aS'Glide'
-p847
-ag847
-aS''
 p848
-ag847
+ag848
+aS''
+p849
+ag848
 aag2
 ag2
-a(lp849
+a(lp850
 (I0
 I3
 I1
-tp850
-a(lp851
+tp851
+a(lp852
 S'Portamento'
-p852
-aS'fingered P'
 p853
-aS'Glissando'
+aS'fingered P'
 p854
-aS'fingered G'
+aS'Glissando'
 p855
-aaS'Glide Mode'
+aS'fingered G'
 p856
-aS'Mode'
+aaS'Glide Mode'
 p857
-aS'Glide'
+aS'Mode'
 p858
-aS'Glide_Mode'
+aS'Glide'
 p859
-aa(lp860
+aS'Glide_Mode'
+p860
+aa(lp861
 (I0
 I127
 I1
-tp861
+tp862
 ag526
 aS'Glide Rate'
-p862
-aS'Rate'
 p863
-aS'Glide'
+aS'Rate'
 p864
-aS'Glide_Rate'
+aS'Glide'
 p865
-aa(lp866
+aS'Glide_Rate'
+p866
+aa(lp867
 (I0
 I127
 I1
-tp867
+tp868
 ag526
 aS'Allocation Mode and Unisono'
-p868
-ag868
-ag848
-aS'Allocation_Mode_and_Unisono'
 p869
-aa(lp870
+ag869
+ag849
+aS'Allocation_Mode_and_Unisono'
+p870
+aa(lp871
 (I0
 I127
 I1
-tp871
+tp872
 ag526
 aS'Unisono Uni Detune'
-p872
-ag872
-ag848
-aS'Unisono_Uni_Detune'
 p873
+ag873
+ag849
+aS'Unisono_Uni_Detune'
+p874
 aag2
-a(lp874
+a(lp875
 (I0
 I127
 I1
-tp875
+tp876
 ag526
 aS'Mixer Osc 1 Level'
-p876
-aS'Level'
 p877
-aS'Mixer Osc 1'
+aS'Level'
 p878
-aS'Mixer_Osc_1_Level'
-p879
-aa(lp880
-(I0
-I127
-I1
-tp881
-a(S'F1 64'
-p882
-S'F1 63'
-p883
-S'F1 62'
-p884
-S'F1 61'
-p885
-S'F1 60'
-p886
-S'F1 59'
-p887
-S'F1 58'
-p888
-S'F1 57'
-p889
-S'F1 56'
-p890
-S'F1 55'
-p891
-S'F1 54'
-p892
-S'F1 53'
-p893
-S'F1 52'
-p894
-S'F1 51'
-p895
-S'F1 50'
-p896
-S'F1 49'
-p897
-S'F1 48'
-p898
-S'F1 47'
-p899
-S'F1 46'
-p900
-S'F1 45'
-p901
-S'F1 44'
-p902
-S'F1 43'
-p903
-S'F1 42'
-p904
-S'F1 41'
-p905
-S'F1 40'
-p906
-S'F1 39'
-p907
-S'F1 38'
-p908
-S'F1 37'
-p909
-S'F1 36'
-p910
-S'F1 35'
-p911
-S'F1 34'
-p912
-S'F1 33'
-p913
-S'F1 32'
-p914
-S'F1 31'
-p915
-S'F1 30'
-p916
-S'F1 29'
-p917
-S'F1 28'
-p918
-S'F1 27'
-p919
-S'F1 26'
-p920
-S'F1 25'
-p921
-S'F1 24'
-p922
-S'F1 23'
-p923
-S'F1 22'
-p924
-S'F1 21'
-p925
-S'F1 20'
-p926
-S'F1 19'
-p927
-S'F1 18'
-p928
-S'F1 17'
-p929
-S'F1 16'
-p930
-S'F1 15'
-p931
-S'F1 14'
-p932
-S'F1 13'
-p933
-S'F1 12'
-p934
-S'F1 11'
-p935
-S'F1 10'
-p936
-S'F1 9'
-p937
-S'F1 8'
-p938
-S'F1 7'
-p939
-S'F1 6'
-p940
-S'F1 5'
-p941
-S'F1 4'
-p942
-S'F1 3'
-p943
-S'F1 2'
-p944
-S'F1 1'
-p945
-S'middle'
-p946
-S'F2 1'
-p947
-S'F2 2'
-p948
-S'F2 3'
-p949
-S'F2 4'
-p950
-S'F2 5'
-p951
-S'F2 6'
-p952
-S'F2 7'
-p953
-S'F2 8'
-p954
-S'F2 9'
-p955
-S'F2 10'
-p956
-S'F2 11'
-p957
-S'F2 12'
-p958
-S'F2 13'
-p959
-S'F2 14'
-p960
-S'F2 15'
-p961
-S'F2 16'
-p962
-S'F2 17'
-p963
-S'F2 18'
-p964
-S'F2 19'
-p965
-S'F2 20'
-p966
-S'F2 21'
-p967
-S'F2 22'
-p968
-S'F2 23'
-p969
-S'F2 24'
-p970
-S'F2 25'
-p971
-S'F2 26'
-p972
-S'F2 27'
-p973
-S'F2 28'
-p974
-S'F2 29'
-p975
-S'F2 30'
-p976
-S'F2 31'
-p977
-S'F2 32'
-p978
-S'F2 33'
-p979
-S'F2 34'
-p980
-S'F2 35'
-p981
-S'F2 36'
-p982
-S'F2 37'
-p983
-S'F2 38'
-p984
-S'F2 39'
-p985
-S'F2 40'
-p986
-S'F2 41'
-p987
-S'F2 42'
-p988
-S'F2 43'
-p989
-S'F2 44'
-p990
-S'F2 45'
-p991
-S'F2 46'
-p992
-S'F2 47'
-p993
-S'F2 48'
-p994
-S'F2 49'
-p995
-S'F2 50'
-p996
-S'F2 51'
-p997
-S'F2 52'
-p998
-S'F2 53'
-p999
-S'F2 54'
-p1000
-S'F2 55'
-p1001
-S'F2 56'
-p1002
-S'F2 57'
-p1003
-S'F2 58'
-p1004
-S'F2 59'
-p1005
-S'F2 60'
-p1006
-S'F2 61'
-p1007
-S'F2 62'
-p1008
-S'F2 63'
-p1009
-tp1010
-aS'Mixer Osc 1 Balance'
-p1011
-aS'Balance'
-p1012
 aS'Mixer Osc 1'
-p1013
-aS'Mixer_Osc_1_Balance'
-p1014
-aa(lp1015
+p879
+aS'Mixer_Osc_1_Level'
+p880
+aa(lp881
 (I0
 I127
 I1
-tp1016
+tp882
+a(S'F1 64'
+p883
+S'F1 63'
+p884
+S'F1 62'
+p885
+S'F1 61'
+p886
+S'F1 60'
+p887
+S'F1 59'
+p888
+S'F1 58'
+p889
+S'F1 57'
+p890
+S'F1 56'
+p891
+S'F1 55'
+p892
+S'F1 54'
+p893
+S'F1 53'
+p894
+S'F1 52'
+p895
+S'F1 51'
+p896
+S'F1 50'
+p897
+S'F1 49'
+p898
+S'F1 48'
+p899
+S'F1 47'
+p900
+S'F1 46'
+p901
+S'F1 45'
+p902
+S'F1 44'
+p903
+S'F1 43'
+p904
+S'F1 42'
+p905
+S'F1 41'
+p906
+S'F1 40'
+p907
+S'F1 39'
+p908
+S'F1 38'
+p909
+S'F1 37'
+p910
+S'F1 36'
+p911
+S'F1 35'
+p912
+S'F1 34'
+p913
+S'F1 33'
+p914
+S'F1 32'
+p915
+S'F1 31'
+p916
+S'F1 30'
+p917
+S'F1 29'
+p918
+S'F1 28'
+p919
+S'F1 27'
+p920
+S'F1 26'
+p921
+S'F1 25'
+p922
+S'F1 24'
+p923
+S'F1 23'
+p924
+S'F1 22'
+p925
+S'F1 21'
+p926
+S'F1 20'
+p927
+S'F1 19'
+p928
+S'F1 18'
+p929
+S'F1 17'
+p930
+S'F1 16'
+p931
+S'F1 15'
+p932
+S'F1 14'
+p933
+S'F1 13'
+p934
+S'F1 12'
+p935
+S'F1 11'
+p936
+S'F1 10'
+p937
+S'F1 9'
+p938
+S'F1 8'
+p939
+S'F1 7'
+p940
+S'F1 6'
+p941
+S'F1 5'
+p942
+S'F1 4'
+p943
+S'F1 3'
+p944
+S'F1 2'
+p945
+S'F1 1'
+p946
+S'middle'
+p947
+S'F2 1'
+p948
+S'F2 2'
+p949
+S'F2 3'
+p950
+S'F2 4'
+p951
+S'F2 5'
+p952
+S'F2 6'
+p953
+S'F2 7'
+p954
+S'F2 8'
+p955
+S'F2 9'
+p956
+S'F2 10'
+p957
+S'F2 11'
+p958
+S'F2 12'
+p959
+S'F2 13'
+p960
+S'F2 14'
+p961
+S'F2 15'
+p962
+S'F2 16'
+p963
+S'F2 17'
+p964
+S'F2 18'
+p965
+S'F2 19'
+p966
+S'F2 20'
+p967
+S'F2 21'
+p968
+S'F2 22'
+p969
+S'F2 23'
+p970
+S'F2 24'
+p971
+S'F2 25'
+p972
+S'F2 26'
+p973
+S'F2 27'
+p974
+S'F2 28'
+p975
+S'F2 29'
+p976
+S'F2 30'
+p977
+S'F2 31'
+p978
+S'F2 32'
+p979
+S'F2 33'
+p980
+S'F2 34'
+p981
+S'F2 35'
+p982
+S'F2 36'
+p983
+S'F2 37'
+p984
+S'F2 38'
+p985
+S'F2 39'
+p986
+S'F2 40'
+p987
+S'F2 41'
+p988
+S'F2 42'
+p989
+S'F2 43'
+p990
+S'F2 44'
+p991
+S'F2 45'
+p992
+S'F2 46'
+p993
+S'F2 47'
+p994
+S'F2 48'
+p995
+S'F2 49'
+p996
+S'F2 50'
+p997
+S'F2 51'
+p998
+S'F2 52'
+p999
+S'F2 53'
+p1000
+S'F2 54'
+p1001
+S'F2 55'
+p1002
+S'F2 56'
+p1003
+S'F2 57'
+p1004
+S'F2 58'
+p1005
+S'F2 59'
+p1006
+S'F2 60'
+p1007
+S'F2 61'
+p1008
+S'F2 62'
+p1009
+S'F2 63'
+p1010
+tp1011
+aS'Mixer Osc 1 Balance'
+p1012
+aS'Balance'
+p1013
+aS'Mixer Osc 1'
+p1014
+aS'Mixer_Osc_1_Balance'
+p1015
+aa(lp1016
+(I0
+I127
+I1
+tp1017
 ag526
 aS'Mixer Osc 2 Level'
-p1017
-aS'Level'
 p1018
-aS'Mixer Osc 2'
+aS'Level'
 p1019
-aS'Mixer_Osc_2_Level'
-p1020
-aa(lp1021
-(I0
-I127
-I1
-tp1022
-ag1010
-aS'Mixer Osc 2 Balance'
-p1023
-aS'Balance'
-p1024
 aS'Mixer Osc 2'
-p1025
-aS'Mixer_Osc_2_Balance'
-p1026
-aa(lp1027
+p1020
+aS'Mixer_Osc_2_Level'
+p1021
+aa(lp1022
 (I0
 I127
 I1
-tp1028
+tp1023
+ag1011
+aS'Mixer Osc 2 Balance'
+p1024
+aS'Balance'
+p1025
+aS'Mixer Osc 2'
+p1026
+aS'Mixer_Osc_2_Balance'
+p1027
+aa(lp1028
+(I0
+I127
+I1
+tp1029
 ag526
 aS'Mixer Osc 3 Level'
-p1029
-aS'Level'
 p1030
-aS'Mixer Osc 3'
+aS'Level'
 p1031
-aS'Mixer_Osc_3_Level'
-p1032
-aa(lp1033
-(I0
-I127
-I1
-tp1034
-ag1010
-aS'Mixer Osc 3 Balance'
-p1035
-aS'Balance'
-p1036
 aS'Mixer Osc 3'
-p1037
-aS'Mixer_Osc_3_Balance'
-p1038
-aa(lp1039
+p1032
+aS'Mixer_Osc_3_Level'
+p1033
+aa(lp1034
 (I0
 I127
 I1
-tp1040
+tp1035
+ag1011
+aS'Mixer Osc 3 Balance'
+p1036
+aS'Balance'
+p1037
+aS'Mixer Osc 3'
+p1038
+aS'Mixer_Osc_3_Balance'
+p1039
+aa(lp1040
+(I0
+I127
+I1
+tp1041
 ag526
 aS'Mixer Noise Level'
-p1041
-aS'Level'
 p1042
-aS'Mixer Noise'
+aS'Level'
 p1043
-aS'Mixer_Noise_Level'
-p1044
-aa(lp1045
-(I0
-I127
-I1
-tp1046
-ag1010
-aS'Mixer Noise Balance'
-p1047
-aS'Balance'
-p1048
 aS'Mixer Noise'
-p1049
-aS'Mixer_Noise_Balance'
-p1050
-aa(lp1051
+p1044
+aS'Mixer_Noise_Level'
+p1045
+aa(lp1046
 (I0
 I127
 I1
-tp1052
+tp1047
+ag1011
+aS'Mixer Noise Balance'
+p1048
+aS'Balance'
+p1049
+aS'Mixer Noise'
+p1050
+aS'Mixer_Noise_Balance'
+p1051
+aa(lp1052
+(I0
+I127
+I1
+tp1053
 ag181
 aS'Mixer Noise Colour'
-p1053
-aS'Colour'
 p1054
-aS'Mixer Noise'
+aS'Colour'
 p1055
-aS'Mixer_Noise_Colour'
+aS'Mixer Noise'
 p1056
+aS'Mixer_Noise_Colour'
+p1057
 aag2
-a(lp1057
+a(lp1058
 (I0
 I127
 I1
-tp1058
+tp1059
 ag526
 aS'Mixer RingMod Level'
-p1059
-aS'Level'
 p1060
-aS'Mixer RingMod'
+aS'Level'
 p1061
-aS'Mixer_RingMod_Level'
+aS'Mixer RingMod'
 p1062
-aa(lp1063
+aS'Mixer_RingMod_Level'
+p1063
+aa(lp1064
 (I0
 I127
 I1
-tp1064
-ag1010
+tp1065
+ag1011
 aS'Mixer RingMod Balance'
-p1065
-aS'Balance'
 p1066
-aS'Mixer RingMod'
+aS'Balance'
 p1067
-aS'Mixer_RingMod_Balance'
+aS'Mixer RingMod'
 p1068
+aS'Mixer_RingMod_Balance'
+p1069
 aag2
 ag2
 ag2
 ag2
-a(lp1069
+a(lp1070
 (I0
 I11
 I1
-tp1070
-a(lp1071
+tp1071
+a(lp1072
 S'Bypass'
-p1072
-aS'LP 24dB'
 p1073
-aS'LP 12dB'
+aS'LP 24dB'
 p1074
-aS'BP 24dB'
+aS'LP 12dB'
 p1075
-aS'BP 12dB'
+aS'BP 24dB'
 p1076
-aS'HP 24dB'
+aS'BP 12dB'
 p1077
-aS'HP 12dB'
+aS'HP 24dB'
 p1078
-aS'Notch24dB'
+aS'HP 12dB'
 p1079
-aS'Notch12dB'
+aS'Notch24dB'
 p1080
-aS'Comb+'
+aS'Notch12dB'
 p1081
-aS'Comb-'
+aS'Comb+'
 p1082
-aS'PPG LP'
+aS'Comb-'
 p1083
-aaS'Filter 1 Type'
+aS'PPG LP'
 p1084
-aS'Type'
+aaS'Filter 1 Type'
 p1085
-aS'Filter 1'
+aS'Type'
 p1086
-aS'Filter_1_Type'
+aS'Filter 1'
 p1087
-aa(lp1088
+aS'Filter_1_Type'
+p1088
+aa(lp1089
 (I0
 I127
 I1
-tp1089
+tp1090
 ag526
 aS'Filter 1 Cutoff'
-p1090
-aS'Cutoff'
 p1091
-aS'Filter 1'
+aS'Cutoff'
 p1092
-aS'Filter_1_Cutoff'
+aS'Filter 1'
 p1093
+aS'Filter_1_Cutoff'
+p1094
 aag2
-a(lp1094
+a(lp1095
 (I0
 I127
 I1
-tp1095
+tp1096
 ag526
 aS'Filter 1 Resonance'
-p1096
-aS'Resonance'
 p1097
-aS'Filter 1'
+aS'Resonance'
 p1098
-aS'Filter_1_Resonance'
+aS'Filter 1'
 p1099
-aa(lp1100
+aS'Filter_1_Resonance'
+p1100
+aa(lp1101
 (I0
 I127
 I1
-tp1101
+tp1102
 ag526
 aS'Filter 1 Drive'
-p1102
-aS'Drive'
 p1103
-aS'Filter 1'
+aS'Drive'
 p1104
-aS'Filter_1_Drive'
+aS'Filter 1'
 p1105
-aa(lp1106
+aS'Filter_1_Drive'
+p1106
+aa(lp1107
 (I0
 I12
 I1
-tp1107
-a(lp1108
+tp1108
+a(lp1109
 S'Clipping'
-p1109
-aS'Tube'
 p1110
-aS'Hard'
+aS'Tube'
 p1111
-aS'Medium'
+aS'Hard'
 p1112
-aS'Soft'
+aS'Medium'
 p1113
-aS'Pickup 1'
+aS'Soft'
 p1114
-aS'Pickup 2'
+aS'Pickup 1'
 p1115
-aS'Rectifier'
+aS'Pickup 2'
 p1116
-aS'Square'
+aS'Rectifier'
 p1117
-aS'Binary'
+aS'Square'
 p1118
-aS'Overflow'
+aS'Binary'
 p1119
-aS'Sine Shaper'
+aS'Overflow'
 p1120
-aS'Osc 1 Mod'
+aS'Sine Shaper'
 p1121
-aaS'Filter 1 Drive Curve'
+aS'Osc 1 Mod'
 p1122
-aS'Drive Curve'
+aaS'Filter 1 Drive Curve'
 p1123
-aS'Filter 1'
+aS'Drive Curve'
 p1124
-aS'Filter_1_Drive_Curve'
+aS'Filter 1'
 p1125
+aS'Filter_1_Drive_Curve'
+p1126
 aag2
 ag2
 ag2
-a(lp1126
+a(lp1127
 (I0
 I127
 I1
-tp1127
+tp1128
 ag372
 aS'Filter 1 Keytrack'
-p1128
-aS'Keytrack'
 p1129
-aS'Filter 1'
+aS'Keytrack'
 p1130
-aS'Filter_1_Keytrack'
+aS'Filter 1'
 p1131
-aa(lp1132
+aS'Filter_1_Keytrack'
+p1132
+aa(lp1133
 (I0
 I127
 I1
-tp1133
+tp1134
 ag181
 aS'Filter 1 Env Amount'
-p1134
-aS'Env Amount'
 p1135
-aS'Filter 1'
+aS'Env Amount'
 p1136
-aS'Filter_1_Env_Amount'
+aS'Filter 1'
 p1137
-aa(lp1138
+aS'Filter_1_Env_Amount'
+p1138
+aa(lp1139
 (I0
 I127
 I1
-tp1139
+tp1140
 ag181
 aS'Filter 1 Env Velocity'
-p1140
-aS'Env Velocity'
 p1141
-aS'Filter 1'
+aS'Env Velocity'
 p1142
-aS'Filter_1_Env_Velocity'
+aS'Filter 1'
 p1143
-aa(lp1144
+aS'Filter_1_Env_Velocity'
+p1144
+aa(lp1145
 (I0
 I30
 I1
-tp1145
+tp1146
 ag619
 aS'Filter 1 Mod Source'
-p1146
-aS'Mod Source'
 p1147
-aS'Filter 1'
+aS'Mod Source'
 p1148
-aS'Filter_1_Mod_Source'
+aS'Filter 1'
 p1149
-aa(lp1150
+aS'Filter_1_Mod_Source'
+p1150
+aa(lp1151
 (I0
 I127
 I1
-tp1151
+tp1152
 ag181
 aS'Filter 1 Mod Amount'
-p1152
-aS'Mod Amount'
 p1153
-aS'Filter 1'
+aS'Mod Amount'
 p1154
-aS'Filter_1_Mod_Amount'
+aS'Filter 1'
 p1155
-aa(lp1156
+aS'Filter_1_Mod_Amount'
+p1156
+aa(lp1157
 (I0
 I11
 I1
-tp1157
+tp1158
 ag379
 aS'Filter 1 FM Source'
-p1158
-aS'FM Source'
 p1159
-aS'Filter 1'
+aS'FM Source'
 p1160
-aS'Filter_1_FM_Source'
+aS'Filter 1'
 p1161
-aa(lp1162
+aS'Filter_1_FM_Source'
+p1162
+aa(lp1163
 (I0
 I127
 I1
-tp1163
+tp1164
 ag379
 aS'Filter 1 FM Amount'
-p1164
-aS'FM Amount'
 p1165
-aS'Filter 1'
+aS'FM Amount'
 p1166
-aS'Filter_1_FM_Amount'
+aS'Filter 1'
 p1167
-aa(lp1168
+aS'Filter_1_FM_Amount'
+p1168
+aa(lp1169
 (I0
 I127
 I1
-tp1169
+tp1170
 a(S'left 64'
-p1170
-S'left 63'
 p1171
-S'left 62'
+S'left 63'
 p1172
-S'left 61'
+S'left 62'
 p1173
-S'left 60'
+S'left 61'
 p1174
-S'left 59'
+S'left 60'
 p1175
-S'left 58'
+S'left 59'
 p1176
-S'left 57'
+S'left 58'
 p1177
-S'left 56'
+S'left 57'
 p1178
-S'left 55'
+S'left 56'
 p1179
-S'left 54'
+S'left 55'
 p1180
-S'left 53'
+S'left 54'
 p1181
-S'left 52'
+S'left 53'
 p1182
-S'left 51'
+S'left 52'
 p1183
-S'left 50'
+S'left 51'
 p1184
-S'left 49'
+S'left 50'
 p1185
-S'left 48'
+S'left 49'
 p1186
-S'left 47'
+S'left 48'
 p1187
-S'left 46'
+S'left 47'
 p1188
-S'left 45'
+S'left 46'
 p1189
-S'left 44'
+S'left 45'
 p1190
-S'left 43'
+S'left 44'
 p1191
-S'left 42'
+S'left 43'
 p1192
-S'left 41'
+S'left 42'
 p1193
-S'left 40'
+S'left 41'
 p1194
-S'left 39'
+S'left 40'
 p1195
-S'left 38'
+S'left 39'
 p1196
-S'left 37'
+S'left 38'
 p1197
-S'left 36'
+S'left 37'
 p1198
-S'left 35'
+S'left 36'
 p1199
-S'left 34'
+S'left 35'
 p1200
-S'left 33'
+S'left 34'
 p1201
-S'left 32'
+S'left 33'
 p1202
-S'left 31'
+S'left 32'
 p1203
-S'left 30'
+S'left 31'
 p1204
-S'left 29'
+S'left 30'
 p1205
-S'left 28'
+S'left 29'
 p1206
-S'left 27'
+S'left 28'
 p1207
-S'left 26'
+S'left 27'
 p1208
-S'left 25'
+S'left 26'
 p1209
-S'left 24'
+S'left 25'
 p1210
-S'left 23'
+S'left 24'
 p1211
-S'left 22'
+S'left 23'
 p1212
-S'left 21'
+S'left 22'
 p1213
-S'left 20'
+S'left 21'
 p1214
-S'left 19'
+S'left 20'
 p1215
-S'left 18'
+S'left 19'
 p1216
-S'left 17'
+S'left 18'
 p1217
-S'left 16'
+S'left 17'
 p1218
-S'left 15'
+S'left 16'
 p1219
-S'left 14'
+S'left 15'
 p1220
-S'left 13'
+S'left 14'
 p1221
-S'left 12'
+S'left 13'
 p1222
-S'left 11'
+S'left 12'
 p1223
-S'left 10'
+S'left 11'
 p1224
-S'left 9'
+S'left 10'
 p1225
-S'left 8'
+S'left 9'
 p1226
-S'left 7'
+S'left 8'
 p1227
-S'left 6'
+S'left 7'
 p1228
-S'left 5'
+S'left 6'
 p1229
-S'left 4'
+S'left 5'
 p1230
-S'left 3'
+S'left 4'
 p1231
-S'left 2'
+S'left 3'
 p1232
-S'left 1'
+S'left 2'
 p1233
-S'center'
+S'left 1'
 p1234
-S'right 1'
+S'center'
 p1235
-S'right 2'
+S'right 1'
 p1236
-S'right 3'
+S'right 2'
 p1237
-S'right 4'
+S'right 3'
 p1238
-S'right 5'
+S'right 4'
 p1239
-S'right 6'
+S'right 5'
 p1240
-S'right 7'
+S'right 6'
 p1241
-S'right 8'
+S'right 7'
 p1242
-S'right 9'
+S'right 8'
 p1243
-S'right 10'
+S'right 9'
 p1244
-S'right 11'
+S'right 10'
 p1245
-S'right 12'
+S'right 11'
 p1246
-S'right 13'
+S'right 12'
 p1247
-S'right 14'
+S'right 13'
 p1248
-S'right 15'
+S'right 14'
 p1249
-S'right 16'
+S'right 15'
 p1250
-S'right 17'
+S'right 16'
 p1251
-S'right 18'
+S'right 17'
 p1252
-S'right 19'
+S'right 18'
 p1253
-S'right 20'
+S'right 19'
 p1254
-S'right 21'
+S'right 20'
 p1255
-S'right 22'
+S'right 21'
 p1256
-S'right 23'
+S'right 22'
 p1257
-S'right 24'
+S'right 23'
 p1258
-S'right 25'
+S'right 24'
 p1259
-S'right 26'
+S'right 25'
 p1260
-S'right 27'
+S'right 26'
 p1261
-S'right 28'
+S'right 27'
 p1262
-S'right 29'
+S'right 28'
 p1263
-S'right 30'
+S'right 29'
 p1264
-S'right 31'
+S'right 30'
 p1265
-S'right 32'
+S'right 31'
 p1266
-S'right 33'
+S'right 32'
 p1267
-S'right 34'
+S'right 33'
 p1268
-S'right 35'
+S'right 34'
 p1269
-S'right 36'
+S'right 35'
 p1270
-S'right 37'
+S'right 36'
 p1271
-S'right 38'
+S'right 37'
 p1272
-S'right 39'
+S'right 38'
 p1273
-S'right 40'
+S'right 39'
 p1274
-S'right 41'
+S'right 40'
 p1275
-S'right 42'
+S'right 41'
 p1276
-S'right 43'
+S'right 42'
 p1277
-S'right 44'
+S'right 43'
 p1278
-S'right 45'
+S'right 44'
 p1279
-S'right 46'
+S'right 45'
 p1280
-S'right 47'
+S'right 46'
 p1281
-S'right 48'
+S'right 47'
 p1282
-S'right 49'
+S'right 48'
 p1283
-S'right 50'
+S'right 49'
 p1284
-S'right 51'
+S'right 50'
 p1285
-S'right 52'
+S'right 51'
 p1286
-S'right 53'
+S'right 52'
 p1287
-S'right 54'
+S'right 53'
 p1288
-S'right 55'
+S'right 54'
 p1289
-S'right 56'
+S'right 55'
 p1290
-S'right 57'
+S'right 56'
 p1291
-S'right 58'
+S'right 57'
 p1292
-S'right 59'
+S'right 58'
 p1293
-S'right 60'
+S'right 59'
 p1294
-S'right 61'
+S'right 60'
 p1295
-S'right 62'
+S'right 61'
 p1296
-S'right 63'
+S'right 62'
 p1297
-tp1298
+S'right 63'
+p1298
+tp1299
 aS'Filter 1 Pan'
-p1299
-aS'Pan'
 p1300
-aS'Filter 1'
+aS'Pan'
 p1301
-aS'Filter_1_Pan'
+aS'Filter 1'
 p1302
-aa(lp1303
+aS'Filter_1_Pan'
+p1303
+aa(lp1304
 (I0
 I30
 I1
-tp1304
+tp1305
 ag619
 aS'Filter 1 Pan Source'
-p1305
-aS'Pan Source'
 p1306
-aS'Filter 1'
+aS'Pan Source'
 p1307
-aS'Filter_1_Pan_Source'
+aS'Filter 1'
 p1308
-aa(lp1309
+aS'Filter_1_Pan_Source'
+p1309
+aa(lp1310
 (I0
 I127
 I1
-tp1310
+tp1311
 ag181
 aS'Filter 1 Pan Amount'
-p1311
-aS'Pan Amount'
 p1312
-aS'Filter 1'
+aS'Pan Amount'
 p1313
-aS'Filter_1_Pan_Amount'
+aS'Filter 1'
 p1314
+aS'Filter_1_Pan_Amount'
+p1315
 aag2
-a(lp1315
+a(lp1316
 (I0
 I11
 I1
-tp1316
-ag1071
+tp1317
+ag1072
 aS'Filter 2 Type'
-p1317
-aS'Type'
 p1318
-aS'Filter 2'
+aS'Type'
 p1319
-aS'Filter_2_Type'
+aS'Filter 2'
 p1320
-aa(lp1321
+aS'Filter_2_Type'
+p1321
+aa(lp1322
 (I0
 I127
 I1
-tp1322
+tp1323
 ag526
 aS'Filter 2 Cutoff'
-p1323
-aS'Cutoff'
 p1324
-aS'Filter 2'
+aS'Cutoff'
 p1325
-aS'Filter_2_Cutoff'
+aS'Filter 2'
 p1326
+aS'Filter_2_Cutoff'
+p1327
 aag2
-a(lp1327
+a(lp1328
 (I0
 I127
 I1
-tp1328
+tp1329
 ag526
 aS'Filter 2 Resonance'
-p1329
-aS'Resonance'
 p1330
-aS'Filter 2'
+aS'Resonance'
 p1331
-aS'Filter_2_Resonance'
+aS'Filter 2'
 p1332
-aa(lp1333
+aS'Filter_2_Resonance'
+p1333
+aa(lp1334
 (I0
 I127
 I1
-tp1334
+tp1335
 ag526
 aS'Filter 2 Drive'
-p1335
-aS'Drive'
 p1336
-aS'Filter 2'
+aS'Drive'
 p1337
-aS'Filter_2_Drive'
+aS'Filter 2'
 p1338
-aa(lp1339
+aS'Filter_2_Drive'
+p1339
+aa(lp1340
 (I0
 I12
 I1
-tp1340
-ag1108
+tp1341
+ag1109
 aS'Filter 2 Drive Curve'
-p1341
-aS'Drive Curve'
 p1342
-aS'Filter 2'
+aS'Drive Curve'
 p1343
-aS'Filter_2_Drive_Curve'
+aS'Filter 2'
 p1344
+aS'Filter_2_Drive_Curve'
+p1345
 aag2
 ag2
 ag2
-a(lp1345
+a(lp1346
 (I0
 I127
 I1
-tp1346
+tp1347
 ag372
 aS'Filter 2 Keytrack'
-p1347
-aS'Keytrack'
 p1348
-aS'Filter 2'
+aS'Keytrack'
 p1349
-aS'Filter_2_Keytrack'
+aS'Filter 2'
 p1350
-aa(lp1351
+aS'Filter_2_Keytrack'
+p1351
+aa(lp1352
 (I0
 I127
 I1
-tp1352
+tp1353
 ag181
 aS'Filter 2 Env Amount'
-p1353
-aS'Env Amount'
 p1354
-aS'Filter 2'
+aS'Env Amount'
 p1355
-aS'Filter_2_Env_Amount'
+aS'Filter 2'
 p1356
-aa(lp1357
+aS'Filter_2_Env_Amount'
+p1357
+aa(lp1358
 (I0
 I127
 I1
-tp1358
+tp1359
 ag181
 aS'Filter 2 Env Velocity'
-p1359
-aS'Env Velocity'
 p1360
-aS'Filter 2'
+aS'Env Velocity'
 p1361
-aS'Filter_2_Env_Velocity'
+aS'Filter 2'
 p1362
-aa(lp1363
+aS'Filter_2_Env_Velocity'
+p1363
+aa(lp1364
 (I0
 I30
 I1
-tp1364
+tp1365
 ag619
 aS'Filter 2 Mod Source'
-p1365
-aS'Mod Source'
 p1366
-aS'Filter 2'
+aS'Mod Source'
 p1367
-aS'Filter_2_Mod_Source'
+aS'Filter 2'
 p1368
-aa(lp1369
+aS'Filter_2_Mod_Source'
+p1369
+aa(lp1370
 (I0
 I127
 I1
-tp1370
+tp1371
 ag181
 aS'Filter 2 Mod Amount'
-p1371
-aS'Mod Amount'
 p1372
-aS'Filter 2'
+aS'Mod Amount'
 p1373
-aS'Filter_2_Mod_Amount'
+aS'Filter 2'
 p1374
-aa(lp1375
+aS'Filter_2_Mod_Amount'
+p1375
+aa(lp1376
 (I0
 I11
 I1
-tp1376
+tp1377
 ag379
 aS'Filter 2 FM Source'
-p1377
-aS'FM Source'
 p1378
-aS'Filter 2'
+aS'FM Source'
 p1379
-aS'Filter_2_FM_Source'
+aS'Filter 2'
 p1380
-aa(lp1381
+aS'Filter_2_FM_Source'
+p1381
+aa(lp1382
 (I0
 I127
 I1
-tp1382
+tp1383
 ag379
 aS'Filter 2 FM Amount'
-p1383
-aS'FM Amount'
 p1384
-aS'Filter 2'
+aS'FM Amount'
 p1385
-aS'Filter_2_FM_Amount'
+aS'Filter 2'
 p1386
-aa(lp1387
+aS'Filter_2_FM_Amount'
+p1387
+aa(lp1388
 (I0
 I127
 I1
-tp1388
-ag1298
+tp1389
+ag1299
 aS'Filter 2 Pan'
-p1389
-aS'Pan'
 p1390
-aS'Filter 2'
+aS'Pan'
 p1391
-aS'Filter_2_Pan'
+aS'Filter 2'
 p1392
-aa(lp1393
+aS'Filter_2_Pan'
+p1393
+aa(lp1394
 (I0
 I30
 I1
-tp1394
+tp1395
 ag619
 aS'Filter 2 Pan Source'
-p1395
-aS'Pan Source'
 p1396
-aS'Filter 2'
+aS'Pan Source'
 p1397
-aS'Filter_2_Pan_Source'
+aS'Filter 2'
 p1398
-aa(lp1399
+aS'Filter_2_Pan_Source'
+p1399
+aa(lp1400
 (I0
 I127
 I1
-tp1400
+tp1401
 ag181
 aS'Filter 2 Pan Amount'
-p1401
-aS'Pan Amount'
 p1402
-aS'Filter 2'
+aS'Pan Amount'
 p1403
-aS'Filter_2_Pan_Amount'
+aS'Filter 2'
 p1404
+aS'Filter_2_Pan_Amount'
+p1405
 aag2
-a(lp1405
+a(lp1406
 (I0
 I1
 I1
-tp1406
+tp1407
 a(S'parallel'
-p1407
-S'serial'
 p1408
-tp1409
+S'serial'
+p1409
+tp1410
 aS'Filter Routing'
-p1410
-aS'Routing'
 p1411
-aS'Filter'
+aS'Routing'
 p1412
-aS'Filter_Routing'
+aS'Filter'
 p1413
+aS'Filter_Routing'
+p1414
 aag2
 ag2
 ag2
-a(lp1414
+a(lp1415
 (I0
 I127
 I1
-tp1415
+tp1416
 ag526
 aS'Amplifier Volume'
-p1416
-aS'Volume'
 p1417
-aS'Amplifier'
+aS'Volume'
 p1418
-aS'Amplifier_Volume'
+aS'Amplifier'
 p1419
-aa(lp1420
+aS'Amplifier_Volume'
+p1420
+aa(lp1421
 (I0
 I127
 I1
-tp1421
+tp1422
 ag181
 aS'Amplifier Velocity'
-p1422
-aS'Velocity'
 p1423
-aS'Amplifier'
+aS'Velocity'
 p1424
-aS'Amplifier_Velocity'
+aS'Amplifier'
 p1425
-aa(lp1426
+aS'Amplifier_Velocity'
+p1426
+aa(lp1427
 (I0
 I30
 I1
-tp1427
+tp1428
 ag619
 aS'Amplifier Mod Source'
-p1428
-aS'Source'
 p1429
-aS'Amplifier Mod'
+aS'Source'
 p1430
-aS'Amplifier_Mod_Source'
+aS'Amplifier Mod'
 p1431
-aa(lp1432
+aS'Amplifier_Mod_Source'
+p1432
+aa(lp1433
 (I0
 I127
 I1
-tp1433
+tp1434
 ag181
 aS'Amplifier Mod Amount'
-p1434
-aS'Amount'
 p1435
-aS'Amplifier Mod'
+aS'Amount'
 p1436
-aS'Amplifier_Mod_Amount'
+aS'Amplifier Mod'
 p1437
+aS'Amplifier_Mod_Amount'
+p1438
 aag2
 ag2
 ag2
-a(lp1438
+a(lp1439
 (I0
 I127
 I1
-tp1439
-a(lp1440
+tp1440
+a(lp1441
 S'Bypass'
-p1441
-aS'Chorus'
 p1442
-aS'Flanger'
+aS'Chorus'
 p1443
-aS'Phaser'
+aS'Flanger'
 p1444
-aS'Overdrive'
+aS'Phaser'
 p1445
-aS'Triple FX'
+aS'Overdrive'
 p1446
-aaS'Effect 1 Type'
+aS'Triple FX'
 p1447
-aS'Type'
+aaS'Effect 1 Type'
 p1448
-aS'Effect 1'
+aS'Type'
 p1449
-aS'Effect_1_Type'
+aS'Effect 1'
 p1450
-aa(lp1451
+aS'Effect_1_Type'
+p1451
+aa(lp1452
 (I0
 I127
 I1
-tp1452
+tp1453
 ag526
 aS'Effect 1 Mix'
-p1453
-aS'Mix'
 p1454
-aS'Effect 1'
+aS'Mix'
 p1455
-aS'Effect_1_Mix'
+aS'Effect 1'
 p1456
-aa(lp1457
+aS'Effect_1_Mix'
+p1457
+aa(lp1458
 (I0
 I127
 I1
-tp1458
+tp1459
 ag526
 aS'Effect 1 Parameter 1'
-p1459
-aS'Parameter 1'
 p1460
-aS'Effect 1'
+aS'Parameter 1'
 p1461
-aS'Effect_1_Parameter_1'
+aS'Effect 1'
 p1462
-aa(lp1463
+aS'Effect_1_Parameter_1'
+p1463
+aa(lp1464
 (I0
 I127
 I1
-tp1464
+tp1465
 ag526
 aS'Effect 1 Parameter 2'
-p1465
-aS'Parameter 2'
 p1466
-aS'Effect 1'
+aS'Parameter 2'
 p1467
-aS'Effect_1_Parameter_2'
+aS'Effect 1'
 p1468
-aa(lp1469
+aS'Effect_1_Parameter_2'
+p1469
+aa(lp1470
 (I0
 I127
 I1
-tp1470
+tp1471
 ag526
 aS'Effect 1 Parameter 3'
-p1471
-aS'Parameter 3'
 p1472
-aS'Effect 1'
+aS'Parameter 3'
 p1473
-aS'Effect_1_Parameter_3'
+aS'Effect 1'
 p1474
-aa(lp1475
+aS'Effect_1_Parameter_3'
+p1475
+aa(lp1476
 (I0
 I127
 I1
-tp1476
+tp1477
 ag526
 aS'Effect 1 Parameter 4'
-p1477
-aS'Parameter 4'
 p1478
-aS'Effect 1'
+aS'Parameter 4'
 p1479
-aS'Effect_1_Parameter_4'
+aS'Effect 1'
 p1480
-aa(lp1481
+aS'Effect_1_Parameter_4'
+p1481
+aa(lp1482
 (I0
 I127
 I1
-tp1482
+tp1483
 ag526
 aS'Effect 1 Parameter 5'
-p1483
-aS'Parameter 5'
 p1484
-aS'Effect 1'
+aS'Parameter 5'
 p1485
-aS'Effect_1_Parameter_5'
+aS'Effect 1'
 p1486
-aa(lp1487
+aS'Effect_1_Parameter_5'
+p1487
+aa(lp1488
 (I0
 I127
 I1
-tp1488
+tp1489
 ag526
 aS'Effect 1 Parameter 6'
-p1489
-aS'Parameter 6'
 p1490
-aS'Effect 1'
+aS'Parameter 6'
 p1491
-aS'Effect_1_Parameter_6'
+aS'Effect 1'
 p1492
-aa(lp1493
+aS'Effect_1_Parameter_6'
+p1493
+aa(lp1494
 (I0
 I127
 I1
-tp1494
+tp1495
 ag526
 aS'Effect 1 Parameter 7'
-p1495
-aS'Parameter 7'
 p1496
-aS'Effect 1'
+aS'Parameter 7'
 p1497
-aS'Effect_1_Parameter_7'
+aS'Effect 1'
 p1498
-aa(lp1499
+aS'Effect_1_Parameter_7'
+p1499
+aa(lp1500
 (I0
 I127
 I1
-tp1500
+tp1501
 ag526
 aS'Effect 1 Parameter 8'
-p1501
-aS'Parameter 8'
 p1502
-aS'Effect 1'
+aS'Parameter 8'
 p1503
-aS'Effect_1_Parameter_8'
+aS'Effect 1'
 p1504
-aa(lp1505
+aS'Effect_1_Parameter_8'
+p1505
+aa(lp1506
 (I0
 I127
 I1
-tp1506
+tp1507
 ag526
 aS'Effect 1 Parameter 9'
-p1507
-aS'Parameter 9'
 p1508
-aS'Effect 1'
+aS'Parameter 9'
 p1509
-aS'Effect_1_Parameter_9'
+aS'Effect 1'
 p1510
-aa(lp1511
+aS'Effect_1_Parameter_9'
+p1511
+aa(lp1512
 (I0
 I127
 I1
-tp1512
+tp1513
 ag526
 aS'Effect 1 Parameter 10'
-p1513
-aS'Parameter 10'
 p1514
-aS'Effect 1'
+aS'Parameter 10'
 p1515
-aS'Effect_1_Parameter_10'
+aS'Effect 1'
 p1516
-aa(lp1517
+aS'Effect_1_Parameter_10'
+p1517
+aa(lp1518
 (I0
 I127
 I1
-tp1518
+tp1519
 ag526
 aS'Effect 1 Parameter 11'
-p1519
-aS'Parameter 11'
 p1520
-aS'Effect 1'
+aS'Parameter 11'
 p1521
-aS'Effect_1_Parameter_11'
+aS'Effect 1'
 p1522
-aa(lp1523
+aS'Effect_1_Parameter_11'
+p1523
+aa(lp1524
 (I0
 I127
 I1
-tp1524
+tp1525
 ag526
 aS'Effect 1 Parameter 12'
-p1525
-aS'Parameter 12'
 p1526
-aS'Effect 1'
+aS'Parameter 12'
 p1527
-aS'Effect_1_Parameter_12'
+aS'Effect 1'
 p1528
-aa(lp1529
+aS'Effect_1_Parameter_12'
+p1529
+aa(lp1530
 (I0
 I127
 I1
-tp1530
+tp1531
 ag526
 aS'Effect 1 Parameter 13'
-p1531
-aS'Parameter 13'
 p1532
-aS'Effect 1'
+aS'Parameter 13'
 p1533
-aS'Effect_1_Parameter_13'
+aS'Effect 1'
 p1534
-aa(lp1535
+aS'Effect_1_Parameter_13'
+p1535
+aa(lp1536
 (I0
 I127
 I1
-tp1536
+tp1537
 ag526
 aS'Effect 1 Parameter 14'
-p1537
-aS'Parameter 14'
 p1538
-aS'Effect 1'
+aS'Parameter 14'
 p1539
-aS'Effect_1_Parameter_14'
+aS'Effect 1'
 p1540
-aa(lp1541
+aS'Effect_1_Parameter_14'
+p1541
+aa(lp1542
 (I0
 I127
 I1
-tp1542
-a(lp1543
-g1441
-ag1442
+tp1543
+a(lp1544
+g1442
 ag1443
 ag1444
 ag1445
 ag1446
+ag1447
 aS'Delay'
-p1544
-aS'Clk.Delay'
 p1545
-aS'Reverb'
+aS'Clk.Delay'
 p1546
-aaS'Effect 2 Type'
+aS'Reverb'
 p1547
-aS'Type'
+aaS'Effect 2 Type'
 p1548
-aS'Effect 2'
+aS'Type'
 p1549
-aS'Effect_2_Type'
+aS'Effect 2'
 p1550
-aa(lp1551
+aS'Effect_2_Type'
+p1551
+aa(lp1552
 (I0
 I127
 I1
-tp1552
+tp1553
 ag526
 aS'Effect 2 Mix'
-p1553
-aS'Mix'
 p1554
-aS'Effect 2'
+aS'Mix'
 p1555
-aS'Effect_2_Mix'
+aS'Effect 2'
 p1556
-aa(lp1557
+aS'Effect_2_Mix'
+p1557
+aa(lp1558
 (I0
 I127
 I1
-tp1558
+tp1559
 ag526
 aS'Effect 2 Parameter 1'
-p1559
-aS'Parameter 1'
 p1560
-aS'Effect 2'
+aS'Parameter 1'
 p1561
-aS'Effect_2_Parameter_1'
+aS'Effect 2'
 p1562
-aa(lp1563
+aS'Effect_2_Parameter_1'
+p1563
+aa(lp1564
 (I0
 I127
 I1
-tp1564
+tp1565
 ag526
 aS'Effect 2 Parameter 2'
-p1565
-aS'Parameter 2'
 p1566
-aS'Effect 2'
+aS'Parameter 2'
 p1567
-aS'Effect_2_Parameter_2'
+aS'Effect 2'
 p1568
-aa(lp1569
+aS'Effect_2_Parameter_2'
+p1569
+aa(lp1570
 (I0
 I127
 I1
-tp1570
+tp1571
 ag526
 aS'Effect 2 Parameter 3'
-p1571
-aS'Parameter 3'
 p1572
-aS'Effect 2'
+aS'Parameter 3'
 p1573
-aS'Effect_2_Parameter_3'
+aS'Effect 2'
 p1574
-aa(lp1575
+aS'Effect_2_Parameter_3'
+p1575
+aa(lp1576
 (I0
 I127
 I1
-tp1576
+tp1577
 ag526
 aS'Effect 2 Parameter 4'
-p1577
-aS'Parameter 4'
 p1578
-aS'Effect 2'
+aS'Parameter 4'
 p1579
-aS'Effect_2_Parameter_4'
+aS'Effect 2'
 p1580
-aa(lp1581
+aS'Effect_2_Parameter_4'
+p1581
+aa(lp1582
 (I0
 I127
 I1
-tp1582
+tp1583
 ag526
 aS'Effect 2 Parameter 5'
-p1583
-aS'Parameter 5'
 p1584
-aS'Effect 2'
+aS'Parameter 5'
 p1585
-aS'Effect_2_Parameter_5'
+aS'Effect 2'
 p1586
-aa(lp1587
+aS'Effect_2_Parameter_5'
+p1587
+aa(lp1588
 (I0
 I127
 I1
-tp1588
+tp1589
 ag526
 aS'Effect 2 Parameter 6'
-p1589
-aS'Parameter 6'
 p1590
-aS'Effect 2'
+aS'Parameter 6'
 p1591
-aS'Effect_2_Parameter_6'
+aS'Effect 2'
 p1592
-aa(lp1593
+aS'Effect_2_Parameter_6'
+p1593
+aa(lp1594
 (I0
 I127
 I1
-tp1594
+tp1595
 ag526
 aS'Effect 2 Parameter 7'
-p1595
-aS'Parameter 7'
 p1596
-aS'Effect 2'
+aS'Parameter 7'
 p1597
-aS'Effect_2_Parameter_7'
+aS'Effect 2'
 p1598
-aa(lp1599
+aS'Effect_2_Parameter_7'
+p1599
+aa(lp1600
 (I0
 I127
 I1
-tp1600
+tp1601
 ag526
 aS'Effect 2 Parameter 8'
-p1601
-aS'Parameter 8'
 p1602
-aS'Effect 2'
+aS'Parameter 8'
 p1603
-aS'Effect_2_Parameter_8'
+aS'Effect 2'
 p1604
-aa(lp1605
+aS'Effect_2_Parameter_8'
+p1605
+aa(lp1606
 (I0
 I127
 I1
-tp1606
+tp1607
 ag526
 aS'Effect 2 Parameter 9'
-p1607
-aS'Parameter 9'
 p1608
-aS'Effect 2'
+aS'Parameter 9'
 p1609
-aS'Effect_2_Parameter_9'
+aS'Effect 2'
 p1610
-aa(lp1611
+aS'Effect_2_Parameter_9'
+p1611
+aa(lp1612
 (I0
 I127
 I1
-tp1612
+tp1613
 ag526
 aS'Effect 2 Parameter 10'
-p1613
-aS'Parameter 10'
 p1614
-aS'Effect 2'
+aS'Parameter 10'
 p1615
-aS'Effect_2_Parameter_10'
+aS'Effect 2'
 p1616
-aa(lp1617
+aS'Effect_2_Parameter_10'
+p1617
+aa(lp1618
 (I0
 I127
 I1
-tp1618
+tp1619
 ag526
 aS'Effect 2 Parameter 11'
-p1619
-aS'Parameter 11'
 p1620
-aS'Effect 2'
+aS'Parameter 11'
 p1621
-aS'Effect_2_Parameter_11'
+aS'Effect 2'
 p1622
-aa(lp1623
+aS'Effect_2_Parameter_11'
+p1623
+aa(lp1624
 (I0
 I127
 I1
-tp1624
+tp1625
 ag526
 aS'Effect 2 Parameter 12'
-p1625
-aS'Parameter 12'
 p1626
-aS'Effect 2'
+aS'Parameter 12'
 p1627
-aS'Effect_2_Parameter_12'
+aS'Effect 2'
 p1628
-aa(lp1629
+aS'Effect_2_Parameter_12'
+p1629
+aa(lp1630
 (I0
 I127
 I1
-tp1630
+tp1631
 ag526
 aS'Effect 2 Parameter 13'
-p1631
-aS'Parameter 13'
 p1632
-aS'Effect 2'
+aS'Parameter 13'
 p1633
-aS'Effect_2_Parameter_13'
+aS'Effect 2'
 p1634
-aa(lp1635
+aS'Effect_2_Parameter_13'
+p1635
+aa(lp1636
 (I0
 I127
 I1
-tp1636
+tp1637
 ag526
 aS'Effect 2 Parameter 14'
-p1637
-aS'Parameter 14'
 p1638
-aS'Effect 2'
+aS'Parameter 14'
 p1639
-aS'Effect_2_Parameter_14'
+aS'Effect 2'
 p1640
-aa(lp1641
+aS'Effect_2_Parameter_14'
+p1641
+aa(lp1642
 (I0
 I5
 I1
-tp1642
-a(lp1643
+tp1643
+a(lp1644
 S'Sine'
-p1644
-aS'Triangle'
 p1645
-aS'Square'
+aS'Triangle'
 p1646
-aS'Saw'
+aS'Square'
 p1647
-aS'Random'
+aS'Saw'
 p1648
-aS'S&H'
+aS'Random'
 p1649
-aaS'LFO 1 Shape'
+aS'S&H'
 p1650
-aS'Shape'
+aaS'LFO 1 Shape'
 p1651
-aS'LFO 1'
+aS'Shape'
 p1652
-aS'LFO_1_Shape'
+aS'LFO 1'
 p1653
-aa(lp1654
+aS'LFO_1_Shape'
+p1654
+aa(lp1655
 (I0
 I127
 I1
-tp1655
-a(lp1656
+tp1656
+a(lp1657
 S'1280 bars'
-p1657
-aS'1280 bars'
 p1658
-aS'1152 bars'
+aS'1280 bars'
 p1659
 aS'1152 bars'
 p1660
-aS'1024 bars'
+aS'1152 bars'
 p1661
 aS'1024 bars'
 p1662
-aS'896 bars'
+aS'1024 bars'
 p1663
 aS'896 bars'
 p1664
-aS'768 bars'
+aS'896 bars'
 p1665
 aS'768 bars'
 p1666
-aS'640 bars'
+aS'768 bars'
 p1667
 aS'640 bars'
 p1668
-aS'576 bars'
+aS'640 bars'
 p1669
 aS'576 bars'
 p1670
-aS'512 bars'
+aS'576 bars'
 p1671
 aS'512 bars'
 p1672
-aS'448 bars'
+aS'512 bars'
 p1673
 aS'448 bars'
 p1674
-aS'384 bars'
+aS'448 bars'
 p1675
 aS'384 bars'
 p1676
-aS'320 bars'
+aS'384 bars'
 p1677
 aS'320 bars'
 p1678
-aS'288 bars'
+aS'320 bars'
 p1679
 aS'288 bars'
 p1680
-aS'256 bars'
+aS'288 bars'
 p1681
 aS'256 bars'
 p1682
-aS'224 bars'
+aS'256 bars'
 p1683
 aS'224 bars'
 p1684
-aS'192 bars'
+aS'224 bars'
 p1685
 aS'192 bars'
 p1686
-aS'160 bars'
+aS'192 bars'
 p1687
 aS'160 bars'
 p1688
-aS'144 bars'
+aS'160 bars'
 p1689
 aS'144 bars'
 p1690
-aS'128 bars'
+aS'144 bars'
 p1691
 aS'128 bars'
 p1692
-aS'112 bars'
+aS'128 bars'
 p1693
 aS'112 bars'
 p1694
-aS'96 bars'
+aS'112 bars'
 p1695
 aS'96 bars'
 p1696
-aS'80 bars'
+aS'96 bars'
 p1697
 aS'80 bars'
 p1698
-aS'72 bars'
+aS'80 bars'
 p1699
 aS'72 bars'
 p1700
-aS'64 bars'
+aS'72 bars'
 p1701
 aS'64 bars'
 p1702
-aS'56 bars'
+aS'64 bars'
 p1703
 aS'56 bars'
 p1704
-aS'48 bars'
+aS'56 bars'
 p1705
 aS'48 bars'
 p1706
-aS'40 bars'
+aS'48 bars'
 p1707
 aS'40 bars'
 p1708
-aS'36 bars'
+aS'40 bars'
 p1709
 aS'36 bars'
 p1710
-aS'32 bars'
+aS'36 bars'
 p1711
 aS'32 bars'
 p1712
-aS'28 bars'
+aS'32 bars'
 p1713
 aS'28 bars'
 p1714
-aS'24 bars'
+aS'28 bars'
 p1715
 aS'24 bars'
 p1716
-aS'20 bars'
+aS'24 bars'
 p1717
 aS'20 bars'
 p1718
-aS'18 bars'
+aS'20 bars'
 p1719
 aS'18 bars'
 p1720
-aS'16 bars'
+aS'18 bars'
 p1721
 aS'16 bars'
 p1722
-aS'14 bars'
+aS'16 bars'
 p1723
 aS'14 bars'
 p1724
-aS'12 bars'
+aS'14 bars'
 p1725
 aS'12 bars'
 p1726
-aS'10 bars'
+aS'12 bars'
 p1727
 aS'10 bars'
 p1728
-aS'9 bars'
+aS'10 bars'
 p1729
 aS'9 bars'
 p1730
-aS'8 bars'
+aS'9 bars'
 p1731
 aS'8 bars'
 p1732
-aS'7 bars'
+aS'8 bars'
 p1733
 aS'7 bars'
 p1734
-aS'6 bars'
+aS'7 bars'
 p1735
 aS'6 bars'
 p1736
-aS'5 bars'
+aS'6 bars'
 p1737
 aS'5 bars'
 p1738
-aS'4 bars'
+aS'5 bars'
 p1739
 aS'4 bars'
 p1740
-aS'3.5 bars'
+aS'4 bars'
 p1741
 aS'3.5 bars'
 p1742
-aS'3 bars'
+aS'3.5 bars'
 p1743
 aS'3 bars'
 p1744
-aS'2.5 bars'
+aS'3 bars'
 p1745
 aS'2.5 bars'
 p1746
-aS'2 bars'
+aS'2.5 bars'
 p1747
 aS'2 bars'
 p1748
-aS'1.5 bars'
+aS'2 bars'
 p1749
 aS'1.5 bars'
 p1750
-aS'1 bar'
+aS'1.5 bars'
 p1751
 aS'1 bar'
 p1752
-aS'1/2.'
+aS'1 bar'
 p1753
 aS'1/2.'
 p1754
-aS'1/1T'
+aS'1/2.'
 p1755
 aS'1/1T'
 p1756
-aS'1/2 '
+aS'1/1T'
 p1757
 aS'1/2 '
 p1758
-aS'1/4.'
+aS'1/2 '
 p1759
 aS'1/4.'
 p1760
-aS'1/2T'
+aS'1/4.'
 p1761
 aS'1/2T'
 p1762
-aS'1/4 '
+aS'1/2T'
 p1763
 aS'1/4 '
 p1764
-aS'1/8.'
+aS'1/4 '
 p1765
 aS'1/8.'
 p1766
-aS'1/4T'
+aS'1/8.'
 p1767
 aS'1/4T'
 p1768
-aS'1/8 '
+aS'1/4T'
 p1769
 aS'1/8 '
 p1770
-aS'1/16.'
+aS'1/8 '
 p1771
 aS'1/16.'
 p1772
-aS'1/8T'
+aS'1/16.'
 p1773
 aS'1/8T'
 p1774
-aS'1/16 '
+aS'1/8T'
 p1775
 aS'1/16 '
 p1776
-aS'1/32.'
+aS'1/16 '
 p1777
 aS'1/32.'
 p1778
-aS'1/16T'
+aS'1/32.'
 p1779
 aS'1/16T'
 p1780
-aS'1/32 '
+aS'1/16T'
 p1781
 aS'1/32 '
 p1782
-aS'1/48'
+aS'1/32 '
 p1783
 aS'1/48'
 p1784
-aaS'LFO 1 Speed'
+aS'1/48'
 p1785
-aS'Speed'
+aaS'LFO 1 Speed'
 p1786
-aS'LFO 1'
+aS'Speed'
 p1787
-aS'LFO_1_Speed'
+aS'LFO 1'
 p1788
+aS'LFO_1_Speed'
+p1789
 aag2
-a(lp1789
+a(lp1790
 (I0
 I1
 I1
-tp1790
-ag828
+tp1791
+ag829
 aS'LFO 1 Sync'
-p1791
-aS'Sync'
 p1792
-aS'LFO 1'
+aS'Sync'
 p1793
-aS'LFO_1_Sync'
+aS'LFO 1'
 p1794
-aa(lp1795
+aS'LFO_1_Sync'
+p1795
+aa(lp1796
 (I0
 I1
 I1
-tp1796
-ag828
+tp1797
+ag829
 aS'LFO 1 Clocked'
-p1797
-aS'Clocked'
 p1798
-aS'LFO 1'
+aS'Clocked'
 p1799
-aS'LFO_1_Clocked'
-p1800
-aa(lp1801
-(I0
-I127
-I1
-tp1802
-a(S'free'
-p1803
-S'0\xc2\xb0'
-p1804
-S'3\xc2\xb0'
-p1805
-S'6\xc2\xb0'
-p1806
-S'8\xc2\xb0'
-p1807
-S'11\xc2\xb0'
-p1808
-S'14\xc2\xb0'
-p1809
-S'17\xc2\xb0'
-p1810
-S'20\xc2\xb0'
-p1811
-S'22\xc2\xb0'
-p1812
-S'25\xc2\xb0'
-p1813
-S'28\xc2\xb0'
-p1814
-S'31\xc2\xb0'
-p1815
-S'34\xc2\xb0'
-p1816
-S'36\xc2\xb0'
-p1817
-S'39\xc2\xb0'
-p1818
-S'42\xc2\xb0'
-p1819
-S'45\xc2\xb0'
-p1820
-S'48\xc2\xb0'
-p1821
-S'50\xc2\xb0'
-p1822
-S'53\xc2\xb0'
-p1823
-S'56\xc2\xb0'
-p1824
-S'59\xc2\xb0'
-p1825
-S'62\xc2\xb0'
-p1826
-S'64\xc2\xb0'
-p1827
-S'67\xc2\xb0'
-p1828
-S'70\xc2\xb0'
-p1829
-S'73\xc2\xb0'
-p1830
-S'76\xc2\xb0'
-p1831
-S'78\xc2\xb0'
-p1832
-S'81\xc2\xb0'
-p1833
-S'84\xc2\xb0'
-p1834
-S'87\xc2\xb0'
-p1835
-S'90\xc2\xb0'
-p1836
-S'92\xc2\xb0'
-p1837
-S'95\xc2\xb0'
-p1838
-S'98\xc2\xb0'
-p1839
-S'101\xc2\xb0'
-p1840
-S'104\xc2\xb0'
-p1841
-S'106\xc2\xb0'
-p1842
-S'109\xc2\xb0'
-p1843
-S'112\xc2\xb0'
-p1844
-S'115\xc2\xb0'
-p1845
-S'118\xc2\xb0'
-p1846
-S'120\xc2\xb0'
-p1847
-S'123\xc2\xb0'
-p1848
-S'126\xc2\xb0'
-p1849
-S'129\xc2\xb0'
-p1850
-S'132\xc2\xb0'
-p1851
-S'134\xc2\xb0'
-p1852
-S'137\xc2\xb0'
-p1853
-S'140\xc2\xb0'
-p1854
-S'143\xc2\xb0'
-p1855
-S'146\xc2\xb0'
-p1856
-S'148\xc2\xb0'
-p1857
-S'151\xc2\xb0'
-p1858
-S'154\xc2\xb0'
-p1859
-S'157\xc2\xb0'
-p1860
-S'160\xc2\xb0'
-p1861
-S'162\xc2\xb0'
-p1862
-S'165\xc2\xb0'
-p1863
-S'168\xc2\xb0'
-p1864
-S'171\xc2\xb0'
-p1865
-S'174\xc2\xb0'
-p1866
-S'176\xc2\xb0'
-p1867
-S'179\xc2\xb0'
-p1868
-S'182\xc2\xb0'
-p1869
-S'185\xc2\xb0'
-p1870
-S'188\xc2\xb0'
-p1871
-S'190\xc2\xb0'
-p1872
-S'193\xc2\xb0'
-p1873
-S'196\xc2\xb0'
-p1874
-S'199\xc2\xb0'
-p1875
-S'202\xc2\xb0'
-p1876
-S'204\xc2\xb0'
-p1877
-S'207\xc2\xb0'
-p1878
-S'210\xc2\xb0'
-p1879
-S'213\xc2\xb0'
-p1880
-S'216\xc2\xb0'
-p1881
-S'218\xc2\xb0'
-p1882
-S'221\xc2\xb0'
-p1883
-S'224\xc2\xb0'
-p1884
-S'227\xc2\xb0'
-p1885
-S'230\xc2\xb0'
-p1886
-S'232\xc2\xb0'
-p1887
-S'235\xc2\xb0'
-p1888
-S'238\xc2\xb0'
-p1889
-S'241\xc2\xb0'
-p1890
-S'244\xc2\xb0'
-p1891
-S'246\xc2\xb0'
-p1892
-S'249\xc2\xb0'
-p1893
-S'252\xc2\xb0'
-p1894
-S'255\xc2\xb0'
-p1895
-S'258\xc2\xb0'
-p1896
-S'260\xc2\xb0'
-p1897
-S'263\xc2\xb0'
-p1898
-S'266\xc2\xb0'
-p1899
-S'269\xc2\xb0'
-p1900
-S'272\xc2\xb0'
-p1901
-S'274\xc2\xb0'
-p1902
-S'277\xc2\xb0'
-p1903
-S'280\xc2\xb0'
-p1904
-S'283\xc2\xb0'
-p1905
-S'286\xc2\xb0'
-p1906
-S'288\xc2\xb0'
-p1907
-S'291\xc2\xb0'
-p1908
-S'294\xc2\xb0'
-p1909
-S'297\xc2\xb0'
-p1910
-S'300\xc2\xb0'
-p1911
-S'302\xc2\xb0'
-p1912
-S'305\xc2\xb0'
-p1913
-S'308\xc2\xb0'
-p1914
-S'311\xc2\xb0'
-p1915
-S'314\xc2\xb0'
-p1916
-S'316\xc2\xb0'
-p1917
-S'319\xc2\xb0'
-p1918
-S'322\xc2\xb0'
-p1919
-S'325\xc2\xb0'
-p1920
-S'328\xc2\xb0'
-p1921
-S'330\xc2\xb0'
-p1922
-S'333\xc2\xb0'
-p1923
-S'336\xc2\xb0'
-p1924
-S'339\xc2\xb0'
-p1925
-S'342\xc2\xb0'
-p1926
-S'344\xc2\xb0'
-p1927
-S'347\xc2\xb0'
-p1928
-S'350\xc2\xb0'
-p1929
-S'353\xc2\xb0'
-p1930
-tp1931
-aS'LFO 1 Start Phase'
-p1932
-aS'Start Phase'
-p1933
 aS'LFO 1'
-p1934
-aS'LFO_1_Start_Phase'
-p1935
-aa(lp1936
+p1800
+aS'LFO_1_Clocked'
+p1801
+aa(lp1802
 (I0
 I127
 I1
-tp1937
+tp1803
+a(S'free'
+p1804
+S'0\xc2\xb0'
+p1805
+S'3\xc2\xb0'
+p1806
+S'6\xc2\xb0'
+p1807
+S'8\xc2\xb0'
+p1808
+S'11\xc2\xb0'
+p1809
+S'14\xc2\xb0'
+p1810
+S'17\xc2\xb0'
+p1811
+S'20\xc2\xb0'
+p1812
+S'22\xc2\xb0'
+p1813
+S'25\xc2\xb0'
+p1814
+S'28\xc2\xb0'
+p1815
+S'31\xc2\xb0'
+p1816
+S'34\xc2\xb0'
+p1817
+S'36\xc2\xb0'
+p1818
+S'39\xc2\xb0'
+p1819
+S'42\xc2\xb0'
+p1820
+S'45\xc2\xb0'
+p1821
+S'48\xc2\xb0'
+p1822
+S'50\xc2\xb0'
+p1823
+S'53\xc2\xb0'
+p1824
+S'56\xc2\xb0'
+p1825
+S'59\xc2\xb0'
+p1826
+S'62\xc2\xb0'
+p1827
+S'64\xc2\xb0'
+p1828
+S'67\xc2\xb0'
+p1829
+S'70\xc2\xb0'
+p1830
+S'73\xc2\xb0'
+p1831
+S'76\xc2\xb0'
+p1832
+S'78\xc2\xb0'
+p1833
+S'81\xc2\xb0'
+p1834
+S'84\xc2\xb0'
+p1835
+S'87\xc2\xb0'
+p1836
+S'90\xc2\xb0'
+p1837
+S'92\xc2\xb0'
+p1838
+S'95\xc2\xb0'
+p1839
+S'98\xc2\xb0'
+p1840
+S'101\xc2\xb0'
+p1841
+S'104\xc2\xb0'
+p1842
+S'106\xc2\xb0'
+p1843
+S'109\xc2\xb0'
+p1844
+S'112\xc2\xb0'
+p1845
+S'115\xc2\xb0'
+p1846
+S'118\xc2\xb0'
+p1847
+S'120\xc2\xb0'
+p1848
+S'123\xc2\xb0'
+p1849
+S'126\xc2\xb0'
+p1850
+S'129\xc2\xb0'
+p1851
+S'132\xc2\xb0'
+p1852
+S'134\xc2\xb0'
+p1853
+S'137\xc2\xb0'
+p1854
+S'140\xc2\xb0'
+p1855
+S'143\xc2\xb0'
+p1856
+S'146\xc2\xb0'
+p1857
+S'148\xc2\xb0'
+p1858
+S'151\xc2\xb0'
+p1859
+S'154\xc2\xb0'
+p1860
+S'157\xc2\xb0'
+p1861
+S'160\xc2\xb0'
+p1862
+S'162\xc2\xb0'
+p1863
+S'165\xc2\xb0'
+p1864
+S'168\xc2\xb0'
+p1865
+S'171\xc2\xb0'
+p1866
+S'174\xc2\xb0'
+p1867
+S'176\xc2\xb0'
+p1868
+S'179\xc2\xb0'
+p1869
+S'182\xc2\xb0'
+p1870
+S'185\xc2\xb0'
+p1871
+S'188\xc2\xb0'
+p1872
+S'190\xc2\xb0'
+p1873
+S'193\xc2\xb0'
+p1874
+S'196\xc2\xb0'
+p1875
+S'199\xc2\xb0'
+p1876
+S'202\xc2\xb0'
+p1877
+S'204\xc2\xb0'
+p1878
+S'207\xc2\xb0'
+p1879
+S'210\xc2\xb0'
+p1880
+S'213\xc2\xb0'
+p1881
+S'216\xc2\xb0'
+p1882
+S'218\xc2\xb0'
+p1883
+S'221\xc2\xb0'
+p1884
+S'224\xc2\xb0'
+p1885
+S'227\xc2\xb0'
+p1886
+S'230\xc2\xb0'
+p1887
+S'232\xc2\xb0'
+p1888
+S'235\xc2\xb0'
+p1889
+S'238\xc2\xb0'
+p1890
+S'241\xc2\xb0'
+p1891
+S'244\xc2\xb0'
+p1892
+S'246\xc2\xb0'
+p1893
+S'249\xc2\xb0'
+p1894
+S'252\xc2\xb0'
+p1895
+S'255\xc2\xb0'
+p1896
+S'258\xc2\xb0'
+p1897
+S'260\xc2\xb0'
+p1898
+S'263\xc2\xb0'
+p1899
+S'266\xc2\xb0'
+p1900
+S'269\xc2\xb0'
+p1901
+S'272\xc2\xb0'
+p1902
+S'274\xc2\xb0'
+p1903
+S'277\xc2\xb0'
+p1904
+S'280\xc2\xb0'
+p1905
+S'283\xc2\xb0'
+p1906
+S'286\xc2\xb0'
+p1907
+S'288\xc2\xb0'
+p1908
+S'291\xc2\xb0'
+p1909
+S'294\xc2\xb0'
+p1910
+S'297\xc2\xb0'
+p1911
+S'300\xc2\xb0'
+p1912
+S'302\xc2\xb0'
+p1913
+S'305\xc2\xb0'
+p1914
+S'308\xc2\xb0'
+p1915
+S'311\xc2\xb0'
+p1916
+S'314\xc2\xb0'
+p1917
+S'316\xc2\xb0'
+p1918
+S'319\xc2\xb0'
+p1919
+S'322\xc2\xb0'
+p1920
+S'325\xc2\xb0'
+p1921
+S'328\xc2\xb0'
+p1922
+S'330\xc2\xb0'
+p1923
+S'333\xc2\xb0'
+p1924
+S'336\xc2\xb0'
+p1925
+S'339\xc2\xb0'
+p1926
+S'342\xc2\xb0'
+p1927
+S'344\xc2\xb0'
+p1928
+S'347\xc2\xb0'
+p1929
+S'350\xc2\xb0'
+p1930
+S'353\xc2\xb0'
+p1931
+tp1932
+aS'LFO 1 Start Phase'
+p1933
+aS'Start Phase'
+p1934
+aS'LFO 1'
+p1935
+aS'LFO_1_Start_Phase'
+p1936
+aa(lp1937
+(I0
+I127
+I1
+tp1938
 ag526
 aS'LFO 1 Delay'
-p1938
-aS'Delay'
 p1939
-aS'LFO 1'
+aS'Delay'
 p1940
-aS'LFO_1_Delay'
+aS'LFO 1'
 p1941
-aa(lp1942
+aS'LFO_1_Delay'
+p1942
+aa(lp1943
 (I0
 I127
 I1
-tp1943
+tp1944
 ag181
 aS'LFO 1 Fade'
-p1944
-aS'Fade'
 p1945
-aS'LFO 1'
+aS'Fade'
 p1946
-aS'LFO_1_Fade'
+aS'LFO 1'
 p1947
+aS'LFO_1_Fade'
+p1948
 aag2
 ag2
-a(lp1948
+a(lp1949
 (I0
 I127
 I1
-tp1949
+tp1950
 ag372
 aS'LFO 1 Keytrack'
-p1950
-aS'Keytrack'
 p1951
-aS'LFO 1'
+aS'Keytrack'
 p1952
-aS'LFO_1_Keytrack'
+aS'LFO 1'
 p1953
+aS'LFO_1_Keytrack'
+p1954
 aag2
-a(lp1954
+a(lp1955
 (I0
 I5
 I1
-tp1955
-ag1643
+tp1956
+ag1644
 aS'LFO 2 Shape'
-p1956
-aS'Shape'
 p1957
-aS'LFO 2'
+aS'Shape'
 p1958
-aS'LFO_2_Shape'
+aS'LFO 2'
 p1959
-aa(lp1960
+aS'LFO_2_Shape'
+p1960
+aa(lp1961
 (I0
 I127
 I1
-tp1961
-ag1656
+tp1962
+ag1657
 aS'LFO 2 Speed'
-p1962
-aS'Speed'
 p1963
-aS'LFO 2'
+aS'Speed'
 p1964
-aS'LFO_2_Speed'
+aS'LFO 2'
 p1965
+aS'LFO_2_Speed'
+p1966
 aag2
-a(lp1966
+a(lp1967
 (I0
 I1
 I1
-tp1967
-ag828
+tp1968
+ag829
 aS'LFO 2 Sync'
-p1968
-aS'Sync'
 p1969
-aS'LFO 2'
+aS'Sync'
 p1970
-aS'LFO_2_Sync'
+aS'LFO 2'
 p1971
-aa(lp1972
+aS'LFO_2_Sync'
+p1972
+aa(lp1973
 (I0
 I1
 I1
-tp1973
-ag828
+tp1974
+ag829
 aS'LFO 2 Clocked'
-p1974
-aS'Clocked'
 p1975
-aS'LFO 2'
+aS'Clocked'
 p1976
-aS'LFO_2_Clocked'
-p1977
-aa(lp1978
-(I0
-I127
-I1
-tp1979
-ag1931
-aS'LFO 2 Start Phase'
-p1980
-aS'Start Phase'
-p1981
 aS'LFO 2'
-p1982
-aS'LFO_2_Start_Phase'
-p1983
-aa(lp1984
+p1977
+aS'LFO_2_Clocked'
+p1978
+aa(lp1979
 (I0
 I127
 I1
-tp1985
+tp1980
+ag1932
+aS'LFO 2 Start Phase'
+p1981
+aS'Start Phase'
+p1982
+aS'LFO 2'
+p1983
+aS'LFO_2_Start_Phase'
+p1984
+aa(lp1985
+(I0
+I127
+I1
+tp1986
 ag526
 aS'LFO 2 Delay'
-p1986
-aS'Delay'
 p1987
-aS'LFO 2'
+aS'Delay'
 p1988
-aS'LFO_2_Delay'
+aS'LFO 2'
 p1989
-aa(lp1990
+aS'LFO_2_Delay'
+p1990
+aa(lp1991
 (I0
 I127
 I1
-tp1991
+tp1992
 ag181
 aS'LFO 2 Fade'
-p1992
-aS'Fade'
 p1993
-aS'LFO 2'
+aS'Fade'
 p1994
-aS'LFO_2_Fade'
+aS'LFO 2'
 p1995
+aS'LFO_2_Fade'
+p1996
 aag2
 ag2
-a(lp1996
+a(lp1997
 (I0
 I127
 I1
-tp1997
+tp1998
 ag372
 aS'LFO 2 Keytrack'
-p1998
-aS'Keytrack'
 p1999
-aS'LFO 2'
+aS'Keytrack'
 p2000
-aS'LFO_2_Keytrack'
+aS'LFO 2'
 p2001
+aS'LFO_2_Keytrack'
+p2002
 aag2
-a(lp2002
+a(lp2003
 (I0
 I5
 I1
-tp2003
-ag1643
+tp2004
+ag1644
 aS'LFO 3 Shape'
-p2004
-aS'Shape'
 p2005
-aS'LFO 3'
+aS'Shape'
 p2006
-aS'LFO_3_Shape'
+aS'LFO 3'
 p2007
-aa(lp2008
+aS'LFO_3_Shape'
+p2008
+aa(lp2009
 (I0
 I127
 I1
-tp2009
-ag1656
+tp2010
+ag1657
 aS'LFO 3 Speed'
-p2010
-aS'Speed'
 p2011
-aS'LFO 3'
+aS'Speed'
 p2012
-aS'LFO_3_Speed'
+aS'LFO 3'
 p2013
+aS'LFO_3_Speed'
+p2014
 aag2
-a(lp2014
+a(lp2015
 (I0
 I1
 I1
-tp2015
-ag828
+tp2016
+ag829
 aS'LFO 3 Sync'
-p2016
-aS'Sync'
 p2017
-aS'LFO 3'
+aS'Sync'
 p2018
-aS'LFO_3_Sync'
+aS'LFO 3'
 p2019
-aa(lp2020
+aS'LFO_3_Sync'
+p2020
+aa(lp2021
 (I0
 I1
 I1
-tp2021
-ag828
+tp2022
+ag829
 aS'LFO 3 Clocked'
-p2022
-aS'Clocked'
 p2023
-aS'LFO 3'
+aS'Clocked'
 p2024
-aS'LFO_3_Clocked'
-p2025
-aa(lp2026
-(I0
-I127
-I1
-tp2027
-ag1931
-aS'LFO 3 Start Phase'
-p2028
-aS'Start Phase'
-p2029
 aS'LFO 3'
-p2030
-aS'LFO_3_Start_Phase'
-p2031
-aa(lp2032
+p2025
+aS'LFO_3_Clocked'
+p2026
+aa(lp2027
 (I0
 I127
 I1
-tp2033
+tp2028
+ag1932
+aS'LFO 3 Start Phase'
+p2029
+aS'Start Phase'
+p2030
+aS'LFO 3'
+p2031
+aS'LFO_3_Start_Phase'
+p2032
+aa(lp2033
+(I0
+I127
+I1
+tp2034
 ag526
 aS'LFO 3 Delay'
-p2034
-aS'Delay'
 p2035
-aS'LFO 3'
+aS'Delay'
 p2036
-aS'LFO_3_Delay'
+aS'LFO 3'
 p2037
-aa(lp2038
+aS'LFO_3_Delay'
+p2038
+aa(lp2039
 (I0
 I127
 I1
-tp2039
+tp2040
 ag181
 aS'LFO 3 Fade'
-p2040
-aS'Fade'
 p2041
-aS'LFO 3'
+aS'Fade'
 p2042
-aS'LFO_3_Fade'
+aS'LFO 3'
 p2043
+aS'LFO_3_Fade'
+p2044
 aag2
 ag2
-a(lp2044
+a(lp2045
 (I0
 I127
 I1
-tp2045
+tp2046
 ag372
 aS'LFO 3 Keytrack'
-p2046
-aS'Keytrack'
 p2047
-aS'LFO 3'
+aS'Keytrack'
 p2048
-aS'LFO_3_Keytrack'
+aS'LFO 3'
 p2049
+aS'LFO_3_Keytrack'
+p2050
 aag2
-a(lp2050
+a(lp2051
 (I0
 I4
 I1
-tp2051
+tp2052
 ag372
 aS'Filter Envelope Mode'
-p2052
-aS'Mode'
 p2053
-aS'Filter Envelope'
+aS'Mode'
 p2054
-aS'Filter_Envelope_Mode'
+aS'Filter Envelope'
 p2055
+aS'Filter_Envelope_Mode'
+p2056
 aag2
 ag2
-a(lp2056
+a(lp2057
 (I0
 I127
 I1
-tp2057
+tp2058
 ag526
 aS'Filter Envelope Attack'
-p2058
-aS'Attack'
 p2059
-aS'Filter Envelope'
+aS'Attack'
 p2060
-aS'Filter_Envelope_Attack'
+aS'Filter Envelope'
 p2061
-aa(lp2062
+aS'Filter_Envelope_Attack'
+p2062
+aa(lp2063
 (I0
 I127
 I1
-tp2063
+tp2064
 ag526
 aS'Filter Envelope Attack Level'
-p2064
-aS'Attack Level'
 p2065
-aS'Filter Envelope'
+aS'Attack Level'
 p2066
-aS'Filter_Envelope_Attack_Level'
+aS'Filter Envelope'
 p2067
-aa(lp2068
+aS'Filter_Envelope_Attack_Level'
+p2068
+aa(lp2069
 (I0
 I127
 I1
-tp2069
+tp2070
 ag526
 aS'Filter Envelope Decay'
-p2070
-aS'Decay'
 p2071
-aS'Filter Envelope'
+aS'Decay'
 p2072
-aS'Filter_Envelope_Decay'
+aS'Filter Envelope'
 p2073
-aa(lp2074
+aS'Filter_Envelope_Decay'
+p2074
+aa(lp2075
 (I0
 I127
 I1
-tp2075
+tp2076
 ag526
 aS'Filter Envelope Sustain'
-p2076
-aS'Sustain'
 p2077
-aS'Filter Envelope'
+aS'Sustain'
 p2078
-aS'Filter_Envelope_Sustain'
+aS'Filter Envelope'
 p2079
-aa(lp2080
+aS'Filter_Envelope_Sustain'
+p2080
+aa(lp2081
 (I0
 I127
 I1
-tp2081
+tp2082
 ag526
 aS'Filter Envelope Decay 2'
-p2082
-aS'Decay 2'
 p2083
-aS'Filter Envelope'
+aS'Decay 2'
 p2084
-aS'Filter_Envelope_Decay_2'
+aS'Filter Envelope'
 p2085
-aa(lp2086
+aS'Filter_Envelope_Decay_2'
+p2086
+aa(lp2087
 (I0
 I127
 I1
-tp2087
+tp2088
 ag526
 aS'Filter Envelope Sustain 2'
-p2088
-aS'Sustain 2'
 p2089
-aS'Filter Envelope'
+aS'Sustain 2'
 p2090
-aS'Filter_Envelope_Sustain_2'
+aS'Filter Envelope'
 p2091
-aa(lp2092
+aS'Filter_Envelope_Sustain_2'
+p2092
+aa(lp2093
 (I0
 I127
 I1
-tp2093
+tp2094
 ag526
 aS'Filter Envelope Release'
-p2094
-aS'Release'
 p2095
-aS'Filter Envelope'
+aS'Release'
 p2096
-aS'Filter_Envelope_Release'
+aS'Filter Envelope'
 p2097
+aS'Filter_Envelope_Release'
+p2098
 aag2
 ag2
-a(lp2098
+a(lp2099
 (I0
 I4
 I1
-tp2099
+tp2100
 ag526
 aS'Amplifier Envelope Mode'
-p2100
-aS'Mode'
 p2101
-aS'Amplifier Envelope'
+aS'Mode'
 p2102
-aS'Amplifier_Envelope_Mode'
+aS'Amplifier Envelope'
 p2103
+aS'Amplifier_Envelope_Mode'
+p2104
 aag2
 ag2
-a(lp2104
+a(lp2105
 (I0
 I127
 I1
-tp2105
+tp2106
 ag526
 aS'Amplifier Envelope Attack'
-p2106
-aS'Attack'
 p2107
-aS'Amplifier Envelope'
+aS'Attack'
 p2108
-aS'Amplifier_Envelope_Attack'
+aS'Amplifier Envelope'
 p2109
-aa(lp2110
+aS'Amplifier_Envelope_Attack'
+p2110
+aa(lp2111
 (I0
 I127
 I1
-tp2111
+tp2112
 ag526
 aS'Amplifier Envelope Attack Level'
-p2112
-aS'Attack Level'
 p2113
-aS'Amplifier Envelope'
+aS'Attack Level'
 p2114
-aS'Amplifier_Envelope_Attack_Level'
+aS'Amplifier Envelope'
 p2115
-aa(lp2116
+aS'Amplifier_Envelope_Attack_Level'
+p2116
+aa(lp2117
 (I0
 I127
 I1
-tp2117
+tp2118
 ag526
 aS'Amplifier Envelope Decay'
-p2118
-aS'Decay'
 p2119
-aS'Amplifier Envelope'
+aS'Decay'
 p2120
-aS'Amplifier_Envelope_Decay'
+aS'Amplifier Envelope'
 p2121
-aa(lp2122
+aS'Amplifier_Envelope_Decay'
+p2122
+aa(lp2123
 (I0
 I127
 I1
-tp2123
+tp2124
 ag526
 aS'Amplifier Envelope Sustain'
-p2124
-aS'Sustain'
 p2125
-aS'Amplifier Envelope'
+aS'Sustain'
 p2126
-aS'Amplifier_Envelope_Sustain'
+aS'Amplifier Envelope'
 p2127
-aa(lp2128
+aS'Amplifier_Envelope_Sustain'
+p2128
+aa(lp2129
 (I0
 I127
 I1
-tp2129
+tp2130
 ag526
 aS'Amplifier Envelope Decay 2'
-p2130
-aS'Decay 2'
 p2131
-aS'Amplifier Envelope'
+aS'Decay 2'
 p2132
-aS'Amplifier_Envelope_Decay_2'
+aS'Amplifier Envelope'
 p2133
-aa(lp2134
+aS'Amplifier_Envelope_Decay_2'
+p2134
+aa(lp2135
 (I0
 I127
 I1
-tp2135
+tp2136
 ag526
 aS'Amplifier Envelope Sustain 2'
-p2136
-aS'Sustain 2'
 p2137
-aS'Amplifier Envelope'
+aS'Sustain 2'
 p2138
-aS'Amplifier_Envelope_Sustain_2'
+aS'Amplifier Envelope'
 p2139
-aa(lp2140
+aS'Amplifier_Envelope_Sustain_2'
+p2140
+aa(lp2141
 (I0
 I127
 I1
-tp2141
+tp2142
 ag526
 aS'Amplifier Envelope Release'
-p2142
-aS'Release'
 p2143
-aS'Amplifier Envelope'
+aS'Release'
 p2144
-aS'Amplifier_Envelope_Release'
+aS'Amplifier Envelope'
 p2145
+aS'Amplifier_Envelope_Release'
+p2146
 aag2
 ag2
-a(lp2146
+a(lp2147
 (I0
 I4
 I1
-tp2147
+tp2148
 ag526
 aS'Envelope 3 Mode'
-p2148
-aS'Mode'
 p2149
-aS'Envelope 3'
+aS'Mode'
 p2150
-aS'Envelope_3_Mode'
+aS'Envelope 3'
 p2151
+aS'Envelope_3_Mode'
+p2152
 aag2
 ag2
-a(lp2152
+a(lp2153
 (I0
 I127
 I1
-tp2153
+tp2154
 ag526
 aS'Envelope 3 Attack'
-p2154
-aS'Attack'
 p2155
-aS'Envelope 3'
+aS'Attack'
 p2156
-aS'Envelope_3_Attack'
+aS'Envelope 3'
 p2157
-aa(lp2158
+aS'Envelope_3_Attack'
+p2158
+aa(lp2159
 (I0
 I127
 I1
-tp2159
+tp2160
 ag526
 aS'Envelope 3 Attack Level'
-p2160
-aS'Attack Level'
 p2161
-aS'Envelope 3'
+aS'Attack Level'
 p2162
-aS'Envelope_3_Attack_Level'
+aS'Envelope 3'
 p2163
-aa(lp2164
+aS'Envelope_3_Attack_Level'
+p2164
+aa(lp2165
 (I0
 I127
 I1
-tp2165
+tp2166
 ag526
 aS'Envelope 3 Decay'
-p2166
-aS'Decay'
 p2167
-aS'Envelope 3'
+aS'Decay'
 p2168
-aS'Envelope_3_Decay'
+aS'Envelope 3'
 p2169
-aa(lp2170
+aS'Envelope_3_Decay'
+p2170
+aa(lp2171
 (I0
 I127
 I1
-tp2171
+tp2172
 ag526
 aS'Envelope 3 Sustain'
-p2172
-aS'Sustain'
 p2173
-aS'Envelope 3'
+aS'Sustain'
 p2174
-aS'Envelope_3_Sustain'
+aS'Envelope 3'
 p2175
-aa(lp2176
+aS'Envelope_3_Sustain'
+p2176
+aa(lp2177
 (I0
 I127
 I1
-tp2177
+tp2178
 ag526
 aS'Envelope 3 Decay 2'
-p2178
-aS'Decay 2'
 p2179
-aS'Envelope 3'
+aS'Decay 2'
 p2180
-aS'Envelope_3_Decay_2'
+aS'Envelope 3'
 p2181
-aa(lp2182
+aS'Envelope_3_Decay_2'
+p2182
+aa(lp2183
 (I0
 I127
 I1
-tp2183
+tp2184
 ag526
 aS'Envelope 3 Sustain 2'
-p2184
-aS'Sustain 2'
 p2185
-aS'Envelope 3'
+aS'Sustain 2'
 p2186
-aS'Envelope_3_Sustain_2'
+aS'Envelope 3'
 p2187
-aa(lp2188
+aS'Envelope_3_Sustain_2'
+p2188
+aa(lp2189
 (I0
 I127
 I1
-tp2189
+tp2190
 ag526
 aS'Envelope 3 Release'
-p2190
-aS'Release'
 p2191
-aS'Envelope 3'
+aS'Release'
 p2192
-aS'Envelope_3_Release'
+aS'Envelope 3'
 p2193
+aS'Envelope_3_Release'
+p2194
 aag2
 ag2
-a(lp2194
+a(lp2195
 (I0
 I4
 I1
-tp2195
+tp2196
 ag526
 aS'Envelope 4 Mode'
-p2196
-aS'Mode'
 p2197
-aS'Envelope 4'
+aS'Mode'
 p2198
-aS'Envelope_4_Mode'
+aS'Envelope 4'
 p2199
+aS'Envelope_4_Mode'
+p2200
 aag2
 ag2
-a(lp2200
+a(lp2201
 (I0
 I127
 I1
-tp2201
+tp2202
 ag526
 aS'Envelope 4 Attack'
-p2202
-aS'Attack'
 p2203
-aS'Envelope 4'
+aS'Attack'
 p2204
-aS'Envelope_4_Attack'
+aS'Envelope 4'
 p2205
-aa(lp2206
+aS'Envelope_4_Attack'
+p2206
+aa(lp2207
 (I0
 I127
 I1
-tp2207
+tp2208
 ag526
 aS'Envelope 4 Attack Level'
-p2208
-aS'Attack Level'
 p2209
-aS'Envelope 4'
+aS'Attack Level'
 p2210
-aS'Envelope_4_Attack_Level'
+aS'Envelope 4'
 p2211
-aa(lp2212
+aS'Envelope_4_Attack_Level'
+p2212
+aa(lp2213
 (I0
 I127
 I1
-tp2213
+tp2214
 ag526
 aS'Envelope 4 Decay'
-p2214
-aS'Decay'
 p2215
-aS'Envelope 4'
+aS'Decay'
 p2216
-aS'Envelope_4_Decay'
+aS'Envelope 4'
 p2217
-aa(lp2218
+aS'Envelope_4_Decay'
+p2218
+aa(lp2219
 (I0
 I127
 I1
-tp2219
+tp2220
 ag526
 aS'Envelope 4 Sustain'
-p2220
-aS'Sustain'
 p2221
-aS'Envelope 4'
+aS'Sustain'
 p2222
-aS'Envelope_4_Sustain'
+aS'Envelope 4'
 p2223
-aa(lp2224
+aS'Envelope_4_Sustain'
+p2224
+aa(lp2225
 (I0
 I127
 I1
-tp2225
+tp2226
 ag526
 aS'Envelope 4 Decay 2'
-p2226
-aS'Decay 2'
 p2227
-aS'Envelope 4'
+aS'Decay 2'
 p2228
-aS'Envelope_4_Decay_2'
+aS'Envelope 4'
 p2229
-aa(lp2230
+aS'Envelope_4_Decay_2'
+p2230
+aa(lp2231
 (I0
 I127
 I1
-tp2231
+tp2232
 ag526
 aS'Envelope 4 Sustain 2'
-p2232
-aS'Sustain 2'
 p2233
-aS'Envelope 4'
+aS'Sustain 2'
 p2234
-aS'Envelope_4_Sustain_2'
+aS'Envelope 4'
 p2235
-aa(lp2236
+aS'Envelope_4_Sustain_2'
+p2236
+aa(lp2237
 (I0
 I127
 I1
-tp2237
+tp2238
 ag526
 aS'Envelope 4 Release'
-p2238
-aS'Release'
 p2239
-aS'Envelope 4'
+aS'Release'
 p2240
-aS'Envelope_4_Release'
+aS'Envelope 4'
 p2241
+aS'Envelope_4_Release'
+p2242
 aag2
 ag2
 ag2
-a(lp2242
+a(lp2243
 (I0
 I30
 I1
-tp2243
+tp2244
 ag619
 aS'Modifier 1 Source A'
-p2244
-aS'Source A'
 p2245
-aS'Modifier 1'
+aS'Source A'
 p2246
-aS'Modifier_1_Source_A'
+aS'Modifier 1'
 p2247
-aa(lp2248
+aS'Modifier_1_Source_A'
+p2248
+aa(lp2249
 (I0
 I30
 I1
-tp2249
+tp2250
 ag619
 aS'Modifier 1 Source B'
-p2250
-aS'Source B'
 p2251
-aS'Modifier 1'
+aS'Source B'
 p2252
-aS'Modifier_1_Source_B'
+aS'Modifier 1'
 p2253
-aa(lp2254
+aS'Modifier_1_Source_B'
+p2254
+aa(lp2255
 (I0
 I7
 I1
-tp2255
-a(lp2256
+tp2256
+a(lp2257
 S'+'
-p2257
-aS'-'
 p2258
-aS'*'
+aS'-'
 p2259
-aS'AND'
+aS'*'
 p2260
-aS'OR'
+aS'AND'
 p2261
-aS'XOR'
+aS'OR'
 p2262
-aS'MAX'
+aS'XOR'
 p2263
-aS'min'
+aS'MAX'
 p2264
-aaS'Modifier 1 Operation'
+aS'min'
 p2265
-aS'Operation'
+aaS'Modifier 1 Operation'
 p2266
-aS'Modifier 1'
+aS'Operation'
 p2267
-aS'Modifier_1_Operation'
+aS'Modifier 1'
 p2268
-aa(lp2269
+aS'Modifier_1_Operation'
+p2269
+aa(lp2270
 (I0
 I127
 I1
-tp2270
+tp2271
 ag181
 aS'Modifier 1 Constant'
-p2271
-aS'Constant'
 p2272
-aS'Modifier 1'
+aS'Constant'
 p2273
-aS'Modifier_1_Constant'
+aS'Modifier 1'
 p2274
-aa(lp2275
+aS'Modifier_1_Constant'
+p2275
+aa(lp2276
 (I0
 I30
 I1
-tp2276
+tp2277
 ag619
 aS'Modifier 2 Source A'
-p2277
-aS'Source A'
 p2278
-aS'Modifier 2'
+aS'Source A'
 p2279
-aS'Modifier_2_Source_A'
+aS'Modifier 2'
 p2280
-aa(lp2281
+aS'Modifier_2_Source_A'
+p2281
+aa(lp2282
 (I0
 I30
 I1
-tp2282
+tp2283
 ag619
 aS'Modifier 2 Source B'
-p2283
-aS'Source B'
 p2284
-aS'Modifier 2'
+aS'Source B'
 p2285
-aS'Modifier_2_Source_B'
+aS'Modifier 2'
 p2286
-aa(lp2287
+aS'Modifier_2_Source_B'
+p2287
+aa(lp2288
 (I0
 I7
 I1
-tp2288
-ag2256
+tp2289
+ag2257
 aS'Modifier 2 Operation'
-p2289
-aS'Operation'
 p2290
-aS'Modifier 2'
+aS'Operation'
 p2291
-aS'Modifier_2_Operation'
+aS'Modifier 2'
 p2292
-aa(lp2293
+aS'Modifier_2_Operation'
+p2293
+aa(lp2294
 (I0
 I127
 I1
-tp2294
+tp2295
 ag181
 aS'Modifier 2 Constant'
-p2295
-aS'Constant'
 p2296
-aS'Modifier 2'
+aS'Constant'
 p2297
-aS'Modifier_2_Constant'
+aS'Modifier 2'
 p2298
-aa(lp2299
+aS'Modifier_2_Constant'
+p2299
+aa(lp2300
 (I0
 I30
 I1
-tp2300
+tp2301
 ag619
 aS'Modifier 3 Source A'
-p2301
-aS'Source A'
 p2302
-aS'Modifier 3'
+aS'Source A'
 p2303
-aS'Modifier_3_Source_A'
+aS'Modifier 3'
 p2304
-aa(lp2305
+aS'Modifier_3_Source_A'
+p2305
+aa(lp2306
 (I0
 I30
 I1
-tp2306
+tp2307
 ag619
 aS'Modifier 3 Source B'
-p2307
-aS'Source B'
 p2308
-aS'Modifier 3'
+aS'Source B'
 p2309
-aS'Modifier_3_Source_B'
+aS'Modifier 3'
 p2310
-aa(lp2311
+aS'Modifier_3_Source_B'
+p2311
+aa(lp2312
 (I0
 I7
 I1
-tp2312
-ag2256
+tp2313
+ag2257
 aS'Modifier 3 Operation'
-p2313
-aS'Operation'
 p2314
-aS'Modifier 3'
+aS'Operation'
 p2315
-aS'Modifier_3_Operation'
+aS'Modifier 3'
 p2316
-aa(lp2317
+aS'Modifier_3_Operation'
+p2317
+aa(lp2318
 (I0
 I127
 I1
-tp2318
+tp2319
 ag181
 aS'Modifier 3 Constant'
-p2319
-aS'Constant'
 p2320
-aS'Modifier 3'
+aS'Constant'
 p2321
-aS'Modifier_3_Constant'
+aS'Modifier 3'
 p2322
-aa(lp2323
+aS'Modifier_3_Constant'
+p2323
+aa(lp2324
 (I0
 I30
 I1
-tp2324
+tp2325
 ag619
 aS'Modifier 4 Source A'
-p2325
-aS'Source A'
 p2326
-aS'Modifier 4'
+aS'Source A'
 p2327
-aS'Modifier_4_Source_A'
+aS'Modifier 4'
 p2328
-aa(lp2329
+aS'Modifier_4_Source_A'
+p2329
+aa(lp2330
 (I0
 I30
 I1
-tp2330
+tp2331
 ag619
 aS'Modifier 4 Source B'
-p2331
-aS'Source B'
 p2332
-aS'Modifier 4'
+aS'Source B'
 p2333
-aS'Modifier_4_Source_B'
+aS'Modifier 4'
 p2334
-aa(lp2335
+aS'Modifier_4_Source_B'
+p2335
+aa(lp2336
 (I0
 I7
 I1
-tp2336
-ag2256
+tp2337
+ag2257
 aS'Modifier 4 Operation'
-p2337
-aS'Operation'
 p2338
-aS'Modifier 4'
+aS'Operation'
 p2339
-aS'Modifier_4_Operation'
+aS'Modifier 4'
 p2340
-aa(lp2341
+aS'Modifier_4_Operation'
+p2341
+aa(lp2342
 (I0
 I127
 I1
-tp2342
+tp2343
 ag181
 aS'Modifier 4 Constant'
-p2343
-aS'Constant'
 p2344
-aS'Modifier 4'
+aS'Constant'
 p2345
-aS'Modifier_4_Constant'
+aS'Modifier 4'
 p2346
-aa(lp2347
+aS'Modifier_4_Constant'
+p2347
+aa(lp2348
 (I0
 I30
 I1
-tp2348
+tp2349
 ag619
 aS'Modulation 1 Source'
-p2349
-ag2349
-ag848
-aS'Modulation_1_Source'
 p2350
-aa(lp2351
+ag2350
+ag849
+aS'Modulation_1_Source'
+p2351
+aa(lp2352
 (I0
 I53
 I1
-tp2352
-a(lp2353
+tp2353
+a(lp2354
 S'Pitch'
-p2354
-aS'O1 Pitch'
 p2355
-aS'O1 FM'
+aS'O1 Pitch'
 p2356
-aS'O1 PW/Wave'
+aS'O1 FM'
 p2357
-aS'O2 Pitch'
+aS'O1 PW/Wave'
 p2358
-aS'O2 FM'
+aS'O2 Pitch'
 p2359
-aS'O2 PW/Wave'
+aS'O2 FM'
 p2360
-aS'O3 Pitch'
+aS'O2 PW/Wave'
 p2361
-aS'O3 FM'
+aS'O3 Pitch'
 p2362
-aS'O3 PW'
+aS'O3 FM'
 p2363
-aS'O1 Level'
+aS'O3 PW'
 p2364
-aS'O1 Balance'
+aS'O1 Level'
 p2365
-aS'O2 Level'
+aS'O1 Balance'
 p2366
-aS'O2 Balance'
+aS'O2 Level'
 p2367
-aS'O3 Level'
+aS'O2 Balance'
 p2368
-aS'O3 Balance'
+aS'O3 Level'
 p2369
-aS'RMod Level'
+aS'O3 Balance'
 p2370
-aS'RMod Bal.'
+aS'RMod Level'
 p2371
-aS'NoiseLevel'
+aS'RMod Bal.'
 p2372
-aS'Noise Bal.'
+aS'NoiseLevel'
 p2373
-aS'F1 Cutoff'
+aS'Noise Bal.'
 p2374
-aS'F1 Reson.'
+aS'F1 Cutoff'
 p2375
-aS'F1 FM'
+aS'F1 Reson.'
 p2376
-aS'F1 Drive'
+aS'F1 FM'
 p2377
-aS'F1 Pan'
+aS'F1 Drive'
 p2378
-aS'F2 Cutoff'
+aS'F1 Pan'
 p2379
-aS'F2 Reson.'
+aS'F2 Cutoff'
 p2380
-aS'F2 FM'
+aS'F2 Reson.'
 p2381
-aS'F2 Drive'
+aS'F2 FM'
 p2382
-aS'F2 Pan'
+aS'F2 Drive'
 p2383
-aS'Volume'
+aS'F2 Pan'
 p2384
-aS'LFO1Speed'
+aS'Volume'
 p2385
-aS'LFO2Speed'
+aS'LFO1Speed'
 p2386
-aS'LFO3Speed'
+aS'LFO2Speed'
 p2387
-aS'FE Attack'
+aS'LFO3Speed'
 p2388
-aS'FE Decay'
+aS'FE Attack'
 p2389
-aS'FE Sustain'
+aS'FE Decay'
 p2390
-aS'FE Release'
+aS'FE Sustain'
 p2391
-aS'AE Attack'
+aS'FE Release'
 p2392
-aS'AE Decay'
+aS'AE Attack'
 p2393
-aS'AE Sustain'
+aS'AE Decay'
 p2394
-aS'AE Release'
+aS'AE Sustain'
 p2395
-aS'E3 Attack'
+aS'AE Release'
 p2396
-aS'E3 Decay'
+aS'E3 Attack'
 p2397
-aS'E3 Sustain'
+aS'E3 Decay'
 p2398
-aS'E3 Release'
+aS'E3 Sustain'
 p2399
-aS'E4 Attack'
+aS'E3 Release'
 p2400
-aS'E4 Decay'
+aS'E4 Attack'
 p2401
-aS'E4 Sustain'
+aS'E4 Decay'
 p2402
-aS'E4 Release'
+aS'E4 Sustain'
 p2403
-aS'M1 Amount'
+aS'E4 Release'
 p2404
-aS'M2 Amount'
+aS'M1 Amount'
 p2405
-aS'M3 Amount'
+aS'M2 Amount'
 p2406
-aS'M4 Amount'
+aS'M3 Amount'
 p2407
-aaS'Modulation 1 Destination'
+aS'M4 Amount'
 p2408
-ag2408
-ag848
-aS'Modulation_1_Destination'
+aaS'Modulation 1 Destination'
 p2409
-aa(lp2410
+ag2409
+ag849
+aS'Modulation_1_Destination'
+p2410
+aa(lp2411
 (I0
 I127
 I1
-tp2411
+tp2412
 ag181
 aS'Modulation 1 Amount'
-p2412
-ag2412
-ag848
-aS'Modulation_1_Amount'
 p2413
-aa(lp2414
+ag2413
+ag849
+aS'Modulation_1_Amount'
+p2414
+aa(lp2415
 (I0
 I30
 I1
-tp2415
+tp2416
 ag619
 aS'Modulation 2 Source'
-p2416
-ag2416
-ag848
-aS'Modulation_2_Source'
 p2417
-aa(lp2418
+ag2417
+ag849
+aS'Modulation_2_Source'
+p2418
+aa(lp2419
 (I0
 I53
 I1
-tp2419
-ag2353
+tp2420
+ag2354
 aS'Modulation 2 Destination'
-p2420
-ag2420
-ag848
-aS'Modulation_2_Destination'
 p2421
-aa(lp2422
+ag2421
+ag849
+aS'Modulation_2_Destination'
+p2422
+aa(lp2423
 (I0
 I127
 I1
-tp2423
+tp2424
 ag181
 aS'Modulation 2 Amount'
-p2424
-ag2424
-ag848
-aS'Modulation_2_Amount'
 p2425
-aa(lp2426
+ag2425
+ag849
+aS'Modulation_2_Amount'
+p2426
+aa(lp2427
 (I0
 I30
 I1
-tp2427
+tp2428
 ag619
 aS'Modulation 3 Source'
-p2428
-ag2428
-ag848
-aS'Modulation_3_Source'
 p2429
-aa(lp2430
+ag2429
+ag849
+aS'Modulation_3_Source'
+p2430
+aa(lp2431
 (I0
 I53
 I1
-tp2431
-ag2353
+tp2432
+ag2354
 aS'Modulation 3 Destination'
-p2432
-ag2432
-ag848
-aS'Modulation_3_Destination'
 p2433
-aa(lp2434
+ag2433
+ag849
+aS'Modulation_3_Destination'
+p2434
+aa(lp2435
 (I0
 I127
 I1
-tp2435
+tp2436
 ag181
 aS'Modulation 3 Amount'
-p2436
-ag2436
-ag848
-aS'Modulation_3_Amount'
 p2437
-aa(lp2438
+ag2437
+ag849
+aS'Modulation_3_Amount'
+p2438
+aa(lp2439
 (I0
 I30
 I1
-tp2439
+tp2440
 ag619
 aS'Modulation 4 Source'
-p2440
-ag2440
-ag848
-aS'Modulation_4_Source'
 p2441
-aa(lp2442
+ag2441
+ag849
+aS'Modulation_4_Source'
+p2442
+aa(lp2443
 (I0
 I53
 I1
-tp2443
-ag2353
+tp2444
+ag2354
 aS'Modulation 4 Destination'
-p2444
-ag2444
-ag848
-aS'Modulation_4_Destination'
 p2445
-aa(lp2446
+ag2445
+ag849
+aS'Modulation_4_Destination'
+p2446
+aa(lp2447
 (I0
 I127
 I1
-tp2447
+tp2448
 ag181
 aS'Modulation 4 Amount'
-p2448
-ag2448
-ag848
-aS'Modulation_4_Amount'
 p2449
-aa(lp2450
+ag2449
+ag849
+aS'Modulation_4_Amount'
+p2450
+aa(lp2451
 (I0
 I30
 I1
-tp2451
+tp2452
 ag619
 aS'Modulation 5 Source'
-p2452
-ag2452
-ag848
-aS'Modulation_5_Source'
 p2453
-aa(lp2454
+ag2453
+ag849
+aS'Modulation_5_Source'
+p2454
+aa(lp2455
 (I0
 I53
 I1
-tp2455
-ag2353
+tp2456
+ag2354
 aS'Modulation 5 Destination'
-p2456
-ag2456
-ag848
-aS'Modulation_5_Destination'
 p2457
-aa(lp2458
+ag2457
+ag849
+aS'Modulation_5_Destination'
+p2458
+aa(lp2459
 (I0
 I127
 I1
-tp2459
+tp2460
 ag181
 aS'Modulation 5 Amount'
-p2460
-ag2460
-ag848
-aS'Modulation_5_Amount'
 p2461
-aa(lp2462
+ag2461
+ag849
+aS'Modulation_5_Amount'
+p2462
+aa(lp2463
 (I0
 I30
 I1
-tp2463
+tp2464
 ag619
 aS'Modulation 6 Source'
-p2464
-ag2464
-ag848
-aS'Modulation_6_Source'
 p2465
-aa(lp2466
+ag2465
+ag849
+aS'Modulation_6_Source'
+p2466
+aa(lp2467
 (I0
 I53
 I1
-tp2467
-ag2353
+tp2468
+ag2354
 aS'Modulation 6 Destination'
-p2468
-ag2468
-ag848
-aS'Modulation_6_Destination'
 p2469
-aa(lp2470
+ag2469
+ag849
+aS'Modulation_6_Destination'
+p2470
+aa(lp2471
 (I0
 I127
 I1
-tp2471
+tp2472
 ag181
 aS'Modulation 6 Amount'
-p2472
-ag2472
-ag848
-aS'Modulation_6_Amount'
 p2473
-aa(lp2474
+ag2473
+ag849
+aS'Modulation_6_Amount'
+p2474
+aa(lp2475
 (I0
 I30
 I1
-tp2475
+tp2476
 ag619
 aS'Modulation 7 Source'
-p2476
-ag2476
-ag848
-aS'Modulation_7_Source'
 p2477
-aa(lp2478
+ag2477
+ag849
+aS'Modulation_7_Source'
+p2478
+aa(lp2479
 (I0
 I53
 I1
-tp2479
-ag2353
+tp2480
+ag2354
 aS'Modulation 7 Destination'
-p2480
-ag2480
-ag848
-aS'Modulation_7_Destination'
 p2481
-aa(lp2482
+ag2481
+ag849
+aS'Modulation_7_Destination'
+p2482
+aa(lp2483
 (I0
 I127
 I1
-tp2483
+tp2484
 ag181
 aS'Modulation 7 Amount'
-p2484
-ag2484
-ag848
-aS'Modulation_7_Amount'
 p2485
-aa(lp2486
+ag2485
+ag849
+aS'Modulation_7_Amount'
+p2486
+aa(lp2487
 (I0
 I30
 I1
-tp2487
+tp2488
 ag619
 aS'Modulation 8 Source'
-p2488
-ag2488
-ag848
-aS'Modulation_8_Source'
 p2489
-aa(lp2490
+ag2489
+ag849
+aS'Modulation_8_Source'
+p2490
+aa(lp2491
 (I0
 I53
 I1
-tp2491
-ag2353
+tp2492
+ag2354
 aS'Modulation 8 Destination'
-p2492
-ag2492
-ag848
-aS'Modulation_8_Destination'
 p2493
-aa(lp2494
+ag2493
+ag849
+aS'Modulation_8_Destination'
+p2494
+aa(lp2495
 (I0
 I127
 I1
-tp2495
+tp2496
 ag181
 aS'Modulation 8 Amount'
-p2496
-ag2496
-ag848
-aS'Modulation_8_Amount'
 p2497
-aa(lp2498
+ag2497
+ag849
+aS'Modulation_8_Amount'
+p2498
+aa(lp2499
 (I0
 I30
 I1
-tp2499
+tp2500
 ag619
 aS'Modulation 9 Source'
-p2500
-ag2500
-ag848
-aS'Modulation_9_Source'
 p2501
-aa(lp2502
+ag2501
+ag849
+aS'Modulation_9_Source'
+p2502
+aa(lp2503
 (I0
 I53
 I1
-tp2503
-ag2353
+tp2504
+ag2354
 aS'Modulation 9 Destination'
-p2504
-ag2504
-ag848
-aS'Modulation_9_Destination'
 p2505
-aa(lp2506
+ag2505
+ag849
+aS'Modulation_9_Destination'
+p2506
+aa(lp2507
 (I0
 I127
 I1
-tp2507
+tp2508
 ag181
 aS'Modulation 9 Amount'
-p2508
-ag2508
-ag848
-aS'Modulation_9_Amount'
 p2509
-aa(lp2510
+ag2509
+ag849
+aS'Modulation_9_Amount'
+p2510
+aa(lp2511
 (I0
 I30
 I1
-tp2511
+tp2512
 ag619
 aS'Modulation 10 Source'
-p2512
-ag2512
-ag848
-aS'Modulation_10_Source'
 p2513
-aa(lp2514
+ag2513
+ag849
+aS'Modulation_10_Source'
+p2514
+aa(lp2515
 (I0
 I53
 I1
-tp2515
-ag2353
+tp2516
+ag2354
 aS'Modulation 10 Destination'
-p2516
-ag2516
-ag848
-aS'Modulation_10_Destination'
 p2517
-aa(lp2518
+ag2517
+ag849
+aS'Modulation_10_Destination'
+p2518
+aa(lp2519
 (I0
 I127
 I1
-tp2519
+tp2520
 ag181
 aS'Modulation 10 Amount'
-p2520
-ag2520
-ag848
-aS'Modulation_10_Amount'
 p2521
-aa(lp2522
+ag2521
+ag849
+aS'Modulation_10_Amount'
+p2522
+aa(lp2523
 (I0
 I30
 I1
-tp2523
+tp2524
 ag619
 aS'Modulation 11 Source'
-p2524
-ag2524
-ag848
-aS'Modulation_11_Source'
 p2525
-aa(lp2526
+ag2525
+ag849
+aS'Modulation_11_Source'
+p2526
+aa(lp2527
 (I0
 I53
 I1
-tp2527
-ag2353
+tp2528
+ag2354
 aS'Modulation 11 Destination'
-p2528
-ag2528
-ag848
-aS'Modulation_11_Destination'
 p2529
-aa(lp2530
+ag2529
+ag849
+aS'Modulation_11_Destination'
+p2530
+aa(lp2531
 (I0
 I127
 I1
-tp2531
+tp2532
 ag181
 aS'Modulation 11 Amount'
-p2532
-ag2532
-ag848
-aS'Modulation_11_Amount'
 p2533
-aa(lp2534
+ag2533
+ag849
+aS'Modulation_11_Amount'
+p2534
+aa(lp2535
 (I0
 I30
 I1
-tp2535
+tp2536
 ag619
 aS'Modulation 12 Source'
-p2536
-ag2536
-ag848
-aS'Modulation_12_Source'
 p2537
-aa(lp2538
+ag2537
+ag849
+aS'Modulation_12_Source'
+p2538
+aa(lp2539
 (I0
 I53
 I1
-tp2539
-ag2353
+tp2540
+ag2354
 aS'Modulation 12 Destination'
-p2540
-ag2540
-ag848
-aS'Modulation_12_Destination'
 p2541
-aa(lp2542
+ag2541
+ag849
+aS'Modulation_12_Destination'
+p2542
+aa(lp2543
 (I0
 I127
 I1
-tp2543
+tp2544
 ag181
 aS'Modulation 12 Amount'
-p2544
-ag2544
-ag848
-aS'Modulation_12_Amount'
 p2545
-aa(lp2546
+ag2545
+ag849
+aS'Modulation_12_Amount'
+p2546
+aa(lp2547
 (I0
 I30
 I1
-tp2547
+tp2548
 ag619
 aS'Modulation 13 Source'
-p2548
-ag2548
-ag848
-aS'Modulation_13_Source'
 p2549
-aa(lp2550
+ag2549
+ag849
+aS'Modulation_13_Source'
+p2550
+aa(lp2551
 (I0
 I53
 I1
-tp2551
-ag2353
+tp2552
+ag2354
 aS'Modulation 13 Destination'
-p2552
-ag2552
-ag848
-aS'Modulation_13_Destination'
 p2553
-aa(lp2554
+ag2553
+ag849
+aS'Modulation_13_Destination'
+p2554
+aa(lp2555
 (I0
 I127
 I1
-tp2555
+tp2556
 ag181
 aS'Modulation 13 Amount'
-p2556
-ag2556
-ag848
-aS'Modulation_13_Amount'
 p2557
-aa(lp2558
+ag2557
+ag849
+aS'Modulation_13_Amount'
+p2558
+aa(lp2559
 (I0
 I30
 I1
-tp2559
+tp2560
 ag619
 aS'Modulation 14 Source'
-p2560
-ag2560
-ag848
-aS'Modulation_14_Source'
 p2561
-aa(lp2562
+ag2561
+ag849
+aS'Modulation_14_Source'
+p2562
+aa(lp2563
 (I0
 I53
 I1
-tp2563
-ag2353
+tp2564
+ag2354
 aS'Modulation 14 Destination'
-p2564
-ag2564
-ag848
-aS'Modulation_14_Destination'
 p2565
-aa(lp2566
+ag2565
+ag849
+aS'Modulation_14_Destination'
+p2566
+aa(lp2567
 (I0
 I127
 I1
-tp2567
+tp2568
 ag181
 aS'Modulation 14 Amount'
-p2568
-ag2568
-ag848
-aS'Modulation_14_Amount'
 p2569
-aa(lp2570
+ag2569
+ag849
+aS'Modulation_14_Amount'
+p2570
+aa(lp2571
 (I0
 I30
 I1
-tp2571
+tp2572
 ag619
 aS'Modulation 15 Source'
-p2572
-ag2572
-ag848
-aS'Modulation_15_Source'
 p2573
-aa(lp2574
+ag2573
+ag849
+aS'Modulation_15_Source'
+p2574
+aa(lp2575
 (I0
 I53
 I1
-tp2575
-ag2353
+tp2576
+ag2354
 aS'Modulation 15 Destination'
-p2576
-ag2576
-ag848
-aS'Modulation_15_Destination'
 p2577
-aa(lp2578
+ag2577
+ag849
+aS'Modulation_15_Destination'
+p2578
+aa(lp2579
 (I0
 I127
 I1
-tp2579
+tp2580
 ag181
 aS'Modulation 15 Amount'
-p2580
-ag2580
-ag848
-aS'Modulation_15_Amount'
 p2581
-aa(lp2582
+ag2581
+ag849
+aS'Modulation_15_Amount'
+p2582
+aa(lp2583
 (I0
 I30
 I1
-tp2583
+tp2584
 ag619
 aS'Modulation 16 Source'
-p2584
-ag2584
-ag848
-aS'Modulation_16_Source'
 p2585
-aa(lp2586
+ag2585
+ag849
+aS'Modulation_16_Source'
+p2586
+aa(lp2587
 (I0
 I53
 I1
-tp2587
-ag2353
+tp2588
+ag2354
 aS'Modulation 16 Destination'
-p2588
-ag2588
-ag848
-aS'Modulation_16_Destination'
 p2589
-aa(lp2590
+ag2589
+ag849
+aS'Modulation_16_Destination'
+p2590
+aa(lp2591
 (I0
 I127
 I1
-tp2591
+tp2592
 ag181
 aS'Modulation 16 Amount'
-p2592
-ag2592
-ag848
-aS'Modulation_16_Amount'
 p2593
+ag2593
+ag849
+aS'Modulation_16_Amount'
+p2594
 aag2
 ag2
-a(lp2594
+a(lp2595
 (I0
 I3
 I1
-tp2595
+tp2596
 a(g664
 g663
 S'One Shot'
-p2596
-S'Hold'
 p2597
-tp2598
+S'Hold'
+p2598
+tp2599
 aS'Arpeggiator Mode'
-p2599
-ag2599
-ag848
-aS'Arpeggiator_Mode'
 p2600
-aa(lp2601
+ag2600
+ag849
+aS'Arpeggiator_Mode'
+p2601
+aa(lp2602
 (I0
 I16
 I1
-tp2602
+tp2603
 a(S'User'
-p2603
+p2604
 g399
 g400
 g401
@@ -5835,228 +5840,228 @@ g405
 g406
 g407
 S'10'
-p2604
-S'11'
 p2605
-S'12'
+S'11'
 p2606
-S'13'
+S'12'
 p2607
-S'14'
+S'13'
 p2608
-S'15'
+S'14'
 p2609
-tp2610
+S'15'
+p2610
+tp2611
 aS'Arpeggiator Pattern'
-p2611
-ag2611
-ag848
-aS'Arpeggiator_Pattern'
 p2612
+ag2612
+ag849
+aS'Arpeggiator_Pattern'
+p2613
 aag2
-a(lp2613
+a(lp2614
 (I0
 I42
 I1
-tp2614
-a(lp2615
+tp2615
+a(lp2616
 S'1/96'
-p2616
-aS'1/48'
 p2617
-aS'1/32 '
+aS'1/48'
 p2618
-aS'1/16T'
+aS'1/32 '
 p2619
-aS'1/32.'
+aS'1/16T'
 p2620
-aS'1/16 '
+aS'1/32.'
 p2621
-aS'1/8T'
+aS'1/16 '
 p2622
-aS'1/16.'
+aS'1/8T'
 p2623
-aS'1/8 '
+aS'1/16.'
 p2624
-aS'1/4T'
+aS'1/8 '
 p2625
-aS'1/8.'
+aS'1/4T'
 p2626
-aS'1/4 '
+aS'1/8.'
 p2627
-aS'1/2T'
+aS'1/4 '
 p2628
-aS'1/4.'
+aS'1/2T'
 p2629
-aS'1/2 '
+aS'1/4.'
 p2630
-aS'1/1T'
+aS'1/2 '
 p2631
-aS'1/2.'
+aS'1/1T'
 p2632
-aS'1 bar'
+aS'1/2.'
 p2633
-aS'1.5 bars'
+aS'1 bar'
 p2634
-aS'2 bars'
+aS'1.5 bars'
 p2635
-aS'2.5 bars'
+aS'2 bars'
 p2636
-aS'3 bars'
+aS'2.5 bars'
 p2637
-aS'3.5 bars'
+aS'3 bars'
 p2638
-aS'4 bars'
+aS'3.5 bars'
 p2639
-aS'5 bars'
+aS'4 bars'
 p2640
-aS'6 bars'
+aS'5 bars'
 p2641
-aS'7 bars'
+aS'6 bars'
 p2642
-aS'8 bars'
+aS'7 bars'
 p2643
-aS'9 bars'
+aS'8 bars'
 p2644
-aS'10 bars'
+aS'9 bars'
 p2645
-aS'12 bars'
+aS'10 bars'
 p2646
-aS'14 bars'
+aS'12 bars'
 p2647
-aS'16 bars'
+aS'14 bars'
 p2648
-aS'18 bars'
+aS'16 bars'
 p2649
-aS'20 bars'
+aS'18 bars'
 p2650
-aS'24 bars'
+aS'20 bars'
 p2651
-aS'28 bars'
+aS'24 bars'
 p2652
-aS'32 bars'
+aS'28 bars'
 p2653
-aS'36 bars'
+aS'32 bars'
 p2654
-aS'40 bars'
+aS'36 bars'
 p2655
-aS'48 bars'
+aS'40 bars'
 p2656
-aS'56 bars'
+aS'48 bars'
 p2657
-aS'64 bars'
+aS'56 bars'
 p2658
-aaS'Arpeggiator Clock'
+aS'64 bars'
 p2659
-ag2659
-ag848
-aS'Arpeggiator_Clock'
+aaS'Arpeggiator Clock'
 p2660
-aa(lp2661
+ag2660
+ag849
+aS'Arpeggiator_Clock'
+p2661
+aa(lp2662
 (I0
 I43
 I1
-tp2662
+tp2663
 a(S'1/96'
-p2663
-S'1/48'
 p2664
-S'1/32'
+S'1/48'
 p2665
-S'1/16T'
+S'1/32'
 p2666
-S'1/32.'
+S'1/16T'
 p2667
-S'1/16'
+S'1/32.'
 p2668
-S'1/8T'
+S'1/16'
 p2669
-S'1/16.'
+S'1/8T'
 p2670
-S'1/8'
+S'1/16.'
 p2671
-S'1/4T'
+S'1/8'
 p2672
-S'1/8.'
+S'1/4T'
 p2673
-S'1/4'
+S'1/8.'
 p2674
-S'1/2T'
+S'1/4'
 p2675
-S'1/4.'
+S'1/2T'
 p2676
-S'1/2'
+S'1/4.'
 p2677
-S'1/1T'
+S'1/2'
 p2678
-S'1/2.'
+S'1/1T'
 p2679
-S'1 bar'
+S'1/2.'
 p2680
-S'1.5 bars'
+S'1 bar'
 p2681
-S'2 bars'
+S'1.5 bars'
 p2682
-S'2.5 bars'
+S'2 bars'
 p2683
-S'3 bars'
+S'2.5 bars'
 p2684
-S'3.5 bars'
+S'3 bars'
 p2685
-S'4 bars'
+S'3.5 bars'
 p2686
-S'5 bars'
+S'4 bars'
 p2687
-S'6 bars'
+S'5 bars'
 p2688
-S'7 bars'
+S'6 bars'
 p2689
-S'8 bars'
+S'7 bars'
 p2690
-S'9 bars'
+S'8 bars'
 p2691
-S'10 bars'
+S'9 bars'
 p2692
-S'12 bars'
+S'10 bars'
 p2693
-S'14 bars'
+S'12 bars'
 p2694
-S'16 bars'
+S'14 bars'
 p2695
-S'18 bars'
+S'16 bars'
 p2696
-S'20 bars'
+S'18 bars'
 p2697
-S'24 bars'
+S'20 bars'
 p2698
-S'28 bars'
+S'24 bars'
 p2699
-S'32 bars'
+S'28 bars'
 p2700
-S'36 bars'
+S'32 bars'
 p2701
-S'40 bars'
+S'36 bars'
 p2702
-S'48 bars'
+S'40 bars'
 p2703
-S'56 bars'
+S'48 bars'
 p2704
-S'64 bars'
+S'56 bars'
 p2705
-S'legato'
+S'64 bars'
 p2706
-tp2707
+S'legato'
+p2707
+tp2708
 aS'Arpeggiator Length'
-p2708
-ag2708
-ag848
-aS'Arpeggiator_Length'
 p2709
-aa(lp2710
+ag2709
+ag849
+aS'Arpeggiator_Length'
+p2710
+aa(lp2711
 (I0
 I9
 I1
-tp2711
+tp2712
 a(g399
 g400
 g401
@@ -6067,114 +6072,114 @@ g405
 g406
 g407
 S'10'
-p2712
-tp2713
+p2713
+tp2714
 aS'Arpeggiator Octave'
-p2714
-ag2714
-ag848
-aS'Arpeggiator_Octave'
 p2715
-aa(lp2716
+ag2715
+ag849
+aS'Arpeggiator_Octave'
+p2716
+aa(lp2717
 (I0
 I3
 I1
-tp2717
+tp2718
 a(S'Up'
-p2718
-S'Down'
 p2719
-S'Alt Up'
+S'Down'
 p2720
-S'Alt Down'
+S'Alt Up'
 p2721
-tp2722
+S'Alt Down'
+p2722
+tp2723
 aS'Arpeggiator Direction'
-p2723
-ag2723
-ag848
-aS'Arpeggiator_Direction'
 p2724
-aa(lp2725
+ag2724
+ag849
+aS'Arpeggiator_Direction'
+p2725
+aa(lp2726
 (I0
 I5
 I1
-tp2726
-a(lp2727
+tp2727
+a(lp2728
 S'as played'
-p2728
-aS'reversed'
 p2729
-aS'Key Lo>Hi'
+aS'reversed'
 p2730
-aS'Key Hi>Lo'
+aS'Key Lo>Hi'
 p2731
-aS'Vel Lo>Hi'
+aS'Key Hi>Lo'
 p2732
-aS'Vel Hi>Lo'
+aS'Vel Lo>Hi'
 p2733
-aaS'Arpeggiator Sort Order'
+aS'Vel Hi>Lo'
 p2734
-ag2734
-ag848
-aS'Arpeggiator_Sort_Order'
+aaS'Arpeggiator Sort Order'
 p2735
-aa(lp2736
+ag2735
+ag849
+aS'Arpeggiator_Sort_Order'
+p2736
+aa(lp2737
 (I0
 I6
 I1
-tp2737
-a(lp2738
+tp2738
+a(lp2739
 S'Each Note'
-p2739
-aS'First Note'
 p2740
-aS'Last Note'
+aS'First Note'
 p2741
-aS'fix 32'
+aS'Last Note'
 p2742
-aS'fix 64'
+aS'fix 32'
 p2743
-aS'fix 100'
+aS'fix 64'
 p2744
-aS'fix 127'
+aS'fix 100'
 p2745
-aaS'Arpeggiator Velocity'
+aS'fix 127'
 p2746
-ag2746
-ag848
-aS'Arpeggiator_Velocity'
+aaS'Arpeggiator Velocity'
 p2747
-aa(lp2748
+ag2747
+ag849
+aS'Arpeggiator_Velocity'
+p2748
+aa(lp2749
 (I0
 I127
 I1
-tp2749
+tp2750
 ag526
 aS'Arpeggiator Timing Factor'
-p2750
-ag2750
-ag848
-aS'Arpeggiator_Timing_Factor'
 p2751
+ag2751
+ag849
+aS'Arpeggiator_Timing_Factor'
+p2752
 aag2
-a(lp2752
+a(lp2753
 (I0
 I1
 I1
-tp2753
-ag828
+tp2754
+ag829
 aS'Arpeggiator Ptn Reset'
-p2754
-ag2754
-ag848
-aS'Arpeggiator_Ptn_Reset'
 p2755
-aa(lp2756
+ag2755
+ag849
+aS'Arpeggiator_Ptn_Reset'
+p2756
+aa(lp2757
 (I0
 I15
 I1
-tp2757
+tp2758
 a(g399
 g400
 g401
@@ -6185,1105 +6190,1105 @@ g405
 g406
 g407
 S'10'
-p2758
-S'11'
 p2759
-S'12'
+S'11'
 p2760
-S'13'
+S'12'
 p2761
-S'14'
+S'13'
 p2762
-S'15'
+S'14'
 p2763
-S'16'
+S'15'
 p2764
-tp2765
+S'16'
+p2765
+tp2766
 aS'Arpeggiator Ptn Length'
-p2766
-ag2766
-ag848
-aS'Arpeggiator_Ptn_Length'
 p2767
+ag2767
+ag849
+aS'Arpeggiator_Ptn_Length'
+p2768
 aag2
 ag2
-a(lp2768
+a(lp2769
 (I0
 I127
 I1
-tp2769
+tp2770
 a(S'40'
-p2770
-S'42'
 p2771
-S'44'
+S'42'
 p2772
-S'46'
+S'44'
 p2773
-S'48'
+S'46'
 p2774
-S'50'
+S'48'
 p2775
-S'52'
+S'50'
 p2776
-S'54'
+S'52'
 p2777
-S'56'
+S'54'
 p2778
-S'58'
+S'56'
 p2779
-S'60'
+S'58'
 p2780
-S'62'
+S'60'
 p2781
-S'64'
+S'62'
 p2782
-S'66'
+S'64'
 p2783
-S'68'
+S'66'
 p2784
-S'70'
+S'68'
 p2785
-S'72'
+S'70'
 p2786
-S'74'
+S'72'
 p2787
-S'76'
+S'74'
 p2788
-S'78'
+S'76'
 p2789
-S'80'
+S'78'
 p2790
-S'82'
+S'80'
 p2791
-S'84'
+S'82'
 p2792
-S'86'
+S'84'
 p2793
-S'88'
+S'86'
 p2794
-S'90'
+S'88'
 p2795
-S'91'
+S'90'
 p2796
-S'92'
+S'91'
 p2797
-S'93'
+S'92'
 p2798
-S'94'
+S'93'
 p2799
-S'95'
+S'94'
 p2800
-S'96'
+S'95'
 p2801
-S'97'
+S'96'
 p2802
-S'98'
+S'97'
 p2803
-S'99'
+S'98'
 p2804
-S'100'
+S'99'
 p2805
-S'101'
+S'100'
 p2806
-S'102'
+S'101'
 p2807
-S'103'
+S'102'
 p2808
-S'104'
+S'103'
 p2809
-S'105'
+S'104'
 p2810
-S'106'
+S'105'
 p2811
-S'107'
+S'106'
 p2812
-S'108'
+S'107'
 p2813
-S'109'
+S'108'
 p2814
-S'110'
+S'109'
 p2815
-S'111'
+S'110'
 p2816
-S'112'
+S'111'
 p2817
-S'113'
+S'112'
 p2818
-S'114'
+S'113'
 p2819
-S'115'
+S'114'
 p2820
-S'116'
+S'115'
 p2821
-S'117'
+S'116'
 p2822
-S'118'
+S'117'
 p2823
-S'119'
+S'118'
 p2824
-S'120'
+S'119'
 p2825
-S'121'
+S'120'
 p2826
-S'122'
+S'121'
 p2827
-S'123'
+S'122'
 p2828
-S'124'
+S'123'
 p2829
-S'125'
+S'124'
 p2830
-S'126'
+S'125'
 p2831
-S'127'
+S'126'
 p2832
-S'128'
+S'127'
 p2833
-S'129'
+S'128'
 p2834
-S'130'
+S'129'
 p2835
-S'131'
+S'130'
 p2836
-S'132'
+S'131'
 p2837
-S'133'
+S'132'
 p2838
-S'134'
+S'133'
 p2839
-S'135'
+S'134'
 p2840
-S'136'
+S'135'
 p2841
-S'137'
+S'136'
 p2842
-S'138'
+S'137'
 p2843
-S'139'
+S'138'
 p2844
-S'140'
+S'139'
 p2845
-S'141'
+S'140'
 p2846
-S'142'
+S'141'
 p2847
-S'143'
+S'142'
 p2848
-S'144'
+S'143'
 p2849
-S'145'
+S'144'
 p2850
-S'146'
+S'145'
 p2851
-S'147'
+S'146'
 p2852
-S'148'
+S'147'
 p2853
-S'149'
+S'148'
 p2854
-S'150'
+S'149'
 p2855
-S'151'
+S'150'
 p2856
-S'152'
+S'151'
 p2857
-S'153'
+S'152'
 p2858
-S'154'
+S'153'
 p2859
-S'155'
+S'154'
 p2860
-S'156'
+S'155'
 p2861
-S'157'
+S'156'
 p2862
-S'158'
+S'157'
 p2863
-S'159'
+S'158'
 p2864
-S'160'
+S'159'
 p2865
-S'161'
+S'160'
 p2866
-S'162'
+S'161'
 p2867
-S'163'
+S'162'
 p2868
-S'164'
+S'163'
 p2869
-S'165'
+S'164'
 p2870
-S'170'
+S'165'
 p2871
-S'175'
+S'170'
 p2872
-S'180'
+S'175'
 p2873
-S'185'
+S'180'
 p2874
-S'190'
+S'185'
 p2875
-S'195'
+S'190'
 p2876
-S'200'
+S'195'
 p2877
-S'205'
+S'200'
 p2878
-S'210'
+S'205'
 p2879
-S'215'
+S'210'
 p2880
-S'220'
+S'215'
 p2881
-S'225'
+S'220'
 p2882
-S'230'
+S'225'
 p2883
-S'235'
+S'230'
 p2884
-S'240'
+S'235'
 p2885
-S'245'
+S'240'
 p2886
-S'250'
+S'245'
 p2887
-S'255'
+S'250'
 p2888
-S'260'
+S'255'
 p2889
-S'265'
+S'260'
 p2890
-S'270'
+S'265'
 p2891
-S'275'
+S'270'
 p2892
-S'280'
+S'275'
 p2893
-S'285'
+S'280'
 p2894
-S'290'
+S'285'
 p2895
-S'295'
+S'290'
 p2896
-S'300'
+S'295'
 p2897
-tp2898
+S'300'
+p2898
+tp2899
 aS'Arpeggiator Tempo'
-p2899
-ag2899
-ag848
-aS'Arpeggiator_Tempo'
 p2900
-aa(lp2901
+ag2900
+ag849
+aS'Arpeggiator_Tempo'
+p2901
+aa(lp2902
 (I0
 I127
 I1
-tp2902
-ag2898
+tp2903
+ag2899
 aS'Arp Pattern Step/Glide/Accent 1'
-p2903
-ag2903
-ag848
-aS'Arp_Pattern_Step_Glide_Accent_1'
 p2904
-aa(lp2905
+ag2904
+ag849
+aS'Arp_Pattern_Step_Glide_Accent_1'
+p2905
+aa(lp2906
 (I0
 I127
 I1
-tp2906
-ag2898
+tp2907
+ag2899
 aS'Arp Pattern Step/Glide/Accent 2'
-p2907
-ag2907
-ag848
-aS'Arp_Pattern_Step_Glide_Accent_2'
 p2908
-aa(lp2909
+ag2908
+ag849
+aS'Arp_Pattern_Step_Glide_Accent_2'
+p2909
+aa(lp2910
 (I0
 I127
 I1
-tp2910
-ag2898
+tp2911
+ag2899
 aS'Arp Pattern Step/Glide/Accent 3'
-p2911
-ag2911
-ag848
-aS'Arp_Pattern_Step_Glide_Accent_3'
 p2912
-aa(lp2913
+ag2912
+ag849
+aS'Arp_Pattern_Step_Glide_Accent_3'
+p2913
+aa(lp2914
 (I0
 I127
 I1
-tp2914
-ag2898
+tp2915
+ag2899
 aS'Arp Pattern Step/Glide/Accent 4'
-p2915
-ag2915
-ag848
-aS'Arp_Pattern_Step_Glide_Accent_4'
 p2916
-aa(lp2917
+ag2916
+ag849
+aS'Arp_Pattern_Step_Glide_Accent_4'
+p2917
+aa(lp2918
 (I0
 I127
 I1
-tp2918
-ag2898
+tp2919
+ag2899
 aS'Arp Pattern Step/Glide/Accent 5'
-p2919
-ag2919
-ag848
-aS'Arp_Pattern_Step_Glide_Accent_5'
 p2920
-aa(lp2921
+ag2920
+ag849
+aS'Arp_Pattern_Step_Glide_Accent_5'
+p2921
+aa(lp2922
 (I0
 I127
 I1
-tp2922
-ag2898
+tp2923
+ag2899
 aS'Arp Pattern Step/Glide/Accent 6'
-p2923
-ag2923
-ag848
-aS'Arp_Pattern_Step_Glide_Accent_6'
 p2924
-aa(lp2925
+ag2924
+ag849
+aS'Arp_Pattern_Step_Glide_Accent_6'
+p2925
+aa(lp2926
 (I0
 I127
 I1
-tp2926
-ag2898
+tp2927
+ag2899
 aS'Arp Pattern Step/Glide/Accent 7'
-p2927
-ag2927
-ag848
-aS'Arp_Pattern_Step_Glide_Accent_7'
 p2928
-aa(lp2929
+ag2928
+ag849
+aS'Arp_Pattern_Step_Glide_Accent_7'
+p2929
+aa(lp2930
 (I0
 I127
 I1
-tp2930
-ag2898
+tp2931
+ag2899
 aS'Arp Pattern Step/Glide/Accent 8'
-p2931
-ag2931
-ag848
-aS'Arp_Pattern_Step_Glide_Accent_8'
 p2932
-aa(lp2933
+ag2932
+ag849
+aS'Arp_Pattern_Step_Glide_Accent_8'
+p2933
+aa(lp2934
 (I0
 I127
 I1
-tp2934
-ag2898
+tp2935
+ag2899
 aS'Arp Pattern Step/Glide/Accent 9'
-p2935
-ag2935
-ag848
-aS'Arp_Pattern_Step_Glide_Accent_9'
 p2936
-aa(lp2937
+ag2936
+ag849
+aS'Arp_Pattern_Step_Glide_Accent_9'
+p2937
+aa(lp2938
 (I0
 I127
 I1
-tp2938
-ag2898
+tp2939
+ag2899
 aS'Arp Pattern Step/Glide/Accent 10'
-p2939
-ag2939
-ag848
-aS'Arp_Pattern_Step_Glide_Accent_10'
 p2940
-aa(lp2941
+ag2940
+ag849
+aS'Arp_Pattern_Step_Glide_Accent_10'
+p2941
+aa(lp2942
 (I0
 I127
 I1
-tp2942
-ag2898
+tp2943
+ag2899
 aS'Arp Pattern Step/Glide/Accent 11'
-p2943
-ag2943
-ag848
-aS'Arp_Pattern_Step_Glide_Accent_11'
 p2944
-aa(lp2945
+ag2944
+ag849
+aS'Arp_Pattern_Step_Glide_Accent_11'
+p2945
+aa(lp2946
 (I0
 I127
 I1
-tp2946
-ag2898
+tp2947
+ag2899
 aS'Arp Pattern Step/Glide/Accent 12'
-p2947
-ag2947
-ag848
-aS'Arp_Pattern_Step_Glide_Accent_12'
 p2948
-aa(lp2949
+ag2948
+ag849
+aS'Arp_Pattern_Step_Glide_Accent_12'
+p2949
+aa(lp2950
 (I0
 I127
 I1
-tp2950
-ag2898
+tp2951
+ag2899
 aS'Arp Pattern Step/Glide/Accent 13'
-p2951
-ag2951
-ag848
-aS'Arp_Pattern_Step_Glide_Accent_13'
 p2952
-aa(lp2953
+ag2952
+ag849
+aS'Arp_Pattern_Step_Glide_Accent_13'
+p2953
+aa(lp2954
 (I0
 I127
 I1
-tp2954
-ag2898
+tp2955
+ag2899
 aS'Arp Pattern Step/Glide/Accent 14'
-p2955
-ag2955
-ag848
-aS'Arp_Pattern_Step_Glide_Accent_14'
 p2956
-aa(lp2957
+ag2956
+ag849
+aS'Arp_Pattern_Step_Glide_Accent_14'
+p2957
+aa(lp2958
 (I0
 I127
 I1
-tp2958
-ag2898
+tp2959
+ag2899
 aS'Arp Pattern Step/Glide/Accent 15'
-p2959
-ag2959
-ag848
-aS'Arp_Pattern_Step_Glide_Accent_15'
 p2960
-aa(lp2961
+ag2960
+ag849
+aS'Arp_Pattern_Step_Glide_Accent_15'
+p2961
+aa(lp2962
 (I0
 I127
 I1
-tp2962
-ag2898
+tp2963
+ag2899
 aS'Arp Pattern Step/Glide/Accent 16'
-p2963
-ag2963
-ag848
-aS'Arp_Pattern_Step_Glide_Accent_16'
 p2964
-aa(lp2965
+ag2964
+ag849
+aS'Arp_Pattern_Step_Glide_Accent_16'
+p2965
+aa(lp2966
 (I0
 I127
 I1
-tp2966
-ag2898
+tp2967
+ag2899
 aS'Arp Pattern Timing/Length 1'
-p2967
-ag2967
-ag848
-aS'Arp_Pattern_Timing_Length_1'
 p2968
-aa(lp2969
+ag2968
+ag849
+aS'Arp_Pattern_Timing_Length_1'
+p2969
+aa(lp2970
 (I0
 I127
 I1
-tp2970
-ag2898
+tp2971
+ag2899
 aS'Arp Pattern Timing/Length 2'
-p2971
-ag2971
-ag848
-aS'Arp_Pattern_Timing_Length_2'
 p2972
-aa(lp2973
+ag2972
+ag849
+aS'Arp_Pattern_Timing_Length_2'
+p2973
+aa(lp2974
 (I0
 I127
 I1
-tp2974
-ag2898
+tp2975
+ag2899
 aS'Arp Pattern Timing/Length 3'
-p2975
-ag2975
-ag848
-aS'Arp_Pattern_Timing_Length_3'
 p2976
-aa(lp2977
+ag2976
+ag849
+aS'Arp_Pattern_Timing_Length_3'
+p2977
+aa(lp2978
 (I0
 I127
 I1
-tp2978
-ag2898
+tp2979
+ag2899
 aS'Arp Pattern Timing/Length 4'
-p2979
-ag2979
-ag848
-aS'Arp_Pattern_Timing_Length_4'
 p2980
-aa(lp2981
+ag2980
+ag849
+aS'Arp_Pattern_Timing_Length_4'
+p2981
+aa(lp2982
 (I0
 I127
 I1
-tp2982
-ag2898
+tp2983
+ag2899
 aS'Arp Pattern Timing/Length 5'
-p2983
-ag2983
-ag848
-aS'Arp_Pattern_Timing_Length_5'
 p2984
-aa(lp2985
+ag2984
+ag849
+aS'Arp_Pattern_Timing_Length_5'
+p2985
+aa(lp2986
 (I0
 I127
 I1
-tp2986
-ag2898
+tp2987
+ag2899
 aS'Arp Pattern Timing/Length 6'
-p2987
-ag2987
-ag848
-aS'Arp_Pattern_Timing_Length_6'
 p2988
-aa(lp2989
+ag2988
+ag849
+aS'Arp_Pattern_Timing_Length_6'
+p2989
+aa(lp2990
 (I0
 I127
 I1
-tp2990
-ag2898
+tp2991
+ag2899
 aS'Arp Pattern Timing/Length 7'
-p2991
-ag2991
-ag848
-aS'Arp_Pattern_Timing_Length_7'
 p2992
-aa(lp2993
+ag2992
+ag849
+aS'Arp_Pattern_Timing_Length_7'
+p2993
+aa(lp2994
 (I0
 I127
 I1
-tp2994
-ag2898
+tp2995
+ag2899
 aS'Arp Pattern Timing/Length 8'
-p2995
-ag2995
-ag848
-aS'Arp_Pattern_Timing_Length_8'
 p2996
-aa(lp2997
+ag2996
+ag849
+aS'Arp_Pattern_Timing_Length_8'
+p2997
+aa(lp2998
 (I0
 I127
 I1
-tp2998
-ag2898
+tp2999
+ag2899
 aS'Arp Pattern Timing/Length 9'
-p2999
-ag2999
-ag848
-aS'Arp_Pattern_Timing_Length_9'
 p3000
-aa(lp3001
+ag3000
+ag849
+aS'Arp_Pattern_Timing_Length_9'
+p3001
+aa(lp3002
 (I0
 I127
 I1
-tp3002
-ag2898
+tp3003
+ag2899
 aS'Arp Pattern Timing/Length 10'
-p3003
-ag3003
-ag848
-aS'Arp_Pattern_Timing_Length_10'
 p3004
-aa(lp3005
+ag3004
+ag849
+aS'Arp_Pattern_Timing_Length_10'
+p3005
+aa(lp3006
 (I0
 I127
 I1
-tp3006
-ag2898
+tp3007
+ag2899
 aS'Arp Pattern Timing/Length 11'
-p3007
-ag3007
-ag848
-aS'Arp_Pattern_Timing_Length_11'
 p3008
-aa(lp3009
+ag3008
+ag849
+aS'Arp_Pattern_Timing_Length_11'
+p3009
+aa(lp3010
 (I0
 I127
 I1
-tp3010
-ag2898
+tp3011
+ag2899
 aS'Arp Pattern Timing/Length 12'
-p3011
-ag3011
-ag848
-aS'Arp_Pattern_Timing_Length_12'
 p3012
-aa(lp3013
+ag3012
+ag849
+aS'Arp_Pattern_Timing_Length_12'
+p3013
+aa(lp3014
 (I0
 I127
 I1
-tp3014
-ag2898
+tp3015
+ag2899
 aS'Arp Pattern Timing/Length 13'
-p3015
-ag3015
-ag848
-aS'Arp_Pattern_Timing_Length_13'
 p3016
-aa(lp3017
+ag3016
+ag849
+aS'Arp_Pattern_Timing_Length_13'
+p3017
+aa(lp3018
 (I0
 I127
 I1
-tp3018
-ag2898
+tp3019
+ag2899
 aS'Arp Pattern Timing/Length 14'
-p3019
-ag3019
-ag848
-aS'Arp_Pattern_Timing_Length_14'
 p3020
-aa(lp3021
+ag3020
+ag849
+aS'Arp_Pattern_Timing_Length_14'
+p3021
+aa(lp3022
 (I0
 I127
 I1
-tp3022
-ag2898
+tp3023
+ag2899
 aS'Arp Pattern Timing/Length 15'
-p3023
-ag3023
-ag848
-aS'Arp_Pattern_Timing_Length_15'
 p3024
-aa(lp3025
+ag3024
+ag849
+aS'Arp_Pattern_Timing_Length_15'
+p3025
+aa(lp3026
 (I0
 I127
 I1
-tp3026
-ag2898
+tp3027
+ag2899
 aS'Arp Pattern Timing/Length 16'
-p3027
-ag3027
-ag848
-aS'Arp_Pattern_Timing_Length_16'
 p3028
+ag3028
+ag849
+aS'Arp_Pattern_Timing_Length_16'
+p3029
 aag2
 ag2
 ag2
 ag2
-a(lp3029
+a(lp3030
 (I32
 I127
 I1
-tp3030
+tp3031
 a(S' '
-p3031
-S'!'
 p3032
-S'"'
+S'!'
 p3033
-S'#'
+S'"'
 p3034
-S'$'
+S'#'
 p3035
-S'%'
+S'$'
 p3036
-S'&'
+S'%'
 p3037
-S"'"
+S'&'
 p3038
-S'('
+S"'"
 p3039
-S')'
+S'('
 p3040
-S'*'
+S')'
 p3041
-S'+'
+S'*'
 p3042
-S','
+S'+'
 p3043
-S'-'
+S','
 p3044
-S'.'
+S'-'
 p3045
-S'/'
+S'.'
 p3046
-S'0'
+S'/'
 p3047
-S'1'
+S'0'
 p3048
-S'2'
+S'1'
 p3049
-S'3'
+S'2'
 p3050
-S'4'
+S'3'
 p3051
-S'5'
+S'4'
 p3052
-S'6'
+S'5'
 p3053
-S'7'
+S'6'
 p3054
-S'8'
+S'7'
 p3055
-S'9'
+S'8'
 p3056
-S':'
+S'9'
 p3057
-S';'
+S':'
 p3058
-S'<'
+S';'
 p3059
-S'='
+S'<'
 p3060
-S'>'
+S'='
 p3061
-S'?'
+S'>'
 p3062
-S'@'
+S'?'
 p3063
-S'A'
+S'@'
 p3064
-S'B'
+S'A'
 p3065
-S'C'
+S'B'
 p3066
-S'D'
+S'C'
 p3067
-S'E'
+S'D'
 p3068
-S'F'
+S'E'
 p3069
-S'G'
+S'F'
 p3070
-S'H'
+S'G'
 p3071
-S'I'
+S'H'
 p3072
-S'J'
+S'I'
 p3073
-S'K'
+S'J'
 p3074
-S'L'
+S'K'
 p3075
-S'M'
+S'L'
 p3076
-S'N'
+S'M'
 p3077
-S'O'
+S'N'
 p3078
-S'P'
+S'O'
 p3079
-S'Q'
+S'P'
 p3080
-S'R'
+S'Q'
 p3081
-S'S'
+S'R'
 p3082
-S'T'
+S'S'
 p3083
-S'U'
+S'T'
 p3084
-S'V'
+S'U'
 p3085
-S'W'
+S'V'
 p3086
-S'X'
+S'W'
 p3087
-S'Y'
+S'X'
 p3088
-S'Z'
+S'Y'
 p3089
-S'['
+S'Z'
 p3090
-S'\\'
+S'['
 p3091
-S']'
+S'\\'
 p3092
-S'^'
+S']'
 p3093
-S'_'
+S'^'
 p3094
-S'`'
+S'_'
 p3095
-S'a'
+S'`'
 p3096
-S'b'
+S'a'
 p3097
-S'c'
+S'b'
 p3098
-S'd'
+S'c'
 p3099
-S'e'
+S'd'
 p3100
-S'f'
+S'e'
 p3101
-S'g'
+S'f'
 p3102
-S'h'
+S'g'
 p3103
-S'i'
+S'h'
 p3104
-S'j'
+S'i'
 p3105
-S'k'
+S'j'
 p3106
-S'l'
+S'k'
 p3107
-S'm'
+S'l'
 p3108
-S'n'
+S'm'
 p3109
-S'o'
+S'n'
 p3110
-S'p'
+S'o'
 p3111
-S'q'
+S'p'
 p3112
-S'r'
+S'q'
 p3113
-S's'
+S'r'
 p3114
-S't'
+S's'
 p3115
-S'u'
+S't'
 p3116
-S'v'
+S'u'
 p3117
-S'w'
+S'v'
 p3118
-S'x'
+S'w'
 p3119
-S'y'
+S'x'
 p3120
-S'z'
+S'y'
 p3121
-S'{'
+S'z'
 p3122
-S'|'
+S'{'
 p3123
-S'}'
+S'|'
 p3124
-S'~'
+S'}'
 p3125
-S'\xc2\xb0'
+S'~'
 p3126
-tp3127
+S'\xc2\xb0'
+p3127
+tp3128
 aS'Name Char 00'
-p3128
-ag3128
-ag848
-aS'Name_Char_00'
 p3129
-aa(lp3130
+ag3129
+ag849
+aS'Name_Char_00'
+p3130
+aa(lp3131
 (I32
 I127
 I1
-tp3131
-ag3127
+tp3132
+ag3128
 aS'Name Char 01'
-p3132
-ag3132
-ag848
-aS'Name_Char_01'
 p3133
-aa(lp3134
+ag3133
+ag849
+aS'Name_Char_01'
+p3134
+aa(lp3135
 (I32
 I127
 I1
-tp3135
-ag3127
+tp3136
+ag3128
 aS'Name Char 02'
-p3136
-ag3136
-ag848
-aS'Name_Char_02'
 p3137
-aa(lp3138
+ag3137
+ag849
+aS'Name_Char_02'
+p3138
+aa(lp3139
 (I32
 I127
 I1
-tp3139
-ag3127
+tp3140
+ag3128
 aS'Name Char 03'
-p3140
-ag3140
-ag848
-aS'Name_Char_03'
 p3141
-aa(lp3142
+ag3141
+ag849
+aS'Name_Char_03'
+p3142
+aa(lp3143
 (I32
 I127
 I1
-tp3143
-ag3127
+tp3144
+ag3128
 aS'Name Char 04'
-p3144
-ag3144
-ag848
-aS'Name_Char_04'
 p3145
-aa(lp3146
+ag3145
+ag849
+aS'Name_Char_04'
+p3146
+aa(lp3147
 (I32
 I127
 I1
-tp3147
-ag3127
+tp3148
+ag3128
 aS'Name Char 05'
-p3148
-ag3148
-ag848
-aS'Name_Char_05'
 p3149
-aa(lp3150
+ag3149
+ag849
+aS'Name_Char_05'
+p3150
+aa(lp3151
 (I32
 I127
 I1
-tp3151
-ag3127
+tp3152
+ag3128
 aS'Name Char 06'
-p3152
-ag3152
-ag848
-aS'Name_Char_06'
 p3153
-aa(lp3154
+ag3153
+ag849
+aS'Name_Char_06'
+p3154
+aa(lp3155
 (I32
 I127
 I1
-tp3155
-ag3127
+tp3156
+ag3128
 aS'Name Char 07'
-p3156
-ag3156
-ag848
-aS'Name_Char_07'
 p3157
-aa(lp3158
+ag3157
+ag849
+aS'Name_Char_07'
+p3158
+aa(lp3159
 (I32
 I127
 I1
-tp3159
-ag3127
+tp3160
+ag3128
 aS'Name Char 08'
-p3160
-ag3160
-ag848
-aS'Name_Char_08'
 p3161
-aa(lp3162
+ag3161
+ag849
+aS'Name_Char_08'
+p3162
+aa(lp3163
 (I32
 I127
 I1
-tp3163
-ag3127
+tp3164
+ag3128
 aS'Name Char 09'
-p3164
-ag3164
-ag848
-aS'Name_Char_09'
 p3165
-aa(lp3166
+ag3165
+ag849
+aS'Name_Char_09'
+p3166
+aa(lp3167
 (I32
 I127
 I1
-tp3167
-ag3127
+tp3168
+ag3128
 aS'Name Char 10'
-p3168
-ag3168
-ag848
-aS'Name_Char_10'
 p3169
-aa(lp3170
+ag3169
+ag849
+aS'Name_Char_10'
+p3170
+aa(lp3171
 (I32
 I127
 I1
-tp3171
-ag3127
+tp3172
+ag3128
 aS'Name Char 11'
-p3172
-ag3172
-ag848
-aS'Name_Char_11'
 p3173
-aa(lp3174
+ag3173
+ag849
+aS'Name_Char_11'
+p3174
+aa(lp3175
 (I32
 I127
 I1
-tp3175
-ag3127
+tp3176
+ag3128
 aS'Name Char 12'
-p3176
-ag3176
-ag848
-aS'Name_Char_12'
 p3177
-aa(lp3178
+ag3177
+ag849
+aS'Name_Char_12'
+p3178
+aa(lp3179
 (I32
 I127
 I1
-tp3179
-ag3127
+tp3180
+ag3128
 aS'Name Char 13'
-p3180
-ag3180
-ag848
-aS'Name_Char_13'
 p3181
-aa(lp3182
+ag3181
+ag849
+aS'Name_Char_13'
+p3182
+aa(lp3183
 (I32
 I127
 I1
-tp3183
-ag3127
+tp3184
+ag3128
 aS'Name Char 14'
-p3184
-ag3184
-ag848
-aS'Name_Char_14'
 p3185
-aa(lp3186
+ag3185
+ag849
+aS'Name_Char_14'
+p3186
+aa(lp3187
 (I32
 I127
 I1
-tp3187
-ag3127
+tp3188
+ag3128
 aS'Name Char 15'
-p3188
-ag3188
-ag848
-aS'Name_Char_15'
 p3189
-aa(lp3190
+ag3189
+ag849
+aS'Name_Char_15'
+p3190
+aa(lp3191
 (I0
 I12
 I1
-tp3191
-a(lp3192
+tp3192
+a(lp3193
 S'Init'
-p3193
-aS'Arp '
 p3194
-aS'Atmo'
+aS'Arp '
 p3195
-aS'Bass'
+aS'Atmo'
 p3196
-aS'Drum'
+aS'Bass'
 p3197
-aS'FX  '
+aS'Drum'
 p3198
-aS'Keys'
+aS'FX  '
 p3199
-aS'Lead'
+aS'Keys'
 p3200
-aS'Mono'
+aS'Lead'
 p3201
-aS'Pad '
+aS'Mono'
 p3202
-aS'Perc'
+aS'Pad '
 p3203
-aS'Poly'
+aS'Perc'
 p3204
-aS'Seq '
+aS'Poly'
 p3205
-aaS'Category'
+aS'Seq '
 p3206
-ag3206
-ag848
-ag3206
+aaS'Category'
+p3207
+ag3207
+ag849
+ag3207
 aag2
 ag2
 ag2
