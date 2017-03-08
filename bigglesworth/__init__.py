@@ -86,10 +86,25 @@ class BigglesworthObject(QtCore.QObject):
         self.librarian.program_change.connect(self.program_change_request)
 
         self.editor = Editor(self)
+
+        
+        self.editor.pgm_receive_btn.blockSignals(True)
         self.editor.pgm_receive_btn.setChecked(self.editor_remember_states[PGMRECEIVE])
+        self.editor.pgm_receive_btn.blockSignals(False)
+        self.editor.midi_receive_btn.blockSignals(True)
         self.editor.midi_receive_btn.setChecked(self.editor_remember_states[MIDIRECEIVE])
+        self.editor.midi_receive_btn.blockSignals(False)
+
+        self.editor.pgm_send_btn.blockSignals(True)
         self.editor.pgm_send_btn.setChecked(self.editor_remember_states[PGMSEND])
-        self.editor.midi_send_btn.setChecked(self.editor_remember_states[MIDISEND])
+        self.editor.pgm_send_btn.blockSignals(False)
+
+        midi_send = self.editor_remember_states[MIDISEND]
+        self.editor.midi_send_btn.blockSignals(True)
+        self.editor.midi_send_btn.setChecked(midi_send)
+        self.editor.send = midi_send
+        self.editor.midi_send_btn.blockSignals(False)
+
         self.librarian.activate_editor.connect(self.activate_editor)
         self.pgm_change_received.connect(self.editor.pgm_change_received)
         self.editor.show_librarian.connect(lambda: [self.librarian.show(), self.librarian.activateWindow()])

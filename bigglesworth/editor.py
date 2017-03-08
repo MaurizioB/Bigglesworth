@@ -266,6 +266,25 @@ class UpArrowWidget(DownArrowWidget):
     arrow.lineTo(0, -2)
     arrow.closeSubpath()
 
+class TextCursorWidget(BaseDisplayWidget):
+    def __init__(self, parent, size=12):
+        BaseDisplayWidget.__init__(self, parent)
+        self.line = QtGui.QPainterPath()
+        self.line.moveTo(.5, 0)
+        self.line.lineTo(.5, size)
+        width = self.line.boundingRect().width()
+        height = self.line.boundingRect().height()
+#        self.setMinimumSize(width, height)
+#        self.setMaximumSize(width, height)
+#        self.setSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Minimum)
+
+    def paint(self, painter, *args, **kwargs):
+        painter.setPen(self.pen)
+        painter.setBrush(self.brush)
+        painter.setRenderHints(QtGui.QPainter.Antialiasing)
+#        painter.translate(self.rect().center())
+        painter.drawPath(self.line)
+
 class BaseTextWidget(BaseDisplayWidget):
     def __init__(self, text, parent):
         BaseDisplayWidget.__init__(self, parent)
@@ -281,15 +300,38 @@ class BaseTextWidget(BaseDisplayWidget):
         painter.drawText(self.rect(), self.text_align, self.text)
 
 class ProgLabelTextWidget(BaseTextWidget):
+    letter_changed = QtCore.pyqtSignal(int, int)
+    editing_started = QtCore.pyqtSignal()
+    editing_finished = QtCore.pyqtSignal()
     def __init__(self, text, parent):
         BaseTextWidget.__init__(self, text, parent)
+        self.main = parent
         self.font = QtGui.QFont('Fira Sans', 22)
         self.font_metrics = QtGui.QFontMetrics(self.font)
         self.setMinimumSize(self.font_metrics.width(self.text), self.font_metrics.height())
+        self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Maximum)
         while len(self.text) < 16:
             self.text += ' '
         self.text = QtCore.QString.fromUtf8(self.text)
         self.text_list = QtCore.QStringList([l for l in self.text])
+        self.cursor = TextCursorWidget(self, self.font_metrics.ascent())
+        self.cursor.hide()
+        self.cursor_timer = QtCore.QTimer()
+        self.cursor_timer.setInterval(500)
+        self.cursor_timer.timeout.connect(lambda: self.cursor.setVisible(False if self.cursor.isVisible() else True))
+        self._editing = False
+
+    @property
+    def editing(self):
+        return self._editing
+
+    @editing.setter
+    def editing(self, state):
+        self._editing = state
+        if state:
+            self.editing_started.emit()
+        else:
+            self.editing_finished.emit()
 
     def setChar(self, pos, char):
         if char == 127:
@@ -299,6 +341,142 @@ class ProgLabelTextWidget(BaseTextWidget):
         self.text_list[pos] = readable
         self.text = self.text_list.join('')
         self.update()
+
+    def keyPressEvent(self, event):
+        if not self.editing: return
+        if event.key() == QtCore.Qt.Key_Escape:
+            self.ungrabKeyboard()
+            self.cursor_timer.stop()
+            self.cursor.hide()
+            self.editing = False
+            self.update()
+            return
+        elif event.key() == QtCore.Qt.Key_Return:
+            self.ungrabKeyboard()
+            self.cursor_timer.stop()
+            self.cursor.hide()
+            self.editing = False
+            if self.text != self.editing_text:
+                self.check_changes()
+            self.update()
+            return
+        if event.key() == QtCore.Qt.Key_Right:
+            self.set_cursor_pos(self.cursor_pos+1)
+        elif event.key() == QtCore.Qt.Key_Left:
+            self.set_cursor_pos(self.cursor_pos-1)
+        elif event.key() == QtCore.Qt.Key_Home:
+            self.set_cursor_pos(0)
+        elif event.key() == QtCore.Qt.Key_End:
+            self.set_cursor_pos(16)
+        elif event.key() == QtCore.Qt.Key_Backspace:
+            if self.cursor_pos == 0: return
+            self.set_cursor_pos(self.cursor_pos-1)
+            self.editing_text = self.editing_text[:self.cursor_pos] + self.editing_text[self.cursor_pos+1:]
+        elif event.key() == QtCore.Qt.Key_Delete:
+            if self.cursor_pos == len(self.editing_text): return
+            self.editing_text = self.editing_text[:self.cursor_pos] + self.editing_text[self.cursor_pos+1:]
+        else:
+            if not event.text() or self.cursor_pos >= 16 or len(self.editing_text) >= 16: return
+            try:
+                char = str(event.text().toUtf8())
+                if char == '°':
+                    id = 127
+                else:
+                    id = ord(char)
+                if 32 <= id <= 127:
+                    self.editing_text = self.editing_text[:self.cursor_pos] + event.text() + self.editing_text[self.cursor_pos:]
+                    self.set_cursor_pos(self.cursor_pos+1)
+            except Exception as e:
+                print e
+        self.update()
+
+    def focusOutEvent(self, event):
+        if self.text == self.editing_text:
+            BaseTextWidget.focusOutEvent(self, event)
+            self.ungrabKeyboard()
+            self.cursor_timer.stop()
+            self.cursor.hide()
+            self.editing = False
+            self.update()
+            return
+        res = QtGui.QMessageBox.question(self.main.scene().views()[0].window(), 'Save sound name?', 'Save sound name to "{}"?'.format(self.editing_text), QtGui.QMessageBox.Yes|QtGui.QMessageBox.No|QtGui.QMessageBox.Cancel)
+        if res == QtGui.QMessageBox.Cancel:
+            self.ungrabKeyboard()
+            self.grabKeyboard()
+            self.setFocus(QtCore.Qt.OtherFocusReason)
+            return
+        BaseTextWidget.focusOutEvent(self, event)
+        self.ungrabKeyboard()
+        self.cursor_timer.stop()
+        self.cursor.hide()
+        self.editing = False
+        if res == QtGui.QMessageBox.Yes:
+            if self.text != self.editing_text:
+                self.check_changes()
+        self.update()
+
+    def set_cursor_pos(self, pos):
+        if pos < 0:
+            pos = 0
+        elif pos > 16:
+            pos = 16
+        elif pos > len(self.editing_text):
+            pos = len(self.editing_text)
+        self.cursor.setX(self.font_metrics.width(self.editing_text[:pos]))
+        self.cursor.show()
+        self.cursor_timer.start()
+        self.cursor_pos = pos
+
+    def check_changes(self):
+        while len(self.editing_text) < 16:
+            self.editing_text += ' '
+        for l in range(16):
+            if self.text[l] != self.editing_text[l]:
+                letter = self.editing_text[l].toUtf8()
+                if letter == '°':
+                    char = 127
+                else:
+                    char = ord(str(letter))
+                self.letter_changed.emit(l, char)
+        self.text = self.editing_text
+
+    def keyReleaseEvent(self, event):
+        return
+
+    def mousePressEvent(self, event):
+        if not self.editing:
+            BankTextWidget.mousePressEvent(self, event)
+            return
+        pos = event.pos().x()
+        for l in range(len(self.editing_text)):
+            before = self.font_metrics.width(self.editing_text[:l])
+            next = self.font_metrics.width(self.editing_text[l])
+            if pos <= before+next/1.8:
+                self.set_cursor_pos(l)
+                break
+            elif pos <= before+next:
+                self.set_cursor_pos(l+1)
+                break
+
+    def mouseDoubleClickEvent(self, event):
+        if self.editing == True: return
+        self.grabKeyboard()
+        self.cursor.show()
+        self.cursor_timer.start()
+        self.editing_text = QtCore.QString.fromUtf8(str(self.text.toUtf8()).rstrip())
+        self.editing = True
+        self.set_cursor_pos(0)
+
+    def paint(self, painter, *args, **kwargs):
+#        painter.drawRect(self.rect())
+        if not self.editing:
+            BaseTextWidget.paint(self, painter, *args, **kwargs)
+            return
+        painter.setRenderHints(QtGui.QPainter.Antialiasing)
+        painter.setPen(self.pen)
+        painter.setBrush(self.brush)
+        painter.setFont(self.font)
+        painter.drawText(self.rect(), self.text_align, self.editing_text)
 
 class SmallTextWidget(BaseTextWidget):
     def __init__(self, text, parent):
@@ -1419,6 +1597,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         cat_object = FakeObject(self)
         cat_object.valueChanged.connect(lambda value: self.cat_name.setCat(value))
         parent.object_dict['Category'].add(cat_object)
+        self.prog_name.letter_changed.connect(lambda id, char: setattr(self.main, 'Name_Char_{:02}'.format(id), char))
 
     def create_layout(self):
         panel = QtGui.QGraphicsWidget()
@@ -1495,16 +1674,11 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         self.edit_mode_label = SmallLabelTextWidget('Sound mode Edit buffer', panel)
 #        self.edit_mode_label.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         layout.addItem(self.edit_mode_label, 0, 2)
-        self.prog_name = ProgLabelTextWidget('Mini moog super', panel)
+        self.prog_name = ProgLabelTextWidget('Init', panel)
         layout.addItem(self.prog_name, 1, 2)
 
-        self.status_bar = QtGui.QGraphicsGridLayout()
-        layout.addItem(self.status_bar, 2, 2, 1, 2)
-        status_lbl = SmallLabelTextWidget('Status:', panel, fixed=True)
-        self.status_bar.addItem(status_lbl, 0, 0, QtCore.Qt.AlignLeft)
-
-        self.status = SmallLabelTextWidget('Ready', panel)
-        self.status_bar.addItem(self.status, 0, 1, QtCore.Qt.AlignLeft)
+        self.status = SmallLabelTextWidget('Status: ready', panel)
+        layout.addItem(self.status, 2, 2, 1, 2)
 
         buttons_layout = QtGui.QGraphicsGridLayout()
         layout.addItem(buttons_layout, 0, 3, 2, 1)
@@ -1520,6 +1694,12 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         buttons_layout.addItem(spacer, 2, 0)
 
         self.panel.setGraphicsEffect(self.shadow)
+
+#    def mouseDoubleClickEvent(self, event):
+#        item = self.scene.itemAt(event.pos())
+#        if not item == self.prog_name: return
+#        current = self.prog_name
+#        self.indexChanged.connect(lambda id: setattr(self.main, self.attr, id if sub_par is None else (id, sub_par)))
 
     def mouseReleaseEvent(self, event):
         item = self.scene.itemAt(event.pos())
@@ -1579,6 +1759,10 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         else:
             return
         self.main.setSound(bank, prog, pgm_send=True)
+
+    def focusOutEvent(self, event):
+        if self.prog_name.editing:
+            self.prog_name.focusOutEvent(event)
 
     def contextMenuEvent(self, event):
         item = self.scene.itemAt(event.pos())
@@ -1659,11 +1843,17 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         in_menu = QtGui.QMenu()
         in_disconnect = QtGui.QAction('Disconnect all', in_menu)
         in_menu.addAction(in_disconnect)
+        sep = QtGui.QAction(in_menu)
+        sep.setSeparator(True)
+        in_menu.addAction(sep)
         menu.addMenu(in_menu)
 
         out_menu = QtGui.QMenu()
         out_disconnect = QtGui.QAction('Disconnect all', out_menu)
         out_menu.addAction(out_disconnect)
+        sep = QtGui.QAction(out_menu)
+        sep.setSeparator(True)
+        out_menu.addAction(sep)
         menu.addMenu(out_menu)
 
         in_clients = False
@@ -1725,8 +1915,16 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         if input and output:
             res = menu.exec_(self.mapToGlobal(pos))
         elif input:
+            in_header = QtGui.QAction('Input', self)
+            in_header.setSeparator(True)
+            in_menu.insertAction(in_disconnect, in_header)
+            in_menu.setSeparatorsCollapsible(False)
             res = in_menu.exec_(self.mapToGlobal(pos))
         else:
+            out_header = QtGui.QAction('Output', self)
+            out_header.setSeparator(True)
+            out_menu.insertAction(out_disconnect, out_header)
+            out_menu.setSeparatorsCollapsible(False)
             res = out_menu.exec_(self.mapToGlobal(pos))
 
         if not res: return
@@ -1801,6 +1999,44 @@ class BlofeldDisplay(QtGui.QGraphicsView):
 #        self.cat_name.text = categories[sound.cat]
         self.update()
         self.panel.update()
+
+class EditingMask(QtGui.QWidget):
+    def __init__(self, parent, reference):
+        QtGui.QWidget.__init__(self, parent)
+        self.main = parent
+        self.reference = reference
+        blur = QtGui.QGraphicsBlurEffect()
+        self.setGraphicsEffect(blur)
+        opacity = QtGui.QGraphicsOpacityEffect()
+        opacity.setOpacity(0)
+
+    def mousePressEvent(self, event):
+        self.setFocus(QtCore.Qt.OtherFocusReason)
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter()
+        qp.begin(self)
+        qp.setBrush(QtGui.QColor(0, 0, 0, 88))
+        qp.drawRect(0, 0, self.width(), self.height())
+        qp.end()
+
+    def resizeEvent(self, event):
+        QtGui.QWidget.resizeEvent(self, event)
+        object_rect = self.reference.mapToScene(self.reference.rect())
+        real_rect = self.main.display.mapFromScene(object_rect).boundingRect()
+        real_pos = self.mapFromGlobal(self.main.display.mapToGlobal(real_rect.topLeft()))
+        mask_rect = QtCore.QRect(real_pos, real_rect.size())
+        mask_rect.adjust(-3, -3, 0, -8)
+        bmp = QtGui.QBitmap(self.width(), self.height())
+        bmp.clear()
+        qp = QtGui.QPainter(bmp)
+        qp.setPen(QtCore.Qt.black)
+        qp.setBrush(QtCore.Qt.black)
+        qp.drawRect(0, 0, self.width(), self.height())
+        qp.eraseRect(mask_rect)
+        qp.end()
+        self.setMask(bmp)
+
 
 class Editor(QtGui.QMainWindow):
     midi_event = QtCore.pyqtSignal(object)
@@ -2014,7 +2250,12 @@ class Editor(QtGui.QMainWindow):
         self.keyboard.noteEvent.connect(self.send_note)
         lower_layout.addWidget(self.keyboard, 1, 1)
         lower_layout.addWidget(self.create_key_config(), 1, 2)
-        
+
+        self.editing_mask = EditingMask(self, self.display.prog_name)
+        self.editing_mask.hide()
+        self.display.prog_name.editing_started.connect(self.editing_mask.show)
+        self.display.prog_name.editing_finished.connect(self.editing_mask.hide)
+        self.grid.addWidget(self.editing_mask, 0, 0, self.grid.rowCount(), self.grid.columnCount())
 
     def __getattr__(self, attr):
         try:
@@ -2062,6 +2303,9 @@ class Editor(QtGui.QMainWindow):
         self.display.midi_in.setConn(conn)
 
     def keyPressEvent(self, event):
+        if self.display.prog_name.editing:
+            self.display.prog_name.keyPressEvent(event)
+            return
         if event.isAutoRepeat(): return
         scancode = event.nativeScanCode()
         if scancode in note_scancodes:
