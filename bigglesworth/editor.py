@@ -1874,6 +1874,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
                 in_clients = True
                 client_menu = QtGui.QMenu(client.name, menu)
                 in_menu.addMenu(client_menu)
+                client_menu_connections = []
                 for port in in_port_list:
                     port_item = QtGui.QAction(port.name, in_menu)
                     port_item.setData(port)
@@ -1882,11 +1883,20 @@ class BlofeldDisplay(QtGui.QGraphicsView):
                         port_item.setChecked(True)
                         setBold(client_menu.menuAction())
                         in_menu_connections += 1
+                        client_menu_connections.append(port)
                     client_menu.addAction(port_item)
+                if len(client_menu_connections) > 1:
+                    sep = QtGui.QAction(client_menu)
+                    sep.setSeparator(True)
+                    client_menu.addAction(sep)
+                    client_disconnect_all = QtGui.QAction('Disconnect all', client_menu)
+                    client_disconnect_all.setData((INPUT, client_menu_connections))
+                    client_menu.addAction(client_disconnect_all)
             if out_port_list:
                 out_clients = True
                 client_menu = QtGui.QMenu(client.name, menu)
                 out_menu.addMenu(client_menu)
+                client_menu_connections = []
                 for port in out_port_list:
                     port_item = QtGui.QAction(port.name, out_menu)
                     port_item.setData(port)
@@ -1895,7 +1905,15 @@ class BlofeldDisplay(QtGui.QGraphicsView):
                         port_item.setChecked(True)
                         setBold(client_menu.menuAction())
                         out_menu_connections += 1
+                        client_menu_connections.append(port)
                     client_menu.addAction(port_item)
+                if len(client_menu_connections) > 1:
+                    sep = QtGui.QAction(client_menu)
+                    sep.setSeparator(True)
+                    client_menu.addAction(sep)
+                    client_disconnect_all = QtGui.QAction('Disconnect all', client_menu)
+                    client_disconnect_all.setData((OUTPUT, client_menu_connections))
+                    client_menu.addAction(client_disconnect_all)
         if not in_clients:
             in_menu.setTitle('Input (no clients)')
             in_menu.setEnabled(False)
@@ -1948,6 +1966,16 @@ class BlofeldDisplay(QtGui.QGraphicsView):
                 self.main.output.connect(port)
             else:
                 self.main.output.disconnect(port)
+        else:
+            disconnect_all = res.data().toPyObject()
+            if not disconnect_all: return
+            direction, ports = disconnect_all
+            if direction == INPUT:
+                for port in ports:
+                    port.disconnect(self.main.input)
+            else:
+                for port in ports:
+                    self.main.output.disconnect(port)
 
     def paintEvent(self, event):
         qp = QtGui.QPainter(self.viewport())
