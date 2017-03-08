@@ -2001,7 +2001,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         self.panel.update()
 
 class EditingMask(QtGui.QWidget):
-    def __init__(self, parent, reference):
+    def __init__(self, parent, reference=None):
         QtGui.QWidget.__init__(self, parent)
         self.main = parent
         self.reference = reference
@@ -2009,6 +2009,9 @@ class EditingMask(QtGui.QWidget):
         self.setGraphicsEffect(blur)
         opacity = QtGui.QGraphicsOpacityEffect()
         opacity.setOpacity(0)
+
+    def setReference(self, reference):
+        self.reference = reference
 
     def mousePressEvent(self, event):
         self.setFocus(QtCore.Qt.OtherFocusReason)
@@ -2022,6 +2025,7 @@ class EditingMask(QtGui.QWidget):
 
     def resizeEvent(self, event):
         QtGui.QWidget.resizeEvent(self, event)
+        if not self.reference: return
         object_rect = self.reference.mapToScene(self.reference.rect())
         real_rect = self.main.display.mapFromScene(object_rect).boundingRect()
         real_pos = self.mapFromGlobal(self.main.display.mapToGlobal(real_rect.topLeft()))
@@ -2075,6 +2079,9 @@ class Editor(QtGui.QMainWindow):
         self.notify = True
         self.envelopes = []
         self.grid = self.centralWidget().layout()
+        self.editing_mask = EditingMask(self)
+        self.editing_mask.hide()
+        self.grid.addWidget(self.editing_mask, 0, 0, 5, 5)
 
         self.grid.addWidget(self.create_mixer(), 0, 0, 2, 1)
 
@@ -2251,11 +2258,10 @@ class Editor(QtGui.QMainWindow):
         lower_layout.addWidget(self.keyboard, 1, 1)
         lower_layout.addWidget(self.create_key_config(), 1, 2)
 
-        self.editing_mask = EditingMask(self, self.display.prog_name)
-        self.editing_mask.hide()
         self.display.prog_name.editing_started.connect(self.editing_mask.show)
         self.display.prog_name.editing_finished.connect(self.editing_mask.hide)
-        self.grid.addWidget(self.editing_mask, 0, 0, self.grid.rowCount(), self.grid.columnCount())
+        self.editing_mask.setReference(self.display.prog_name)
+        self.editing_mask.raise_()
 
     def __getattr__(self, attr):
         try:
