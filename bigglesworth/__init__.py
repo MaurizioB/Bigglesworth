@@ -20,7 +20,7 @@ class BigglesworthObject(QtCore.QObject):
     device_event = QtCore.pyqtSignal(object)
     sound_dump = QtCore.pyqtSignal(object)
     parameter_change = QtCore.pyqtSignal(int, int, int)
-    pgm_change_received = QtCore.pyqtSignal(int, int)
+    program_change_received = QtCore.pyqtSignal(int, int)
     input_conn_state_change = QtCore.pyqtSignal(int)
     output_conn_state_change = QtCore.pyqtSignal(int)
     def __init__(self, app, argv):
@@ -71,8 +71,11 @@ class BigglesworthObject(QtCore.QObject):
 
         QtGui.QIcon.setThemeName(QtGui.QApplication.style().objectName())
         self.librarian = Librarian(self)
-        self.librarian.quitAction.setIcon(QtGui.QIcon.fromTheme('application-exit'))
-        self.librarian.quitAction.triggered.connect(self.app.quit)
+        self.quitAction = self.librarian.quitAction
+        self.settingsAction = self.librarian.settingsAction
+        self.settingsAction.setIcon(QtGui.QIcon(QtGui.QIcon.fromTheme('preferences-other')))
+        self.quitAction.setIcon(QtGui.QIcon.fromTheme('application-exit'))
+        self.quitAction.triggered.connect(self.app.quit)
         self.device_event.connect(lambda event: self.device_response(event, self.librarian))
         self.sound_dump.connect(self.librarian.sound_dump)
         self.loader.loaded.connect(self.librarian.create_proxy)
@@ -106,7 +109,7 @@ class BigglesworthObject(QtCore.QObject):
         self.editor.midi_send_btn.blockSignals(False)
 
         self.librarian.activate_editor.connect(self.activate_editor)
-        self.pgm_change_received.connect(self.editor.pgm_change_received)
+        self.program_change_received.connect(self.editor.program_change_received)
         self.editor.show_librarian.connect(lambda: [self.librarian.show(), self.librarian.activateWindow()])
         self.editor.midi_event.connect(self.output_event)
         self.editor.program_change.connect(self.program_change_request)
@@ -129,7 +132,7 @@ class BigglesworthObject(QtCore.QObject):
         self.editor.show_midi_dialog.connect(self.mididialog.show)
 
         self.settings_dialog = SettingsDialog(self, self.librarian)
-        self.librarian.settingsAction.triggered.connect(self.show_settings)
+        self.settingsAction.triggered.connect(self.show_settings)
         self.output_conn_state_change.connect(lambda conn: self.settings_dialog.detect_connections(OUTPUT, conn))
         self.input_conn_state_change.connect(lambda conn: self.settings_dialog.detect_connections(INPUT, conn))
 #        self.settings_dialog.show()
@@ -343,7 +346,7 @@ class BigglesworthObject(QtCore.QObject):
             self.blofeld_current[1] = event.data2
             if None in self.blofeld_current: return
             self.librarian.blofeld_sounds_table.selectRow(self.librarian.blofeld_model_proxy.mapFromSource(self.blofeld_model.index(self.blofeld_current[0]*128+self.blofeld_current[1], 0)).row())
-            self.pgm_change_received.emit(*self.blofeld_current)
+            self.program_change_received.emit(*self.blofeld_current)
 
     def sysex_parameter(self, data):
         location = data[0]
@@ -755,7 +758,7 @@ def main():
     app.setApplicationName('Bigglesworth')
 #    app.setQuitOnLastWindowClosed(False)
     cursor_list.extend((QtCore.Qt.SizeAllCursor, UpCursorClass(), DownCursorClass(), LeftCursorClass(), RightCursorClass()))
-    bigglesworth = BigglesworthObject(app, argv)
+    BigglesworthObject(app, argv)
     sys.exit(app.exec_())
     print 'Blofix has been quit!'
 

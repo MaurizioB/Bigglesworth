@@ -426,6 +426,8 @@ class Sound(QtCore.QObject):
             self.source = SRC_LIBRARY
             self._state = EMPTY
 
+        self._done = True
+
     def __getattr__(self, attr):
         try:
 #            print sound_params[VALUE][self.data[params_index[attr]]]
@@ -440,6 +442,18 @@ class Sound(QtCore.QObject):
             print 'attr exception: {}'.format(attr)
             print '{}:{}, {}'.format(uppercase[self.bank], self.prog, self.name)
             return None
+
+    def __setattr__(self, attr, value):
+        if '_done' in self.__dict__.keys() and attr not in self.__dict__.keys():
+            try:
+                index = Params.index_from_attr(attr)
+                self._data[index] = value
+                self._state = self._state|EDITED
+                self.edited.emit(self._state)
+            except Exception as Err:
+                print Err
+        else:
+            super(QtCore.QObject, self).__setattr__(attr, value)
 
     @property
     def state(self):
@@ -624,8 +638,8 @@ class Library(QtCore.QObject):
         prog_item.setData(prog, ProgRole)
         prog_item.setEditable(False)
         name_item = QtGui.QStandardItem(sound.name)
-#        name_item.setData(sound.Amplifier_Envelope_Mode, QtCore.Qt.ToolTipRole)
-        name_item.setData(sound.name, QtCore.Qt.ToolTipRole)
+        name_item.setData(sound.Osc_1_Shape, QtCore.Qt.ToolTipRole)
+#        name_item.setData(sound.name, QtCore.Qt.ToolTipRole)
         cat_item = QtGui.QStandardItem(categories[sound.cat])
         cat_item.setData(sound.cat, UserRole)
         cat_item.setData(sound.cat, CatRole)

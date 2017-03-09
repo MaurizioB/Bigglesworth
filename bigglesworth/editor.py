@@ -272,17 +272,11 @@ class TextCursorWidget(BaseDisplayWidget):
         self.line = QtGui.QPainterPath()
         self.line.moveTo(.5, 0)
         self.line.lineTo(.5, size)
-        width = self.line.boundingRect().width()
-        height = self.line.boundingRect().height()
-#        self.setMinimumSize(width, height)
-#        self.setMaximumSize(width, height)
-#        self.setSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Minimum)
 
     def paint(self, painter, *args, **kwargs):
         painter.setPen(self.pen)
         painter.setBrush(self.brush)
         painter.setRenderHints(QtGui.QPainter.Antialiasing)
-#        painter.translate(self.rect().center())
         painter.drawPath(self.line)
 
 class BaseTextWidget(BaseDisplayWidget):
@@ -529,6 +523,25 @@ class DisplayHSpacer(QtGui.QGraphicsWidget):
 
 #    def paint(self, painter, *args, **kwargs):
 #        painter.drawRect(self.rect())
+
+class EditedWidget(BaseTextWidget):
+    def __init__(self, parent):
+        BaseDisplayWidget.__init__(self, parent)
+        self.font = QtGui.QFont('Fira Sans', 10, QtGui.QFont.Bold)
+        self.font_metrics = QtGui.QFontMetrics(self.font)
+        self.setMaximumWidth(self.font_metrics.width('E')+8)
+
+    def paint(self, painter, *args, **kwargs):
+        painter.setRenderHints(QtGui.QPainter.Antialiasing)
+        painter.setPen(self.pen)
+        painter.setBrush(self.brush)
+        painter.setFont(self.font)
+        painter.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
+        painter.drawRoundedRect(self.rect().adjusted(4, 2, -3, -4), 1, 1)
+        painter.setCompositionMode(QtGui.QPainter.CompositionMode_DestinationOut)
+#        painter.setBrush(QtCore.Qt.white)
+#        painter.drawRect(2, 2, 5, 5)
+        painter.drawText(self.rect(), QtCore.Qt.AlignCenter, 'E')
 
 class SmallLabelTextWidget(BaseTextWidget):
     def __init__(self, text, parent, fixed=False, font_size=12, max_size=None, bold=False):
@@ -1671,17 +1684,20 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         self.cat_dn = DownArrowWidget(panel)
         cat_arrows.addItem(self.cat_dn, 1, 0)
 
+        self.edited_widget = EditedWidget(panel)
+        layout.addItem(self.edited_widget, 0, 2)
+        self.edited_widget.hide()
         self.edit_mode_label = SmallLabelTextWidget('Sound mode Edit buffer', panel)
 #        self.edit_mode_label.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-        layout.addItem(self.edit_mode_label, 0, 2)
+        layout.addItem(self.edit_mode_label, 0, 3)
         self.prog_name = ProgLabelTextWidget('Init', panel)
-        layout.addItem(self.prog_name, 1, 2)
+        layout.addItem(self.prog_name, 1, 2, 1, 2)
 
         self.status = SmallLabelTextWidget('Status: ready', panel)
-        layout.addItem(self.status, 2, 2, 1, 2)
+        layout.addItem(self.status, 2, 2, 1, 3)
 
         buttons_layout = QtGui.QGraphicsGridLayout()
-        layout.addItem(buttons_layout, 0, 3, 2, 1)
+        layout.addItem(buttons_layout, 0, 4, 2, 1)
         self.midi_btn = MidiDisplayButton(panel)
         buttons_layout.addItem(self.midi_btn, 0, 0, 1, 2)
         self.midi_in = MidiInDisplayButton(panel)
@@ -2071,6 +2087,7 @@ class EditingMask(QtGui.QWidget):
 
 
 class Editor(QtGui.QMainWindow):
+    sound_changed = QtCore.pyqtSignal()
     midi_event = QtCore.pyqtSignal(object)
     program_change = QtCore.pyqtSignal(int, int)
     midi_receive = QtCore.pyqtSignal(bool)
@@ -2105,6 +2122,8 @@ class Editor(QtGui.QMainWindow):
         self.params = Params
         self.send = False
         self.notify = True
+        self.save = False
+        self._edited = False
         self.envelopes = []
         self.grid = self.centralWidget().layout()
         self.editing_mask = EditingMask(self)
@@ -2116,17 +2135,22 @@ class Editor(QtGui.QMainWindow):
         display_layout = QtGui.QGridLayout()
         self.grid.addLayout(display_layout, 0, 1, 1, 2)
         display_layout.addLayout(self.create_display(), 0, 0, 2, 1)
-        display_layout.addWidget(HSpacer(max_width=24), 0, 1)
+        self.sound_changed.connect(lambda: self.display.edited_widget.show())
+        display_layout.addWidget(HSpacer(max_width=8), 0, 1)
 
 
         side_layout = QtGui.QGridLayout()
         display_layout.addLayout(side_layout, 1, 2)
 
-        library_btn = SquareButton(self, color=QtCore.Qt.darkGreen, name='Library')
-        library_btn.clicked.connect(self.show_librarian)
-        side_layout.addWidget(library_btn)
+        autosave_btn = SquareButton(self, 'Autosave', checkable=True, checked=False, size=12, label_pos=RIGHT)
+        autosave_btn.clicked.connect(lambda state: setattr(self, 'save', state))
+        side_layout.addWidget(autosave_btn, 0, 0)
 
-        randomize_btn = SquareButton(self, color=QtCore.Qt.darkGreen, name='Randomize')
+        library_btn = SquareButton(self, color=QtCore.Qt.darkGreen, name='Library', size=12, label_pos=RIGHT)
+        library_btn.clicked.connect(self.show_librarian)
+        side_layout.addWidget(library_btn, 1, 0)
+
+        randomize_btn = SquareButton(self, color=QtCore.Qt.darkGreen, name='Randomize', size=12, label_pos=RIGHT)
         randomize_btn.clicked.connect(self.randomize)
         side_layout.addWidget(randomize_btn, 0, 1)
 
@@ -2134,10 +2158,10 @@ class Editor(QtGui.QMainWindow):
         logo_widget = QtGui.QLabel()
         logo_widget.mouseDoubleClickEvent = self.logo_click
         logo_widget.setPixmap(QtGui.QPixmap().fromImage(logo))
-        logo_widget.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        logo_widget.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.MinimumExpanding)
         logo_widget.setToolTip('Right click here for...')
         logo_widget.contextMenuEvent = self.menuEvent
-        side_layout.addWidget(logo_widget, 1, 0, 1, 2, QtCore.Qt.AlignBottom|QtCore.Qt.AlignRight)
+        side_layout.addWidget(logo_widget, 2, 0, 1, 2, QtCore.Qt.AlignBottom|QtCore.Qt.AlignRight)
 
         amp_layout = QtGui.QVBoxLayout()
         amp_layout.addWidget(self.create_amplifier())
@@ -2302,15 +2326,29 @@ class Editor(QtGui.QMainWindow):
             try:
                 self.object_dict[attr].value = value
                 if self.notify:
+                    self.edited = True
                     self.display.statusParamUpdate(attr, value)
                 if self.send:
                     value = self.object_dict[attr].value
                     self.send_value(attr, value)
+                if self.save:
+                    value = self.object_dict[attr].value
+                    setattr(self.sound, attr, value)
             except:
                 QtCore.QObject.__setattr__(self, attr, value)
         except Exception as e:
             raise e
 #            raise NameError('{} attribute does not exist!'.format(attr))
+
+    @property
+    def edited(self):
+        return self._edited
+
+    @edited.setter
+    def edited(self, state):
+        self._edited = state
+        if state:
+            self.sound_changed.emit()
 
     def showEvent(self, event):
         if self.blofeld_library.menu is None:
@@ -2318,7 +2356,11 @@ class Editor(QtGui.QMainWindow):
 
     def menuEvent(self, event):
         menu = QtGui.QMenu()
+        menu.addAction(self.main.settingsAction)
         menu.addAction(self.main.globalsAction)
+        sep = QtGui.QAction(self)
+        sep.setSeparator(True)
+        menu.addAction(sep)
         about_item = QtGui.QAction('About Mr. Bigglesworth...', menu)
         menu.addAction(about_item)
         res = menu.exec_(event.globalPos())
@@ -2558,7 +2600,7 @@ class Editor(QtGui.QMainWindow):
         self.midi_event.emit(note_event)
         self.display.midi_btn.midi_out()
 
-    def pgm_change_received(self, bank, prog):
+    def program_change_received(self, bank, prog):
         if self.pgm_receive_btn.isChecked():
             self.setSound(bank, prog, False)
 
@@ -2582,6 +2624,8 @@ class Editor(QtGui.QMainWindow):
         data = sound.data
         old_send = self.send
         self.send = False
+        old_save = self.save
+        self.save = False
         self.notify = False
         for i, p in enumerate(data):
             try:
@@ -2592,8 +2636,10 @@ class Editor(QtGui.QMainWindow):
                 pass
         self.reset_advanced_widgets()
         self.send = old_send
+        self.save = old_save
         self.notify = True
         self.display.setSound()
+        self.display.edited_widget.hide()
         if pgm_send and self.pgm_send_btn.isChecked():
             self.display.midi_btn.midi_out()
             self.program_change.emit(sound.bank, sound.prog)
