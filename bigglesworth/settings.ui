@@ -20,7 +20,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="general_tab">
       <attribute name="title">
@@ -149,10 +149,7 @@
                 </widget>
                </item>
                <item row="1" column="1">
-                <widget class="KComboBox" name="editor_midi_send_combo">
-                 <property name="currentIndex">
-                  <number>1</number>
-                 </property>
+                <widget class="QComboBox" name="editor_midi_send_combo">
                  <item>
                   <property name="text">
                    <string>Off</string>
@@ -229,10 +226,7 @@
                 </widget>
                </item>
                <item row="1" column="1">
-                <widget class="KComboBox" name="editor_midi_receive_combo">
-                 <property name="currentIndex">
-                  <number>1</number>
-                 </property>
+                <widget class="QComboBox" name="editor_midi_receive_combo">
                  <item>
                   <property name="text">
                    <string>Off</string>
@@ -517,13 +511,6 @@
    </item>
   </layout>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>KComboBox</class>
-   <extends>QComboBox</extends>
-   <header>kcombobox.h</header>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections>
   <connection>
