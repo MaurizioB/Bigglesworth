@@ -1153,8 +1153,8 @@ class SquareButton(QtGui.QAbstractButton):
 #            self.current_pen = self.active_pen
 
 class Frame(QtGui.QWidget):
-    _fgd_line_normal = QtGui.QPen(QtCore.Qt.black, 1)
-    _fgd_line_highlight = QtGui.QPen(QtCore.Qt.gray, 1)
+    _fgd_line_normal = QtGui.QColor(QtCore.Qt.black)
+    _fgd_line_highlight = QtGui.QColor(QtCore.Qt.gray)
     fgd_lines = _fgd_line_normal, _fgd_line_highlight
     _up = QtGui.QColor(180, 180, 180)
     _left = QtGui.QColor(80, 80, 80)
@@ -1187,55 +1187,29 @@ class Frame(QtGui.QWidget):
             top_margin = 0
         self.setContentsMargins(2, 2+top_margin, 2, 2)
 
-        self.fgd_line = self.fgd_lines[0]
-        self.highlight = False
-        self.create_animation(ani_range)
+        self._fgd_line = self.fgd_lines[0]
+        self.border_anim = QtCore.QPropertyAnimation(self, 'fgd_line')
+        self.border_anim.setStartValue(self.fgd_lines[0])
+        self.border_anim.setEndValue(self.fgd_lines[1])
+        self.border_anim.valueChanged.connect(lambda value: self.update())
+        
 
-    def create_animation(self, ani_range):
-        self.ani_range = ani_range
-        if not ani_range:
-            self.ani_colors = self.fgd_lines
-            return
-        self.ani_current = 0
-        self.ani_timer = QtCore.QTimer()
-        self.ani_timer.setInterval(40)
-        self.ani_timer.timeout.connect(self.animate)
-        red_start, green_start, blue_start, _ = self.fgd_lines[0].color().getRgb()
-        red_end, green_end, blue_end, _ = self.fgd_lines[1].color().getRgb()
-        red_div = (red_end-red_start)/(ani_range-1)
-        green_div = (green_end-green_start)/(ani_range-1)
-        blue_div = (blue_end-blue_start)/(ani_range-1)
-        self.fgd_lines = list(self.fgd_lines[:])
-        for c in range(1, ani_range-1):
-            self.fgd_lines.insert(-1, QtGui.QPen(QtGui.QColor(red_start+red_div*c, blue_start+blue_div*c, green_start+green_div*c)))
+    @QtCore.pyqtProperty('QColor')
+    def fgd_line(self):
+        return self._fgd_line
 
-    def animate(self):
-        if self.highlight:
-            current = self.ani_current+1
-        else:
-            current = self.ani_current-1
-        if not 0 <= current < self.ani_range:
-            self.ani_timer.stop()
-            return
-        self.ani_current = current
-        self.fgd_line = self.fgd_lines[current]
-        self.update()
+    @fgd_line.setter
+    def fgd_line(self, value):
+        self._fgd_line = value
 
     def enterEvent(self, event):
-        self.highlight = True
-        if not self.ani_range:
-            self.fgd_line = self.fgd_lines[-1]
-            self.update()
-            return
-        self.ani_timer.start()
+        self.border_anim.setDirection(QtCore.QPropertyAnimation.Forward)
+        self.border_anim.start()
 
     def leaveEvent(self, event):
-        self.highlight = False
-        if not self.ani_range:
-            self.fgd_line = self.fgd_lines[0]
-            self.update()
-            return
-        self.ani_timer.start()
+        self.border_anim.setDirection(QtCore.QPropertyAnimation.Backward)
+        self.border_anim.start()
+
 
     def paintEvent(self, e):
         qp = QtGui.QPainter()
