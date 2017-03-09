@@ -616,7 +616,7 @@ class Librarian(QtGui.QMainWindow):
         
 
     def sound_request(self, bank, sound):
-        self.midi_event.emit(SysExEvent(1, [INIT, IDW, IDE, self.main.device_id, SNDR, bank, sound, CHK, END]))
+        self.midi_event.emit(SysExEvent(1, [INIT, IDW, IDE, self.main.blofeld_id, SNDR, bank, sound, CHK, END]))
 
 #    def create_models(self):
 #        self.bank_dump_combo.addItems(['All']+[l for l in uppercase[:8]])
