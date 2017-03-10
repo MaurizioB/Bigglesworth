@@ -28,7 +28,6 @@ class BigglesworthObject(QtCore.QObject):
         self.qsettings = QtCore.QSettings()
         self.settings = SettingsObj(self.qsettings)
 
-#        self.app.lastWindowClosed.connect(self.save_settings)
         self.font_db = QtGui.QFontDatabase()
         self.font_db.addApplicationFont(local_path('FiraSans-Regular.ttf'))
 
@@ -313,7 +312,7 @@ class BigglesworthObject(QtCore.QObject):
         if conn.dest == self.input:
             conn_list = [c for c in self.input.connections.input if not c.hidden]
             self.input_conn_state_change.emit(len(conn_list))
-            if self.remember_connections:
+            if self.remember_connections and not conn.hidden:
                 port_fmt = '{}:{}'.format(conn.src.client.name, conn.src.name)
                 if port_fmt == 'Blofeld:Blofeld MIDI 1': return
                 if state:
@@ -324,7 +323,7 @@ class BigglesworthObject(QtCore.QObject):
         elif conn.src == self.output:
             conn_list = [c for c in self.output.connections.output if not c.hidden]
             self.output_conn_state_change.emit(len(conn_list))
-            if self.remember_connections:
+            if self.remember_connections and not conn.hidden:
                 port_fmt = '{}:{}'.format(conn.dest.client.name, conn.dest.name)
                 if port_fmt == 'Blofeld:Blofeld MIDI 1': return
                 if state:
@@ -520,9 +519,6 @@ class BigglesworthObject(QtCore.QObject):
         QtGui.QMessageBox.information(parent, 'Device informations', 
                                       'Device info:\n\nManufacturer: {}\nModel: {}\nType: {}\nVersion: {}'.format(
                                        dev_man, dev_model, dev_type, dev_version))
-
-    def save_settings(self):
-        print self.connections
 
 
 class Librarian(QtGui.QMainWindow):
