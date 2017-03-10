@@ -247,11 +247,18 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
-    <addaction name="settingsAction"/>
-    <addaction name="separator"/>
     <addaction name="quitAction"/>
    </widget>
+   <widget class="QMenu" name="menu_Windows">
+    <property name="title">
+     <string>&amp;Windows</string>
+    </property>
+    <addaction name="editorAction"/>
+    <addaction name="separator"/>
+    <addaction name="settingsAction"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menu_Windows"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="settingsAction">
@@ -265,6 +272,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="editorAction">
+   <property name="text">
+    <string>Editor</string>
    </property>
   </action>
  </widget>

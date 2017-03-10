@@ -199,6 +199,7 @@ class Label(QtGui.QWidget):
     _pen_disabled = QtGui.QPen(QtCore.Qt.darkGray)
     _pen_colors = _pen_disabled, _pen_enabled
     pen = _pen_colors[1]
+    brush = QtCore.Qt.NoBrush
     path = QtGui.QPainterPath()
     path_rect = QtCore.QRectF()
 #    label_pos = RIGHT
@@ -265,6 +266,7 @@ class Label(QtGui.QWidget):
         qp.setFont(self.font)
         qp.drawText(self.label_rect, self.text_align, self.text)
         if self.path:
+            qp.setBrush(self.brush)
             qp.translate(self.path_rect.x(), self.path_rect.y())
             qp.drawPath(self.path)
 
@@ -274,6 +276,40 @@ class Label(QtGui.QWidget):
         full_rect = self.label_rect.united(self.path_rect)
         diff = QtCore.QRectF(0, 0, self.width(), self.height()).center()-full_rect.center()
         self.base_translate = QtCore.QPointF(diff.x(), diff.y())
+
+class ActionLabel(Label):
+    arrow = QtGui.QPainterPath()
+    arrow.lineTo(8, 0)
+    arrow.lineTo(4, 4)
+    arrow.translate(4, 0)
+    arrow.closeSubpath()
+    brush = QtCore.Qt.white
+    def __init__(self, parent=None, text=''):
+        Label.__init__(self, parent, text, text_align=QtCore.Qt.AlignLeft, label_pos=LEFT, path=self.arrow)
+        self.actions = []
+
+    def addAction(self, action):
+        self.actions.append(action)
+
+    def addActions(self, *actions):
+        if len(actions) > 1:
+            self.actions.extend(actions)
+        elif isinstance(actions[0], QtGui.QAction):
+            self.actions.append(actions[0])
+        else:
+            self.actions.extend(actions[0])
+
+    def mousePressEvent(self, event):
+        menu = QtGui.QMenu()
+        for action in self.actions:
+            menu.addAction(action)
+        menu.exec_(self.mapToGlobal(QtCore.QPoint(0, self.height())))
+
+    def contextMenuEvent(self, event):
+        menu = QtGui.QMenu()
+        for action in self.actions:
+            menu.addAction(action)
+        menu.exec_(event.globalPos())
 
 class Section(QtGui.QWidget):
     def __init__(self, parent=None, color=None, alpha=None, width=0, height=0, border=False, border_color=None, label='', label_pos=TOP):

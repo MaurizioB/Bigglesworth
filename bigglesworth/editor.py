@@ -1727,13 +1727,15 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         sound = self.main.sound
         bank = sound.bank
         prog = sound.prog
+        if bank > self.main.blofeld_library.banks:
+            bank = 0
         cat = sound.cat
         if item == self.bank_dn:
             bank -= 1
             if bank < 0: return
         elif item == self.bank_up:
             bank += 1
-            if bank > 7: return
+            if bank > self.main.blofeld_library.banks: return
         elif item == self.prog_dn:
             prog -= 1
             if prog < 0:
@@ -1744,7 +1746,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         elif item == self.prog_up:
             prog += 1
             if prog > 127:
-                if bank < 7:
+                if bank < self.main.blofeld_library.banks:
                     bank += 1
                     prog = 0
                 else: return
@@ -1803,7 +1805,11 @@ class BlofeldDisplay(QtGui.QGraphicsView):
             self.main.setSound(*res.data().toPyObject(), pgm_send=True)
             return
         elif self.prog_rect.contains(event.pos()):
-            res = self.main.blofeld_library.menu.actions()[0].menu().actions()[bank].menu().exec_(event.globalPos())
+            if bank > 25:
+                menu = self.main.blofeld_library.menu.actions()[0].menu()
+            else:
+                menu = self.main.blofeld_library.menu.actions()[0].menu().actions()[bank].menu()
+            res = menu.exec_(event.globalPos())
             if not res: return
             self.main.setSound(*res.data().toPyObject(), pgm_send=True)
             return
@@ -2037,10 +2043,12 @@ class BlofeldDisplay(QtGui.QGraphicsView):
 
     def setSound(self):
         sound = self.main.sound
-#        self.prog_name.text = sound.name
-        self.bank.text = uppercase[sound.bank]
-        self.prog.text = '{:03}'.format(sound.prog+1)
-#        self.cat_name.text = categories[sound.cat]
+        if sound.bank > 24:
+            self.bank.text = '?'
+            self.prog.text = '?'
+        else:
+            self.bank.text = uppercase[sound.bank]
+            self.prog.text = '{:03}'.format(sound.prog+1)
         self.update()
         self.panel.update()
 
@@ -2087,9 +2095,11 @@ class EditingMask(QtGui.QWidget):
 
 
 class Editor(QtGui.QMainWindow):
-    sound_changed = QtCore.pyqtSignal()
+    sound_edited = QtCore.pyqtSignal()
+    sound_changed = QtCore.pyqtSignal(int, int)
     midi_event = QtCore.pyqtSignal(object)
-    program_change = QtCore.pyqtSignal(int, int)
+    dump_request = QtCore.pyqtSignal(object)
+    program_change_request = QtCore.pyqtSignal(int, int)
     midi_receive = QtCore.pyqtSignal(bool)
     pgm_receive = QtCore.pyqtSignal(bool)
     midi_send = QtCore.pyqtSignal(bool)
@@ -2124,6 +2134,11 @@ class Editor(QtGui.QMainWindow):
         self.notify = True
         self.save = False
         self._edited = False
+
+        self.create_layout()
+        self.setSoundDump()
+
+    def create_layout(self):
         self.envelopes = []
         self.grid = self.centralWidget().layout()
         self.editing_mask = EditingMask(self)
@@ -2135,7 +2150,7 @@ class Editor(QtGui.QMainWindow):
         display_layout = QtGui.QGridLayout()
         self.grid.addLayout(display_layout, 0, 1, 1, 2)
         display_layout.addLayout(self.create_display(), 0, 0, 2, 1)
-        self.sound_changed.connect(lambda: self.display.edited_widget.show())
+        self.sound_edited.connect(lambda: [self.display.edited_widget.show(), self.display.edited_widget.setOpacity(1)])
         display_layout.addWidget(HSpacer(max_width=8), 0, 1)
 
 
@@ -2153,6 +2168,19 @@ class Editor(QtGui.QMainWindow):
         randomize_btn = SquareButton(self, color=QtCore.Qt.darkGreen, name='Randomize', size=12, label_pos=RIGHT)
         randomize_btn.clicked.connect(self.randomize)
         side_layout.addWidget(randomize_btn, 0, 1)
+
+        dump_action = ActionLabel(self, text='Dump')
+        dump_send_action = QtGui.QAction('Dump to Blofeld', self)
+        dump_send_action.setEnabled(False)
+        dump_current_action = QtGui.QAction('Request dump for current sound', self)
+        dump_current_action.triggered.connect(lambda: self.dump_request.emit((self.sound.bank, self.sound.prog)))
+        self.sound_changed.connect(lambda bank, prog: [dump_current_action.setEnabled(True if bank <= self.blofeld_library.banks else False), 
+                                                       dump_current_action.setText('Request dump for sound{}'.format(' {}{:03}'.format(uppercase[bank], prog+1) if bank <= self.blofeld_library.banks else ''))
+                                                       ])
+        dump_buffer_action = QtGui.QAction('Request dump for Sound Edit buffer', self)
+        dump_buffer_action.triggered.connect(lambda: self.dump_request.emit((0x7f, 0x0)))
+        dump_action.addActions(dump_send_action, dump_current_action, dump_buffer_action)
+        side_layout.addWidget(dump_action, 1, 1)
 
         logo = QtGui.QIcon(local_path('logo.svg')).pixmap(QtCore.QSize(160, 160)).toImage()
         logo_widget = QtGui.QLabel()
@@ -2348,7 +2376,7 @@ class Editor(QtGui.QMainWindow):
     def edited(self, state):
         self._edited = state
         if state:
-            self.sound_changed.emit()
+            self.sound_edited.emit()
 
     def showEvent(self, event):
         if self.blofeld_library.menu is None:
@@ -2605,6 +2633,9 @@ class Editor(QtGui.QMainWindow):
             self.setSound(bank, prog, False)
 
     def randomize(self):
+        if self.edited:
+            res = QtGui.QMessageBox.question(self, 'Randomize', 'The current sound has been modified, are you sure you want to randomize it?', QtGui.QMessageBox.Yes|QtGui.QMessageBox.Cancel)
+            if res != QtGui.QMessageBox.Yes: return
         self.notify = False
         for p in self.params:
             if p.attr is None: continue
@@ -2616,12 +2647,12 @@ class Editor(QtGui.QMainWindow):
                 print e
         self.reset_advanced_widgets()
         self.notify = True
+        self.display.edited_widget.show()
+        self.display.edited_widget.setOpacity(.4)
+        self.edited = False
 
-    def setSound(self, bank, prog, pgm_send=False):
-        sound = self.blofeld_library[bank, prog]
-        if sound is None: return
-        self.sound = sound
-        data = sound.data
+    def _setSound(self):
+        data = self.sound.data
         old_send = self.send
         self.send = False
         old_save = self.save
@@ -2640,9 +2671,24 @@ class Editor(QtGui.QMainWindow):
         self.notify = True
         self.display.setSound()
         self.display.edited_widget.hide()
+
+    def setSound(self, bank, prog, pgm_send=False):
+        sound = self.blofeld_library[bank, prog]
+        if sound is None: return
+        self.sound = sound
+        self._setSound()
+        self.sound_changed.emit(sound.bank, sound.prog)
         if pgm_send and self.pgm_send_btn.isChecked():
             self.display.midi_btn.midi_out()
-            self.program_change.emit(sound.bank, sound.prog)
+            self.program_change_request.emit(sound.bank, sound.prog)
+
+    def setSoundDump(self, sound=None):
+        if sound is None:
+            sound = Sound(init_sound_data)
+        else:
+            self.sound_changed.emit(sound.bank, sound.prog)
+        self.sound = sound
+        self._setSound()
 
     def reset_advanced_widgets(self):
         for env in self.envelopes:

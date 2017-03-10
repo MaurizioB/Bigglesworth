@@ -20,7 +20,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="general_tab">
       <attribute name="title">
@@ -150,6 +150,9 @@
                </item>
                <item row="1" column="1">
                 <widget class="QComboBox" name="editor_midi_send_combo">
+                 <property name="currentIndex">
+                  <number>1</number>
+                 </property>
                  <item>
                   <property name="text">
                    <string>Off</string>
@@ -227,6 +230,9 @@
                </item>
                <item row="1" column="1">
                 <widget class="QComboBox" name="editor_midi_receive_combo">
+                 <property name="currentIndex">
+                  <number>1</number>
+                 </property>
                  <item>
                   <property name="text">
                    <string>Off</string>

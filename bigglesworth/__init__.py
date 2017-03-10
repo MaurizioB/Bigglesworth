@@ -18,8 +18,7 @@ class BigglesworthObject(QtCore.QObject):
     midi_lock = QtCore.pyqtSignal(bool)
     globals_event = QtCore.pyqtSignal(object)
     device_event = QtCore.pyqtSignal(object)
-    sound_dump = QtCore.pyqtSignal(object)
-    parameter_change = QtCore.pyqtSignal(int, int, int)
+    parameter_change_received = QtCore.pyqtSignal(int, int, int)
     program_change_received = QtCore.pyqtSignal(int, int)
     input_conn_state_change = QtCore.pyqtSignal(int)
     output_conn_state_change = QtCore.pyqtSignal(int)
@@ -69,6 +68,7 @@ class BigglesworthObject(QtCore.QObject):
         self.midi_lock_status = False
         self.midi_lock.connect(lambda state: setattr(self, 'midi_lock_status', state))
 
+        #LIBRARY
         QtGui.QIcon.setThemeName(QtGui.QApplication.style().objectName())
         self.librarian = Librarian(self)
         self.quitAction = self.librarian.quitAction
@@ -77,20 +77,53 @@ class BigglesworthObject(QtCore.QObject):
         self.quitAction.setIcon(QtGui.QIcon.fromTheme('application-exit'))
         self.quitAction.triggered.connect(self.app.quit)
         self.device_event.connect(lambda event: self.device_response(event, self.librarian))
-        self.sound_dump.connect(self.librarian.sound_dump)
         self.loader.loaded.connect(self.librarian.create_proxy)
-        self.loader.loaded.connect(self.librarian.create_proxy)
+#        self.loader.loaded.connect(self.librarian.create_proxy)
         self.loading_win = LoadingWindow(self.librarian)
         self.librarian.shown.connect(self.loading_win.show)
         self.loading_win.shown.connect(self.loader_thread.start)
         self.loader.loaded.connect(self.loading_win.hide)
 
+        self.librarian.dump_request.connect(self.dump_request)
         self.librarian.midi_event.connect(self.output_event)
-        self.librarian.program_change.connect(self.program_change_request)
+        self.librarian.program_change_request.connect(self.program_change_request)
 
+
+        #DUMPING
+#        self.dump_detect_count = 0
+#        self.dump_detect_dialog = QtGui.QMessageBox(QtGui.QMessageBox.Information, 'Dump receiving', 'Receiving dump from Blofeld, please wait', parent=self.librarian)
+#        self.dump_detect_dialog.setStandardButtons(QtGui.QMessageBox.NoButton)
+
+        self.dump_timer = QtCore.QTimer()
+        self.dump_timer.setInterval(100)
+        self.dump_timer.setSingleShot(True)
+#        self.dump_timer.timeout.connect(lambda: self.dump_waiter.emit())
+
+        self.dump_active = False
+        self.dump_pause = False
+        self.dump_temp = []
+        self.dump_elapsed = QtCore.QElapsedTimer()
+        self.dump_win = DumpWin(self.librarian)
+        self.dump_win.resume.connect(lambda: setattr(self, 'dump_pause', False))
+        self.dump_win.resume.connect(self.dump_timer.start)
+        self.dump_win.pause.connect(self.dump_timer.stop)
+        self.dump_win.pause.connect(lambda: setattr(self, 'dump_pause', True))
+        self.dump_win.accepted.connect(lambda: self.blofeld_library.addSoundBulk(self.dump_temp))
+        self.dump_win.rejected.connect(lambda: setattr(self, 'dump_active', False))
+        self.dump_win.rejected.connect(self.dump_timer.stop)
+
+
+        #EDITOR
         self.editor = Editor(self)
 
-        
+        self.editor_dump_state = False
+        self.editor_dump_timer = QtCore.QTimer()
+        self.editor_dump_timer.setSingleShot(True)
+        self.editor_dump_timer.setInterval(200)
+        self.editor_dump_timer.timeout.connect(lambda: setattr(self, 'editor_dump_state', False))
+        self.editor.dump_request.connect(self.dump_request)
+        self.editor.dump_request.connect(lambda data: [setattr(self, 'editor_dump_state', True), self.editor_dump_timer.start()])
+
         self.editor.pgm_receive_btn.blockSignals(True)
         self.editor.pgm_receive_btn.setChecked(self.editor_remember_states[PGMRECEIVE])
         self.editor.pgm_receive_btn.blockSignals(False)
@@ -109,17 +142,20 @@ class BigglesworthObject(QtCore.QObject):
         self.editor.midi_send_btn.blockSignals(False)
 
         self.librarian.activate_editor.connect(self.activate_editor)
+        self.librarian.editorAction.triggered.connect(lambda: [self.editor.show(), self.editor.activateWindow()])
         self.program_change_received.connect(self.editor.program_change_received)
         self.editor.show_librarian.connect(lambda: [self.librarian.show(), self.librarian.activateWindow()])
         self.editor.midi_event.connect(self.output_event)
-        self.editor.program_change.connect(self.program_change_request)
+        self.editor.program_change_request.connect(self.program_change_request)
         self.editor.pgm_receive.connect(lambda state: self.set_editor_remember(PGMRECEIVE, state))
         self.editor.midi_receive.connect(lambda state: self.set_editor_remember(MIDIRECEIVE, state))
         self.editor.pgm_send.connect(lambda state: self.set_editor_remember(PGMSEND, state))
         self.editor.midi_send.connect(lambda state: self.set_editor_remember(MIDISEND, state))
-        self.parameter_change.connect(self.editor.receive_value)
+        self.parameter_change_received.connect(self.editor.receive_value)
         self.output_conn_state_change.connect(self.editor.midi_output_state)
         self.input_conn_state_change.connect(self.editor.midi_input_state)
+
+        self.dump_dialog = SoundDumpDialog(self, self.librarian)
 
         self.globals = Globals(self, self.librarian)
         self.globals.midi_event.connect(self.output_event)
@@ -138,6 +174,7 @@ class BigglesworthObject(QtCore.QObject):
 #        self.settings_dialog.show()
 
         self.midi_connect()
+#        self.dump_win.show()
 
     def show_settings(self):
         self.settings_dialog.exec_()
@@ -328,7 +365,7 @@ class BigglesworthObject(QtCore.QObject):
 #            print event.sysex
             sysex_type = event.sysex[4]
             if sysex_type == SNDD:
-                self.sound_dump.emit(event.sysex[5:390])
+                self.sound_dump_received(Sound(event.sysex[5:390], SRC_BLOFELD))
             elif sysex_type == SNDP:
                 self.sysex_parameter(event.sysex[5:])
             elif sysex_type == GLBD:
@@ -336,7 +373,6 @@ class BigglesworthObject(QtCore.QObject):
 #                self.main.globals.setData(event.sysex)
             elif len(event.sysex) == 15 and event.sysex[3:5] == [6, 2]:
                 self.device_event.emit(event.sysex)
-#                self.device_response(event.sysex)
         elif event.type == CTRL:
             if event.data1 == 0:
                 self.blofeld_current[0] = event.data2
@@ -352,11 +388,11 @@ class BigglesworthObject(QtCore.QObject):
         location = data[0]
         index = data[1]*128+data[2]
         value = data[3]
-        self.parameter_change.emit(location, index, value)
+        self.parameter_change_received.emit(location, index, value)
 
     def ctrl_parameter(self, param_id, value):
         if param_id in ctrl2sysex:
-            self.parameter_change.emit(0, ctrl2sysex[param_id], value)
+            self.parameter_change_received.emit(0, ctrl2sysex[param_id], value)
 
     def activate_editor(self, bank, prog):
         self.editor.show()
@@ -366,6 +402,99 @@ class BigglesworthObject(QtCore.QObject):
     def activate_globals(self, data):
         if self.midi_lock_status: return
         self.globals.setData(data)
+
+    def sound_dump_received(self, sound):
+        if sound.bank > 25:
+            if self.editor_dump_state == True:
+                self.editor.setSoundDump(sound)
+                self.editor.show()
+                self.editor.activateWindow()
+                return
+            res = self.dump_dialog.exec_(sound.name)
+            if not res or not any(res): return
+            editor, library = res
+            if not library:
+                self.editor.setSoundDump(sound)
+                self.editor.show()
+                self.editor.activateWindow()
+            else:
+                sound._bank, sound._prog = library
+                self.blofeld_library.addSound(sound)
+                if editor:
+                    self.activate_editor(library)
+            return
+        bank, prog = sound.bank, sound.prog
+#        self.blofeld_library.addSound(sound)
+
+        if not self.dump_active:
+            self.blofeld_library.addSound(sound)
+            if self.editor_dump_state == True and (sound.bank, sound.prog) == (self.editor.sound.bank, self.editor.sound.prog):
+                self.editor.setSoundDump(sound)
+#            self.cat_count_update()
+#            self.blofeld_sounds_table.resizeColumnToContents(2)
+#            self.blofeld_sounds_table.resizeColumnToContents(5)
+            return
+        self.dump_temp.append(sound)
+        dump_all = True if self.dump_mode == DUMP_ALL else False
+        if prog >= 127:
+            if dump_all:
+                bank += 1
+                if bank >= 8:
+                    self.dump_active = False
+                    self.blofeld_library.addSoundBulk(self.dump_temp)
+                    self.dump_win.accept()
+#                    self.cat_count_update()
+#                    self.blofeld_sounds_table.resizeColumnToContents(2)
+#                    self.blofeld_sounds_table.resizeColumnToContents(5)
+                    return
+                prog = -1
+            else:
+                self.dump_active = False
+                self.blofeld_library.addSoundBulk(self.dump_temp)
+                self.dump_win.accept()
+                return
+        self.dump_win.bank_lbl.setText('{}{}'.format(uppercase[bank], ' {}/8'.format(bank+1) if dump_all else ''))
+        self.dump_win.sound_lbl.setText('{:03}/{}'.format(prog+1+(128*bank if dump_all else 0), 1024 if dump_all else 128))
+        dump_time = None
+        if dump_all:
+            if not (bank == 0 and prog < 10):
+                dump_time = self.dump_elapsed.elapsed()/float(prog+1+128*bank)*(1024-prog-128*bank)/1000
+        else:
+            if prog > 5:
+                dump_time = self.dump_elapsed.elapsed()/float(prog+1)*(128-prog)/1000
+        if dump_time is not None:
+            self.dump_win.time.setText('{}:{:02}'.format(*divmod(int(dump_time)+1, 60)))
+        self.dump_win.progress.setValue(prog+1+(128*bank if dump_all else 0))
+        try:
+            self.dump_timer.timeout.disconnect()
+        except:
+            pass
+        self.dump_timer.timeout.connect(lambda: self.sound_request(bank, prog+1))
+        if not self.dump_pause:
+            self.dump_timer.start()
+
+
+    def dump_request(self, req):
+        if isinstance(req, tuple):
+            self.sound_request(*req)
+            return
+        self.dump_active = True
+        self.dump_pause = False
+        self.dump_mode = req
+        self.dump_temp = []
+        self.dump_elapsed.start()
+        self.dump_win.show()
+        self.dump_win.paused = False
+        if req == DUMP_ALL:
+            bank = 0
+            self.dump_win.progress.setMaximum(1024)
+        else:
+            bank = req
+            self.dump_win.progress.setMaximum(128)
+        self.sound_request(bank, 0)
+
+    def sound_request(self, bank, sound):
+        self.output_event(SysExEvent(1, [INIT, IDW, IDE, self.blofeld_id, SNDR, bank, sound, CHK, END]))
 
     def device_request(self):
         self.output_event(SysExEvent(1, [INIT, 0x7e, 0x7f, 0x6, 0x1, END]))
@@ -398,9 +527,10 @@ class BigglesworthObject(QtCore.QObject):
 
 class Librarian(QtGui.QMainWindow):
     shown = QtCore.pyqtSignal()
-    program_change = QtCore.pyqtSignal(int, int)
+    program_change_request = QtCore.pyqtSignal(int, int)
+    dump_request = QtCore.pyqtSignal(object)
     midi_event = QtCore.pyqtSignal(object)
-    dump_waiter = QtCore.pyqtSignal()
+#    dump_waiter = QtCore.pyqtSignal()
     activate_editor = QtCore.pyqtSignal(int, int)
     def __init__(self, main):
         QtGui.QMainWindow.__init__(self, parent=None)
@@ -416,17 +546,6 @@ class Librarian(QtGui.QMainWindow):
         self.loading_complete = False
         self.edit_mode = False
 
-        self.dump_timer = QtCore.QTimer()
-        self.dump_timer.setInterval(100)
-        self.dump_timer.setSingleShot(True)
-        self.dump_timer.timeout.connect(lambda: self.dump_waiter.emit())
-
-        self.dump_active = False
-        self.dump_elapsed = QtCore.QElapsedTimer()
-        self.dump_win = DumpWin(self)
-        self.dump_win.rejected.connect(lambda: setattr(self, 'dump_active', False))
-        self.dump_win.rejected.connect(self.dump_timer.stop)
-
         self.bank_dump_combo.addItems(['All']+[l for l in uppercase[:8]])
         self.sound_dump_combo.addItems(['All']+[str(s) for s in range(1, 129)])
         self.bank_filter_combo.addItems(['All']+[l for l in uppercase[:8]])
@@ -439,7 +558,7 @@ class Librarian(QtGui.QMainWindow):
 
         self.device_btn.clicked.connect(self.main.deviceAction.trigger)
         self.globals_btn.clicked.connect(self.main.globalsAction.trigger)
-        self.dump_btn.clicked.connect(self.dump_request)
+        self.dump_btn.clicked.connect(self.dump_request_create)
         self.bank_dump_combo.currentIndexChanged.connect(lambda b: self.sound_dump_combo.setEnabled(True if b != 0 else False))
         self.edit_btn.toggled.connect(self.edit_mode_set)
         self.search_edit.textChanged.connect(self.search_filter)
@@ -454,7 +573,6 @@ class Librarian(QtGui.QMainWindow):
         self.search_edit.installEventFilter(self)
         self.search_filter_chk.installEventFilter(self)
 
-
     def showEvent(self, event):
         if not self.loading_complete:
             QtCore.QTimer.singleShot(10, self.shown.emit)
@@ -462,7 +580,7 @@ class Librarian(QtGui.QMainWindow):
     def eventFilter(self, source, event):
         if event.type() == QtCore.QEvent.KeyPress:
             if event.key() == QtCore.Qt.Key_F5:
-                self.dump_request()
+                self.dump_request_create()
             elif event.key() == QtCore.Qt.Key_Escape and source == self.search_edit:
                 self.search_edit.setText('')
         if source == self.search_filter_chk and event.type() == QtCore.QEvent.FocusIn and event.reason() == QtCore.Qt.OtherFocusReason:
@@ -498,11 +616,11 @@ class Librarian(QtGui.QMainWindow):
         if behaviour == 0: return
         sound = self.blofeld_model.item(self.blofeld_model_proxy.mapToSource(index).row(), SOUND).data(SoundRole).toPyObject()
         if behaviour == 1:
-            self.program_change.emit(sound.bank, sound.prog)
+            self.program_change_request.emit(sound.bank, sound.prog)
         elif behaviour == 2:
             self.activate_editor.emit(sound.bank, sound.prog)
         else:
-            self.program_change.emit(sound.bank, sound.prog)
+            self.program_change_request.emit(sound.bank, sound.prog)
             self.activate_editor.emit(sound.bank, sound.prog)
 
     def right_click(self, event):
@@ -592,50 +710,19 @@ class Librarian(QtGui.QMainWindow):
             item.setText(get_status(item.data(EditedRole).toPyObject()))
             setBold(item)
 
-    def program_change_request(self, bank, prog):
-        self.midi_event.emit(CtrlEvent(1, 0, 0, bank))
-        self.midi_event.emit(ProgramEvent(1, 0, prog))
-
-    def dump_request(self):
+    def dump_request_create(self):
         bank = self.bank_dump_combo.currentIndex()
         sound = self.sound_dump_combo.currentIndex()
         if bank != 0 and sound != 0:
-            self.sound_request(bank-1, sound-1)
+            self.dump_request.emit((bank-1, sound-1))
         elif bank != 0 and sound == 0:
-            self.dump_active = True
-            self.dump_elapsed.start()
-            self.dump_win.show()
-            self.dump_win.progress.setMaximum(128)
-            self.sound_request(bank-1, 0)
+            self.dump_request.emit(bank-1)
         else:
-            self.dump_active = True
-            self.dump_elapsed.start()
-            self.dump_win.show()
-            self.dump_win.progress.setMaximum(1024)
-            self.sound_request(0, 0)
+            self.dump_request.emit(DUMP_ALL)
         
-
-    def sound_request(self, bank, sound):
-        self.midi_event.emit(SysExEvent(1, [INIT, IDW, IDE, self.main.blofeld_id, SNDR, bank, sound, CHK, END]))
-
-#    def create_models(self):
-#        self.bank_dump_combo.addItems(['All']+[l for l in uppercase[:8]])
-#        self.sound_dump_combo.addItems(['All']+[str(s) for s in range(1, 129)])
-#
-#        self.bank_filter_combo.addItems(['All']+[l for l in uppercase[:8]])
-#        self.cat_filter_combo.addItem('All')
-#        for cat in categories:
-#            self.cat_filter_combo.addItem(cat, cat)
-#        self.bank_filter_combo.currentIndexChanged.connect(lambda index: self.blofeld_model_proxy.setMultiFilter(BANK, index))
-#        self.bank_filter_combo.currentIndexChanged.connect(self.bank_list_update)
-#        self.cat_filter_combo.currentIndexChanged.connect(lambda index: self.blofeld_model_proxy.setMultiFilter(CATEGORY, index))
 
     def create_proxy(self):
         self.loading_complete = True
-#        self.blofeld_library = self.editor.blofeld_library = library
-##        self.editor.create_sorted_library()
-#        self.blofeld_model = model
-#        self.blofeld_model.itemChanged.connect(self.sound_update)
         self.blofeld_model_proxy = LibraryProxy()
         self.blofeld_model_proxy.setSourceModel(self.blofeld_model)
         self.blofeld_sounds_table.setModel(self.blofeld_model_proxy)
@@ -653,28 +740,6 @@ class Librarian(QtGui.QMainWindow):
     def bank_list_update(self, bank):
         self.cat_count_update()
 
-#    def filter_update(self, id=None):
-#        bank_filter = self.bank_filter_combo.currentIndex()
-#        cat_filter = self.cat_filter_combo.currentIndex()
-#        self.blofeld_model_proxy.setMultiFilter(bank_filter-1, cat_filter-1)
-#        return
-#        print 'filtering with {} and {}'.format(bank_filter, cat_filter)
-#        if bank_filter == 0 and cat_filter == 0:
-#            for r in range(self.blofeld_model.rowCount()):
-#                self.blofeld_sounds_table.setRowHidden(r, False)
-#            print 'done'
-#            return
-#        print 'what'
-#        for r in range(self.blofeld_model.rowCount()):
-#            self.blofeld_sounds_table.setRowHidden(
-#                                                   r, 
-#                                                   False if (
-#                                                             bank_filter == 0 or self.blofeld_model.index(r, 0).data(BankRole).toPyObject() == bank_filter-1
-#                                                             ) and (
-#                                                             cat_filter == 0 or self.blofeld_model.index(r, 4).data(CatRole).toPyObject() == cat_filter-1
-#                                                             ) else True
-#                                                   )
-
     def cat_count_update(self):
         cat_len = [0 for cat_id in categories]
         current_bank = self.bank_filter_combo.currentIndex()
@@ -691,62 +756,53 @@ class Librarian(QtGui.QMainWindow):
                                                ))
 
 
-
-    def globals_dump(self, data):
-        globals = self.main.globals
-        globals.autoEdit_chk.setEnabled(data[35])
-        globals.contrast_spin.setValue(data[39])
-        globals.cat_combo.setCurrentIndex(data[56])
-        globals.show()
-
-    def sound_dump(self, sound_event):
-        sound = Sound(sound_event, SRC_BLOFELD)
-        if sound.bank > 25:
-            if None in self.blofeld_current:
-                #you'll ask what to do with incoming sysex, we don't know where it goes
-                print 'no current sound selected'
-                return
-            else:
-                sound._bank, sound._prog = self.blofeld_current
-        bank, prog = sound.bank, sound.prog
-        self.blofeld_library.addSound(sound)
-
-        if not self.dump_active:
-            self.cat_count_update()
-            self.blofeld_sounds_table.resizeColumnToContents(2)
-            self.blofeld_sounds_table.resizeColumnToContents(5)
-            return
-        dump_all = True if self.bank_dump_combo.currentIndex()==0 else False
-        if prog >= 127:
-            if dump_all:
-                bank += 1
-                if bank >= 8:
-                    self.dump_active = False
-                    self.dump_win.done(1)
-                    self.cat_count_update()
-                    self.blofeld_sounds_table.resizeColumnToContents(2)
-                    return
-                prog = -1
-            else:
-                self.dump_active = False
-                self.dump_win.accept()
-                return
-        self.dump_win.bank_lbl.setText('{}{}'.format(uppercase[bank], ' {}/8'.format(bank+1) if dump_all else ''))
-        self.dump_win.sound_lbl.setText('{:03}/{}'.format(prog+1+(128*bank if dump_all else 0), 1024 if dump_all else 128))
-        dump_time = None
-        if dump_all:
-            if not (bank == 0 and prog < 10):
-                dump_time = self.dump_elapsed.elapsed()/float(prog+1+128*bank)*(1024-prog-128*bank)/1000
-        else:
-            if prog > 5:
-                dump_time = self.dump_elapsed.elapsed()/float(prog+1)*(128-prog)/1000
-        if dump_time is not None:
-            self.dump_win.time.setText('{}:{:02}'.format(*divmod(int(dump_time)+1, 60)))
-        self.dump_win.progress.setValue(prog+1+(128*bank if dump_all else 0))
-        self.dump_timer.timeout.disconnect()
-        self.dump_timer.timeout.connect(lambda: self.sound_request(bank, prog+1))
-        self.dump_timer.start()
-#        QtCore.QTimer.singleShot(200, lambda: self.sound_request(0, prog+1))
+#    def sound_dump(self, sound):
+#        if sound.bank > 25:
+#            if None in self.blofeld_current:
+#                #you'll ask what to do with incoming sysex, we don't know where it goes
+#                print 'no current sound selected'
+#                return
+#            else:
+#                sound._bank, sound._prog = self.blofeld_current
+#        bank, prog = sound.bank, sound.prog
+#        self.blofeld_library.addSound(sound)
+#
+#        if not self.dump_active:
+#            self.cat_count_update()
+#            self.blofeld_sounds_table.resizeColumnToContents(2)
+#            self.blofeld_sounds_table.resizeColumnToContents(5)
+#            return
+#        dump_all = True if self.bank_dump_combo.currentIndex()==0 else False
+#        if prog >= 127:
+#            if dump_all:
+#                bank += 1
+#                if bank >= 8:
+#                    self.dump_active = False
+#                    self.dump_win.done(1)
+#                    self.cat_count_update()
+#                    self.blofeld_sounds_table.resizeColumnToContents(2)
+#                    self.blofeld_sounds_table.resizeColumnToContents(5)
+#                    return
+#                prog = -1
+#            else:
+#                self.dump_active = False
+#                self.dump_win.accept()
+#                return
+#        self.dump_win.bank_lbl.setText('{}{}'.format(uppercase[bank], ' {}/8'.format(bank+1) if dump_all else ''))
+#        self.dump_win.sound_lbl.setText('{:03}/{}'.format(prog+1+(128*bank if dump_all else 0), 1024 if dump_all else 128))
+#        dump_time = None
+#        if dump_all:
+#            if not (bank == 0 and prog < 10):
+#                dump_time = self.dump_elapsed.elapsed()/float(prog+1+128*bank)*(1024-prog-128*bank)/1000
+#        else:
+#            if prog > 5:
+#                dump_time = self.dump_elapsed.elapsed()/float(prog+1)*(128-prog)/1000
+#        if dump_time is not None:
+#            self.dump_win.time.setText('{}:{:02}'.format(*divmod(int(dump_time)+1, 60)))
+#        self.dump_win.progress.setValue(prog+1+(128*bank if dump_all else 0))
+#        self.dump_timer.timeout.disconnect()
+#        self.dump_timer.timeout.connect(lambda: self.sound_request.emit(bank, prog+1))
+#        self.dump_timer.start()
 
 
 
