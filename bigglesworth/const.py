@@ -57,11 +57,13 @@ class AdvParam(object):
         self.indexes = {}
         self.addr = {}
         self.order = []
-        self.forbidden = 0
+#        self.forbidden = 0
+        self.allowed = 0
         for i, l in enumerate(reversed(fmt)):
             if l == '0':
-                self.forbidden |= 1<<i
+#                self.forbidden |= 1<<i
                 continue
+            self.allowed |= 1<<i
             if l in self.indexes:
                 self.indexes[l] |= (self.indexes[l]<<1)
             else:
@@ -78,8 +80,9 @@ class AdvParam(object):
         self.order.reverse()
 
     def get_indexes(self, data):
-        if data&self.forbidden:
-            raise IndexError
+#        if data&self.forbidden:
+#            raise IndexError
+        data = data & self.allowed
         res = []
         for k in self.order:
             res.append((data&self.indexes[k])>>self.addr[k])
@@ -92,9 +95,9 @@ class AdvParam(object):
         return res
 
     def get(self, data):
-#        print 'brabba {}'.format(data)
-        if data&self.forbidden:
-            raise IndexError
+#        if data&self.forbidden:
+#            raise IndexError
+        data = data & self.allowed
         res = []
         for k in self.order:
             try:

@@ -1217,6 +1217,39 @@ class ArpStepWidget(QtGui.QGraphicsWidget):
         painter.setRenderHints(QtGui.QPainter.Antialiasing)
         painter.drawRect(self.rect)
 
+class ArpLengthWidget(BaseDisplayWidget):
+    def __init__(self, parent=None):
+        BaseDisplayWidget.__init__(self, parent)
+        self.height = 20
+        self.step = 16
+        self.brush = QtGui.QColor(30, 50, 40, 80)
+        self.reference_x = 60
+        self.reference_width = 40
+#        self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+
+    def setHeight(self, value):
+        self.height = value
+
+    def setReference(self, first, second):
+        width = second.x() - first.x()
+        self.setX(first.x() + self.step*width)
+        self.setY(first.y())
+        self.height = first.boundingRect().height()
+        self.reference_x = first.x()
+        self.reference_width = width
+
+    def setStep(self, step):
+        self.step = step + 1
+        self.setX(self.reference_x + self.step*self.reference_width)
+
+    def boundingRect(self):
+        return QtCore.QRectF(0, 0, 820, self.height)
+
+    def paint(self, painter, *args, **kwargs):
+        painter.setPen(QtCore.Qt.NoPen)
+        painter.setBrush(self.brush)
+        painter.drawRect(0, 0, self.boundingRect().width(), self.boundingRect().height())
+
 class StepLine(BaseDisplayWidget):
     def __init__(self, parent, short=False):
         BaseDisplayWidget.__init__(self, parent)
@@ -1247,6 +1280,7 @@ class FakeObject(QtCore.QObject):
         self.main.blockSignals(True)
         self.valueChanged.emit(value)
         self.main.blockSignals(False)
+
 
 class ArpEditor(QtGui.QGraphicsView):
     border_grad = QtGui.QConicalGradient(QtCore.QPointF(.5, .5), 45)
@@ -1310,6 +1344,9 @@ class ArpEditor(QtGui.QGraphicsView):
         self.length_list = []
         self.timing_list = []
         self.glide_list = []
+
+        self.length_widget = ArpLengthWidget()
+        self.scene.addItem(self.length_widget)
 
         panel = QtGui.QGraphicsWidget()
         self.panel = panel
@@ -1449,6 +1486,9 @@ class ArpEditor(QtGui.QGraphicsView):
         if not self.signalsBlocked():
             setattr(self.main, 'Arp_Pattern_Step_Glide_Accent_{}'.format(step+1), (glide, 'Glide'))
 
+    def setLength(self, value):
+        self.length_widget.setStep(value)
+
     def paintEvent(self, event):
         qp = QtGui.QPainter(self.viewport())
         qp.setRenderHints(QtGui.QPainter.Antialiasing)
@@ -1466,6 +1506,9 @@ class ArpEditor(QtGui.QGraphicsView):
 #        self.display_rect = self.border_rect.adjusted(2, 2, -2, -2)
         self.panel.setGeometry(QtCore.QRectF(0, 0, width-2, height-2))
         self.panel.layout().setGeometry(QtCore.QRectF(0, -10, width-2, height-2))
+
+        self.length_widget.setReference(self.layout.itemAt(1, 1), self.layout.itemAt(1, 2))
+
         self.arp_widget.setY(self.layout.itemAt(1, 1).y())
         self.scene.setSceneRect(self.boundaries())
         ratio = self.step_ratio()
@@ -2301,9 +2344,11 @@ class Editor(QtGui.QMainWindow):
         adv_widget.setLayout(adv_layout)
         adv_layout.addWidget(self.create_effect_1())
         adv_layout.addWidget(self.create_effect_2())
+
+        #We need a reference to the arp editor before creating its controls
+        self.arp_editor = ArpEditor(self)
         adv_layout.addWidget(self.create_arp())
 
-        self.arp_editor = ArpEditor(self)
         arp_widget = self.arp_editor
         adv_arp_layout.addWidget(arp_widget, 0, 0)
         arp_widget.setContentsMargins(0, 0, 0, 0)
@@ -2535,6 +2580,7 @@ class Editor(QtGui.QMainWindow):
         clock = BlofeldCombo(self, self.params.Arpeggiator_Clock, name='Clock', values=t_values)
         tempo_layout.addWidget(clock)
         length = BlofeldCombo(self, self.params.Arpeggiator_Ptn_Length, name='Length')
+        length.internalUpdate.connect(self.arp_editor.setLength)
         tempo_layout.addWidget(length)
         ptn_reset = BlofeldButton(self, self.params.Arpeggiator_Ptn_Reset, checkable=True, size=20, name='Reset')
         tempo_layout.addWidget(ptn_reset)
@@ -2814,37 +2860,37 @@ class Editor(QtGui.QMainWindow):
 
         return frame
 
-    def create_adv(self):
-        stack_layout = QtGui.QStackedLayout()
-        
-        main_widget = QtGui.QWidget()
-        main_widget.setContentsMargins(-3, -3, -3, -3)
-        main_layout = QtGui.QHBoxLayout()
-        main_widget.setLayout(main_layout)
-        stack_layout.addWidget(main_widget)
-        main_layout.addWidget(self.create_effect_1())
-        main_layout.addWidget(self.create_effect_2())
-        main_layout.addWidget(self.create_arp())
-
-        arp_widget = QtGui.QWidget()
-        arp_widget.setContentsMargins(-3, -3, -3, -3)
-        stack_layout.addWidget(arp_widget)
-        arp_widget.setLayout(self.create_arp_editor())
-
-#        stack_layout.setCurrentIndex(1)
-
-        return stack_layout
-
-    def create_arp_editor(self):
-        layout = QtGui.QGridLayout()
-        self.arp_editor = ArpEditor(self)
-        layout.addWidget(self.arp_editor, 0, 0, 1, 16)
-
-#        for c in range(16):
-#            combo = Combo(self, value_list=[str(v) for v in range(8)])
-#            layout.addWidget(combo, 1, c)
-#            combo.indexChanged.connect(lambda v, step=c: self.arp_editor.step_list[step].setLength(v))
-        return layout
+#    def create_adv(self):
+#        stack_layout = QtGui.QStackedLayout()
+#        
+#        main_widget = QtGui.QWidget()
+#        main_widget.setContentsMargins(-3, -3, -3, -3)
+#        main_layout = QtGui.QHBoxLayout()
+#        main_widget.setLayout(main_layout)
+#        stack_layout.addWidget(main_widget)
+#        main_layout.addWidget(self.create_effect_1())
+#        main_layout.addWidget(self.create_effect_2())
+#        main_layout.addWidget(self.create_arp())
+#
+#        arp_widget = QtGui.QWidget()
+#        arp_widget.setContentsMargins(-3, -3, -3, -3)
+#        stack_layout.addWidget(arp_widget)
+#        arp_widget.setLayout(self.create_arp_editor())
+#
+##        stack_layout.setCurrentIndex(1)
+#
+#        return stack_layout
+#
+#    def create_arp_editor(self):
+#        layout = QtGui.QGridLayout()
+#        self.arp_editor = ArpEditor(self)
+#        layout.addWidget(self.arp_editor, 0, 0, 1, 16)
+#
+##        for c in range(16):
+##            combo = Combo(self, value_list=[str(v) for v in range(8)])
+##            layout.addWidget(combo, 1, c)
+##            combo.indexChanged.connect(lambda v, step=c: self.arp_editor.step_list[step].setLength(v))
+#        return layout
 
     def create_mod_widgets(self):
         widget = QtGui.QWidget()
