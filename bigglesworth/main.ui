@@ -209,6 +209,9 @@
       <property name="editTriggers">
        <set>QAbstractItemView::NoEditTriggers</set>
       </property>
+      <property name="tabKeyNavigation">
+       <bool>false</bool>
+      </property>
       <property name="dragEnabled">
        <bool>true</bool>
       </property>
@@ -247,6 +250,8 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
+    <addaction name="saveAction"/>
+    <addaction name="separator"/>
     <addaction name="quitAction"/>
    </widget>
    <widget class="QMenu" name="menu_Windows">
@@ -257,8 +262,16 @@
     <addaction name="separator"/>
     <addaction name="settingsAction"/>
    </widget>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>&amp;?</string>
+    </property>
+    <addaction name="aboutAction"/>
+    <addaction name="aboutQtAction"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menu_Windows"/>
+   <addaction name="menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="settingsAction">
@@ -277,6 +290,24 @@
   <action name="editorAction">
    <property name="text">
     <string>Editor</string>
+   </property>
+  </action>
+  <action name="saveAction">
+   <property name="text">
+    <string>Save library</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="aboutAction">
+   <property name="text">
+    <string>About Mr. Bigglesworth...</string>
+   </property>
+  </action>
+  <action name="aboutQtAction">
+   <property name="text">
+    <string>About Qt</string>
    </property>
   </action>
  </widget>

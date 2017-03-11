@@ -10,6 +10,19 @@ from midiutils import SysExEvent
 from const import *
 from utils import load_ui, setBold
 
+class AboutDialog(QtGui.QDialog):
+    def __init__(self, parent):
+        QtGui.QDialog.__init__(self, parent)
+        load_ui(self, 'about.ui')
+        self.version_lbl.setText('Version: {}'.format(VERSION))
+        logo = QtGui.QIcon(local_path('bigglesworth_logo.png')).pixmap(QtCore.QSize(280, 32)).toImage()
+        logo_widget = QtGui.QLabel()
+        logo_widget.setPixmap(QtGui.QPixmap().fromImage(logo))
+        logo_widget.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.MinimumExpanding)
+        self.layout().addWidget(logo_widget, 0, 0, 1, 1, QtCore.Qt.AlignCenter)
+        self.setFixedSize(400, 300)
+
+
 class SoundDumpDialog(QtGui.QDialog):
     def __init__(self, main, parent):
         QtGui.QDialog.__init__(self, parent)
@@ -40,6 +53,9 @@ class SoundDumpDialog(QtGui.QDialog):
         if res == QtGui.QDialogButtonBox.Ignore:
             return False
         return self.editor_chk.isChecked(), (self.bank_combo.currentIndex(), self.prog_spin.value()-1) if self.store_chk.isChecked() else False
+
+    def resizeEvent(self, event):
+        self.setFixedSize(self.size())
 
 class MidiWidget(QtGui.QWidget):
     def __init__(self, main):
@@ -222,13 +238,23 @@ class MidiDialog(QtGui.QDialog):
         self.layout().addWidget(self.main.midiwidget)
         QtGui.QDialog.show(self)
 
+
+
 class SettingsDialog(QtGui.QDialog):
+    preset_texts = {
+                    '201200': 'Latest official version', 
+                    '200802': 'Same as January 2008, with slight modifications (mostly regarding Amp Volume)', 
+                    '200801': 'Original sound set', 
+                    'personal': '', 
+                    }
     def __init__(self, main, parent):
         QtGui.QDialog.__init__(self, parent)
         load_ui(self, 'settings.ui')
         self.main = main
         self.settings = main.settings
         self.setModal(True)
+
+        self.preset_group.buttonClicked.connect(self.set_preset_labels)
 
         self.previous = 0
         self.connections = {INPUT: None, OUTPUT: None}
@@ -244,6 +270,9 @@ class SettingsDialog(QtGui.QDialog):
         self.detect_timer.timeout.connect(self.no_response)
 
         self.no_response_msgbox = QtGui.QMessageBox(QtGui.QMessageBox.Warning, 'No response', 'We got no response from the Blofeld.\nPlease check MIDI connections or try to switch it off and on again.', QtGui.QMessageBox.Ok, self)
+
+    def set_preset_labels(self, btn):
+        self.preset_desc_lbl.setText(self.preset_texts[str(btn.objectName())[7:-6]])
 
     def detect(self):
         self.main.midi_lock.emit(True)
@@ -300,6 +329,8 @@ class SettingsDialog(QtGui.QDialog):
 
     def exec_(self):
         self.library_doubleclick_combo.setCurrentIndex(self.main.library_doubleclick)
+        preset_btn = getattr(self, 'preset_{}_radio'.format(self.settings.gGeneral.get_Source_Library('personal')))
+        preset_btn.setChecked(True)
 
         self.editor_pgm_send_combo.setCurrentIndex(self.main.editor_remember_states[PGMSEND])
         self.editor_midi_send_combo.setCurrentIndex(self.main.editor_remember_states[MIDISEND])
@@ -323,6 +354,8 @@ class SettingsDialog(QtGui.QDialog):
         if not res: return
 
         self.main.library_doubleclick = self.library_doubleclick_combo.currentIndex()
+#        if self.preset_group.checkedButton() != self.preset_personal_radio and not self.settings.gGeneral.get_Source_Library(False):
+        self.settings.gGeneral.set_Source_Library(str(self.preset_group.checkedButton().objectName())[7:-6])
 
         self.main.editor_remember = self.editor_remember_chk.isChecked()
         if self.editor_remember_chk.isChecked():
@@ -479,12 +512,18 @@ class Sound(QtCore.QObject):
             try:
                 index = Params.index_from_attr(attr)
                 self._data[index] = value
+                if index in range(363, 379):
+                    self.name_reload()
                 self._state = self._state|EDITED
                 self.edited.emit(self._state)
             except Exception as Err:
-                print Err
+#                print Err
+                super(QtCore.QObject, self).__setattr__(attr, value)
         else:
             super(QtCore.QObject, self).__setattr__(attr, value)
+
+    def __repr__(self):
+        return self.name
 
     @property
     def state(self):
@@ -536,7 +575,13 @@ class Sound(QtCore.QObject):
         self.data[363:379] = [ord(l) for l in name]
         self.nameChanged.emit(name)
         self.state = EDITED
-        print 'changed name'
+#        print 'changed name'
+
+    def name_reload(self):
+        new = ''.join([str(unichr(l)) for l in self.data[363:379]])
+#        if new == self._name: return
+        self._name = new
+        self.nameChanged.emit(new)
 
     @property
     def cat(self):
@@ -610,7 +655,7 @@ class DumpWin(QtGui.QDialog):
         QtGui.QDialog.__init__(self, parent)
         self.setModal(True)
         self.setMinimumWidth(150)
-        self.setWindowTitle('Sound dump request')
+        self.setWindowTitle('Sound dump')
         grid = QtGui.QGridLayout(self)
         grid.addWidget(QtGui.QLabel('Dumping sounds...'), 0, 0, 1, 2)
         grid.addWidget(QtGui.QLabel('Bank: '), 1, 0, 1, 1)
@@ -626,26 +671,28 @@ class DumpWin(QtGui.QDialog):
         self.progress.setMaximum(128)
         grid.addWidget(self.progress, 4, 0, 1, 2)
 
-        button_box = QtGui.QHBoxLayout()
-        grid.addLayout(button_box, 5, 0, 1, 2)
+        self.button_box = QtGui.QWidget(self)
+        button_box_layout = QtGui.QHBoxLayout()
+        self.button_box.setLayout(button_box_layout)
+        grid.addWidget(self.button_box, 5, 0, 1, 2)
 
         self.toggle_btn = QtGui.QPushButton('Pause', self)
         self.pause_icon = PauseIcon()
         self.resume_icon = ResumeIcon()
         self.toggle_btn.setIcon(self.pause_icon)
         self.toggle_btn.clicked.connect(self.toggle)
-        button_box.addWidget(self.toggle_btn)
+        button_box_layout.addWidget(self.toggle_btn)
 
         stop = QtGui.QPushButton('Stop', self)
         stop.setIcon(self.style().standardIcon(QtGui.QStyle.SP_DialogCloseButton))
         stop.clicked.connect(self.accept)
-        button_box.addWidget(stop)
+        button_box_layout.addWidget(stop)
 
         cancel = QtGui.QPushButton('Cancel', self)
         cancel.setIcon(self.style().standardIcon(QtGui.QStyle.SP_DialogCancelButton))
         cancel.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
         cancel.clicked.connect(self.reject)
-        button_box.addWidget(cancel)
+        button_box_layout.addWidget(cancel)
 
         self.paused = False
 
@@ -662,6 +709,7 @@ class DumpWin(QtGui.QDialog):
             self.toggle_btn.setText('Resume')
 
     def reject(self):
+        if not self.button_box.isEnabled(): return
         self.pause.emit()
         res = QtGui.QMessageBox.question(self, 'Cancel dumping?', 'Do you want to cancel the current dumping process?', QtGui.QMessageBox.Yes|QtGui.QMessageBox.No)
         if res == QtGui.QMessageBox.Yes:
@@ -675,6 +723,14 @@ class DumpWin(QtGui.QDialog):
         self.time.setText('?')
         self.progress.setValue(0)
         QtGui.QDialog.show(self)
+
+    def showDisabled(self):
+        self.button_box.setEnabled(False)
+        self.show()
+
+    def done(self, *args):
+        QtGui.QDialog.done(self, *args)
+        self.button_box.setEnabled(True)
 
 class SortedLibrary(object):
     def __init__(self, library):
@@ -713,7 +769,7 @@ class Library(QtCore.QObject):
 
     def clear(self):
         self.data = [[None for p in range(128)] for b in range(self.banks)]
-        self.sound_index = {}
+#        self.sound_index = {}
         self.cat_count = [{c:0 for c in categories} for b in range(self.banks)]
 
     def sound(self, bank, prog):
@@ -723,7 +779,7 @@ class Library(QtCore.QObject):
         bank = sound.bank
         prog = sound.prog
         self.data[bank][prog] = sound
-        self.sound_index[sound] = bank, prog
+#        self.sound_index[sound] = bank, prog
 
         index_item = QtGui.QStandardItem('{}{:03}'.format(uppercase[bank], prog+1))
         index_item.setData(bank*128+prog, IndexRole)
@@ -738,7 +794,7 @@ class Library(QtCore.QObject):
         prog_item.setData(prog, ProgRole)
         prog_item.setEditable(False)
         name_item = QtGui.QStandardItem(sound.name)
-        name_item.setData(sound.Osc_1_Shape, QtCore.Qt.ToolTipRole)
+#        name_item.setData(sound.Osc_1_Shape, QtCore.Qt.ToolTipRole)
 #        name_item.setData(sound.name, QtCore.Qt.ToolTipRole)
         cat_item = QtGui.QStandardItem(categories[sound.cat])
         cat_item.setData(sound.cat, UserRole)
@@ -752,6 +808,7 @@ class Library(QtCore.QObject):
 #        sound.bankChanged.connect(lambda bank, item=bank_item: item.setData(bank, BankRole))
 #        sound.progChanged.connect(lambda prog, item=prog_item: item.setData(prog, ProgRole))
         sound.indexChanged.connect(lambda index, item=index_item: item.setData(index, IndexRole))
+        sound.nameChanged.connect(lambda name, item=name_item: item.setText(name))
         sound.catChanged.connect(lambda cat, bank=bank, item=cat_item: self.soundSetCategory(item, bank, cat))
         sound.edited.connect(lambda state, item=status_item: item.setData(state, EditedRole))
 
@@ -783,6 +840,31 @@ class Library(QtCore.QObject):
         self.banks = len(self.data)
         self.model.sort(2)
         self.model.sort(1)
+        self.sorted.reload()
+
+    def swap(self, source, target):
+        first = min(source)
+        last = max(source)
+        if first/128 == last/128 == target/128:
+            bank, first = divmod(first, 128)
+            last = last%128
+            target = target%128
+            clip = self.data[bank][first:last+1]
+            del self.data[bank][first:last+1]
+            if target > first:
+                target = target - len(clip) + 1
+            self.data[bank][target:target] = clip
+        else:
+            full = []
+            [full.extend(l) for l in self.data]
+            clip = full[first:last+1]
+            del full[first:last+1]
+            if target > first:
+                target = target - len(clip) + 15
+            full[target:target] = clip
+            for b in range(len(self.data)):
+                delta = b*128
+                self.data[b] = full[delta:delta+128]
         self.sorted.reload()
 
     def create_menu(self):
@@ -855,6 +937,7 @@ class LibraryModel(QtGui.QStandardItemModel):
 class LibraryProxy(QtGui.QSortFilterProxyModel):
     def __init__(self, parent=None):
         QtGui.QSortFilterProxyModel.__init__(self, parent)
+        self.setDynamicSortFilter(True)
         self.filter_columns = {}
         self.text_filter = None
 
@@ -889,13 +972,36 @@ class LibraryProxy(QtGui.QSortFilterProxyModel):
 
 class LoadingThread(QtCore.QObject):
     loaded = QtCore.pyqtSignal()
-    def __init__(self, parent, library, limit=None):
+    def __init__(self, parent, library, source, limit=None):
         self.limit = limit
         QtCore.QObject.__init__(self)
         self.library = library
+        source = str(source)
+        if source == 'personal':
+            #should do pass
+#            self.source = local_path('presets/blofeld_fact_200802.mid')
+            self.source = source
+        elif source in ['200801', '200802', '201200']:
+            self.source = local_path('presets/blofeld_fact_{}.mid'.format(source))
+        else:
+            self.source = source
+
 
     def run(self):
-        pattern = midifile.read_midifile(local_path('presets/blofeld_fact_080103/blofeld_fact_080103.mid'))
+        if self.source == 'personal':
+            try:
+                sound_list = self.load_library()
+            except:
+#                print 'personal library not found, reverting to default (factory 200802)'
+                sound_list = self.load_midi(local_path('presets/blofeld_fact_200802.mid'))
+        else:
+            sound_list = self.load_midi(self.source)
+        self.library.addSoundBulk(sound_list)
+        self.loaded.emit()
+
+    def load_midi(self, path):
+#        print 'opening "{}"'.format(path)
+        pattern = midifile.read_midifile(path)
         track = pattern[0]
         i = 0
         sound_list = []
@@ -904,8 +1010,16 @@ class LoadingThread(QtCore.QObject):
                 sound_list.append(Sound(event.data[6:391]))
                 i += 1
                 if i == self.limit: break
-        self.library.addSoundBulk(sound_list)
-        self.loaded.emit()
+        print 'done: {}'.format(len(sound_list))
+        return sound_list
+
+    def load_library(self):
+        sound_list = []
+        with open(local_path('presets/personal_library'), 'rb') as of:
+            for data in pickle.load(of):
+                sound_list.append(Sound(list(data)))
+        return sound_list
+
 
 class LoadingWindow(QtGui.QDialog):
     shown = QtCore.pyqtSignal()

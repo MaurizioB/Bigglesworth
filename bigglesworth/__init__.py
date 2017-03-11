@@ -2,6 +2,7 @@
 # *-* coding: utf-8 *-*
 
 import sys
+import pickle
 from string import uppercase
 from PyQt4 import QtCore, QtGui
 
@@ -59,7 +60,7 @@ class BigglesworthObject(QtCore.QObject):
             limit = int(argv[1])
         else:
             limit = None
-        self.loader = LoadingThread(self, self.blofeld_library, limit)
+        self.loader = LoadingThread(self, self.blofeld_library, self.source_library, limit=limit)
         self.loader_thread = QtCore.QThread()
         self.loader.moveToThread(self.loader_thread)
         self.loader_thread.started.connect(self.loader.run)
@@ -70,11 +71,16 @@ class BigglesworthObject(QtCore.QObject):
         #LIBRARY
         QtGui.QIcon.setThemeName(QtGui.QApplication.style().objectName())
         self.librarian = Librarian(self)
+        self.librarian.dump_send.connect(self.dump_send)
+        self.librarian.dump_bulk_send.connect(self.dump_bulk_send)
         self.quitAction = self.librarian.quitAction
+        self.saveAction = self.librarian.saveAction
+        self.saveAction.triggered.connect(self.save_library)
         self.settingsAction = self.librarian.settingsAction
         self.settingsAction.setIcon(QtGui.QIcon(QtGui.QIcon.fromTheme('preferences-other')))
         self.quitAction.setIcon(QtGui.QIcon.fromTheme('application-exit'))
         self.quitAction.triggered.connect(self.app.quit)
+        self.librarian.aboutQtAction.triggered.connect(lambda: QtGui.QMessageBox.aboutQt(self.librarian, 'About Qt'))
         self.device_event.connect(lambda event: self.device_response(event, self.librarian))
         self.loader.loaded.connect(self.librarian.create_proxy)
 #        self.loader.loaded.connect(self.librarian.create_proxy)
@@ -87,9 +93,16 @@ class BigglesworthObject(QtCore.QObject):
         self.librarian.midi_event.connect(self.output_event)
         self.librarian.program_change_request.connect(self.program_change_request)
 
+        self.about_win = AboutDialog(self.librarian)
+        self.aboutAction = self.librarian.aboutAction
+        self.aboutAction.triggered.connect(self.about_win.show)
 
         #DUMPING
-#        self.dump_detect_count = 0
+        self.dump_bulk = False
+        self.dump_bulk_count = 0
+        self.dump_bulk_timer = QtCore.QTimer()
+        self.dump_bulk_timer.setInterval(500)
+        self.dump_bulk_timer.setSingleShot(True)
 #        self.dump_detect_dialog = QtGui.QMessageBox(QtGui.QMessageBox.Information, 'Dump receiving', 'Receiving dump from Blofeld, please wait', parent=self.librarian)
 #        self.dump_detect_dialog.setStandardButtons(QtGui.QMessageBox.NoButton)
 
@@ -103,14 +116,28 @@ class BigglesworthObject(QtCore.QObject):
         self.dump_temp = []
         self.dump_elapsed = QtCore.QElapsedTimer()
         self.dump_win = DumpWin(self.librarian)
+        self.dump_bulk_timer.timeout.connect(self.dump_win.accept)
+        self.dump_bulk_timer.timeout.connect(lambda: self.blofeld_library.addSoundBulk(self.dump_temp))
+        self.dump_bulk_timer.timeout.connect(lambda: setattr(self, 'dump_bulk', False))
+        self.dump_bulk_timer.timeout.connect(lambda: setattr(self, 'dump_bulk_count', 0))
         self.dump_win.resume.connect(lambda: setattr(self, 'dump_pause', False))
         self.dump_win.resume.connect(self.dump_timer.start)
         self.dump_win.pause.connect(self.dump_timer.stop)
         self.dump_win.pause.connect(lambda: setattr(self, 'dump_pause', True))
         self.dump_win.accepted.connect(lambda: self.blofeld_library.addSoundBulk(self.dump_temp))
+        self.dump_win.accepted.connect(lambda: setattr(self, 'dump_active', False))
         self.dump_win.rejected.connect(lambda: setattr(self, 'dump_active', False))
         self.dump_win.rejected.connect(self.dump_timer.stop)
 
+        self.dump_send_win = DumpWin(self.librarian)
+        self.dump_send_timer = QtCore.QTimer()
+        self.dump_send_timer.setInterval(200)
+        self.dump_send_win.resume.connect(self.dump_send_timer.start)
+        self.dump_send_win.pause.connect(self.dump_send_timer.stop)
+        self.dump_send_win.accepted.connect(self.dump_send_timer.stop)
+        self.dump_send_win.accepted.connect(self.dump_send_timer.timeout.disconnect)
+        self.dump_send_win.rejected.connect(self.dump_send_timer.stop)
+        self.dump_send_win.rejected.connect(self.dump_send_timer.timeout.disconnect)
 
         #EDITOR
         self.editor = Editor(self)
@@ -122,6 +149,8 @@ class BigglesworthObject(QtCore.QObject):
         self.editor_dump_timer.timeout.connect(lambda: setattr(self, 'editor_dump_state', False))
         self.editor.dump_request.connect(self.dump_request)
         self.editor.dump_request.connect(lambda data: [setattr(self, 'editor_dump_state', True), self.editor_dump_timer.start()])
+
+        self.editor.dump_send.connect(self.dump_send)
 
         self.editor.pgm_receive_btn.blockSignals(True)
         self.editor.pgm_receive_btn.setChecked(self.editor_remember_states[PGMRECEIVE])
@@ -139,6 +168,7 @@ class BigglesworthObject(QtCore.QObject):
         self.editor.midi_send_btn.setChecked(midi_send)
         self.editor.send = midi_send
         self.editor.midi_send_btn.blockSignals(False)
+        self.editor.autosave_btn.setChecked(self.editor_autosave&1)
 
         self.librarian.activate_editor.connect(self.activate_editor)
         self.librarian.editorAction.triggered.connect(lambda: [self.editor.show(), self.editor.activateWindow()])
@@ -178,6 +208,14 @@ class BigglesworthObject(QtCore.QObject):
     def show_settings(self):
         self.settings_dialog.exec_()
 
+    def save_library(self):
+        data = []
+        for bank in self.blofeld_library.data:
+            for sound in bank:
+                data.append((sound.bank, sound.prog) + tuple(sound.data))
+        with open(local_path('presets/personal_library'), 'wb') as of:
+            pickle.dump(tuple(data), of)
+
     @property
     def blofeld_id(self):
         try:
@@ -190,6 +228,10 @@ class BigglesworthObject(QtCore.QObject):
     def blofeld_id(self, value):
         self.settings.gMIDI.set_Blofeld_ID(value)
         self._blofeld_id = value
+
+    @property
+    def source_library(self):
+        return self.settings.gGeneral.get_Source_Library('personal')
 
     @property
     def library_doubleclick(self):
@@ -237,6 +279,19 @@ class BigglesworthObject(QtCore.QObject):
     def remember_connections(self, value):
         self.settings.gMIDI.set_Remember_connections(value)
         self._remember_connections = value
+
+    @property
+    def editor_autosave(self):
+        try:
+            return self._editor_autosave
+        except:
+            self._editor_autosave = self.settings.gEditor.get_Autosave(3, True)
+            return self._editor_autosave
+
+    @editor_autosave.setter
+    def editor_autosave(self, value):
+        self.settings.gEditor.set_Autosave(value)
+        self._editor_autosave = value
 
     @property
     def editor_remember(self):
@@ -423,9 +478,39 @@ class BigglesworthObject(QtCore.QObject):
                     self.activate_editor(library)
             return
         bank, prog = sound.bank, sound.prog
-#        self.blofeld_library.addSound(sound)
 
+        if self.dump_bulk:
+            self.dump_temp.append(sound)
+            self.dump_bulk_count += 1
+            dump_all = self.dump_bulk_count/128
+            self.dump_bulk_timer.stop()
+            self.dump_bulk_timer.start()
+            self.dump_win.bank_lbl.setText('{}{}'.format(uppercase[bank], ' {}/8'.format(bank+1) if dump_all else ''))
+            self.dump_win.sound_lbl.setText('{:03}/{}'.format(prog+1+(128*bank if dump_all else 0), 1024 if dump_all else 128))
+            dump_time = None
+            if dump_all:
+                self.dump_win.progress.setMaximum(1024)
+                self.dump_win.progress.setValue(prog+1+(128*bank))
+                if not (bank == 0 and prog < 10):
+                    dump_time = self.dump_elapsed.elapsed()/float(prog+1+128*bank)*(1024-prog-128*bank)/1000
+            else:
+                self.dump_win.progress.setValue(prog+1)
+                if prog > 5:
+                    dump_time = self.dump_elapsed.elapsed()/float(prog+1)*(128-prog)/1000
+            if dump_time is not None:
+                self.dump_win.time.setText('{}:{:02}'.format(*divmod(int(dump_time)+1, 60)))
+            return
         if not self.dump_active:
+            if not self.dump_bulk_timer.isActive():
+                self.dump_bulk_timer.start()
+            else:
+                self.dump_bulk = True
+                self.dump_bulk_count += 1
+                self.dump_temp = []
+                self.dump_bulk_timer.stop()
+                self.dump_bulk_timer.start()
+                self.dump_elapsed.start()
+                self.dump_win.showDisabled()
             self.blofeld_library.addSound(sound)
             if self.editor_dump_state == True and (sound.bank, sound.prog) == (self.editor.sound.bank, self.editor.sound.prog):
                 self.editor.setSoundDump(sound)
@@ -492,6 +577,50 @@ class BigglesworthObject(QtCore.QObject):
             self.dump_win.progress.setMaximum(128)
         self.sound_request(bank, 0)
 
+    def dump_send(self, sound, bank=None, prog=None):
+        data = sound.data
+        if bank is None:
+            bank = sound.bank
+            prog = sound.prog
+        self.output_event(SysExEvent(1, [INIT, IDW, IDE, self.blofeld_id, SNDD, bank, prog] + data + [CHK, END]))
+
+    
+    def dump_bulk_send(self, first, last):
+        def consume():
+            if not dump_bulk_list:
+                self.dump_send_win.accept()
+                return
+            sound = dump_bulk_list.pop(0)
+            self.dump_send(sound)
+            current = tot_sounds-len(dump_bulk_list)
+            self.dump_send_win.bank_lbl.setText('{} {}/{}'.format(uppercase[sound.bank], tot_banks-last[0]+sound.bank, tot_banks))
+            self.dump_send_win.sound_lbl.setText('{:03} {}/{}'.format(sound.prog+1, current, tot_sounds))
+            self.dump_send_win.progress.setValue(current)
+            dump_time = None
+            if (tot_sounds > 100 and current > 10) or (tot_sounds <= 100 and current > 5):
+                dump_time = self.dump_elapsed.elapsed()/float(current)*(len(dump_bulk_list))/1000
+            if dump_time is not None:
+                self.dump_send_win.time.setText('{}:{:02}'.format(*divmod(int(dump_time)+1, 60)))
+        bank, prog = first
+        tot_banks = last[0]-bank+1
+        _last = (last[0], last[1]+1) if last[1]+1 <= 127 else (last[0]+1, 0)
+        dump_bulk_list = []
+        while (bank, prog) != _last:
+#            print 'send {}:{:03} "{}"'.format(bank, prog, self.blofeld_library[bank, prog])
+            dump_bulk_list.append(self.blofeld_library[bank, prog])
+            prog += 1
+            if prog > 127:
+                bank += 1
+                if bank > self.blofeld_library.banks: break
+                prog = 0
+        tot_sounds = len(dump_bulk_list)
+        self.dump_send_win.progress.setMaximum(tot_sounds)
+        self.dump_send_win.show()
+        self.dump_send_timer.timeout.connect(consume)
+        self.dump_send(dump_bulk_list.pop(0))
+        self.dump_send_timer.start()
+        self.dump_elapsed.start()
+
     def sound_request(self, bank, sound):
         self.output_event(SysExEvent(1, [INIT, IDW, IDE, self.blofeld_id, SNDR, bank, sound, CHK, END]))
 
@@ -525,6 +654,8 @@ class Librarian(QtGui.QMainWindow):
     shown = QtCore.pyqtSignal()
     program_change_request = QtCore.pyqtSignal(int, int)
     dump_request = QtCore.pyqtSignal(object)
+    dump_bulk_send = QtCore.pyqtSignal(object, object)
+    dump_send = QtCore.pyqtSignal(object)
     midi_event = QtCore.pyqtSignal(object)
 #    dump_waiter = QtCore.pyqtSignal()
     activate_editor = QtCore.pyqtSignal(int, int)
@@ -561,6 +692,7 @@ class Librarian(QtGui.QMainWindow):
         self.search_clear_btn.clicked.connect(lambda _: self.search_edit.setText(''))
         self.search_filter_chk.toggled.connect(self.search_filter_set)
         self.blofeld_sounds_table.doubleClicked.connect(self.sound_doubleclick)
+        self.blofeld_sounds_table.keyPressEvent = self.table_key_press
         self.blofeld_sounds_table.mouseReleaseEvent = self.right_click
         self.blofeld_sounds_table.dropEvent = self.sound_drop_event
 #        self.blofeld_model.dataChanged.connect(self.sound_update)
@@ -619,8 +751,17 @@ class Librarian(QtGui.QMainWindow):
             self.program_change_request.emit(sound.bank, sound.prog)
             self.activate_editor.emit(sound.bank, sound.prog)
 
+    def table_key_press(self, event):
+        if event.key() == QtCore.Qt.Key_Home:
+            self.blofeld_sounds_table.selectRow(0)
+        elif event.key() == QtCore.Qt.Key_End:
+            self.blofeld_sounds_table.selectRow(self.blofeld_model_proxy.rowCount()-1)
+        else:
+            QtGui.QTableView.keyPressEvent(self.blofeld_sounds_table, event)
+
     def right_click(self, event):
         if event.button() != QtCore.Qt.RightButton: return
+        rows = set([self.blofeld_model_proxy.mapToSource(index).row() for index in self.blofeld_sounds_table.selectedIndexes()])
         index = self.blofeld_sounds_table.indexAt(event.pos())
         sound = self.blofeld_model.item(self.blofeld_model_proxy.mapToSource(index).row(), SOUND).data(SoundRole).toPyObject()
         menu = QtGui.QMenu()
@@ -629,7 +770,14 @@ class Librarian(QtGui.QMainWindow):
         header.setSeparator(True)
         menu.addAction(header)
         edit_item = QtGui.QAction('Edit...', menu)
-        menu.addAction(edit_item)
+        sep = QtGui.QAction(menu)
+        sep.setSeparator(True)
+        dump_request_item = QtGui.QAction('Request dump', menu)
+        dump_send_item = QtGui.QAction('Dump to Blofeld', menu)
+        menu.addActions([edit_item, sep, dump_request_item, dump_send_item])
+        if len(rows) > 1:
+            dump_bulk_send_item = QtGui.QAction('Dump selected sounds', menu)
+            menu.addAction(dump_bulk_send_item)
         menu.show()
         fm = QtGui.QFontMetrics(edit_item.font())
         minsize = 0
@@ -641,28 +789,40 @@ class Librarian(QtGui.QMainWindow):
         frame_delta = menu.width()-minsize
         menu.setMinimumWidth(frame_delta+QtGui.QFontMetrics(header.font()).width(header.text()))
         res = menu.exec_(event.globalPos())
-        if res == edit_item:
+        if not res: return
+        elif res == edit_item:
             self.activate_editor.emit(sound.bank, sound.prog)
+        elif res == dump_request_item:
+            self.dump_request.emit((sound.bank, sound.prog))
+        elif res == dump_send_item:
+            res = QtGui.QMessageBox.question(self, 'Dump selected sound',
+                                             'You are going to send a sound dump to the Blofeld at location "{}{:03}".\nThis action cannot be undone. Do you want to proceed?'.format(uppercase[sound.bank], sound.prog+1), 
+                                             QtGui.QMessageBox.Ok|QtGui.QMessageBox.Cancel
+                                             )
+            if not res == QtGui.QMessageBox.Ok: return
+            self.dump_send.emit(sound)
+        elif rows > 1 and res == dump_bulk_send_item:
+            first = self.blofeld_model.item(min(rows), SOUND).data(SoundRole).toPyObject()
+            last = self.blofeld_model.item(max(rows), SOUND).data(SoundRole).toPyObject()
+            res = QtGui.QMessageBox.question(self, 'Dump selected sounds',
+                                             'You are going to send a sound dump to the Blofeld for locations "{}{:03}" through "{}{:03}".\nThis action cannot be undone. Do you want to proceed?'.format(uppercase[first.bank], first.prog+1, uppercase[last.bank], last.prog+1), 
+                                             QtGui.QMessageBox.Ok|QtGui.QMessageBox.Cancel
+                                             )
+            if not res == QtGui.QMessageBox.Ok: return
+            self.dump_bulk_send.emit((first.bank, first.prog), (last.bank, last.prog))
 
     def sound_drop_event(self, event):
         def rename(sound_range):
-#            first, last = sorted(sound_range)
             first = min(sound_range)
             last = max(sound_range)
-            print first, last
+#            print first, last
             for row in range(first, last+1):
                 bank, prog = divmod(row, 128)
-                sound = self.blofeld_library[bank, prog]
-                sound.prog += 1
-#                sound.bank, sound.prog = divmod(row+1, 128)
-                self.blofeld_model.item(row, BANK).setText(uppercase[sound.bank])
-                self.blofeld_model.item(row, PROG).setText('{:03}'.format(sound.prog+1))
-#                self.blofeld_model.item(row, 0).setText(str(row+1))
-#                sound = self.blofeld_model.item(row, SOUND).data(SoundRole).toPyObject()
-#                sound.prog, sound.bank = divmod(row, 128)
-                
-#                bank = index_item.data(SoundRole).toPyObject()/128
-#                self.blofeld_model.item(row, 0).setData(bank*128+row, SoundRole)
+                self.blofeld_model.item(row, BANK).setText(uppercase[bank])
+                self.blofeld_model.item(row, PROG).setText('{:03}'.format(prog+1))
+                sound = self.blofeld_model.item(row, SOUND).data(SoundRole).toPyObject()
+                sound.bank = bank
+                sound.prog = prog
         drop_pos = self.blofeld_sounds_table.dropIndicatorPosition()
         rows = set([self.blofeld_model_proxy.mapToSource(index).row() for index in self.blofeld_sounds_table.selectedIndexes()])
         current_bank = self.bank_filter_combo.currentIndex() - 1
@@ -678,6 +838,7 @@ class Librarian(QtGui.QMainWindow):
             items = self.blofeld_model.takeRow(source)
             self.blofeld_model.insertRow(target, items)
             rename((source, target))
+            self.blofeld_library.swap((source, ), target)
         else:
             if drop_pos == QtGui.QTableView.OnViewport:
                 if current_bank < 0:
@@ -691,9 +852,10 @@ class Librarian(QtGui.QMainWindow):
             first = min(rows)
             before = True if target < first else False
             for d in range(max(rows)+1-first):
-                items = self.blofeld_model.takeRow(first)
+                items = self.blofeld_model.takeRow(first if not before else first+d)
                 self.blofeld_model.insertRow(target if not before else target+d, items)
             rename((target, )+tuple(rows))
+            self.blofeld_library.swap(rows, target)
 
 #        self.blofeld_model.sort(2)
 #        self.blofeld_model.sort(1)
@@ -750,56 +912,6 @@ class Librarian(QtGui.QMainWindow):
                                                self.cat_filter_combo.model().item(cat_id).data(QtCore.Qt.UserRole).toPyObject(),
                                                cat_len[cat_id-1]
                                                ))
-
-
-#    def sound_dump(self, sound):
-#        if sound.bank > 25:
-#            if None in self.blofeld_current:
-#                #you'll ask what to do with incoming sysex, we don't know where it goes
-#                print 'no current sound selected'
-#                return
-#            else:
-#                sound._bank, sound._prog = self.blofeld_current
-#        bank, prog = sound.bank, sound.prog
-#        self.blofeld_library.addSound(sound)
-#
-#        if not self.dump_active:
-#            self.cat_count_update()
-#            self.blofeld_sounds_table.resizeColumnToContents(2)
-#            self.blofeld_sounds_table.resizeColumnToContents(5)
-#            return
-#        dump_all = True if self.bank_dump_combo.currentIndex()==0 else False
-#        if prog >= 127:
-#            if dump_all:
-#                bank += 1
-#                if bank >= 8:
-#                    self.dump_active = False
-#                    self.dump_win.done(1)
-#                    self.cat_count_update()
-#                    self.blofeld_sounds_table.resizeColumnToContents(2)
-#                    self.blofeld_sounds_table.resizeColumnToContents(5)
-#                    return
-#                prog = -1
-#            else:
-#                self.dump_active = False
-#                self.dump_win.accept()
-#                return
-#        self.dump_win.bank_lbl.setText('{}{}'.format(uppercase[bank], ' {}/8'.format(bank+1) if dump_all else ''))
-#        self.dump_win.sound_lbl.setText('{:03}/{}'.format(prog+1+(128*bank if dump_all else 0), 1024 if dump_all else 128))
-#        dump_time = None
-#        if dump_all:
-#            if not (bank == 0 and prog < 10):
-#                dump_time = self.dump_elapsed.elapsed()/float(prog+1+128*bank)*(1024-prog-128*bank)/1000
-#        else:
-#            if prog > 5:
-#                dump_time = self.dump_elapsed.elapsed()/float(prog+1)*(128-prog)/1000
-#        if dump_time is not None:
-#            self.dump_win.time.setText('{}:{:02}'.format(*divmod(int(dump_time)+1, 60)))
-#        self.dump_win.progress.setValue(prog+1+(128*bank if dump_all else 0))
-#        self.dump_timer.timeout.disconnect()
-#        self.dump_timer.timeout.connect(lambda: self.sound_request.emit(bank, prog+1))
-#        self.dump_timer.start()
-
 
 
 def main():

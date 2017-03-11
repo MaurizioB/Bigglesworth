@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>507</width>
-    <height>347</height>
+    <width>533</width>
+    <height>406</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,17 +20,17 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
-     <widget class="QWidget" name="general_tab">
+     <widget class="QWidget" name="library_tab">
       <attribute name="title">
-       <string>General</string>
+       <string>Library</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
         <widget class="QGroupBox" name="groupBox_2">
          <property name="title">
-          <string>Library</string>
+          <string>Behaviour</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_4">
           <item row="0" column="0">
@@ -72,7 +72,170 @@
               </item>
              </widget>
             </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="saveTheLibraryLabel">
+              <property name="text">
+               <string>Save the library</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QComboBox" name="library_save_combo">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="currentIndex">
+               <number>0</number>
+              </property>
+              <item>
+               <property name="text">
+                <string>manually</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>after any modification</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>every 5 minutes</string>
+               </property>
+              </item>
+             </widget>
+            </item>
            </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_5">
+         <property name="title">
+          <string>Presets</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_8">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;ALWAYS&lt;/span&gt; use the following preset library on start up:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QFrame" name="frame_2">
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Sunken</enum>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_9">
+             <item row="3" column="0">
+              <widget class="QRadioButton" name="preset_201200_radio">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="text">
+                <string>2012</string>
+               </property>
+               <attribute name="buttonGroup">
+                <string notr="true">preset_group</string>
+               </attribute>
+              </widget>
+             </item>
+             <item row="4" column="0">
+              <widget class="QRadioButton" name="preset_200802_radio">
+               <property name="text">
+                <string>February 2008</string>
+               </property>
+               <attribute name="buttonGroup">
+                <string notr="true">preset_group</string>
+               </attribute>
+              </widget>
+             </item>
+             <item row="5" column="0">
+              <widget class="QRadioButton" name="preset_200801_radio">
+               <property name="text">
+                <string>January 2008</string>
+               </property>
+               <attribute name="buttonGroup">
+                <string notr="true">preset_group</string>
+               </attribute>
+              </widget>
+             </item>
+             <item row="0" column="0" colspan="2">
+              <widget class="QLabel" name="label_5">
+               <property name="text">
+                <string>Official Waldorf Blofeld factory sets</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="1" rowspan="3">
+              <widget class="QLabel" name="preset_desc_lbl">
+               <property name="frameShape">
+                <enum>QFrame::Panel</enum>
+               </property>
+               <property name="frameShadow">
+                <enum>QFrame::Sunken</enum>
+               </property>
+               <property name="text">
+                <string>Latest official version</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QFrame" name="frame_4">
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Sunken</enum>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_10">
+             <item row="0" column="0">
+              <widget class="QRadioButton" name="preset_personal_radio">
+               <property name="text">
+                <string>Personal library (recommended)</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+               <attribute name="buttonGroup">
+                <string notr="true">preset_group</string>
+               </attribute>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QPushButton" name="preset_import_btn">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>Import...</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -506,6 +669,47 @@
     </widget>
    </item>
    <item>
+    <widget class="QGroupBox" name="groupBox_6">
+     <property name="title">
+      <string>Misc</string>
+     </property>
+     <layout class="QFormLayout" name="formLayout_8">
+      <property name="fieldGrowthPolicy">
+       <enum>QFormLayout::ExpandingFieldsGrow</enum>
+      </property>
+      <item row="0" column="0">
+       <widget class="QLabel" name="autosaveLabel">
+        <property name="text">
+         <string>Autosave status on startup</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QComboBox" name="editor_autosave_combo">
+        <property name="currentIndex">
+         <number>2</number>
+        </property>
+        <item>
+         <property name="text">
+          <string>always off</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>always on</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>remember last state</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
@@ -603,5 +807,6 @@
  <buttongroups>
   <buttongroup name="editor_appearance_filter_matrix_group"/>
   <buttongroup name="editor_appearance_adv_group"/>
+  <buttongroup name="preset_group"/>
  </buttongroups>
 </ui>

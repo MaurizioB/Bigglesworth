@@ -12,6 +12,8 @@ def local_path(name):
 #with open('blofeld_params', 'rb') as _params_file:
 #    sound_params = pickle.load(_params_file)
 
+VERSION = '0.5'
+
 QWIDGETSIZE_MAX = ((1 << 24) - 1)
 INPUT, OUTPUT = 0, 1
 LEGATO = 0
@@ -24,6 +26,8 @@ PGMRECEIVE, MIDIRECEIVE, PGMSEND, MIDISEND = range(4)
 MOVEUP, MOVEDOWN, MOVELEFT, MOVERIGHT, MOVE = range(5)
 
 DUMP_ALL = -1
+SMEB = 0x7f, 0x00
+MIEB = True
 
 MoveCursor, UpCursor, DownCursor, LeftCursor, RightCursor = range(5)
 cursor_list = []
@@ -168,17 +172,24 @@ class ParamsClass(object):
             param_list.append(param_values_nt(r, v, n, s, f, a))
             param_names[a] = param_names_nt(r, v, n, s, f, a, i)
 
+    def attr_from_index(self, index):
+        return self.param_list[id].attr
+
+    def iter_attr(self):
+        for p in self.param_list:
+            yield p.attr
+
     def index_from_attr(self, par_attr):
         try:
             return self.param_names[par_attr].id
         except:
-            raise KeyError('Parameter {} unknown!'.format(par_attr))
+            raise KeyError('Index: Parameter {} unknown!'.format(par_attr))
 
     def param_from_attr(self, par_attr):
         try:
             return self.param_names[par_attr]
         except:
-            raise KeyError('Parameter {} unknown!'.format(par_attr))
+            raise KeyError('Param: Parameter {} unknown!'.format(par_attr))
 
     def __getattr__(self, par_attr):
         try:

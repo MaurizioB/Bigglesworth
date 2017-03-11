@@ -2099,6 +2099,7 @@ class Editor(QtGui.QMainWindow):
     sound_changed = QtCore.pyqtSignal(int, int)
     midi_event = QtCore.pyqtSignal(object)
     dump_request = QtCore.pyqtSignal(object)
+    dump_send = QtCore.pyqtSignal(object)
     program_change_request = QtCore.pyqtSignal(int, int)
     midi_receive = QtCore.pyqtSignal(bool)
     pgm_receive = QtCore.pyqtSignal(bool)
@@ -2157,9 +2158,9 @@ class Editor(QtGui.QMainWindow):
         side_layout = QtGui.QGridLayout()
         display_layout.addLayout(side_layout, 1, 2)
 
-        autosave_btn = SquareButton(self, 'Autosave', checkable=True, checked=False, size=12, label_pos=RIGHT)
-        autosave_btn.clicked.connect(lambda state: setattr(self, 'save', state))
-        side_layout.addWidget(autosave_btn, 0, 0)
+        self.autosave_btn = SquareButton(self, 'Autosave', checkable=True, checked=False, size=12, label_pos=RIGHT)
+        self.autosave_btn.clicked.connect(self.autosave_set)
+        side_layout.addWidget(self.autosave_btn, 0, 0)
 
         library_btn = SquareButton(self, color=QtCore.Qt.darkGreen, name='Library', size=12, label_pos=RIGHT)
         library_btn.clicked.connect(self.show_librarian)
@@ -2170,19 +2171,31 @@ class Editor(QtGui.QMainWindow):
         side_layout.addWidget(randomize_btn, 0, 1)
 
         dump_action = ActionLabel(self, text='Dump')
-        dump_send_action = QtGui.QAction('Dump to Blofeld', self)
-        dump_send_action.setEnabled(False)
-        dump_current_action = QtGui.QAction('Request dump for current sound', self)
-        dump_current_action.triggered.connect(lambda: self.dump_request.emit((self.sound.bank, self.sound.prog)))
-        self.sound_changed.connect(lambda bank, prog: [dump_current_action.setEnabled(True if bank <= self.blofeld_library.banks else False), 
-                                                       dump_current_action.setText('Request dump for sound{}'.format(' {}{:03}'.format(uppercase[bank], prog+1) if bank <= self.blofeld_library.banks else ''))
+        dump_send_current_action = QtGui.QAction('Current sound location', self)
+        self.sound_changed.connect(lambda bank, prog: dump_send_current_action.setEnabled(True if bank <= self.blofeld_library.banks else False))
+        dump_send_current_action.triggered.connect(lambda: self.dump_send_create((self.sound.bank, self.sound.prog)))
+        dump_send_single_action = QtGui.QAction('Sound Mode Edit Buffer ', self)
+        dump_send_single_action.triggered.connect(lambda: self.dump_send_create(SMEB))
+        dump_send_multi_action = QtGui.QAction('Multi Instrument', self)
+        multi_menu = QtGui.QMenu()
+        for multi in range(16):
+            item = QtGui.QAction('Edit Buffer', multi_menu)
+            item.triggered.connect(lambda: self.dump_send_create((0x7f, multi)))
+            multi_menu.addAction(item)
+        dump_send_multi_action.setMenu(multi_menu)
+        sep = QtGui.QAction(self)
+        sep.setSeparator(True)
+        dump_request_current_action = QtGui.QAction('Request dump for current sound', self)
+        dump_request_current_action.triggered.connect(lambda: self.dump_request.emit((self.sound.bank, self.sound.prog)))
+        self.sound_changed.connect(lambda bank, prog: [dump_request_current_action.setEnabled(True if bank <= self.blofeld_library.banks else False), 
+                                                       dump_request_current_action.setText('Request dump for sound{}'.format(' {}{:03}'.format(uppercase[bank], prog+1) if bank <= self.blofeld_library.banks else ''))
                                                        ])
-        dump_buffer_action = QtGui.QAction('Request dump for Sound Edit buffer', self)
-        dump_buffer_action.triggered.connect(lambda: self.dump_request.emit((0x7f, 0x0)))
-        dump_action.addActions(dump_send_action, dump_current_action, dump_buffer_action)
+        dump_request_buffer_action = QtGui.QAction('Request dump for Sound Edit buffer', self)
+        dump_request_buffer_action.triggered.connect(lambda: self.dump_request.emit((0x7f, 0x0)))
+        dump_action.addActions(dump_send_current_action, dump_send_single_action, dump_send_multi_action, sep, dump_request_current_action, dump_request_buffer_action)
         side_layout.addWidget(dump_action, 1, 1)
 
-        logo = QtGui.QIcon(local_path('logo.svg')).pixmap(QtCore.QSize(160, 160)).toImage()
+        logo = QtGui.QIcon(local_path('blofeld_logo.svg')).pixmap(QtCore.QSize(160, 160)).toImage()
         logo_widget = QtGui.QLabel()
         logo_widget.mouseDoubleClickEvent = self.logo_click
         logo_widget.setPixmap(QtGui.QPixmap().fromImage(logo))
@@ -2340,6 +2353,7 @@ class Editor(QtGui.QMainWindow):
 
         self.display.prog_name.editing_started.connect(self.editing_mask.show)
         self.display.prog_name.editing_finished.connect(self.editing_mask.hide)
+#        self.display.prog_name.editing_finished.connect(lambda: self.sound.name_reload())
         self.editing_mask.setReference(self.display.prog_name)
         self.editing_mask.raise_()
 
@@ -2389,12 +2403,8 @@ class Editor(QtGui.QMainWindow):
         sep = QtGui.QAction(self)
         sep.setSeparator(True)
         menu.addAction(sep)
-        about_item = QtGui.QAction('About Mr. Bigglesworth...', menu)
-        menu.addAction(about_item)
-        res = menu.exec_(event.globalPos())
-        if not res: return
-        elif res == about_item:
-            QtGui.QMessageBox.information(self, 'Ahem...', 'Sorry, I\'m not ready yet!')
+        menu.addAction(self.main.aboutAction)
+        menu.exec_(event.globalPos())
 
     def midi_output_state(self, conn):
         self.pgm_send_btn.setEnabled(conn)
@@ -2596,6 +2606,11 @@ class Editor(QtGui.QMainWindow):
 #        self.sorted_library_menu = menu
 #        self.sorted_library = sorted_library
 
+    def autosave_set(self, state):
+        self.save = state
+        if self.main.editor_autosave & 2:
+            self.main.editor_autosave = state|2
+
     def receive_value(self, location, index, value):
         if not self.midi_receive_btn.isChecked(): return
         attr = Params[index].attr
@@ -2687,8 +2702,33 @@ class Editor(QtGui.QMainWindow):
             sound = Sound(init_sound_data)
         else:
             self.sound_changed.emit(sound.bank, sound.prog)
+            self.display.statusUpdate('Received sound dump from Blofeld')
         self.sound = sound
         self._setSound()
+
+    def dump_send_create(self, dest=None):
+        data = []
+        for i, attr in enumerate(self.params.iter_attr()):
+            if attr is None:
+                data.append(self.sound.data[i])
+            else:
+                data.append(getattr(self, attr))
+        if dest is None:
+            bank, prog = sound.bank, sound.prog
+        elif dest == SMEB:
+            bank, prog = SMEB
+        elif dest == MIEB:
+            #show messagebox?
+            bank, prog = SMEB
+        else:
+            bank, prog = dest
+            res = QtGui.QMessageBox.warning(self, 'Dump sound to Blofeld', 
+                                      'You are going to send a sound dump to the Blofeld at location "{}{:03}".\nThis action cannot be undone. Do you want to proceed?'.format(uppercase[bank], prog+1), 
+                                      QtGui.QMessageBox.Ok|QtGui.QMessageBox.Cancel
+                                      )
+            if res != QtGui.QMessageBox.Ok: return
+        self.dump_send.emit(Sound([bank, prog]+data))
+        
 
     def reset_advanced_widgets(self):
         for env in self.envelopes:
