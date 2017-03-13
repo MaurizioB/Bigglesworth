@@ -1,7 +1,7 @@
 #!/usr/bin/env python2.7
 # *-* coding: utf-8 *-*
 
-import sys
+import sys, argparse
 import pickle
 from string import uppercase
 from PyQt4 import QtCore, QtGui
@@ -15,6 +15,11 @@ from utils import *
 
 from editor import Editor
 
+def process_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-s', '--sysex', help='Specify the configuration file to use', action='store_true')
+    return parser.parse_args()
+
 class BigglesworthObject(QtCore.QObject):
     midi_lock = QtCore.pyqtSignal(bool)
     globals_event = QtCore.pyqtSignal(object)
@@ -23,7 +28,7 @@ class BigglesworthObject(QtCore.QObject):
     program_change_received = QtCore.pyqtSignal(int, int)
     input_conn_state_change = QtCore.pyqtSignal(int)
     output_conn_state_change = QtCore.pyqtSignal(int)
-    def __init__(self, app, argv):
+    def __init__(self, app, args):
         QtCore.QObject.__init__(self)
         self.app = app
         self.qsettings = QtCore.QSettings()
@@ -56,10 +61,18 @@ class BigglesworthObject(QtCore.QObject):
         self.blofeld_model = LibraryModel()
         self.blofeld_library = Library(self.blofeld_model)
 
-        if len(argv) > 1 and argv[1].isdigit():
-            limit = int(argv[1])
+#        if len(argv) > 1 and argv[1].isdigit():
+#            limit = int(argv[1])
+#        else:
+#            limit = None
+
+        if args.sysex:
+            self.debug_sysex = True
         else:
-            limit = None
+            self.debug_sysex = False
+        limit = None
+
+        #LOADING
         self.loader = LoadingThread(self, self.blofeld_library, self.source_library, limit=limit)
         self.loader_thread = QtCore.QThread()
         self.loader.moveToThread(self.loader_thread)
@@ -168,7 +181,8 @@ class BigglesworthObject(QtCore.QObject):
         self.editor.midi_send_btn.setChecked(midi_send)
         self.editor.send = midi_send
         self.editor.midi_send_btn.blockSignals(False)
-        self.editor.autosave_btn.setChecked(self.editor_autosave&1)
+        self.editor.autosave_btn.setChecked(self.editor_autosave & 1)
+        self.editor.save = self.editor_autosave & 1
 
         self.librarian.activate_editor.connect(self.activate_editor)
         self.librarian.editorAction.triggered.connect(lambda: [self.editor.show(), self.editor.activateWindow()])
@@ -408,6 +422,8 @@ class BigglesworthObject(QtCore.QObject):
         self.output_event(ProgramEvent(1, 0, prog))
 
     def output_event(self, event):
+        if self.debug_sysex and event.type == SYSEX:
+            print event.sysex
         alsa_event = event.get_event()
         alsa_event.source = self.output.client.id, self.output.id
         self.seq.output_event(alsa_event)
@@ -915,6 +931,7 @@ class Librarian(QtGui.QMainWindow):
 
 
 def main():
+    args = process_args()
     argv = sys.argv[:]
     argv[0] = 'Bigglesworth'
     app = QtGui.QApplication(argv)
@@ -922,7 +939,7 @@ def main():
     app.setApplicationName('Bigglesworth')
 #    app.setQuitOnLastWindowClosed(False)
     cursor_list.extend((QtCore.Qt.SizeAllCursor, UpCursorClass(), DownCursorClass(), LeftCursorClass(), RightCursorClass()))
-    BigglesworthObject(app, argv)
+    BigglesworthObject(app, args)
     sys.exit(app.exec_())
     print 'Blofix has been quit!'
 
