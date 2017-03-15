@@ -2115,7 +2115,7 @@ class EditingMask(QtGui.QWidget):
         self.reference = reference
         blur = QtGui.QGraphicsBlurEffect()
         opacity = QtGui.QGraphicsOpacityEffect()
-        opacity.setOpacity(.1)
+        opacity.setOpacity(.5)
         self.setGraphicsEffect(opacity)
         self.mask_rect = QtCore.QRect()
         self.q = Q(self)
@@ -2129,16 +2129,16 @@ class EditingMask(QtGui.QWidget):
         self.opacity_anim.setDuration(100)
         self.opacity_anim.setStartValue(0)
         self.opacity_anim.setEndValue(1)
-        self.opacity_anim.finished.connect(self.anim_finish)
+#        self.opacity_anim.finished.connect(self.anim_finish)
 
-    def show(self):
-        QtGui.QWidget.show(self)
-        self.opacity_anim.setDirection(QtCore.QPropertyAnimation.Forward)
-        self.opacity_anim.start()
-
-    def hide(self):
-        self.opacity_anim.setDirection(QtCore.QPropertyAnimation.Backward)
-        self.opacity_anim.start()
+#    def show(self):
+#        QtGui.QWidget.show(self)
+#        self.opacity_anim.setDirection(QtCore.QPropertyAnimation.Forward)
+#        self.opacity_anim.start()
+#
+#    def hide(self):
+#        self.opacity_anim.setDirection(QtCore.QPropertyAnimation.Backward)
+#        self.opacity_anim.start()
 
     def anim_finish(self):
         if self.opacity_anim.direction() == QtCore.QPropertyAnimation.Backward:
