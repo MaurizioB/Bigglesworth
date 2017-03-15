@@ -2095,21 +2095,11 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         self.update()
         self.panel.update()
 
-class EditingMask(QtGui.QWidget):
-    def __init__(self, parent, reference=None):
+class Q(QtGui.QWidget):
+    def __init__(self, parent):
         QtGui.QWidget.__init__(self, parent)
-        self.main = parent
-        self.reference = reference
-        blur = QtGui.QGraphicsBlurEffect()
-        self.setGraphicsEffect(blur)
-        opacity = QtGui.QGraphicsOpacityEffect()
-        opacity.setOpacity(0)
-
-    def setReference(self, reference):
-        self.reference = reference
-
-    def mousePressEvent(self, event):
-        self.setFocus(QtCore.Qt.OtherFocusReason)
+        self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        self.mask_rect = QtCore.QRect()
 
     def paintEvent(self, event):
         qp = QtGui.QPainter()
@@ -2118,23 +2108,74 @@ class EditingMask(QtGui.QWidget):
         qp.drawRect(0, 0, self.width(), self.height())
         qp.end()
 
+class EditingMask(QtGui.QWidget):
+    def __init__(self, parent, reference=None):
+        QtGui.QWidget.__init__(self, parent)
+        self.main = parent
+        self.reference = reference
+        blur = QtGui.QGraphicsBlurEffect()
+        opacity = QtGui.QGraphicsOpacityEffect()
+        opacity.setOpacity(.1)
+        self.setGraphicsEffect(opacity)
+        self.mask_rect = QtCore.QRect()
+        self.q = Q(self)
+        layout = QtGui.QHBoxLayout()
+        self.setLayout(layout)
+        layout.addWidget(self.q)
+        self.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.q.setGraphicsEffect(blur)
+        self.opacity_anim = QtCore.QPropertyAnimation(opacity, 'opacity')
+        self.opacity_anim.setDuration(100)
+        self.opacity_anim.setStartValue(0)
+        self.opacity_anim.setEndValue(1)
+        self.opacity_anim.finished.connect(self.anim_finish)
+
+    def show(self):
+        QtGui.QWidget.show(self)
+        self.opacity_anim.setDirection(QtCore.QPropertyAnimation.Forward)
+        self.opacity_anim.start()
+
+    def hide(self):
+        self.opacity_anim.setDirection(QtCore.QPropertyAnimation.Backward)
+        self.opacity_anim.start()
+
+    def anim_finish(self):
+        if self.opacity_anim.direction() == QtCore.QPropertyAnimation.Backward:
+            QtGui.QWidget.hide(self)
+
+    def setReference(self, reference):
+        self.reference = reference
+
+    def mousePressEvent(self, event):
+        self.setFocus(QtCore.Qt.OtherFocusReason)
+
     def resizeEvent(self, event):
         QtGui.QWidget.resizeEvent(self, event)
         if not self.reference: return
         object_rect = self.reference.mapToScene(self.reference.rect())
         real_rect = self.main.display.mapFromScene(object_rect).boundingRect()
         real_pos = self.mapFromGlobal(self.main.display.mapToGlobal(real_rect.topLeft()))
-        mask_rect = QtCore.QRect(real_pos, real_rect.size())
-        mask_rect.adjust(-3, -3, 0, -8)
+        self.mask_rect = QtCore.QRect(real_pos, real_rect.size())
+        self.mask_rect.adjust(-3, -3, -3, -3)
         bmp = QtGui.QBitmap(self.width(), self.height())
         bmp.clear()
         qp = QtGui.QPainter(bmp)
         qp.setPen(QtCore.Qt.black)
         qp.setBrush(QtCore.Qt.black)
         qp.drawRect(0, 0, self.width(), self.height())
-        qp.eraseRect(mask_rect)
+        qp.eraseRect(self.mask_rect)
         qp.end()
         self.setMask(bmp)
+        bmp = QtGui.QBitmap(self.width(), self.height())
+        bmp.clear()
+        qp = QtGui.QPainter(bmp)
+        qp.setPen(QtCore.Qt.black)
+        qp.setBrush(QtCore.Qt.black)
+        qp.drawRect(0, 0, self.width(), self.height())
+        qp.eraseRect(self.mask_rect.adjusted(-4, -4, 4, 4))
+        qp.end()
+        self.q.setMask(bmp)
 
 
 class Editor(QtGui.QMainWindow):
@@ -2440,6 +2481,12 @@ class Editor(QtGui.QMainWindow):
     def showEvent(self, event):
         if self.blofeld_library.menu is None:
             self.blofeld_library.create_menu()
+
+    def closeEvent(self, event):
+        if self.main.closeDetect(self):
+            event.accept()
+        else:
+            event.ignore()
 
     def menuEvent(self, event):
         menu = QtGui.QMenu()

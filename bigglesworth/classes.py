@@ -1,3 +1,6 @@
+#!/usr/bin/env python2.7
+# *-* coding: utf-8 *-*
+
 from string import uppercase, ascii_letters
 from collections import namedtuple
 from bisect import bisect_left
@@ -567,6 +570,8 @@ class Sound(QtCore.QObject):
 
     @name.setter
     def name(self, name):
+        name = name.replace('\xc2\xb0', '\x7f')
+        if name == self._name: return
         while len(name) < 16:
             name += ' '
         if len(name) > 16:
@@ -602,13 +607,28 @@ class Sound(QtCore.QObject):
         self._data = data
 
 
+class NameDelegate(QtGui.QStyledItemDelegate):
+    def __init__(self, parent=None):
+        QtGui.QStyledItemDelegate.__init__(self, parent)
+        self.commitData.connect(self.set_data)
+
+    def createEditor(self, parent, option, index):
+        self.index = index
+        edit = QtGui.QLineEdit(parent)
+        edit.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp('[\x20-\x7f°]*')))
+        edit.setMaxLength(16)
+        return edit
+
+    def set_data(self, widget):
+        self.index.model().sourceModel().sound(self.index).name = str(widget.text().toUtf8())
+
 class CategoryDelegate(QtGui.QStyledItemDelegate):
     def __init__(self, parent=None):
         QtGui.QStyledItemDelegate.__init__(self, parent)
         self.commitData.connect(self.set_data)
 
     def createEditor(self, parent, option, index):
-        self.table = parent.parent()
+#        self.table = parent.parent()
         self.index = index
         combo = QtGui.QComboBox(parent)
         model = QtGui.QStandardItemModel()
@@ -619,6 +639,8 @@ class CategoryDelegate(QtGui.QStyledItemDelegate):
         return combo
 
     def set_data(self, widget):
+        sound = self.index.model().sourceModel().sound(self.index)
+        if sound.cat == widget.currentIndex(): return
         self.index.model().sourceModel().sound(self.index).cat = widget.currentIndex()
 
 class PauseIcon(QtGui.QIcon):

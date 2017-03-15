@@ -1117,6 +1117,7 @@ class SquareButton(QtGui.QAbstractButton):
             self.current_pen = self.active_pressed_pen
 
     def mousePressEvent(self, event):
+        if not event.button() == QtCore.Qt.LeftButton: return
         self.set_pressed_colors()
         self.repaint()
         QtGui.QAbstractButton.mousePressEvent(self, event)

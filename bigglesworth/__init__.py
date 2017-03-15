@@ -92,7 +92,7 @@ class BigglesworthObject(QtCore.QObject):
         self.settingsAction = self.librarian.settingsAction
         self.settingsAction.setIcon(QtGui.QIcon(QtGui.QIcon.fromTheme('preferences-other')))
         self.quitAction.setIcon(QtGui.QIcon.fromTheme('application-exit'))
-        self.quitAction.triggered.connect(self.app.quit)
+        self.quitAction.triggered.connect(self.quit)
         self.librarian.aboutQtAction.triggered.connect(lambda: QtGui.QMessageBox.aboutQt(self.librarian, 'About Qt'))
         self.device_event.connect(lambda event: self.device_response(event, self.librarian))
         self.loader.loaded.connect(self.librarian.create_proxy)
@@ -665,6 +665,42 @@ class BigglesworthObject(QtCore.QObject):
                                       'Device info:\n\nManufacturer: {}\nModel: {}\nType: {}\nVersion: {}'.format(
                                        dev_man, dev_model, dev_type, dev_version))
 
+    def closeDetect(self, win=None):
+        if win:
+            win_list = set((self.librarian, self.editor))
+            win_list.discard(win)
+            if any(win.isVisible() for win in win_list):
+                return True
+            if not self.library_changed():
+                return True
+        msgbox = QtGui.QMessageBox(
+                                   QtGui.QMessageBox.Question, 
+                                   'Confirm exit', 'The library has been modified, do you want to quit anyway?', 
+                                   QtGui.QMessageBox.Abort|QtGui.QMessageBox.Save|QtGui.QMessageBox.Cancel, 
+                                   self.librarian
+                                   )
+        buttonBox = msgbox.findChild(QtGui.QDialogButtonBox)
+        abort_btn = buttonBox.button(QtGui.QDialogButtonBox.Abort)
+        abort_btn.setText('Ignore and quit')
+        abort_btn.setIcon(QtGui.QIcon.fromTheme('application-exit'))
+        res = msgbox.exec_()
+        if res == QtGui.QMessageBox.Cancel:
+            return False
+        elif res == QtGui.QMessageBox.Abort:
+            return True
+        self.save_library()
+        return True
+
+    def library_changed(self):
+        index_list = self.blofeld_model.match(self.blofeld_model.index(0, STATUS), EditedRole, QtCore.QVariant(STORED), hits=-1)
+        if len(index_list) == self.blofeld_model.rowCount():
+            return False
+        return True
+
+    def quit(self):
+        if not self.closeDetect(): return
+        self.app.quit()
+
 
 class Librarian(QtGui.QMainWindow):
     shown = QtCore.pyqtSignal()
@@ -721,6 +757,12 @@ class Librarian(QtGui.QMainWindow):
         if not self.loading_complete:
             QtCore.QTimer.singleShot(10, self.shown.emit)
 
+    def closeEvent(self, event):
+        if self.main.closeDetect(self):
+            event.accept()
+        else:
+            event.ignore()
+
     def eventFilter(self, source, event):
         if event.type() == QtCore.QEvent.KeyPress:
             if event.key() == QtCore.Qt.Key_F5:
@@ -748,7 +790,7 @@ class Librarian(QtGui.QMainWindow):
         filter =  self.search_filter_chk.isChecked()
         if not text and not filter: return
         if not filter:
-            found = self.blofeld_model.findItems(text, QtCore.Qt.MatchContains, 3)
+            found = self.blofeld_model.findItems(text, QtCore.Qt.MatchContains, NAME)
             if found:
                 self.blofeld_sounds_table.selectRow(found[0].row())
             return
@@ -881,8 +923,12 @@ class Librarian(QtGui.QMainWindow):
 #        print 'updating {}'.format(item.column())
 #        print self.sender()
         if item.column() == STATUS:
-            item.setText(get_status(item.data(EditedRole).toPyObject()))
-            setBold(item)
+            status = item.data(EditedRole).toPyObject()
+            item.setText(get_status(status))
+            setBold(item, True if status!=STORED else False)
+#        elif item.column() == NAME:
+#            sound = self.blofeld_model.item(item.row(), SOUND).data(SoundRole).toPyObject()
+#            sound.name = item.text()
 
     def dump_request_create(self):
         bank = self.bank_dump_combo.currentIndex()
@@ -903,7 +949,8 @@ class Librarian(QtGui.QMainWindow):
         self.blofeld_sounds_table.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
         self.blofeld_sounds_table.horizontalHeader().setResizeMode(NAME, QtGui.QHeaderView.Stretch)
         self.blofeld_sounds_table.verticalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
-        self.blofeld_sounds_table.setItemDelegateForColumn(4, CategoryDelegate(self))
+        self.blofeld_sounds_table.setItemDelegateForColumn(CATEGORY, CategoryDelegate(self))
+        self.blofeld_sounds_table.setItemDelegateForColumn(NAME, NameDelegate(self))
         self.blofeld_sounds_table.setColumnHidden(INDEX, True)
         for c in range(len(sound_headers), self.blofeld_model.columnCount()):
             self.blofeld_sounds_table.setColumnHidden(c, True)
