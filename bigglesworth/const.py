@@ -51,6 +51,8 @@ SNDP = 0x20
 GLBR = 0x4
 GLBD = 0x14
 
+CURSOR_NORMAL, CURSOR_INSERT = range(2)
+
 class AdvParam(object):
     def __init__(self, fmt, **kwargs):
         self.fmt = fmt

@@ -267,17 +267,38 @@ class UpArrowWidget(DownArrowWidget):
     arrow.closeSubpath()
 
 class TextCursorWidget(BaseDisplayWidget):
-    def __init__(self, parent, size=12):
+    def __init__(self, parent, height=12, mode=CURSOR_INSERT):
         BaseDisplayWidget.__init__(self, parent)
+        self.height = height
         self.line = QtGui.QPainterPath()
         self.line.moveTo(.5, 0)
-        self.line.lineTo(.5, size)
+        self.line.lineTo(.5, self.height)
+        self.setInsWidth(5)
+        self.setMode(mode)
 
-    def paint(self, painter, *args, **kwargs):
+    def setMode(self, mode):
+        if mode == CURSOR_NORMAL:
+            self.paint = self.paintNormal
+        else:
+            self.paint = self.paintInsert
+
+
+    def setInsWidth(self, width):
+        self.insert = QtGui.QPainterPath()
+        self.insert.moveTo(.5, self.height+4)
+        self.insert.lineTo(.5+width, self.height+4)
+
+    def paintNormal(self, painter, *args, **kwargs):
         painter.setPen(self.pen)
         painter.setBrush(self.brush)
         painter.setRenderHints(QtGui.QPainter.Antialiasing)
         painter.drawPath(self.line)
+
+    def paintInsert(self, painter, *args, **kwargs):
+        painter.setPen(self.pen)
+        painter.setBrush(self.brush)
+        painter.setRenderHints(QtGui.QPainter.Antialiasing)
+        painter.drawPath(self.insert)
 
 class BaseTextWidget(BaseDisplayWidget):
     def __init__(self, text, parent):
@@ -294,6 +315,8 @@ class BaseTextWidget(BaseDisplayWidget):
         painter.drawText(self.rect(), self.text_align, self.text)
 
 class ProgLabelTextWidget(BaseTextWidget):
+    space_brush = QtGui.QColor(BaseTextWidget.brush)
+    space_brush.setAlpha(24)
     letter_changed = QtCore.pyqtSignal(int, int)
     editing_started = QtCore.pyqtSignal()
     editing_finished = QtCore.pyqtSignal()
@@ -358,19 +381,40 @@ class ProgLabelTextWidget(BaseTextWidget):
             self.set_cursor_pos(self.cursor_pos+1)
         elif event.key() == QtCore.Qt.Key_Left:
             self.set_cursor_pos(self.cursor_pos-1)
+        elif event.key() == QtCore.Qt.Key_Up:
+            letter = str(self.editing_text[self.cursor_pos].toUtf8())
+            if letter == '°': return
+            char = ord(letter)
+            if char < 126:
+                new_char = QtCore.QString.fromUtf8(unichr(char+1))
+            else:
+                new_char = QtCore.QString.fromUtf8('°')
+            self.editing_text = self.editing_text[:self.cursor_pos] + new_char + self.editing_text[self.cursor_pos+1:]
+            self.set_cursor_pos(self.cursor_pos)
+        elif event.key() == QtCore.Qt.Key_Down:
+            letter = str(self.editing_text[self.cursor_pos].toUtf8())
+            if letter == ' ': return
+            if letter == '°':
+                char = 127
+            else:
+                char = ord(letter)
+            new_char = unichr(char-1)
+            self.editing_text = self.editing_text[:self.cursor_pos] + new_char + self.editing_text[self.cursor_pos+1:]
+            self.set_cursor_pos(self.cursor_pos)
         elif event.key() == QtCore.Qt.Key_Home:
             self.set_cursor_pos(0)
         elif event.key() == QtCore.Qt.Key_End:
-            self.set_cursor_pos(16)
+            self.set_cursor_pos(15)
         elif event.key() == QtCore.Qt.Key_Backspace:
-            if self.cursor_pos == 0: return
+#            if self.cursor_pos == 0: return
+            self.editing_text = self.editing_text[:self.cursor_pos] + self.editing_text[self.cursor_pos+1:] + ' '
             self.set_cursor_pos(self.cursor_pos-1)
-            self.editing_text = self.editing_text[:self.cursor_pos] + self.editing_text[self.cursor_pos+1:]
         elif event.key() == QtCore.Qt.Key_Delete:
-            if self.cursor_pos == len(self.editing_text): return
-            self.editing_text = self.editing_text[:self.cursor_pos] + self.editing_text[self.cursor_pos+1:]
+            if self.cursor_pos == len(self.editing_text)-1: return
+            self.editing_text = self.editing_text[:self.cursor_pos] + self.editing_text[self.cursor_pos+1:] + ' '
+            self.set_cursor_pos(self.cursor_pos)
         else:
-            if not event.text() or self.cursor_pos >= 16 or len(self.editing_text) >= 16: return
+            if not event.text(): return
             try:
                 char = str(event.text().toUtf8())
                 if char == '°':
@@ -378,7 +422,7 @@ class ProgLabelTextWidget(BaseTextWidget):
                 else:
                     id = ord(char)
                 if 32 <= id <= 127:
-                    self.editing_text = self.editing_text[:self.cursor_pos] + event.text() + self.editing_text[self.cursor_pos:]
+                    self.editing_text = self.editing_text[:self.cursor_pos] + event.text() + self.editing_text[self.cursor_pos+1:]
                     self.set_cursor_pos(self.cursor_pos+1)
             except Exception as e:
                 print e
@@ -393,7 +437,8 @@ class ProgLabelTextWidget(BaseTextWidget):
             self.editing = False
             self.update()
             return
-        res = QtGui.QMessageBox.question(self.main.scene().views()[0].window(), 'Save sound name?', 'Save sound name to "{}"?'.format(self.editing_text), QtGui.QMessageBox.Yes|QtGui.QMessageBox.No|QtGui.QMessageBox.Cancel)
+        new_text = QtCore.QString.fromUtf8('Save sound name to "{}"?'.format(self.editing_text.toUtf8()))
+        res = QtGui.QMessageBox.question(self.main.scene().views()[0].window(), 'Save sound name?', new_text, QtGui.QMessageBox.Yes|QtGui.QMessageBox.No|QtGui.QMessageBox.Cancel)
         if res == QtGui.QMessageBox.Cancel:
             self.ungrabKeyboard()
             self.grabKeyboard()
@@ -412,13 +457,14 @@ class ProgLabelTextWidget(BaseTextWidget):
     def set_cursor_pos(self, pos):
         if pos < 0:
             pos = 0
-        elif pos > 16:
-            pos = 16
+        elif pos > 15:
+            pos = 15
         elif pos > len(self.editing_text):
             pos = len(self.editing_text)
         self.cursor.setX(self.font_metrics.width(self.editing_text[:pos]))
         self.cursor.show()
         self.cursor_timer.start()
+        self.cursor.setInsWidth(self.font_metrics.width(self.editing_text[pos]))
         self.cursor_pos = pos
 
     def check_changes(self):
@@ -457,7 +503,7 @@ class ProgLabelTextWidget(BaseTextWidget):
         self.grabKeyboard()
         self.cursor.show()
         self.cursor_timer.start()
-        self.editing_text = QtCore.QString.fromUtf8(str(self.text.toUtf8()).rstrip())
+        self.editing_text = QtCore.QString.fromUtf8(str(self.text.toUtf8()))
         self.editing = True
         self.set_cursor_pos(0)
 
@@ -471,6 +517,12 @@ class ProgLabelTextWidget(BaseTextWidget):
         painter.setBrush(self.brush)
         painter.setFont(self.font)
         painter.drawText(self.rect(), self.text_align, self.editing_text)
+        painter.setBrush(self.space_brush)
+        painter.setPen(QtCore.Qt.NoPen)
+        for i, l in enumerate(self.editing_text):
+            if l != ' ': continue
+            painter.drawRect(self.font_metrics.width(self.editing_text[:i])+.5, 0, self.font_metrics.width(' ')-1, self.font_metrics.ascent())
+            
 
 class SmallTextWidget(BaseTextWidget):
     def __init__(self, text, parent):
