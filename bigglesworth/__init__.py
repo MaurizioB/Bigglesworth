@@ -96,7 +96,6 @@ class BigglesworthObject(QtCore.QObject):
         self.librarian.aboutQtAction.triggered.connect(lambda: QtGui.QMessageBox.aboutQt(self.librarian, 'About Qt'))
         self.device_event.connect(lambda event: self.device_response(event, self.librarian))
         self.loader.loaded.connect(self.librarian.create_proxy)
-#        self.loader.loaded.connect(self.librarian.create_proxy)
         self.loading_win = LoadingWindow(self.librarian)
         self.librarian.shown.connect(self.loading_win.show)
         self.loading_win.shown.connect(self.loader_thread.start)
@@ -116,13 +115,10 @@ class BigglesworthObject(QtCore.QObject):
         self.dump_bulk_timer = QtCore.QTimer()
         self.dump_bulk_timer.setInterval(500)
         self.dump_bulk_timer.setSingleShot(True)
-#        self.dump_detect_dialog = QtGui.QMessageBox(QtGui.QMessageBox.Information, 'Dump receiving', 'Receiving dump from Blofeld, please wait', parent=self.librarian)
-#        self.dump_detect_dialog.setStandardButtons(QtGui.QMessageBox.NoButton)
 
         self.dump_timer = QtCore.QTimer()
         self.dump_timer.setInterval(100)
         self.dump_timer.setSingleShot(True)
-#        self.dump_timer.timeout.connect(lambda: self.dump_waiter.emit())
 
         self.dump_active = False
         self.dump_pause = False
@@ -154,6 +150,13 @@ class BigglesworthObject(QtCore.QObject):
 
         #EDITOR
         self.editor = Editor(self)
+        if self.editor_appearance_efx_arp & 1:
+            self.editor.efx_arp_toggle_btn.clicked.emit(1)
+        self.editor.efx_arp_toggle_state.connect(lambda state: setattr(self, 'editor_appearance_efx_arp', 2|state) if self.editor_appearance_efx_arp&2 else None)
+        if self.editor_appearance_filter_matrix & 1:
+            self.editor.filter_matrix_toggle_btn.clicked.emit(1)
+        self.editor.filter_matrix_toggle_state.connect(lambda state: setattr(self, 'editor_appearance_filter_matrix', 2|state) if self.editor_appearance_filter_matrix&2 else None)
+
 
         self.editor_dump_state = False
         self.editor_dump_timer = QtCore.QTimer()
@@ -214,7 +217,8 @@ class BigglesworthObject(QtCore.QObject):
         self.settingsAction.triggered.connect(self.show_settings)
         self.output_conn_state_change.connect(lambda conn: self.settings_dialog.detect_connections(OUTPUT, conn))
         self.input_conn_state_change.connect(lambda conn: self.settings_dialog.detect_connections(INPUT, conn))
-#        self.settings_dialog.show()
+        self.editor.filter_matrix_toggle_state.connect(lambda state: setattr(self, 'editor_appearance_filter_matrix_latest', state))
+        self.editor.efx_arp_toggle_state.connect(lambda state: setattr(self, 'editor_appearance_efx_arp_latest', state))
 
         self.midi_connect()
 #        self.dump_win.show()
@@ -334,24 +338,24 @@ class BigglesworthObject(QtCore.QObject):
         self._editor_remember_states = value
 
     @property
-    def editor_appearance_remember(self):
+    def editor_appearance_efx_arp(self):
         try:
-            return self._editor_appearance_remember
+            return self._editor_appearance_efx_arp
         except:
-            self._editor_appearance_remember = self.settings.gEditor.get_Remember_Appearance(True, True)
-            return self._editor_appearance_remember
+            self._editor_appearance_efx_arp = self.settings.gEditor.get_Remember_Appearance_EfxArp(2, True)
+            return self._editor_appearance_efx_arp
 
-    @editor_appearance_remember.setter
-    def editor_appearance_remember(self, value):
-        self._editor_appearance_remember = self.settings.gEditor.set_Remember_Appearance(value)
-        self._editor_appearance_remember = value
+    @editor_appearance_efx_arp.setter
+    def editor_appearance_efx_arp(self, value):
+        self._editor_appearance_efx_arp = self.settings.gEditor.set_Remember_Appearance_EfxArp(value)
+        self._editor_appearance_efx_arp = value
 
     @property
     def editor_appearance_filter_matrix(self):
         try:
             return self._editor_appearance_filter_matrix
         except:
-            self._editor_appearance_filter_matrix = self.settings.gEditor.get_Remember_Appearance_FilterMatrix(0, True)
+            self._editor_appearance_filter_matrix = self.settings.gEditor.get_Remember_Appearance_FilterMatrix(2, True)
             return self._editor_appearance_filter_matrix
 
     @editor_appearance_filter_matrix.setter

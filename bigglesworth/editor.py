@@ -2203,6 +2203,9 @@ class Editor(QtGui.QMainWindow):
     show_midi_dialog = QtCore.pyqtSignal()
     show_librarian = QtCore.pyqtSignal()
 
+    filter_matrix_toggle_state = QtCore.pyqtSignal(bool)
+    efx_arp_toggle_state = QtCore.pyqtSignal(bool)
+
     object_dict = {attr:ParamObject(param_tuple) for attr, param_tuple in Params.param_names.items()}
     with open(local_path('blofeld_efx'), 'rb') as _fx:
         efx_params = pickle.load(_fx)
@@ -2336,8 +2339,8 @@ class Editor(QtGui.QMainWindow):
 
         btn_layout = QtGui.QHBoxLayout()
         filter_matrix_btn_layout.addLayout(btn_layout, 1, 0)
-        open_mod = SquareButton(self, color=QtCore.Qt.darkGreen, size=(20, 16), name='Mod Matrix Editor', label_pos=RIGHT, text_align=QtCore.Qt.AlignLeft)
-        btn_layout.addWidget(open_mod)
+        self.filter_matrix_toggle_btn = SquareButton(self, color=QtCore.Qt.darkGreen, size=(20, 16), name='Mod Matrix Editor', label_pos=RIGHT, text_align=QtCore.Qt.AlignLeft)
+        btn_layout.addWidget(self.filter_matrix_toggle_btn)
 #        filter_matrix_lbl = Label(self, 'Mod Matrix Editor', QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
 #        btn_layout.addWidget(filter_matrix_lbl)
         filter_matrix_cycle = cycle((0, 1))
@@ -2358,8 +2361,8 @@ class Editor(QtGui.QMainWindow):
         matrix_opacity_anim.setDuration(200)
         filter_matrix_tuple = (filter_widget, filter_opacity_anim), (matrix_widget, matrix_opacity_anim)
 
-        def filter_matrix_set(cycler):
-            id = cycler.next()
+        def filter_matrix_set():
+            id = filter_matrix_cycle.next()
             for i, (w, a) in enumerate(filter_matrix_tuple):
                 if i == id:
                     a.setStartValue(0)
@@ -2370,12 +2373,13 @@ class Editor(QtGui.QMainWindow):
                     a.setStartValue(1)
                     a.setEndValue(0)
                     a.start()
-            open_mod.setText(filter_matrix_labels[id])
+            self.filter_matrix_toggle_state.emit(id)
+            self.filter_matrix_toggle_btn.setText(filter_matrix_labels[id])
 
-        open_mod.clicked.connect(lambda state, cycler=filter_matrix_cycle: filter_matrix_set(cycler))
+        self.filter_matrix_toggle_btn.clicked.connect(lambda state: filter_matrix_set())
 
-        open_arp = SquareButton(self, color=QtCore.Qt.darkGreen, size=(20, 16), name='Arpeggiator Pattern Editor', label_pos=RIGHT, text_align=QtCore.Qt.AlignLeft)
-        btn_layout.addWidget(open_arp)
+        self.efx_arp_toggle_btn = SquareButton(self, color=QtCore.Qt.darkGreen, size=(20, 16), name='Arpeggiator Pattern Editor', label_pos=RIGHT, text_align=QtCore.Qt.AlignLeft)
+        btn_layout.addWidget(self.efx_arp_toggle_btn)
 #        adv_arp_lbl = Label(self, 'Arpeggiator Pattern Editor', QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
 #        btn_layout.addWidget(adv_arp_lbl)
 
@@ -2420,8 +2424,8 @@ class Editor(QtGui.QMainWindow):
         arp_opacity_anim.setDuration(200)
         adv_arp_tuple = (adv_widget, adv_opacity_anim), (arp_widget, arp_opacity_anim)
 
-        def adv_arp_set(cycler):
-            id = cycler.next()
+        def adv_arp_set():
+            id = adv_arp_cycle.next()
             for i, (w, a) in enumerate(adv_arp_tuple):
                 if i == id:
                     a.setStartValue(0)
@@ -2432,9 +2436,10 @@ class Editor(QtGui.QMainWindow):
                     a.setStartValue(1)
                     a.setEndValue(0)
                     a.start()
-            open_arp.setText(adv_arp_labels[id])
+            self.efx_arp_toggle_state.emit(id)
+            self.efx_arp_toggle_btn.setText(adv_arp_labels[id])
 
-        open_arp.clicked.connect(lambda state, cycler=adv_arp_cycle: adv_arp_set(cycler))
+        self.efx_arp_toggle_btn.clicked.connect(lambda state: adv_arp_set())
 
         lower_layout = QtGui.QGridLayout()
         self.grid.addLayout(lower_layout, 4, 0, 1, 5)
@@ -2664,51 +2669,6 @@ class Editor(QtGui.QMainWindow):
 
         return frame
 
-#    def create_sorted_library(self):
-#        sorted_library = SortedLibrary(self.blofeld_library)
-#        del self.sorted_library_menu
-#        menu = QtGui.QMenu()
-#        by_bank = QtGui.QMenu('By bank', menu)
-#        menu.addMenu(by_bank)
-#        for id, bank in enumerate(sorted_library.by_bank):
-#            if not any(bank): continue
-#            bank_menu = QtGui.QMenu(uppercase[id], by_bank)
-#            by_bank.addMenu(bank_menu)
-#            for sound in bank:
-#                if sound is None: continue
-#                item = QtGui.QAction('{:03} {}'.format(sound.prog+1, sound.name), bank_menu)
-#                item.setData((sound.bank, sound.prog))
-#                bank_menu.addAction(item)
-#        by_cat = QtGui.QMenu('By category', menu)
-#        menu.addMenu(by_cat)
-#        for cid, cat in enumerate(categories):
-#            cat_menu = QtGui.QMenu(by_cat)
-#            by_cat.addMenu(cat_menu)
-#            cat_len = 0
-#            for sound in sorted_library.by_cat[cid]:
-#                cat_len += 1
-#                item = QtGui.QAction(sound.name, cat_menu)
-#                item.setData((sound.bank, sound.prog))
-#                cat_menu.addAction(item)
-#            if not len(cat_menu.actions()):
-#                cat_menu.setEnabled(False)
-#            cat_menu.setTitle('{} ({})'.format(cat, cat_len))
-#        by_alpha = QtGui.QMenu('Alphabetical', menu)
-#        menu.addMenu(by_alpha)
-#        for alpha in sorted(sorted_library.by_alpha.keys()):
-#            alpha_menu = QtGui.QMenu(by_alpha)
-#            by_alpha.addMenu(alpha_menu)
-#            alpha_len = 0
-#            for sound in sorted_library.by_alpha[alpha]:
-#                alpha_len += 1
-#                item = QtGui.QAction(sound.name, alpha_menu)
-#                item.setData((sound.bank, sound.prog))
-#                alpha_menu.addAction(item)
-#            if not len(alpha_menu.actions()):
-#                alpha_menu.setEnabled(False)
-#            alpha_menu.setTitle('{} ({})'.format(alpha, alpha_len))
-#        self.sorted_library_menu = menu
-#        self.sorted_library = sorted_library
 
     def autosave_set(self, state):
         self.save = state

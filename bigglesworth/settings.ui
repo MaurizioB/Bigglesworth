@@ -429,7 +429,7 @@
        <item row="0" column="0">
         <widget class="QGroupBox" name="groupBox_4">
          <property name="enabled">
-          <bool>false</bool>
+          <bool>true</bool>
          </property>
          <property name="title">
           <string>Appearance</string>
@@ -459,7 +459,7 @@
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout">
              <item>
-              <widget class="QRadioButton" name="radioButton_2">
+              <widget class="QRadioButton" name="adv_filter_radio">
                <property name="text">
                 <string>Filters</string>
                </property>
@@ -472,7 +472,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QRadioButton" name="radioButton">
+              <widget class="QRadioButton" name="adv_matrix_radio">
                <property name="text">
                 <string>Modulation Matrix</string>
                </property>
@@ -482,7 +482,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QRadioButton" name="radioButton_3">
+              <widget class="QRadioButton" name="adv_last_radio">
                <property name="text">
                 <string>Last used</string>
                </property>
@@ -504,7 +504,7 @@
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_2">
              <item>
-              <widget class="QRadioButton" name="radioButton_4">
+              <widget class="QRadioButton" name="arp_efx_radio">
                <property name="text">
                 <string>Effects and Arpeggiator</string>
                </property>
@@ -512,27 +512,27 @@
                 <bool>true</bool>
                </property>
                <attribute name="buttonGroup">
-                <string notr="true">editor_appearance_adv_group</string>
+                <string notr="true">editor_appearance_efx_arp_group</string>
                </attribute>
               </widget>
              </item>
              <item>
-              <widget class="QRadioButton" name="radioButton_5">
+              <widget class="QRadioButton" name="arp_arp_radio">
                <property name="text">
                 <string>Arpeggiator editor</string>
                </property>
                <attribute name="buttonGroup">
-                <string notr="true">editor_appearance_adv_group</string>
+                <string notr="true">editor_appearance_efx_arp_group</string>
                </attribute>
               </widget>
              </item>
              <item>
-              <widget class="QRadioButton" name="radioButton_6">
+              <widget class="QRadioButton" name="arp_last_radio">
                <property name="text">
                 <string>Last used</string>
                </property>
                <attribute name="buttonGroup">
-                <string notr="true">editor_appearance_adv_group</string>
+                <string notr="true">editor_appearance_efx_arp_group</string>
                </attribute>
               </widget>
              </item>
@@ -803,10 +803,42 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>editor_appearance_remember_last_chk</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>adv_last_radio</receiver>
+   <slot>setChecked(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>460</x>
+     <y>65</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>427</x>
+     <y>98</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>editor_appearance_remember_last_chk</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>arp_last_radio</receiver>
+   <slot>setChecked(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>460</x>
+     <y>65</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>427</x>
+     <y>140</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <buttongroups>
+  <buttongroup name="editor_appearance_efx_arp_group"/>
   <buttongroup name="editor_appearance_filter_matrix_group"/>
-  <buttongroup name="editor_appearance_adv_group"/>
   <buttongroup name="preset_group"/>
  </buttongroups>
 </ui>

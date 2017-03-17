@@ -259,7 +259,18 @@ class SettingsDialog(QtGui.QDialog):
 
         self.preset_group.buttonClicked.connect(self.set_preset_labels)
 
-        self.previous = 0
+        self.editor_appearance_filter_matrix_group.setId(self.adv_filter_radio, 0)
+        self.editor_appearance_filter_matrix_group.setId(self.adv_matrix_radio, 1)
+        self.editor_appearance_filter_matrix_group.setId(self.adv_last_radio, 2)
+        self.editor_appearance_efx_arp_group.setId(self.arp_efx_radio, 0)
+        self.editor_appearance_efx_arp_group.setId(self.arp_arp_radio, 1)
+        self.editor_appearance_efx_arp_group.setId(self.arp_last_radio, 2)
+        self.editor_appearance_efx_arp_group.buttonClicked.connect(self.editor_appearance_groups_check)
+        self.editor_appearance_filter_matrix_group.buttonClicked.connect(self.editor_appearance_groups_check)
+        self.editor_appearance_remember_last_chk.toggled.connect(self.editor_appearance_groups_check)
+        self.editor_appearance_efx_arp_latest = self.editor_appearance_filter_matrix_latest = 0
+
+        self.previous_id = 0
         self.connections = {INPUT: None, OUTPUT: None}
         self.deviceID_spin.valueChanged.connect(lambda value: self.deviceID_hex_lbl.setText('({:02X}h)'.format(value)))
         self.deviceID_spin.valueChanged.connect(self.check_broadcast)
@@ -273,6 +284,12 @@ class SettingsDialog(QtGui.QDialog):
         self.detect_timer.timeout.connect(self.no_response)
 
         self.no_response_msgbox = QtGui.QMessageBox(QtGui.QMessageBox.Warning, 'No response', 'We got no response from the Blofeld.\nPlease check MIDI connections or try to switch it off and on again.', QtGui.QMessageBox.Ok, self)
+
+    def editor_appearance_groups_check(self, btn):
+        if all([self.adv_last_radio.isChecked(), self.arp_last_radio.isChecked()]):
+            self.editor_appearance_remember_last_chk.setChecked(True)
+        else:
+            self.editor_appearance_remember_last_chk.setChecked(False)
 
     def set_preset_labels(self, btn):
         self.preset_desc_lbl.setText(self.preset_texts[str(btn.objectName())[7:-6]])
@@ -292,7 +309,7 @@ class SettingsDialog(QtGui.QDialog):
         self.detect_msgbox.accept()
         self.no_response_msgbox.accept()
         id = data[42]
-        self.previous = id
+        self.previous_id = id
         if id == 127:
             self.broadcast_chk.setChecked(True)
             self.broadcast_chk.toggled.emit(True)
@@ -312,13 +329,13 @@ class SettingsDialog(QtGui.QDialog):
 
     def set_broadcast(self, state):
         if state:
-            self.previous = self.deviceID_spin.value()
+            self.previous_id = self.deviceID_spin.value()
             self.deviceID_spin.blockSignals(True)
             self.deviceID_spin.setValue(127)
             self.deviceID_hex_lbl.setText('({:02X}h)'.format(127))
             self.deviceID_spin.blockSignals(False)
         else:
-            self.deviceID_spin.setValue(self.previous)
+            self.deviceID_spin.setValue(self.previous_id)
 
     def check_broadcast(self, value):
         if value == 127:
@@ -331,14 +348,19 @@ class SettingsDialog(QtGui.QDialog):
             self.broadcast_chk.setEnabled(True)
 
     def exec_(self):
+        #Library
         self.library_doubleclick_combo.setCurrentIndex(self.main.library_doubleclick)
         preset_btn = getattr(self, 'preset_{}_radio'.format(self.settings.gGeneral.get_Source_Library('personal')))
         preset_btn.setChecked(True)
 
+        #Editor
+        self.editor_appearance_filter_matrix_group.button(min(2, self.main.editor_appearance_filter_matrix)).click()
+        self.editor_appearance_efx_arp_group.button(min(2, self.main.editor_appearance_efx_arp)).click()
         self.editor_pgm_send_combo.setCurrentIndex(self.main.editor_remember_states[PGMSEND])
         self.editor_midi_send_combo.setCurrentIndex(self.main.editor_remember_states[MIDISEND])
         self.editor_remember_chk.setChecked(self.main.editor_remember)
 
+        #MIDI
         self.midi_groupbox.layout().addWidget(self.main.midiwidget)
 
         id = self.main.blofeld_id
@@ -346,20 +368,32 @@ class SettingsDialog(QtGui.QDialog):
             self.broadcast_chk.setChecked(True)
             self.broadcast_chk.toggled.emit(True)
         else:
-            self.previous = id
+            self.previous_id = id
             self.deviceID_spin.setValue(id)
             self.broadcast_chk.setChecked(False)
             self.broadcast_chk.toggled.emit(False)
 
         self.blofeld_autoconnect_chk.setChecked(self.main.blofeld_autoconnect)
         self.remember_connections_chk.setChecked(self.main.remember_connections)
+
+        #EXEC
         res = QtGui.QDialog.exec_(self)
         if not res: return
 
         self.main.library_doubleclick = self.library_doubleclick_combo.currentIndex()
-#        if self.preset_group.checkedButton() != self.preset_personal_radio and not self.settings.gGeneral.get_Source_Library(False):
         self.settings.gGeneral.set_Source_Library(str(self.preset_group.checkedButton().objectName())[7:-6])
 
+
+        if self.editor_appearance_filter_matrix_group.checkedId() > 1:
+            if not self.main.editor_appearance_filter_matrix & 2:
+                self.main.editor_appearance_filter_matrix = self.editor_appearance_filter_matrix_latest+2
+        else:
+            self.main.editor_appearance_filter_matrix = self.editor_appearance_filter_matrix_group.checkedId()
+        if self.editor_appearance_efx_arp_group.checkedId() > 1:
+            if not self.main.editor_appearance_efx_arp & 2:
+                self.main.editor_appearance_efx_arp = self.editor_appearance_efx_arp_latest+2
+        else:
+            self.main.editor_appearance_efx_arp = self.editor_appearance_efx_arp_group.checkedId()
         self.main.editor_remember = self.editor_remember_chk.isChecked()
         if self.editor_remember_chk.isChecked():
             self.main.editor_remember_states = [
