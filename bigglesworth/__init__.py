@@ -92,6 +92,9 @@ class BigglesworthObject(QtCore.QObject):
         self.settingsAction = self.librarian.settingsAction
         self.settingsAction.setIcon(QtGui.QIcon(QtGui.QIcon.fromTheme('preferences-other')))
         self.quitAction.setIcon(QtGui.QIcon.fromTheme('application-exit'))
+        dial_icon = QtGui.QIcon()
+        dial_icon.addFile(local_path('dial_icon.png'))
+        self.librarian.editorAction.setIcon(dial_icon)
         self.quitAction.triggered.connect(self.quit)
         self.librarian.aboutQtAction.triggered.connect(lambda: QtGui.QMessageBox.aboutQt(self.librarian, 'About Qt'))
         self.device_event.connect(lambda event: self.device_response(event, self.librarian))

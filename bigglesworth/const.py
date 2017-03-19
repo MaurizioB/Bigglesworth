@@ -12,7 +12,10 @@ def local_path(name):
 #with open('blofeld_params', 'rb') as _params_file:
 #    sound_params = pickle.load(_params_file)
 
-VERSION = '0.5'
+MAJ_VERSION = 0
+MIN_VERSION = 8
+REV_VERSION = 2
+VERSION = '{}.{}.{}'.format(MAJ_VERSION, MIN_VERSION, REV_VERSION)
 
 TEXT, PDF = range(2)
 
