@@ -713,7 +713,6 @@ class Librarian(QtGui.QMainWindow):
     dump_bulk_send = QtCore.pyqtSignal(object, object)
     dump_send = QtCore.pyqtSignal(object)
     midi_event = QtCore.pyqtSignal(object)
-#    dump_waiter = QtCore.pyqtSignal()
     activate_editor = QtCore.pyqtSignal(int, int)
     def __init__(self, main):
         QtGui.QMainWindow.__init__(self, parent=None)
@@ -738,6 +737,9 @@ class Librarian(QtGui.QMainWindow):
         self.bank_filter_combo.currentIndexChanged.connect(lambda index: self.blofeld_model_proxy.setMultiFilter(BANK, index))
         self.bank_filter_combo.currentIndexChanged.connect(self.bank_list_update)
         self.cat_filter_combo.currentIndexChanged.connect(lambda index: self.blofeld_model_proxy.setMultiFilter(CATEGORY, index))
+
+        self.print_win = PrintDialog(main, self)
+        self.textExportAction.triggered.connect(self.print_win.exec_)
 
         self.device_btn.clicked.connect(self.main.deviceAction.trigger)
         self.globals_btn.clicked.connect(self.main.globalsAction.trigger)

@@ -251,6 +251,7 @@
      <string>&amp;File</string>
     </property>
     <addaction name="saveAction"/>
+    <addaction name="textExportAction"/>
     <addaction name="separator"/>
     <addaction name="quitAction"/>
    </widget>
@@ -294,7 +295,7 @@
   </action>
   <action name="saveAction">
    <property name="text">
-    <string>Save library</string>
+    <string>Save current library</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
@@ -308,6 +309,14 @@
   <action name="aboutQtAction">
    <property name="text">
     <string>About Qt</string>
+   </property>
+  </action>
+  <action name="textExportAction">
+   <property name="text">
+    <string>Export library to text file...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+P</string>
    </property>
   </action>
  </widget>

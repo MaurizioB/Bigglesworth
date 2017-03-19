@@ -14,6 +14,8 @@ def local_path(name):
 
 VERSION = '0.5'
 
+TEXT, PDF = range(2)
+
 QWIDGETSIZE_MAX = ((1 << 24) - 1)
 INPUT, OUTPUT = 0, 1
 LEGATO = 0
