@@ -3,7 +3,8 @@
 
 from math import pi, sin, cos, acos, hypot, radians, degrees
 from bisect import bisect_left
-from PyQt4 import QtCore, QtGui
+from PyQt4 import QtGui
+from PyQt4 import QtCore
 
 from midiutils import NoteIds, NoteNames
 from utils import getAlignMask

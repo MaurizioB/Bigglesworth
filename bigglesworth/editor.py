@@ -12,7 +12,8 @@ from midiutils import *
 from const import *
 from classes import *
 from utils import *
-from ui_classes import *
+from editor_widgets import *
+
 
 class ParamObject(object):
     def __init__(self, param_tuple):
@@ -61,7 +62,7 @@ class ParamObject(object):
         self._value = value
         for o in self.object_list:
             if isinstance(o, BlofeldEnv):
-                o.setValue({self.short_name:value})
+                o.setValue({self.short_name: value})
                 continue
             if isinstance(o, BlofeldCombo):
                 if not 0 <= value <= o.count:
@@ -90,6 +91,7 @@ class BlofeldButton(SquareButton):
         self.setChecked(state)
         self.toggle_states(state)
 
+
 class BlofeldSlider(Slider):
     def __init__(self, parent, param_tuple, *args, **kwargs):
         if len(param_tuple) == 7:
@@ -104,12 +106,13 @@ class BlofeldSlider(Slider):
         self.main = parent
         self.valueChanged.connect(lambda value: setattr(self.main, self.attr, value))
 
+
 class BlofeldDial(Dial):
     def __init__(self, parent, param_tuple, *args, **kwargs):
         if len(param_tuple) == 7:
             full_range, values, name, short_name, family, attr, id = param_tuple
         else:
-            full_range, values, name, short_name, family, attr= param_tuple
+            full_range, values, name, short_name, family, attr = param_tuple
         if 'name' in kwargs:
             short_name = kwargs.pop('name')
         Dial.__init__(self, parent=parent, full_range=full_range, name=short_name, value_list=values, *args, **kwargs)
@@ -118,13 +121,15 @@ class BlofeldDial(Dial):
         self.main = parent
         self.valueChanged.connect(lambda value: setattr(self.main, self.attr, value))
 
+
 class BlofeldCombo(Combo):
     internalUpdate = QtCore.pyqtSignal(int)
+
     def __init__(self, parent, param_tuple, sub_par=None, *args, **kwargs):
         if len(param_tuple) == 7:
             full_range, values, name, short_name, family, attr, id = param_tuple
         else:
-            full_range, values, name, short_name, family, attr= param_tuple
+            full_range, values, name, short_name, family, attr = param_tuple
         if 'name' in kwargs:
             short_name = kwargs.pop('name')
         if 'values' in kwargs:
@@ -142,6 +147,7 @@ class BlofeldCombo(Combo):
     def _setValue(self, id):
         Combo._setValue(self, id)
         self.internalUpdate.emit(id)
+
 
 class BlofeldEnv(Envelope):
     def __init__(self, parent, env_name, *args, **kwargs):
@@ -238,6 +244,7 @@ class BlofeldEnv(Envelope):
 class BaseDisplayWidget(QtGui.QGraphicsWidget):
     pen = brush = QtGui.QColor(30, 50, 40)
 
+
 class DownArrowWidget(BaseDisplayWidget):
     arrow = QtGui.QPainterPath()
     arrow.moveTo(-4, -2)
@@ -259,12 +266,14 @@ class DownArrowWidget(BaseDisplayWidget):
         painter.translate(self.rect().center())
         painter.drawPath(self.arrow)
 
+
 class UpArrowWidget(DownArrowWidget):
     arrow = QtGui.QPainterPath()
     arrow.moveTo(-4, 2)
     arrow.lineTo(4, 2)
     arrow.lineTo(0, -2)
     arrow.closeSubpath()
+
 
 class TextCursorWidget(BaseDisplayWidget):
     def __init__(self, parent, height=12, mode=CURSOR_INSERT):
@@ -281,7 +290,6 @@ class TextCursorWidget(BaseDisplayWidget):
             self.paint = self.paintNormal
         else:
             self.paint = self.paintInsert
-
 
     def setInsWidth(self, width):
         self.insert = QtGui.QPainterPath()
@@ -300,6 +308,7 @@ class TextCursorWidget(BaseDisplayWidget):
         painter.setRenderHints(QtGui.QPainter.Antialiasing)
         painter.drawPath(self.insert)
 
+
 class BaseTextWidget(BaseDisplayWidget):
     def __init__(self, text, parent):
         BaseDisplayWidget.__init__(self, parent)
@@ -314,12 +323,14 @@ class BaseTextWidget(BaseDisplayWidget):
         painter.setFont(self.font)
         painter.drawText(self.rect(), self.text_align, self.text)
 
+
 class ProgLabelTextWidget(BaseTextWidget):
     space_brush = QtGui.QColor(BaseTextWidget.brush)
     space_brush.setAlpha(24)
     letter_changed = QtCore.pyqtSignal(int, int)
     editing_started = QtCore.pyqtSignal()
     editing_finished = QtCore.pyqtSignal()
+
     def __init__(self, text, parent):
         BaseTextWidget.__init__(self, text, parent)
         self.main = parent
@@ -522,7 +533,7 @@ class ProgLabelTextWidget(BaseTextWidget):
         for i, l in enumerate(self.editing_text):
             if l != ' ': continue
             painter.drawRect(self.font_metrics.width(self.editing_text[:i])+.5, 0, self.font_metrics.width(' ')-1, self.font_metrics.ascent())
-            
+
 
 class SmallTextWidget(BaseTextWidget):
     def __init__(self, text, parent):
@@ -530,12 +541,14 @@ class SmallTextWidget(BaseTextWidget):
         self.font = QtGui.QFont('Fira Sans', 12)
         self.font_metrics = QtGui.QFontMetrics(self.font)
 
+
 class BankTextWidget(SmallTextWidget):
     def __init__(self, parent):
         SmallTextWidget.__init__(self, 'A', parent)
         max_letters = max([self.font_metrics.width(l) for l in uppercase])
         self.setMinimumSize(max_letters, self.font_metrics.height())
         self.setMaximumSize(max_letters, self.font_metrics.height())
+
 
 class ProgTextWidget(SmallTextWidget):
     def __init__(self, parent):
@@ -545,6 +558,7 @@ class ProgTextWidget(SmallTextWidget):
         width = max_digits*3
         self.setMinimumSize(width, self.font_metrics.height())
         self.setMaximumSize(width, self.font_metrics.height())
+
 
 class CatTextWidget(SmallTextWidget):
     def __init__(self, parent):
@@ -558,6 +572,7 @@ class CatTextWidget(SmallTextWidget):
         self.text = categories[cat]
         self.update()
 
+
 class DisplayVSpacer(QtGui.QGraphicsWidget):
     def __init__(self, parent, size=2):
         QtGui.QGraphicsWidget.__init__(self, parent)
@@ -567,6 +582,7 @@ class DisplayVSpacer(QtGui.QGraphicsWidget):
 #    def paint(self, painter, *args, **kwargs):
 #        painter.drawRect(self.rect())
 
+
 class DisplayHSpacer(QtGui.QGraphicsWidget):
     def __init__(self, parent, size=2):
         QtGui.QGraphicsWidget.__init__(self, parent)
@@ -575,6 +591,7 @@ class DisplayHSpacer(QtGui.QGraphicsWidget):
 
 #    def paint(self, painter, *args, **kwargs):
 #        painter.drawRect(self.rect())
+
 
 class EditedWidget(BaseTextWidget):
     def __init__(self, parent):
@@ -595,6 +612,7 @@ class EditedWidget(BaseTextWidget):
 #        painter.drawRect(2, 2, 5, 5)
         painter.drawText(self.rect(), QtCore.Qt.AlignCenter, 'E')
 
+
 class SmallLabelTextWidget(BaseTextWidget):
     def __init__(self, text, parent, fixed=False, font_size=12, max_size=None, bold=False):
         BaseTextWidget.__init__(self, text, parent)
@@ -604,6 +622,7 @@ class SmallLabelTextWidget(BaseTextWidget):
         self.setMaximumHeight(self.font_metrics.height())
         if fixed:
             self.setMaximumWidth(self.font_metrics.width(self.text) if max_size is None else max_size)
+
 
 class DisplayComboLabelClass(BaseTextWidget):
     def __init__(self, parent):
@@ -637,14 +656,15 @@ class DisplayComboLabelClass(BaseTextWidget):
             painter.translate((self.rect().width()-item_rect.width())/2+1, (self.rect().height()-item_rect.height())/2)
             painter.drawPath(item)
 
+
 class StepTypeComboLabel(DisplayComboLabelClass):
     value_list = [
-                 '●', 
-                 '○', 
-                 '◀', 
-                 '▼', 
-                 '▲', 
-                 ]
+                  '●', 
+                  '○', 
+                  '◀', 
+                  '▼', 
+                  '▲', 
+                  ]
     value_list = map(QtCore.QString.fromUtf8, value_list)
     firstlast = QtGui.QPainterPath()
     firstlast.moveTo(4, 0)
@@ -664,17 +684,21 @@ class StepTypeComboLabel(DisplayComboLabelClass):
     value_list.append(chord)
     value_list.append(QtCore.QString.fromUtf8('?'))
 
+
 class AccentComboLabel(DisplayComboLabelClass):
     value_list = ['sil.', '/4', '/3', '/2', '*1', '*2', '*3', '*4', ]
     value_list = map(QtCore.QString.fromUtf8, value_list)
+
 
 class TimingComboLabel(DisplayComboLabelClass):
     value_list = ['rnd', '-3', '-2', '-1', '+0', '+1', '+2', '+3', ]
     value_list = map(QtCore.QString.fromUtf8, value_list)
 
+
 class LengthComboLabel(DisplayComboLabelClass):
     value_list = ['leg.', '-3', '-2', '-1', '+0', '+1', '+2', '+3', ]
     value_list = map(QtCore.QString.fromUtf8, value_list)
+
 
 class DisplayButton(QtGui.QGraphicsWidget):
     on_pen = on_brush = QtGui.QColor(30, 50, 40)
@@ -761,12 +785,14 @@ class DisplayButton(QtGui.QGraphicsWidget):
             painter.setFont(self.font)
             painter.drawText(0, self.font_metrics.height()-.5, self.text)
 
+
 class GlideDisplayButton(DisplayButton):
     path = QtGui.QPainterPath()
     path.arcTo(0, -3.5, 9, 7, 180, 90)
     path.arcTo(1, 3.5, 7, 9, 90, -90)
     path.arcTo(-1, 4.5, 9, 7, 0, 90)
     path.arcTo(0, -4.5, 7, 9, 270, -90)
+
     def __init__(self, parent, step, glide_list):
         DisplayButton.__init__(self, parent)
         self.step = step
@@ -778,39 +804,39 @@ class GlideDisplayButton(DisplayButton):
             item = self.scene().itemAt(self.mapToScene(event.pos()))
             if not isinstance(item, self.__class__): return
             index = self.glide_list.index(item)
-            if self.siblings[index] == None:
+            if self.siblings[index] is None:
                 self.siblings[index] = item.state
                 item._setState(self.state)
                 item.hoverEnterEvent(None)
             if index > self.step:
                 for i in range(self.step+1, index+1):
-                    if self.siblings[i] == None:
+                    if self.siblings[i] is None:
                         self.siblings[i] = self.glide_list[i].state
                         self.glide_list[i].hoverEnterEvent(None)
                     self.glide_list[i]._setState(self.state)
                 for i in range(index+1, len(self.glide_list)):
-                    if self.siblings[i] != None:
+                    if self.siblings[i] is not None:
                         self.glide_list[i]._setState(self.siblings[i])
                         self.glide_list[i].hoverLeaveEvent(None)
                         self.siblings[i] = None
                 for i in range(self.step):
-                    if self.siblings[i] != None:
+                    if self.siblings[i] is not None:
                         self.glide_list[i]._setState(self.siblings[i])
                         self.glide_list[i].hoverLeaveEvent(None)
                         self.siblings[i] = None
             else:
                 for i in range(index):
-                    if self.siblings[i] != None:
+                    if self.siblings[i] is not None:
                         self.glide_list[i]._setState(self.siblings[i])
                         self.glide_list[i].hoverLeaveEvent(None)
                         self.siblings[i] = None
                 for i in range(index, self.step):
-                    if self.siblings[i] == None:
+                    if self.siblings[i] is None:
                         self.siblings[i] = self.glide_list[i].state
                         self.glide_list[i].hoverEnterEvent(None)
                     self.glide_list[i]._setState(self.state)
                 for i in range(self.step+1, len(self.glide_list)):
-                    if self.siblings[i] != None:
+                    if self.siblings[i] is not None:
                         self.glide_list[i]._setState(self.siblings[i])
                         self.glide_list[i].hoverLeaveEvent(None)
                         self.siblings[i] = None
@@ -891,7 +917,6 @@ class DisplayCombo(QtGui.QGraphicsWidget):
     def wheelEvent(self, event):
         delta = 1 if event.delta() > 0 else -1
         self.setCurrentIndex(self.currentIndex+delta)
-        
 
     def mousePressEvent(self, event):
         pass
@@ -927,6 +952,7 @@ class DisplayCombo(QtGui.QGraphicsWidget):
 #        painter.translate(self.rect().center())
 #        painter.drawPath(self.arrow)
 
+
 class ArpDisplayComboClass(DisplayCombo):
     def __init__(self, parent, label_class, step, combo_list):
         DisplayCombo.__init__(self, parent, label_class)
@@ -939,39 +965,39 @@ class ArpDisplayComboClass(DisplayCombo):
             item = self.scene().itemAt(self.mapToScene(event.pos()))
             if not isinstance(item, self.__class__): return
             index = self.combo_list.index(item)
-            if self.siblings[index] == None:
+            if self.siblings[index] is None:
                 self.siblings[index] = item.currentIndex
                 item._setCurrentIndex(self.currentIndex)
                 item.highlight()
             if index > self.step:
                 for i in range(self.step+1, index+1):
-                    if self.siblings[i] == None:
+                    if self.siblings[i] is None:
                         self.siblings[i] = self.combo_list[i].currentIndex
                         self.combo_list[i].highlight()
                     self.combo_list[i]._setCurrentIndex(self.currentIndex)
                 for i in range(index+1, len(self.combo_list)):
-                    if self.siblings[i] != None:
+                    if self.siblings[i] is not None:
                         self.combo_list[i]._setCurrentIndex(self.siblings[i])
                         self.combo_list[i].unhighlight()
                         self.siblings[i] = None
                 for i in range(self.step):
-                    if self.siblings[i] != None:
+                    if self.siblings[i] is not None:
                         self.combo_list[i]._setCurrentIndex(self.siblings[i])
                         self.combo_list[i].unhighlight()
                         self.siblings[i] = None
             else:
                 for i in range(index):
-                    if self.siblings[i] != None:
+                    if self.siblings[i] is not None:
                         self.combo_list[i]._setCurrentIndex(self.siblings[i])
                         self.combo_list[i].unhighlight()
                         self.siblings[i] = None
                 for i in range(index, self.step):
-                    if self.siblings[i] == None:
+                    if self.siblings[i] is None:
                         self.siblings[i] = self.combo_list[i].currentIndex
                         self.combo_list[i].highlight()
                     self.combo_list[i]._setCurrentIndex(self.currentIndex)
                 for i in range(self.step+1, len(self.combo_list)):
-                    if self.siblings[i] != None:
+                    if self.siblings[i] is not None:
                         self.combo_list[i]._setCurrentIndex(self.siblings[i])
                         self.combo_list[i].unhighlight()
                         self.siblings[i] = None
@@ -1000,17 +1026,21 @@ class StepTypeCombo(ArpDisplayComboClass):
     def __init__(self, parent, step, combo_list):
         ArpDisplayComboClass.__init__(self, parent, StepTypeComboLabel, step, combo_list)
 
+
 class AccentCombo(ArpDisplayComboClass):
     def __init__(self, parent, step, combo_list):
         ArpDisplayComboClass.__init__(self, parent, AccentComboLabel, step, combo_list)
+
 
 class TimingCombo(ArpDisplayComboClass):
     def __init__(self, parent, step, combo_list):
         ArpDisplayComboClass.__init__(self, parent, TimingComboLabel, step, combo_list)
 
+
 class LengthCombo(ArpDisplayComboClass):
     def __init__(self, parent, step, combo_list):
         ArpDisplayComboClass.__init__(self, parent, LengthComboLabel, step, combo_list)
+
 
 class ArpStepWidget(QtGui.QGraphicsWidget):
     default_pen = QtGui.QColor(10, 30, 20)
@@ -1224,7 +1254,7 @@ class ArpStepWidget(QtGui.QGraphicsWidget):
         else:
             self.normal_pen = self.default_pen
             self.brush = self.normal_brush
-        
+
         if self.move_action is None:
             self.pen = self.normal_pen
         self.update_rect()
@@ -1269,6 +1299,7 @@ class ArpStepWidget(QtGui.QGraphicsWidget):
         painter.setRenderHints(QtGui.QPainter.Antialiasing)
         painter.drawRect(self.rect)
 
+
 class ArpLengthWidget(BaseDisplayWidget):
     def __init__(self, parent=None):
         BaseDisplayWidget.__init__(self, parent)
@@ -1302,6 +1333,7 @@ class ArpLengthWidget(BaseDisplayWidget):
         painter.setBrush(self.brush)
         painter.drawRect(0, 0, self.boundingRect().width(), self.boundingRect().height())
 
+
 class StepLine(BaseDisplayWidget):
     def __init__(self, parent, short=False):
         BaseDisplayWidget.__init__(self, parent)
@@ -1320,8 +1352,10 @@ class StepLine(BaseDisplayWidget):
         painter.setPen(self.pen)
         painter.drawLine(0, 0, 0, self.rect().height())
 
+
 class FakeObject(QtCore.QObject):
     valueChanged = QtCore.pyqtSignal(int)
+
     def __init__(self, parent):
         self.main = parent
         self.value = 0
@@ -1387,7 +1421,6 @@ class ArpEditor(QtGui.QGraphicsView):
 #        self.valueChanged.connect(lambda value: setattr(self.main, self.attr, value))
 #        parent.object_dict[attr].add(self, sub_par)
 #        self.indexChanged.connect(lambda id: setattr(self.main, self.attr, id if sub_par is None else (id, sub_par)))
-
 
     def create_layout(self):
         self.step_list = []
@@ -1568,6 +1601,7 @@ class ArpEditor(QtGui.QGraphicsView):
         self.arp_widget.setX(self.layout.itemAt(1, 1).x()-self.reference_step.x()*ratio)
         self.update()
 
+
 class MidiInDisplayButton(DisplayButton):
     path = QtGui.QPainterPath()
     path.moveTo(0, 3)
@@ -1576,6 +1610,7 @@ class MidiInDisplayButton(DisplayButton):
     path.arcTo(3, 0, 5.5, 6, 135, -270)
 #    path.translate(.5, 0)
     type_txt = 'input'
+
     def __init__(self, parent):
         self.font = QtGui.QFont('Fira Sans', 11, QtGui.QFont.Light)
         self.font_metrics = QtGui.QFontMetrics(self.font)
@@ -1608,6 +1643,7 @@ class MidiInDisplayButton(DisplayButton):
         self.setToolTip(tooltip)
         self.update()
 
+
 class MidiOutDisplayButton(MidiInDisplayButton):
     path = QtGui.QPainterPath()
     path.arcMoveTo(0, 0, 5.5, 6, 45)
@@ -1615,6 +1651,7 @@ class MidiOutDisplayButton(MidiInDisplayButton):
     path.moveTo(4, 3)
     path.lineTo(8, 3)
     type_txt = 'output'
+
 
 class MidiDisplayButton(DisplayButton):
     def __init__(self, parent):
@@ -1662,6 +1699,7 @@ class MidiDisplayButton(DisplayButton):
         self.pen = self.midi_in_pen
         self.led_timer.start()
         self.update()
+
 
 class BlofeldDisplay(QtGui.QGraphicsView):
     border_grad = QtGui.QConicalGradient(QtCore.QPointF(.5, .5), 45)
@@ -1996,7 +2034,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
                     port_item = QtGui.QAction(port.name, in_menu)
                     port_item.setData(port)
                     port_item.setCheckable(True)
-                    if any([True for conn in port.connections.output if conn.dest==self.main.alsa.input]):
+                    if any([True for conn in port.connections.output if conn.dest == self.main.alsa.input]):
                         port_item.setChecked(True)
                         setBold(client_menu.menuAction())
                         in_menu_connections += 1
@@ -2018,7 +2056,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
                     port_item = QtGui.QAction(port.name, out_menu)
                     port_item.setData(port)
                     port_item.setCheckable(True)
-                    if any([True for conn in port.connections.input if conn.src==self.main.alsa.output]):
+                    if any([True for conn in port.connections.input if conn.src == self.main.alsa.output]):
                         port_item.setChecked(True)
                         setBold(client_menu.menuAction())
                         out_menu_connections += 1
@@ -2147,6 +2185,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         self.update()
         self.panel.update()
 
+
 class EditingMask(QtGui.QWidget):
     def __init__(self, parent, reference=None):
         QtGui.QWidget.__init__(self, parent)
@@ -2206,7 +2245,7 @@ class Editor(QtGui.QMainWindow):
     filter_matrix_toggle_state = QtCore.pyqtSignal(bool)
     efx_arp_toggle_state = QtCore.pyqtSignal(bool)
 
-    object_dict = {attr:ParamObject(param_tuple) for attr, param_tuple in Params.param_names.items()}
+    object_dict = {attr: ParamObject(param_tuple) for attr, param_tuple in Params.param_names.items()}
     with open(local_path('blofeld_efx'), 'rb') as _fx:
         efx_params = pickle.load(_fx)
     with open(local_path('blofeld_efx_ranges'), 'rb') as _fx:
@@ -2251,7 +2290,6 @@ class Editor(QtGui.QMainWindow):
         display_layout.addLayout(self.create_display(), 0, 0, 2, 1)
         self.sound_edited.connect(lambda: [self.display.edited_widget.show(), self.display.edited_widget.setOpacity(1)])
         display_layout.addWidget(HSpacer(max_width=8), 0, 1)
-
 
         side_layout = QtGui.QGridLayout()
         display_layout.addLayout(side_layout, 1, 2)
@@ -2446,7 +2484,6 @@ class Editor(QtGui.QMainWindow):
         lower_layout.addLayout(self.create_envelopes(), 0, 0, 2, 1)
 
         lower_layout.addWidget(adv_arp_widget, 0, 1, 1, 2)
-
 
         self.keyboard = Piano(self, key_list=note_keys)
         self.keyboard.noteEvent.connect(self.send_note)
@@ -2669,7 +2706,6 @@ class Editor(QtGui.QMainWindow):
 
         return frame
 
-
     def autosave_set(self, state):
         self.save = state
         if self.main.editor_autosave & 2:
@@ -2690,7 +2726,7 @@ class Editor(QtGui.QMainWindow):
         par_id = Params.index_from_attr(attr)
         par_high, par_low = divmod(par_id, 128)
 #        print par_high, par_low, value
-        
+
         self.midi_event.emit(SysExEvent(1, [INIT, IDW, IDE, self.main.blofeld_id, SNDP, location, par_high, par_low, value, END]))
         self.display.midi_btn.midi_out()
 
@@ -2787,12 +2823,11 @@ class Editor(QtGui.QMainWindow):
         else:
             bank, prog = dest
             res = QtGui.QMessageBox.warning(self, 'Dump sound to Blofeld', 
-                                      'You are going to send a sound dump to the Blofeld at location "{}{:03}".\nThis action cannot be undone. Do you want to proceed?'.format(uppercase[bank], prog+1), 
-                                      QtGui.QMessageBox.Ok|QtGui.QMessageBox.Cancel
-                                      )
+                                            'You are going to send a sound dump to the Blofeld at location "{}{:03}".\nThis action cannot be undone. Do you want to proceed?'.format(uppercase[bank], prog+1), 
+                                            QtGui.QMessageBox.Ok|QtGui.QMessageBox.Cancel
+                                            )
             if res != QtGui.QMessageBox.Ok: return
         self.dump_send.emit(Sound([bank, prog]+data))
-        
 
     def reset_advanced_widgets(self):
         for env in self.envelopes:
@@ -2853,10 +2888,6 @@ class Editor(QtGui.QMainWindow):
         layout = QtGui.QHBoxLayout()
         frame.setLayout(layout)
 
-#        layout.addWidget(HSpacer())
-#        hold = SquareButton(self, checkable=True)
-#        layout.addWidget(hold, 0, 2, 1, 1)
-#        layout.addWidget(Label(self, 'Hold'), 0, 2, 1, 1)
         pitch_layout = QtGui.QGridLayout()
         layout.addLayout(pitch_layout)
         pitch_layout.addWidget(Section(self, border=True, alpha=255), 1, 0, 2, 2)
@@ -2877,38 +2908,6 @@ class Editor(QtGui.QMainWindow):
         uni_layout.addWidget(detune, 1, 1, 1, 1)
 
         return frame
-
-#    def create_adv(self):
-#        stack_layout = QtGui.QStackedLayout()
-#        
-#        main_widget = QtGui.QWidget()
-#        main_widget.setContentsMargins(-3, -3, -3, -3)
-#        main_layout = QtGui.QHBoxLayout()
-#        main_widget.setLayout(main_layout)
-#        stack_layout.addWidget(main_widget)
-#        main_layout.addWidget(self.create_effect_1())
-#        main_layout.addWidget(self.create_effect_2())
-#        main_layout.addWidget(self.create_arp())
-#
-#        arp_widget = QtGui.QWidget()
-#        arp_widget.setContentsMargins(-3, -3, -3, -3)
-#        stack_layout.addWidget(arp_widget)
-#        arp_widget.setLayout(self.create_arp_editor())
-#
-##        stack_layout.setCurrentIndex(1)
-#
-#        return stack_layout
-#
-#    def create_arp_editor(self):
-#        layout = QtGui.QGridLayout()
-#        self.arp_editor = ArpEditor(self)
-#        layout.addWidget(self.arp_editor, 0, 0, 1, 16)
-#
-##        for c in range(16):
-##            combo = Combo(self, value_list=[str(v) for v in range(8)])
-##            layout.addWidget(combo, 1, c)
-##            combo.indexChanged.connect(lambda v, step=c: self.arp_editor.step_list[step].setLength(v))
-#        return layout
 
     def create_mod_widgets(self):
         widget = QtGui.QWidget()
@@ -2955,7 +2954,6 @@ class Editor(QtGui.QMainWindow):
 
         return frame
 
-
     def create_glide(self):
         frame = Frame(self, 'Glide')
         frame.setContentsMargins(2, 12, 2, 2)
@@ -2973,12 +2971,6 @@ class Editor(QtGui.QMainWindow):
         return frame
 
     def create_effect_1(self):
-        short_names = {
-                       'Lowpass': 'LP', 
-                       'Highpass': 'HP', 
-                       'Diffusion': 'Diff.', 
-                       'Damping': 'Damp', 
-                       }
         def create_effects(efx_dict):
             efx_widget = QtGui.QWidget(self)
             frame_layout = QtGui.QVBoxLayout()
@@ -2988,7 +2980,7 @@ class Editor(QtGui.QMainWindow):
             for id, efx in items:
                 efx_range = self.efx_ranges[efx]
                 if len(efx_range) == 128:
-                    widget = BlofeldDial(self, self.params[id], name=short_names.get(efx, efx), size=24)
+                    widget = BlofeldDial(self, self.params[id], name=efx_short_names.get(efx, efx), size=24)
                     widget.setSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
                 else:
                     widget = BlofeldCombo(self, self.params[id], name=efx, values=efx_range)
@@ -3058,12 +3050,6 @@ class Editor(QtGui.QMainWindow):
         self.effects_1_layout.currentWidget().setEnabled(True)
 
     def create_effect_2(self):
-        short_names = {
-                       'Lowpass': 'LP', 
-                       'Highpass': 'HP', 
-                       'Diffusion': 'Diff.', 
-                       'Damping': 'Damp', 
-                       }
         def create_effects(efx_dict):
             efx_widget = QtGui.QWidget(self)
             frame_layout = QtGui.QVBoxLayout()
@@ -3073,7 +3059,7 @@ class Editor(QtGui.QMainWindow):
             for id, efx in items:
                 efx_range = self.efx_ranges[efx]
                 if len(efx_range) == 128:
-                    widget = BlofeldDial(self, self.params[id], name=short_names.get(efx, efx), size=24)
+                    widget = BlofeldDial(self, self.params[id], name=efx_short_names.get(efx, efx), size=24)
                     widget.setSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
                 else:
                     widget = BlofeldCombo(self, self.params[id], name=efx, values=efx_range)
@@ -3450,15 +3436,15 @@ class Editor(QtGui.QMainWindow):
 
         env.attackChanged.connect(attack.setValue)
         attack.valueChanged.connect(env.setAttack)
-        env.attackLevelChanged.connect(lambda value: attack_level.setValue(value) if mode.currentIndex!=0 else None)
+        env.attackLevelChanged.connect(lambda value: attack_level.setValue(value) if mode.currentIndex != 0 else None)
         attack_level.valueChanged.connect(env.setAttackLevel)
         env.sustainChanged.connect(sustain.setValue)
         sustain.valueChanged.connect(env.setSustain)
         env.decayChanged.connect(decay.setValue)
         decay.valueChanged.connect(env.setDecay)
-        env.decay2Changed.connect(lambda value: decay2.setValue(value) if mode.currentIndex!=0 else None)
+        env.decay2Changed.connect(lambda value: decay2.setValue(value) if mode.currentIndex != 0 else None)
         decay2.valueChanged.connect(env.setDecay2)
-        env.sustain2Changed.connect(lambda value: sustain2.setValue(value) if mode.currentIndex!=0 else None)
+        env.sustain2Changed.connect(lambda value: sustain2.setValue(value) if mode.currentIndex != 0 else None)
         sustain2.valueChanged.connect(env.setSustain2)
         env.releaseChanged.connect(release.setValue)
         release.valueChanged.connect(env.setRelease)
@@ -3510,15 +3496,15 @@ class Editor(QtGui.QMainWindow):
 
         env.attackChanged.connect(attack.setValue)
         attack.valueChanged.connect(env.setAttack)
-        env.attackLevelChanged.connect(lambda value: attack_level.setValue(value) if mode.currentIndex!=0 else None)
+        env.attackLevelChanged.connect(lambda value: attack_level.setValue(value) if mode.currentIndex != 0 else None)
         attack_level.valueChanged.connect(env.setAttackLevel)
         env.sustainChanged.connect(sustain.setValue)
         sustain.valueChanged.connect(env.setSustain)
         env.decayChanged.connect(decay.setValue)
         decay.valueChanged.connect(env.setDecay)
-        env.decay2Changed.connect(lambda value: decay2.setValue(value) if mode.currentIndex!=0 else None)
+        env.decay2Changed.connect(lambda value: decay2.setValue(value) if mode.currentIndex != 0 else None)
         decay2.valueChanged.connect(env.setDecay2)
-        env.sustain2Changed.connect(lambda value: sustain2.setValue(value) if mode.currentIndex!=0 else None)
+        env.sustain2Changed.connect(lambda value: sustain2.setValue(value) if mode.currentIndex != 0 else None)
         sustain2.valueChanged.connect(env.setSustain2)
         env.releaseChanged.connect(release.setValue)
         release.valueChanged.connect(env.setRelease)
@@ -3570,15 +3556,15 @@ class Editor(QtGui.QMainWindow):
 
         env.attackChanged.connect(attack.setValue)
         attack.valueChanged.connect(env.setAttack)
-        env.attackLevelChanged.connect(lambda value: attack_level.setValue(value) if mode.currentIndex!=0 else None)
+        env.attackLevelChanged.connect(lambda value: attack_level.setValue(value) if mode.currentIndex != 0 else None)
         attack_level.valueChanged.connect(env.setAttackLevel)
         env.sustainChanged.connect(sustain.setValue)
         sustain.valueChanged.connect(env.setSustain)
         env.decayChanged.connect(decay.setValue)
         decay.valueChanged.connect(env.setDecay)
-        env.decay2Changed.connect(lambda value: decay2.setValue(value) if mode.currentIndex!=0 else None)
+        env.decay2Changed.connect(lambda value: decay2.setValue(value) if mode.currentIndex != 0 else None)
         decay2.valueChanged.connect(env.setDecay2)
-        env.sustain2Changed.connect(lambda value: sustain2.setValue(value) if mode.currentIndex!=0 else None)
+        env.sustain2Changed.connect(lambda value: sustain2.setValue(value) if mode.currentIndex != 0 else None)
         sustain2.valueChanged.connect(env.setSustain2)
         env.releaseChanged.connect(release.setValue)
         release.valueChanged.connect(env.setRelease)
@@ -3630,15 +3616,15 @@ class Editor(QtGui.QMainWindow):
 
         env.attackChanged.connect(attack.setValue)
         attack.valueChanged.connect(env.setAttack)
-        env.attackLevelChanged.connect(lambda value: attack_level.setValue(value) if mode.currentIndex!=0 else None)
+        env.attackLevelChanged.connect(lambda value: attack_level.setValue(value) if mode.currentIndex != 0 else None)
         attack_level.valueChanged.connect(env.setAttackLevel)
         env.sustainChanged.connect(sustain.setValue)
         sustain.valueChanged.connect(env.setSustain)
         env.decayChanged.connect(decay.setValue)
         decay.valueChanged.connect(env.setDecay)
-        env.decay2Changed.connect(lambda value: decay2.setValue(value) if mode.currentIndex!=0 else None)
+        env.decay2Changed.connect(lambda value: decay2.setValue(value) if mode.currentIndex != 0 else None)
         decay2.valueChanged.connect(env.setDecay2)
-        env.sustain2Changed.connect(lambda value: sustain2.setValue(value) if mode.currentIndex!=0 else None)
+        env.sustain2Changed.connect(lambda value: sustain2.setValue(value) if mode.currentIndex != 0 else None)
         sustain2.valueChanged.connect(env.setSustain2)
         env.releaseChanged.connect(release.setValue)
         release.valueChanged.connect(env.setRelease)
@@ -3689,7 +3675,7 @@ class Editor(QtGui.QMainWindow):
                     w.setEnabled(False)
             elif index == 1:
                 for w in widget_list:
-                    w.setEnabled(False if w==limit_wt else True)
+                    w.setEnabled(False if w == limit_wt else True)
             elif index in (2, 3, 4):
                 for w in widget_list:
                     w.setEnabled(False if w in normal_disable else True)
@@ -3723,7 +3709,6 @@ class Editor(QtGui.QMainWindow):
         line2.addWidget(detune)
         bend = BlofeldDial(self, self.params.Osc_1_Bend_Range, center=True, size=32, default=64)
         line2.addWidget(bend)
-
 
         layout.addWidget(Section(self, border=True, alpha=255), 0, 1, 3, 2)
         layout.addWidget(Section(self, border=True, alpha=255), 0, 3, 3, 1)
@@ -3760,7 +3745,7 @@ class Editor(QtGui.QMainWindow):
                     w.setEnabled(False)
             elif index == 1:
                 for w in widget_list+(self.osc2_sync, ):
-                    w.setEnabled(False if w==limit_wt else True)
+                    w.setEnabled(False if w == limit_wt else True)
             elif index in (2, 3, 4):
                 for w in widget_list+(self.osc2_sync, ):
                     w.setEnabled(False if w in normal_disable else True)
@@ -3794,7 +3779,6 @@ class Editor(QtGui.QMainWindow):
         line2.addWidget(detune)
         bend = BlofeldDial(self, self.params.Osc_2_Bend_Range, center=True, size=32, default=64)
         line2.addWidget(bend)
-
 
         layout.addWidget(Section(self, border=True, alpha=255), 0, 1, 3, 2)
         layout.addWidget(Section(self, border=True, alpha=255), 0, 3, 3, 1)
@@ -3831,7 +3815,7 @@ class Editor(QtGui.QMainWindow):
                     w.setEnabled(False)
             elif index == 1:
                 for w in widget_list:
-                    w.setEnabled(False if w==limit_wt else True)
+                    w.setEnabled(False if w == limit_wt else True)
             elif index in (2, 3, 4):
                 for w in widget_list:
                     w.setEnabled(False if w in normal_disable else True)
@@ -3862,7 +3846,6 @@ class Editor(QtGui.QMainWindow):
         line2.addWidget(detune)
         bend = BlofeldDial(self, self.params.Osc_3_Bend_Range, center=True, size=32, default=64)
         line2.addWidget(bend)
-
 
         layout.addWidget(Section(self, border=True, alpha=255), 0, 1, 3, 2)
         layout.addWidget(Section(self, border=True, alpha=255), 0, 3, 3, 1)

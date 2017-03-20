@@ -6,12 +6,14 @@ import pickle
 from string import uppercase
 from PyQt4 import QtCore, QtGui
 
+from const import *
+from utils import *
 from alsa import *
 from midiutils import *
 from utils import *
 from classes import *
-from const import *
-from utils import *
+from widgets import *
+from dialogs import *
 
 from editor import Editor
 
@@ -500,7 +502,8 @@ class BigglesworthObject(QtCore.QObject):
                 if editor:
                     self.activate_editor(library)
             return
-        bank, prog = sound.bank, sound.prog
+        bank = sound.bank
+        prog = sound.prog
 
         if self.dump_bulk:
             self.dump_temp.append(sound)

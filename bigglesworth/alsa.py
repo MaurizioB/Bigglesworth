@@ -3,6 +3,7 @@ from pyalsa import alsaseq
 
 from midiutils import *
 
+
 class AlsaMidi(QtCore.QObject):
     client_start = QtCore.pyqtSignal(object)
     client_exit = QtCore.pyqtSignal(object)
@@ -20,14 +21,15 @@ class AlsaMidi(QtCore.QObject):
         self.sysex_buffer = []
         self.seq = alsaseq.Sequencer(clientname='Bigglesworth')
         self.keep_going = True
-        input_id = self.seq.create_simple_port(name = 'input', 
-                                                 type = alsaseq.SEQ_PORT_TYPE_MIDI_GENERIC|alsaseq.SEQ_PORT_TYPE_APPLICATION, 
-                                                 caps = alsaseq.SEQ_PORT_CAP_WRITE|alsaseq.SEQ_PORT_CAP_SUBS_WRITE|
-                                                 alsaseq.SEQ_PORT_CAP_SYNC_WRITE)
-        output_id = self.seq.create_simple_port(name = 'output', 
-                                                     type = alsaseq.SEQ_PORT_TYPE_MIDI_GENERIC|alsaseq.SEQ_PORT_TYPE_APPLICATION, 
-                                                     caps = alsaseq.SEQ_PORT_CAP_READ|alsaseq.SEQ_PORT_CAP_SUBS_READ|
-                                                     alsaseq.SEQ_PORT_CAP_SYNC_READ)
+        input_id = self.seq.create_simple_port(
+            name='input', 
+            type=alsaseq.SEQ_PORT_TYPE_MIDI_GENERIC|alsaseq.SEQ_PORT_TYPE_APPLICATION, 
+            caps=alsaseq.SEQ_PORT_CAP_WRITE|alsaseq.SEQ_PORT_CAP_SUBS_WRITE|
+            alsaseq.SEQ_PORT_CAP_SYNC_WRITE)
+        output_id = self.seq.create_simple_port(name='output', 
+                                                type=alsaseq.SEQ_PORT_TYPE_MIDI_GENERIC|alsaseq.SEQ_PORT_TYPE_APPLICATION, 
+                                                caps=alsaseq.SEQ_PORT_CAP_READ|alsaseq.SEQ_PORT_CAP_SUBS_READ|
+                                                alsaseq.SEQ_PORT_CAP_SYNC_READ)
 
         self.seq.connect_ports((alsaseq.SEQ_CLIENT_SYSTEM, alsaseq.SEQ_PORT_SYSTEM_ANNOUNCE), (self.seq.client_id, input_id))
 #        self.seq.connect_ports((16, 0), (self.seq.client_id, input_id))

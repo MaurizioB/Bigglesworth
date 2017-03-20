@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>409</width>
+    <width>425</width>
     <height>268</height>
    </rect>
   </property>
@@ -25,7 +25,7 @@
     </widget>
    </item>
    <item row="1" column="0">
-    <widget class="OutsideWidget" name="outside_widget">
+    <widget class="PrinterOutsideWidget" name="outside_widget">
      <property name="text">
       <string>Warning: text width exceeds page margins!</string>
      </property>
@@ -287,9 +287,6 @@
          </layout>
         </item>
        </layout>
-       <zorder>horizontalLayoutWidget_4</zorder>
-       <zorder>horizontalLayoutWidget_4</zorder>
-       <zorder>horizontalLayoutWidget_3</zorder>
       </widget>
      </item>
     </layout>
@@ -300,12 +297,12 @@
   <customwidget>
    <class>MultiCombo</class>
    <extends>QComboBox</extends>
-   <header>bigglesworth.classes</header>
+   <header>bigglesworth.dialogs.printer</header>
   </customwidget>
   <customwidget>
-   <class>OutsideWidget</class>
+   <class>PrinterOutsideWidget</class>
    <extends>QLabel</extends>
-   <header>bigglesworth.classes</header>
+   <header>bigglesworth.dialogs.printer</header>
   </customwidget>
  </customwidgets>
  <resources/>

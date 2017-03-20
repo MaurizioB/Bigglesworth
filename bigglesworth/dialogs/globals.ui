@@ -683,7 +683,7 @@
   <customwidget>
    <class>PopupSpin</class>
    <extends>QDoubleSpinBox</extends>
-   <header>bigglesworth.classes</header>
+   <header>bigglesworth.dialogs.globals</header>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -1,6 +1,6 @@
 from os import path
 from PyQt4 import QtCore, uic
-from const import *
+from bigglesworth.const import status_dict, cursor_list
 
 def get_next_cycle(cycle_obj):
     return cycle_obj.next()
@@ -18,8 +18,8 @@ def get_status(s):
         if k&s:
             return status_dict[k]
 
-def cursors(id):
-    return cursor_list[id]
+def cursors(index):
+    return cursor_list[index]
 
 def getAlignMask(new, default):
     if new & QtCore.Qt.AlignHorizontal_Mask:

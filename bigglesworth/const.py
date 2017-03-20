@@ -17,8 +17,6 @@ MIN_VERSION = 8
 REV_VERSION = 2
 VERSION = '{}.{}.{}'.format(MAJ_VERSION, MIN_VERSION, REV_VERSION)
 
-TEXT, PDF = range(2)
-
 QWIDGETSIZE_MAX = ((1 << 24) - 1)
 INPUT, OUTPUT = 0, 1
 LEGATO = 0
@@ -37,12 +35,12 @@ MIEB = True
 MoveCursor, UpCursor, DownCursor, LeftCursor, RightCursor = range(5)
 cursor_list = []
 status_dict = {
-          EMPTY: 'Empty', 
-          STORED: 'Stored', 
-          DUMPED: 'Dumped', 
-          EDITED: 'Edited', 
-          MOVED: 'Moved', 
-          }
+               EMPTY: 'Empty', 
+               STORED: 'Stored', 
+               DUMPED: 'Dumped', 
+               EDITED: 'Edited', 
+               MOVED: 'Moved', 
+               }
 
 INIT = 0xf0
 END = 0xf7
@@ -121,48 +119,55 @@ class AdvParam(object):
             print 'Parameters malformed (format: {}): {} ({:08b})'.format(self.fmt, data, data)
 
 arp_step_types = [
-               'normal', 
-               'pause', 
-               'previous', 
-               'first', 
-               'last', 
-               'first+last', 
-               'chord', 
-               'random', 
-               ]
+                  'normal', 
+                  'pause', 
+                  'previous', 
+                  'first', 
+                  'last', 
+                  'first+last', 
+                  'chord', 
+                  'random', 
+                  ]
 
 arp_step_accents = [
-                 'silent', 
-                 '/4', 
-                 '/3', 
-                 '/2', 
-                 '*1', 
-                 '*2', 
-                 '*3', 
-                 '*4', 
-                 ]
+                    'silent', 
+                    '/4', 
+                    '/3', 
+                    '/2', 
+                    '*1', 
+                    '*2', 
+                    '*3', 
+                    '*4', 
+                    ]
 
 arp_step_timings = [
-                 'random', 
-                 '-3', 
-                 '-2', 
-                 '-1', 
-                 '+0', 
-                 '+1', 
-                 '+2', 
-                 '+3', 
-                 ]
+                    'random', 
+                    '-3', 
+                    '-2', 
+                    '-1', 
+                    '+0', 
+                    '+1', 
+                    '+2', 
+                    '+3', 
+                    ]
 
 arp_step_lengths = [
-                 'legato', 
-                 '-3', 
-                 '-2', 
-                 '-1', 
-                 '+0', 
-                 '+1', 
-                 '+2', 
-                 '+3', 
-                 ]
+                    'legato', 
+                    '-3', 
+                    '-2', 
+                    '-1', 
+                    '+0', 
+                    '+1', 
+                    '+2', 
+                    '+3', 
+                    ]
+
+efx_short_names = {
+               'Lowpass': 'LP', 
+               'Highpass': 'HP', 
+               'Diffusion': 'Diff.', 
+               'Damping': 'Damp', 
+               }
 
 class ParamsClass(object):
     param_values_nt = namedtuple('param_values_nt', 'range values name short_name family attr')
@@ -183,7 +188,7 @@ class ParamsClass(object):
             param_names[a] = param_names_nt(r, v, n, s, f, a, i)
 
     def attr_from_index(self, index):
-        return self.param_list[id].attr
+        return self.param_list[index].attr
 
     def iter_attr(self):
         for p in self.param_list:
@@ -207,11 +212,11 @@ class ParamsClass(object):
         except:
             raise KeyError('Parameter {} does not exist!'.format(par_attr))
 
-    def __getitem__(self, id):
+    def __getitem__(self, index):
         try:
-            return self.param_list[id]
+            return self.param_list[index]
         except:
-            raise IndexError('Parameter at index {} does not exist!'.format(id))
+            raise IndexError('Parameter at index {} does not exist!'.format(index))
 
 Params = ParamsClass()
 
@@ -246,13 +251,6 @@ ctrl2sysex = {
               113: 235, 114: 237, 115: 238, 116: 239, 117: 240, 118: 241,   #env4 env
               }
 
-popup_values = [None, .1, .2, .3, .4, .6, .7, .8, .9, 1.1, 1.2, 1.3, 1.4, 1.5, 1.7, 1.8, 1.9, 2, 2.2, 2.3, 2.4, 2.5, 2.6, 2.8, 2.9,
-                3, 3.1, 3.3, 3.4, 3.5, 3.6, 3.8, 3.9, 4, 4.1, 4.2, 4.4, 4.5, 4.6, 4.7, 4.9, 5, 5.1, 5.2, 5.3, 5.5, 5.6, 5.7, 5.8, 
-                6, 6.1, 6.2, 6.3, 6.5, 6.6, 6.7, 6.8, 6.9, 7.1, 7.2, 7.3, 7.4, 7.6, 7.7, 7.8, 7.9, 8, 8.2, 8.3, 8.4, 8.5, 8.7, 8.8, 8.9, 
-                9, 9.1, 9.3, 9.4, 9.5, 9.6, 9.8, 9.9, 10, 10.1, 10.3, 10.4, 10.5, 10.6, 10.7, 10.9, 11, 11.1, 11.2, 11.4, 11.5, 11.6, 11.7, 11.8, 
-                12, 12.1, 12.2, 12.3, 12.5, 12.6, 12.7, 12.8, 13, 13.1, 13.2, 13.3, 13.4, 13.6, 13.7, 13.8, 13.9, 
-                14.1, 14.2, 14.3, 14.4, 14.5, 14.7, 14.8, 14.9, 15, 15.2, 15.3, 15.4, 15.5]
-
 INDEX, BANK, PROG, NAME, CATEGORY, STATUS, SOUND = range(7)
 sound_headers = ['Index', 'Bank', 'Id', 'Name', 'Category', 'Status']
 
@@ -286,17 +284,17 @@ note_scancodes = [
                   52, 39, 53, 40, 54, 55, 42, 56, 43, 57, 44, 58,
                   59, 46, 60, 47, 61, 24, 11, 25, 12, 26, 13, 27, 
                   28, 15, 29, 16, 30, 31, 18, 32, 19, 33, 20, 34, 
-                  35
-         ]
-#babba = QtCore.QString().fromUtf8('erg')
+                  35, 
+                  ]
+
 note_keys = [
              'Z', 'S', 'X', 'D', 'C', 'V', 'G', 'B', 'H', 'N', 'J', 'M', 
              ',', 'L', '.', 'Ò', '-', 'Q', '2', 'W', '3', 'E', '4', 'R', 
              'T', '6', 'Y', '7', 'U', 'I', '9', 'O', '0', 'P', '\'', 'È', 
-             '+'
+             '+', 
              ]
 
-note_keys = [QtCore.QString().fromUtf8(l) for l in note_keys]
+note_keys = [QtCore.QString().fromUtf8(key) for key in note_keys]
 
 init_sound_data = [0, 0, 
                    1, 64, 64, 64, 66, 96, 0, 0, 2, 127, 1, 64, 0, 0, 0, 0, 0, 64, 64, 64, 66, 
