@@ -225,6 +225,12 @@ class BigglesworthObject(QtCore.QObject):
         self.editor.filter_matrix_toggle_state.connect(lambda state: setattr(self, 'editor_appearance_filter_matrix_latest', state))
         self.editor.efx_arp_toggle_state.connect(lambda state: setattr(self, 'editor_appearance_efx_arp_latest', state))
 
+        #SUMMARY
+        self.summary = SummaryDialog(self, self.librarian)
+        self.summary.dump_send.connect(self.dump_send)
+        self.sysexSoundImportAction = self.librarian.sysexSoundImportAction
+        self.sysexSoundImportAction.triggered.connect(self.summary.open)
+
         self.midi_connect()
 #        self.dump_win.show()
 

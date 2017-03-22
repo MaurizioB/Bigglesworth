@@ -380,7 +380,7 @@ class PrintDialog(QtGui.QDialog):
         if self.mode == TEXT:
             while True:
                 file = QtGui.QFileDialog.getSaveFileName(self, 'Export to text file', QtCore.QDir.homePath()+'/blofeld_presets.txt', 'Text files (*.txt);; All files (*)')
-                if not file: break
+                if not file: return
                 try:
                     with open(file, 'wb') as of:
                         of.write(self.text)

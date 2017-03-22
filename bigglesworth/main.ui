@@ -253,6 +253,8 @@
     <addaction name="saveAction"/>
     <addaction name="textExportAction"/>
     <addaction name="separator"/>
+    <addaction name="sysexSoundImportAction"/>
+    <addaction name="separator"/>
     <addaction name="quitAction"/>
    </widget>
    <widget class="QMenu" name="menu_Windows">
@@ -318,6 +320,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+P</string>
+   </property>
+  </action>
+  <action name="sysexSoundImportAction">
+   <property name="text">
+    <string>Import SysEx sound...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
    </property>
   </action>
  </widget>

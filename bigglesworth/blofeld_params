@@ -5255,213 +5255,189 @@ tp2350
 ag619
 aS'Modulation 1 Source'
 p2351
-ag2351
-ag849
-aS'Modulation_1_Source'
+aS'Source'
 p2352
-aa(lp2353
+aS'Modulation 1'
+p2353
+aS'Modulation_1_Source'
+p2354
+aa(lp2355
 (I0
 I53
 I1
-tp2354
-a(lp2355
+tp2356
+a(lp2357
 S'Pitch'
-p2356
-aS'O1 Pitch'
-p2357
-aS'O1 FM'
 p2358
-aS'O1 PW/Wave'
+aS'O1 Pitch'
 p2359
-aS'O2 Pitch'
+aS'O1 FM'
 p2360
-aS'O2 FM'
+aS'O1 PW/Wave'
 p2361
-aS'O2 PW/Wave'
+aS'O2 Pitch'
 p2362
-aS'O3 Pitch'
+aS'O2 FM'
 p2363
-aS'O3 FM'
+aS'O2 PW/Wave'
 p2364
-aS'O3 PW'
+aS'O3 Pitch'
 p2365
-aS'O1 Level'
+aS'O3 FM'
 p2366
-aS'O1 Balance'
+aS'O3 PW'
 p2367
-aS'O2 Level'
+aS'O1 Level'
 p2368
-aS'O2 Balance'
+aS'O1 Balance'
 p2369
-aS'O3 Level'
+aS'O2 Level'
 p2370
-aS'O3 Balance'
+aS'O2 Balance'
 p2371
-aS'RMod Level'
+aS'O3 Level'
 p2372
-aS'RMod Bal.'
+aS'O3 Balance'
 p2373
-aS'NoiseLevel'
+aS'RMod Level'
 p2374
-aS'Noise Bal.'
+aS'RMod Bal.'
 p2375
-aS'F1 Cutoff'
+aS'NoiseLevel'
 p2376
-aS'F1 Reson.'
+aS'Noise Bal.'
 p2377
-aS'F1 FM'
+aS'F1 Cutoff'
 p2378
-aS'F1 Drive'
+aS'F1 Reson.'
 p2379
-aS'F1 Pan'
+aS'F1 FM'
 p2380
-aS'F2 Cutoff'
+aS'F1 Drive'
 p2381
-aS'F2 Reson.'
+aS'F1 Pan'
 p2382
-aS'F2 FM'
+aS'F2 Cutoff'
 p2383
-aS'F2 Drive'
+aS'F2 Reson.'
 p2384
-aS'F2 Pan'
+aS'F2 FM'
 p2385
-aS'Volume'
+aS'F2 Drive'
 p2386
-aS'LFO1Speed'
+aS'F2 Pan'
 p2387
-aS'LFO2Speed'
+aS'Volume'
 p2388
-aS'LFO3Speed'
+aS'LFO1Speed'
 p2389
-aS'FE Attack'
+aS'LFO2Speed'
 p2390
-aS'FE Decay'
+aS'LFO3Speed'
 p2391
-aS'FE Sustain'
+aS'FE Attack'
 p2392
-aS'FE Release'
+aS'FE Decay'
 p2393
-aS'AE Attack'
+aS'FE Sustain'
 p2394
-aS'AE Decay'
+aS'FE Release'
 p2395
-aS'AE Sustain'
+aS'AE Attack'
 p2396
-aS'AE Release'
+aS'AE Decay'
 p2397
-aS'E3 Attack'
+aS'AE Sustain'
 p2398
-aS'E3 Decay'
+aS'AE Release'
 p2399
-aS'E3 Sustain'
+aS'E3 Attack'
 p2400
-aS'E3 Release'
+aS'E3 Decay'
 p2401
-aS'E4 Attack'
+aS'E3 Sustain'
 p2402
-aS'E4 Decay'
+aS'E3 Release'
 p2403
-aS'E4 Sustain'
+aS'E4 Attack'
 p2404
-aS'E4 Release'
+aS'E4 Decay'
 p2405
-aS'M1 Amount'
+aS'E4 Sustain'
 p2406
-aS'M2 Amount'
+aS'E4 Release'
 p2407
-aS'M3 Amount'
+aS'M1 Amount'
 p2408
-aS'M4 Amount'
+aS'M2 Amount'
 p2409
-aaS'Modulation 1 Destination'
+aS'M3 Amount'
 p2410
-ag2410
-ag849
-aS'Modulation_1_Destination'
+aS'M4 Amount'
 p2411
-aa(lp2412
-(I0
-I127
-I1
-tp2413
-ag181
-aS'Modulation 1 Amount'
+aaS'Modulation 1 Destination'
+p2412
+aS'Destination'
+p2413
+aS'Modulation 1'
 p2414
-ag2414
-ag849
-aS'Modulation_1_Amount'
+aS'Modulation_1_Destination'
 p2415
 aa(lp2416
 (I0
-I30
-I1
-tp2417
-ag619
-aS'Modulation 2 Source'
-p2418
-ag2418
-ag849
-aS'Modulation_2_Source'
-p2419
-aa(lp2420
-(I0
-I53
-I1
-tp2421
-ag2355
-aS'Modulation 2 Destination'
-p2422
-ag2422
-ag849
-aS'Modulation_2_Destination'
-p2423
-aa(lp2424
-(I0
 I127
 I1
-tp2425
+tp2417
 ag181
-aS'Modulation 2 Amount'
+aS'Modulation 1 Amount'
+p2418
+aS'Amount'
+p2419
+aS'Modulation 1'
+p2420
+aS'Modulation_1_Amount'
+p2421
+aa(lp2422
+(I0
+I30
+I1
+tp2423
+ag619
+aS'Modulation 2 Source'
+p2424
+aS'Source'
+p2425
+aS'Modulation 2'
 p2426
-ag2426
-ag849
-aS'Modulation_2_Amount'
+aS'Modulation_2_Source'
 p2427
 aa(lp2428
 (I0
-I30
-I1
-tp2429
-ag619
-aS'Modulation 3 Source'
-p2430
-ag2430
-ag849
-aS'Modulation_3_Source'
-p2431
-aa(lp2432
-(I0
 I53
 I1
-tp2433
-ag2355
-aS'Modulation 3 Destination'
-p2434
-ag2434
-ag849
-aS'Modulation_3_Destination'
-p2435
-aa(lp2436
+tp2429
+ag2357
+aS'Modulation 2 Destination'
+p2430
+aS'Destination'
+p2431
+aS'Modulation 2'
+p2432
+aS'Modulation_2_Destination'
+p2433
+aa(lp2434
 (I0
 I127
 I1
-tp2437
+tp2435
 ag181
-aS'Modulation 3 Amount'
+aS'Modulation 2 Amount'
+p2436
+aS'Amount'
+p2437
+aS'Modulation 2'
 p2438
-ag2438
-ag849
-aS'Modulation_3_Amount'
+aS'Modulation_2_Amount'
 p2439
 aa(lp2440
 (I0
@@ -5469,107 +5445,83 @@ I30
 I1
 tp2441
 ag619
-aS'Modulation 4 Source'
+aS'Modulation 3 Source'
 p2442
-ag2442
-ag849
-aS'Modulation_4_Source'
+aS'Source'
 p2443
-aa(lp2444
+aS'Modulation 3'
+p2444
+aS'Modulation_3_Source'
+p2445
+aa(lp2446
 (I0
 I53
 I1
-tp2445
-ag2355
-aS'Modulation 4 Destination'
-p2446
-ag2446
-ag849
-aS'Modulation_4_Destination'
-p2447
-aa(lp2448
-(I0
-I127
-I1
-tp2449
-ag181
-aS'Modulation 4 Amount'
+tp2447
+ag2357
+aS'Modulation 3 Destination'
+p2448
+aS'Destination'
+p2449
+aS'Modulation 3'
 p2450
-ag2450
-ag849
-aS'Modulation_4_Amount'
+aS'Modulation_3_Destination'
 p2451
 aa(lp2452
 (I0
-I30
-I1
-tp2453
-ag619
-aS'Modulation 5 Source'
-p2454
-ag2454
-ag849
-aS'Modulation_5_Source'
-p2455
-aa(lp2456
-(I0
-I53
-I1
-tp2457
-ag2355
-aS'Modulation 5 Destination'
-p2458
-ag2458
-ag849
-aS'Modulation_5_Destination'
-p2459
-aa(lp2460
-(I0
 I127
 I1
-tp2461
+tp2453
 ag181
-aS'Modulation 5 Amount'
+aS'Modulation 3 Amount'
+p2454
+aS'Amount'
+p2455
+aS'Modulation 3'
+p2456
+aS'Modulation_3_Amount'
+p2457
+aa(lp2458
+(I0
+I30
+I1
+tp2459
+ag619
+aS'Modulation 4 Source'
+p2460
+aS'Source'
+p2461
+aS'Modulation 4'
 p2462
-ag2462
-ag849
-aS'Modulation_5_Amount'
+aS'Modulation_4_Source'
 p2463
 aa(lp2464
 (I0
-I30
-I1
-tp2465
-ag619
-aS'Modulation 6 Source'
-p2466
-ag2466
-ag849
-aS'Modulation_6_Source'
-p2467
-aa(lp2468
-(I0
 I53
 I1
-tp2469
-ag2355
-aS'Modulation 6 Destination'
-p2470
-ag2470
-ag849
-aS'Modulation_6_Destination'
-p2471
-aa(lp2472
+tp2465
+ag2357
+aS'Modulation 4 Destination'
+p2466
+aS'Destination'
+p2467
+aS'Modulation 4'
+p2468
+aS'Modulation_4_Destination'
+p2469
+aa(lp2470
 (I0
 I127
 I1
-tp2473
+tp2471
 ag181
-aS'Modulation 6 Amount'
+aS'Modulation 4 Amount'
+p2472
+aS'Amount'
+p2473
+aS'Modulation 4'
 p2474
-ag2474
-ag849
-aS'Modulation_6_Amount'
+aS'Modulation_4_Amount'
 p2475
 aa(lp2476
 (I0
@@ -5577,107 +5529,83 @@ I30
 I1
 tp2477
 ag619
-aS'Modulation 7 Source'
+aS'Modulation 5 Source'
 p2478
-ag2478
-ag849
-aS'Modulation_7_Source'
+aS'Source'
 p2479
-aa(lp2480
+aS'Modulation 5'
+p2480
+aS'Modulation_5_Source'
+p2481
+aa(lp2482
 (I0
 I53
 I1
-tp2481
-ag2355
-aS'Modulation 7 Destination'
-p2482
-ag2482
-ag849
-aS'Modulation_7_Destination'
-p2483
-aa(lp2484
-(I0
-I127
-I1
-tp2485
-ag181
-aS'Modulation 7 Amount'
+tp2483
+ag2357
+aS'Modulation 5 Destination'
+p2484
+aS'Destination'
+p2485
+aS'Modulation 5'
 p2486
-ag2486
-ag849
-aS'Modulation_7_Amount'
+aS'Modulation_5_Destination'
 p2487
 aa(lp2488
 (I0
-I30
-I1
-tp2489
-ag619
-aS'Modulation 8 Source'
-p2490
-ag2490
-ag849
-aS'Modulation_8_Source'
-p2491
-aa(lp2492
-(I0
-I53
-I1
-tp2493
-ag2355
-aS'Modulation 8 Destination'
-p2494
-ag2494
-ag849
-aS'Modulation_8_Destination'
-p2495
-aa(lp2496
-(I0
 I127
 I1
-tp2497
+tp2489
 ag181
-aS'Modulation 8 Amount'
+aS'Modulation 5 Amount'
+p2490
+aS'Amount'
+p2491
+aS'Modulation 5'
+p2492
+aS'Modulation_5_Amount'
+p2493
+aa(lp2494
+(I0
+I30
+I1
+tp2495
+ag619
+aS'Modulation 6 Source'
+p2496
+aS'Source'
+p2497
+aS'Modulation 6'
 p2498
-ag2498
-ag849
-aS'Modulation_8_Amount'
+aS'Modulation_6_Source'
 p2499
 aa(lp2500
 (I0
-I30
-I1
-tp2501
-ag619
-aS'Modulation 9 Source'
-p2502
-ag2502
-ag849
-aS'Modulation_9_Source'
-p2503
-aa(lp2504
-(I0
 I53
 I1
-tp2505
-ag2355
-aS'Modulation 9 Destination'
-p2506
-ag2506
-ag849
-aS'Modulation_9_Destination'
-p2507
-aa(lp2508
+tp2501
+ag2357
+aS'Modulation 6 Destination'
+p2502
+aS'Destination'
+p2503
+aS'Modulation 6'
+p2504
+aS'Modulation_6_Destination'
+p2505
+aa(lp2506
 (I0
 I127
 I1
-tp2509
+tp2507
 ag181
-aS'Modulation 9 Amount'
+aS'Modulation 6 Amount'
+p2508
+aS'Amount'
+p2509
+aS'Modulation 6'
 p2510
-ag2510
-ag849
-aS'Modulation_9_Amount'
+aS'Modulation_6_Amount'
 p2511
 aa(lp2512
 (I0
@@ -5685,107 +5613,83 @@ I30
 I1
 tp2513
 ag619
-aS'Modulation 10 Source'
+aS'Modulation 7 Source'
 p2514
-ag2514
-ag849
-aS'Modulation_10_Source'
+aS'Source'
 p2515
-aa(lp2516
+aS'Modulation 7'
+p2516
+aS'Modulation_7_Source'
+p2517
+aa(lp2518
 (I0
 I53
 I1
-tp2517
-ag2355
-aS'Modulation 10 Destination'
-p2518
-ag2518
-ag849
-aS'Modulation_10_Destination'
-p2519
-aa(lp2520
-(I0
-I127
-I1
-tp2521
-ag181
-aS'Modulation 10 Amount'
+tp2519
+ag2357
+aS'Modulation 7 Destination'
+p2520
+aS'Destination'
+p2521
+aS'Modulation 7'
 p2522
-ag2522
-ag849
-aS'Modulation_10_Amount'
+aS'Modulation_7_Destination'
 p2523
 aa(lp2524
 (I0
-I30
-I1
-tp2525
-ag619
-aS'Modulation 11 Source'
-p2526
-ag2526
-ag849
-aS'Modulation_11_Source'
-p2527
-aa(lp2528
-(I0
-I53
-I1
-tp2529
-ag2355
-aS'Modulation 11 Destination'
-p2530
-ag2530
-ag849
-aS'Modulation_11_Destination'
-p2531
-aa(lp2532
-(I0
 I127
 I1
-tp2533
+tp2525
 ag181
-aS'Modulation 11 Amount'
+aS'Modulation 7 Amount'
+p2526
+aS'Amount'
+p2527
+aS'Modulation 7'
+p2528
+aS'Modulation_7_Amount'
+p2529
+aa(lp2530
+(I0
+I30
+I1
+tp2531
+ag619
+aS'Modulation 8 Source'
+p2532
+aS'Source'
+p2533
+aS'Modulation 8'
 p2534
-ag2534
-ag849
-aS'Modulation_11_Amount'
+aS'Modulation_8_Source'
 p2535
 aa(lp2536
 (I0
-I30
-I1
-tp2537
-ag619
-aS'Modulation 12 Source'
-p2538
-ag2538
-ag849
-aS'Modulation_12_Source'
-p2539
-aa(lp2540
-(I0
 I53
 I1
-tp2541
-ag2355
-aS'Modulation 12 Destination'
-p2542
-ag2542
-ag849
-aS'Modulation_12_Destination'
-p2543
-aa(lp2544
+tp2537
+ag2357
+aS'Modulation 8 Destination'
+p2538
+aS'Destination'
+p2539
+aS'Modulation 8'
+p2540
+aS'Modulation_8_Destination'
+p2541
+aa(lp2542
 (I0
 I127
 I1
-tp2545
+tp2543
 ag181
-aS'Modulation 12 Amount'
+aS'Modulation 8 Amount'
+p2544
+aS'Amount'
+p2545
+aS'Modulation 8'
 p2546
-ag2546
-ag849
-aS'Modulation_12_Amount'
+aS'Modulation_8_Amount'
 p2547
 aa(lp2548
 (I0
@@ -5793,107 +5697,83 @@ I30
 I1
 tp2549
 ag619
-aS'Modulation 13 Source'
+aS'Modulation 9 Source'
 p2550
-ag2550
-ag849
-aS'Modulation_13_Source'
+aS'Source'
 p2551
-aa(lp2552
+aS'Modulation 9'
+p2552
+aS'Modulation_9_Source'
+p2553
+aa(lp2554
 (I0
 I53
 I1
-tp2553
-ag2355
-aS'Modulation 13 Destination'
-p2554
-ag2554
-ag849
-aS'Modulation_13_Destination'
-p2555
-aa(lp2556
-(I0
-I127
-I1
-tp2557
-ag181
-aS'Modulation 13 Amount'
+tp2555
+ag2357
+aS'Modulation 9 Destination'
+p2556
+aS'Destination'
+p2557
+aS'Modulation 9'
 p2558
-ag2558
-ag849
-aS'Modulation_13_Amount'
+aS'Modulation_9_Destination'
 p2559
 aa(lp2560
 (I0
-I30
-I1
-tp2561
-ag619
-aS'Modulation 14 Source'
-p2562
-ag2562
-ag849
-aS'Modulation_14_Source'
-p2563
-aa(lp2564
-(I0
-I53
-I1
-tp2565
-ag2355
-aS'Modulation 14 Destination'
-p2566
-ag2566
-ag849
-aS'Modulation_14_Destination'
-p2567
-aa(lp2568
-(I0
 I127
 I1
-tp2569
+tp2561
 ag181
-aS'Modulation 14 Amount'
+aS'Modulation 9 Amount'
+p2562
+aS'Amount'
+p2563
+aS'Modulation 9'
+p2564
+aS'Modulation_9_Amount'
+p2565
+aa(lp2566
+(I0
+I30
+I1
+tp2567
+ag619
+aS'Modulation 10 Source'
+p2568
+aS'Source'
+p2569
+aS'Modulation 10'
 p2570
-ag2570
-ag849
-aS'Modulation_14_Amount'
+aS'Modulation_10_Source'
 p2571
 aa(lp2572
 (I0
-I30
-I1
-tp2573
-ag619
-aS'Modulation 15 Source'
-p2574
-ag2574
-ag849
-aS'Modulation_15_Source'
-p2575
-aa(lp2576
-(I0
 I53
 I1
-tp2577
-ag2355
-aS'Modulation 15 Destination'
-p2578
-ag2578
-ag849
-aS'Modulation_15_Destination'
-p2579
-aa(lp2580
+tp2573
+ag2357
+aS'Modulation 10 Destination'
+p2574
+aS'Destination'
+p2575
+aS'Modulation 10'
+p2576
+aS'Modulation_10_Destination'
+p2577
+aa(lp2578
 (I0
 I127
 I1
-tp2581
+tp2579
 ag181
-aS'Modulation 15 Amount'
+aS'Modulation 10 Amount'
+p2580
+aS'Amount'
+p2581
+aS'Modulation 10'
 p2582
-ag2582
-ag849
-aS'Modulation_15_Amount'
+aS'Modulation_10_Amount'
 p2583
 aa(lp2584
 (I0
@@ -5901,63 +5781,281 @@ I30
 I1
 tp2585
 ag619
-aS'Modulation 16 Source'
+aS'Modulation 11 Source'
 p2586
-ag2586
-ag849
-aS'Modulation_16_Source'
+aS'Source'
 p2587
-aa(lp2588
+aS'Modulation 11'
+p2588
+aS'Modulation_11_Source'
+p2589
+aa(lp2590
 (I0
 I53
 I1
-tp2589
-ag2355
-aS'Modulation 16 Destination'
-p2590
-ag2590
-ag849
-aS'Modulation_16_Destination'
-p2591
-aa(lp2592
+tp2591
+ag2357
+aS'Modulation 11 Destination'
+p2592
+aS'Destination'
+p2593
+aS'Modulation 11'
+p2594
+aS'Modulation_11_Destination'
+p2595
+aa(lp2596
 (I0
 I127
 I1
-tp2593
+tp2597
+ag181
+aS'Modulation 11 Amount'
+p2598
+aS'Amount'
+p2599
+aS'Modulation 11'
+p2600
+aS'Modulation_11_Amount'
+p2601
+aa(lp2602
+(I0
+I30
+I1
+tp2603
+ag619
+aS'Modulation 12 Source'
+p2604
+aS'Source'
+p2605
+aS'Modulation 12'
+p2606
+aS'Modulation_12_Source'
+p2607
+aa(lp2608
+(I0
+I53
+I1
+tp2609
+ag2357
+aS'Modulation 12 Destination'
+p2610
+aS'Destination'
+p2611
+aS'Modulation 12'
+p2612
+aS'Modulation_12_Destination'
+p2613
+aa(lp2614
+(I0
+I127
+I1
+tp2615
+ag181
+aS'Modulation 12 Amount'
+p2616
+aS'Amount'
+p2617
+aS'Modulation 12'
+p2618
+aS'Modulation_12_Amount'
+p2619
+aa(lp2620
+(I0
+I30
+I1
+tp2621
+ag619
+aS'Modulation 13 Source'
+p2622
+aS'Source'
+p2623
+aS'Modulation 13'
+p2624
+aS'Modulation_13_Source'
+p2625
+aa(lp2626
+(I0
+I53
+I1
+tp2627
+ag2357
+aS'Modulation 13 Destination'
+p2628
+aS'Destination'
+p2629
+aS'Modulation 13'
+p2630
+aS'Modulation_13_Destination'
+p2631
+aa(lp2632
+(I0
+I127
+I1
+tp2633
+ag181
+aS'Modulation 13 Amount'
+p2634
+aS'Amount'
+p2635
+aS'Modulation 13'
+p2636
+aS'Modulation_13_Amount'
+p2637
+aa(lp2638
+(I0
+I30
+I1
+tp2639
+ag619
+aS'Modulation 14 Source'
+p2640
+aS'Source'
+p2641
+aS'Modulation 14'
+p2642
+aS'Modulation_14_Source'
+p2643
+aa(lp2644
+(I0
+I53
+I1
+tp2645
+ag2357
+aS'Modulation 14 Destination'
+p2646
+aS'Destination'
+p2647
+aS'Modulation 14'
+p2648
+aS'Modulation_14_Destination'
+p2649
+aa(lp2650
+(I0
+I127
+I1
+tp2651
+ag181
+aS'Modulation 14 Amount'
+p2652
+aS'Amount'
+p2653
+aS'Modulation 14'
+p2654
+aS'Modulation_14_Amount'
+p2655
+aa(lp2656
+(I0
+I30
+I1
+tp2657
+ag619
+aS'Modulation 15 Source'
+p2658
+aS'Source'
+p2659
+aS'Modulation 15'
+p2660
+aS'Modulation_15_Source'
+p2661
+aa(lp2662
+(I0
+I53
+I1
+tp2663
+ag2357
+aS'Modulation 15 Destination'
+p2664
+aS'Destination'
+p2665
+aS'Modulation 15'
+p2666
+aS'Modulation_15_Destination'
+p2667
+aa(lp2668
+(I0
+I127
+I1
+tp2669
+ag181
+aS'Modulation 15 Amount'
+p2670
+aS'Amount'
+p2671
+aS'Modulation 15'
+p2672
+aS'Modulation_15_Amount'
+p2673
+aa(lp2674
+(I0
+I30
+I1
+tp2675
+ag619
+aS'Modulation 16 Source'
+p2676
+aS'Source'
+p2677
+aS'Modulation 16'
+p2678
+aS'Modulation_16_Source'
+p2679
+aa(lp2680
+(I0
+I53
+I1
+tp2681
+ag2357
+aS'Modulation 16 Destination'
+p2682
+aS'Destination'
+p2683
+aS'Modulation 16'
+p2684
+aS'Modulation_16_Destination'
+p2685
+aa(lp2686
+(I0
+I127
+I1
+tp2687
 ag181
 aS'Modulation 16 Amount'
-p2594
-ag2594
-ag849
+p2688
+aS'Amount'
+p2689
+aS'Modulation 16'
+p2690
 aS'Modulation_16_Amount'
-p2595
+p2691
 aag2
 ag2
-a(lp2596
+a(lp2692
 (I0
 I3
 I1
-tp2597
+tp2693
 a(g664
 g663
 S'One Shot'
-p2598
+p2694
 S'Hold'
-p2599
-tp2600
+p2695
+tp2696
 aS'Arpeggiator Mode'
-p2601
-ag2601
-ag849
+p2697
+aS'Mode'
+p2698
+aS'Arpeggiator'
+p2699
 aS'Arpeggiator_Mode'
-p2602
-aa(lp2603
+p2700
+aa(lp2701
 (I0
 I16
 I1
-tp2604
+tp2702
 a(S'User'
-p2605
+p2703
 g398
 g399
 g400
@@ -5969,228 +6067,234 @@ g405
 g406
 g407
 S'10'
-p2606
+p2704
 S'11'
-p2607
+p2705
 S'12'
-p2608
+p2706
 S'13'
-p2609
+p2707
 S'14'
-p2610
+p2708
 S'15'
-p2611
-tp2612
+p2709
+tp2710
 aS'Arpeggiator Pattern'
-p2613
-ag2613
-ag849
+p2711
+aS'Pattern'
+p2712
+aS'Arpeggiator'
+p2713
 aS'Arpeggiator_Pattern'
-p2614
+p2714
 aag2
-a(lp2615
+a(lp2715
 (I0
 I42
 I1
-tp2616
-a(lp2617
+tp2716
+a(lp2717
 S'1/96'
-p2618
+p2718
 aS'1/48'
-p2619
+p2719
 aS'1/32 '
-p2620
+p2720
 aS'1/16T'
-p2621
+p2721
 aS'1/32.'
-p2622
+p2722
 aS'1/16 '
-p2623
+p2723
 aS'1/8T'
-p2624
+p2724
 aS'1/16.'
-p2625
+p2725
 aS'1/8 '
-p2626
+p2726
 aS'1/4T'
-p2627
+p2727
 aS'1/8.'
-p2628
+p2728
 aS'1/4 '
-p2629
+p2729
 aS'1/2T'
-p2630
+p2730
 aS'1/4.'
-p2631
+p2731
 aS'1/2 '
-p2632
+p2732
 aS'1/1T'
-p2633
+p2733
 aS'1/2.'
-p2634
+p2734
 aS'1 bar'
-p2635
+p2735
 aS'1.5 bars'
-p2636
+p2736
 aS'2 bars'
-p2637
+p2737
 aS'2.5 bars'
-p2638
+p2738
 aS'3 bars'
-p2639
+p2739
 aS'3.5 bars'
-p2640
+p2740
 aS'4 bars'
-p2641
+p2741
 aS'5 bars'
-p2642
+p2742
 aS'6 bars'
-p2643
+p2743
 aS'7 bars'
-p2644
+p2744
 aS'8 bars'
-p2645
+p2745
 aS'9 bars'
-p2646
+p2746
 aS'10 bars'
-p2647
+p2747
 aS'12 bars'
-p2648
+p2748
 aS'14 bars'
-p2649
+p2749
 aS'16 bars'
-p2650
+p2750
 aS'18 bars'
-p2651
+p2751
 aS'20 bars'
-p2652
+p2752
 aS'24 bars'
-p2653
+p2753
 aS'28 bars'
-p2654
+p2754
 aS'32 bars'
-p2655
+p2755
 aS'36 bars'
-p2656
+p2756
 aS'40 bars'
-p2657
+p2757
 aS'48 bars'
-p2658
+p2758
 aS'56 bars'
-p2659
+p2759
 aS'64 bars'
-p2660
+p2760
 aaS'Arpeggiator Clock'
-p2661
-ag2661
-ag849
+p2761
+aS'Clock'
+p2762
+aS'Arpeggiator'
+p2763
 aS'Arpeggiator_Clock'
-p2662
-aa(lp2663
+p2764
+aa(lp2765
 (I0
 I43
 I1
-tp2664
+tp2766
 a(S'1/96'
-p2665
+p2767
 S'1/48'
-p2666
+p2768
 S'1/32'
-p2667
+p2769
 S'1/16T'
-p2668
+p2770
 S'1/32.'
-p2669
+p2771
 S'1/16'
-p2670
+p2772
 S'1/8T'
-p2671
+p2773
 S'1/16.'
-p2672
+p2774
 S'1/8'
-p2673
+p2775
 S'1/4T'
-p2674
+p2776
 S'1/8.'
-p2675
+p2777
 S'1/4'
-p2676
+p2778
 S'1/2T'
-p2677
+p2779
 S'1/4.'
-p2678
+p2780
 S'1/2'
-p2679
+p2781
 S'1/1T'
-p2680
+p2782
 S'1/2.'
-p2681
+p2783
 S'1 bar'
-p2682
+p2784
 S'1.5 bars'
-p2683
+p2785
 S'2 bars'
-p2684
+p2786
 S'2.5 bars'
-p2685
+p2787
 S'3 bars'
-p2686
+p2788
 S'3.5 bars'
-p2687
+p2789
 S'4 bars'
-p2688
+p2790
 S'5 bars'
-p2689
+p2791
 S'6 bars'
-p2690
+p2792
 S'7 bars'
-p2691
+p2793
 S'8 bars'
-p2692
+p2794
 S'9 bars'
-p2693
+p2795
 S'10 bars'
-p2694
+p2796
 S'12 bars'
-p2695
+p2797
 S'14 bars'
-p2696
+p2798
 S'16 bars'
-p2697
+p2799
 S'18 bars'
-p2698
+p2800
 S'20 bars'
-p2699
+p2801
 S'24 bars'
-p2700
+p2802
 S'28 bars'
-p2701
+p2803
 S'32 bars'
-p2702
+p2804
 S'36 bars'
-p2703
+p2805
 S'40 bars'
-p2704
+p2806
 S'48 bars'
-p2705
+p2807
 S'56 bars'
-p2706
+p2808
 S'64 bars'
-p2707
+p2809
 S'legato'
-p2708
-tp2709
+p2810
+tp2811
 aS'Arpeggiator Length'
-p2710
-ag2710
-ag849
+p2812
+aS'Length'
+p2813
+aS'Arpeggiator'
+p2814
 aS'Arpeggiator_Length'
-p2711
-aa(lp2712
+p2815
+aa(lp2816
 (I0
 I9
 I1
-tp2713
+tp2817
 a(g399
 g400
 g401
@@ -6201,114 +6305,126 @@ g405
 g406
 g407
 S'10'
-p2714
-tp2715
+p2818
+tp2819
 aS'Arpeggiator Octave'
-p2716
-ag2716
-ag849
+p2820
+aS'Octave'
+p2821
+aS'Arpeggiator'
+p2822
 aS'Arpeggiator_Octave'
-p2717
-aa(lp2718
+p2823
+aa(lp2824
 (I0
 I3
 I1
-tp2719
+tp2825
 a(S'Up'
-p2720
+p2826
 S'Down'
-p2721
+p2827
 S'Alt Up'
-p2722
+p2828
 S'Alt Down'
-p2723
-tp2724
+p2829
+tp2830
 aS'Arpeggiator Direction'
-p2725
-ag2725
-ag849
+p2831
+aS'Direction'
+p2832
+aS'Arpeggiator'
+p2833
 aS'Arpeggiator_Direction'
-p2726
-aa(lp2727
+p2834
+aa(lp2835
 (I0
 I5
 I1
-tp2728
-a(lp2729
+tp2836
+a(lp2837
 S'as played'
-p2730
+p2838
 aS'reversed'
-p2731
+p2839
 aS'Key Lo>Hi'
-p2732
+p2840
 aS'Key Hi>Lo'
-p2733
+p2841
 aS'Vel Lo>Hi'
-p2734
+p2842
 aS'Vel Hi>Lo'
-p2735
+p2843
 aaS'Arpeggiator Sort Order'
-p2736
-ag2736
-ag849
+p2844
+aS'Order'
+p2845
+aS'Arpeggiator Sort'
+p2846
 aS'Arpeggiator_Sort_Order'
-p2737
-aa(lp2738
+p2847
+aa(lp2848
 (I0
 I6
 I1
-tp2739
-a(lp2740
+tp2849
+a(lp2850
 S'Each Note'
-p2741
+p2851
 aS'First Note'
-p2742
+p2852
 aS'Last Note'
-p2743
+p2853
 aS'fix 32'
-p2744
+p2854
 aS'fix 64'
-p2745
+p2855
 aS'fix 100'
-p2746
+p2856
 aS'fix 127'
-p2747
+p2857
 aaS'Arpeggiator Velocity'
-p2748
-ag2748
-ag849
+p2858
+aS'Velocity'
+p2859
+aS'Arpeggiator'
+p2860
 aS'Arpeggiator_Velocity'
-p2749
-aa(lp2750
+p2861
+aa(lp2862
 (I0
 I127
 I1
-tp2751
+tp2863
 ag526
 aS'Arpeggiator Timing Factor'
-p2752
-ag2752
-ag849
+p2864
+aS'Factor'
+p2865
+aS'Arpeggiator Timing'
+p2866
 aS'Arpeggiator_Timing_Factor'
-p2753
+p2867
 aag2
-a(lp2754
+a(lp2868
 (I0
 I1
 I1
-tp2755
+tp2869
 ag829
 aS'Arpeggiator Ptn Reset'
-p2756
-ag2756
-ag849
+p2870
+aS'Reset'
+p2871
+aS'Arpeggiator Ptn'
+p2872
 aS'Arpeggiator_Ptn_Reset'
-p2757
-aa(lp2758
+p2873
+aa(lp2874
 (I0
 I15
 I1
-tp2759
+tp2875
 a(g399
 g400
 g401
@@ -6319,1105 +6435,1187 @@ g405
 g406
 g407
 S'10'
-p2760
+p2876
 S'11'
-p2761
+p2877
 S'12'
-p2762
+p2878
 S'13'
-p2763
+p2879
 S'14'
-p2764
+p2880
 S'15'
-p2765
+p2881
 S'16'
-p2766
-tp2767
+p2882
+tp2883
 aS'Arpeggiator Ptn Length'
-p2768
-ag2768
-ag849
+p2884
+aS'Length'
+p2885
+aS'Arpeggiator Ptn'
+p2886
 aS'Arpeggiator_Ptn_Length'
-p2769
+p2887
 aag2
 ag2
-a(lp2770
+a(lp2888
 (I0
 I127
 I1
-tp2771
+tp2889
 a(S'40'
-p2772
-S'42'
-p2773
-S'44'
-p2774
-S'46'
-p2775
-S'48'
-p2776
-S'50'
-p2777
-S'52'
-p2778
-S'54'
-p2779
-S'56'
-p2780
-S'58'
-p2781
-S'60'
-p2782
-S'62'
-p2783
-S'64'
-p2784
-S'66'
-p2785
-S'68'
-p2786
-S'70'
-p2787
-S'72'
-p2788
-S'74'
-p2789
-S'76'
-p2790
-S'78'
-p2791
-S'80'
-p2792
-S'82'
-p2793
-S'84'
-p2794
-S'86'
-p2795
-S'88'
-p2796
-S'90'
-p2797
-S'91'
-p2798
-S'92'
-p2799
-S'93'
-p2800
-S'94'
-p2801
-S'95'
-p2802
-S'96'
-p2803
-S'97'
-p2804
-S'98'
-p2805
-S'99'
-p2806
-S'100'
-p2807
-S'101'
-p2808
-S'102'
-p2809
-S'103'
-p2810
-S'104'
-p2811
-S'105'
-p2812
-S'106'
-p2813
-S'107'
-p2814
-S'108'
-p2815
-S'109'
-p2816
-S'110'
-p2817
-S'111'
-p2818
-S'112'
-p2819
-S'113'
-p2820
-S'114'
-p2821
-S'115'
-p2822
-S'116'
-p2823
-S'117'
-p2824
-S'118'
-p2825
-S'119'
-p2826
-S'120'
-p2827
-S'121'
-p2828
-S'122'
-p2829
-S'123'
-p2830
-S'124'
-p2831
-S'125'
-p2832
-S'126'
-p2833
-S'127'
-p2834
-S'128'
-p2835
-S'129'
-p2836
-S'130'
-p2837
-S'131'
-p2838
-S'132'
-p2839
-S'133'
-p2840
-S'134'
-p2841
-S'135'
-p2842
-S'136'
-p2843
-S'137'
-p2844
-S'138'
-p2845
-S'139'
-p2846
-S'140'
-p2847
-S'141'
-p2848
-S'142'
-p2849
-S'143'
-p2850
-S'144'
-p2851
-S'145'
-p2852
-S'146'
-p2853
-S'147'
-p2854
-S'148'
-p2855
-S'149'
-p2856
-S'150'
-p2857
-S'151'
-p2858
-S'152'
-p2859
-S'153'
-p2860
-S'154'
-p2861
-S'155'
-p2862
-S'156'
-p2863
-S'157'
-p2864
-S'158'
-p2865
-S'159'
-p2866
-S'160'
-p2867
-S'161'
-p2868
-S'162'
-p2869
-S'163'
-p2870
-S'164'
-p2871
-S'165'
-p2872
-S'170'
-p2873
-S'175'
-p2874
-S'180'
-p2875
-S'185'
-p2876
-S'190'
-p2877
-S'195'
-p2878
-S'200'
-p2879
-S'205'
-p2880
-S'210'
-p2881
-S'215'
-p2882
-S'220'
-p2883
-S'225'
-p2884
-S'230'
-p2885
-S'235'
-p2886
-S'240'
-p2887
-S'245'
-p2888
-S'250'
-p2889
-S'255'
 p2890
-S'260'
+S'42'
 p2891
-S'265'
+S'44'
 p2892
-S'270'
+S'46'
 p2893
-S'275'
+S'48'
 p2894
-S'280'
+S'50'
 p2895
-S'285'
+S'52'
 p2896
-S'290'
+S'54'
 p2897
-S'295'
+S'56'
 p2898
-S'300'
+S'58'
 p2899
-tp2900
-aS'Arpeggiator Tempo'
+S'60'
+p2900
+S'62'
 p2901
-ag2901
-ag849
-aS'Arpeggiator_Tempo'
+S'64'
 p2902
-aa(lp2903
-(I0
-I127
-I1
-tp2904
-ag2900
-aS'Arp Pattern Step/Glide/Accent 1'
+S'66'
+p2903
+S'68'
+p2904
+S'70'
 p2905
-ag2905
-ag849
-aS'Arp_Pattern_Step_Glide_Accent_1'
+S'72'
 p2906
-aa(lp2907
-(I0
-I127
-I1
-tp2908
-ag2900
-aS'Arp Pattern Step/Glide/Accent 2'
+S'74'
+p2907
+S'76'
+p2908
+S'78'
 p2909
-ag2909
-ag849
-aS'Arp_Pattern_Step_Glide_Accent_2'
+S'80'
 p2910
-aa(lp2911
-(I0
-I127
-I1
-tp2912
-ag2900
-aS'Arp Pattern Step/Glide/Accent 3'
+S'82'
+p2911
+S'84'
+p2912
+S'86'
 p2913
-ag2913
-ag849
-aS'Arp_Pattern_Step_Glide_Accent_3'
+S'88'
 p2914
-aa(lp2915
-(I0
-I127
-I1
-tp2916
-ag2900
-aS'Arp Pattern Step/Glide/Accent 4'
+S'90'
+p2915
+S'91'
+p2916
+S'92'
 p2917
-ag2917
-ag849
-aS'Arp_Pattern_Step_Glide_Accent_4'
+S'93'
 p2918
-aa(lp2919
-(I0
-I127
-I1
-tp2920
-ag2900
-aS'Arp Pattern Step/Glide/Accent 5'
+S'94'
+p2919
+S'95'
+p2920
+S'96'
 p2921
-ag2921
-ag849
-aS'Arp_Pattern_Step_Glide_Accent_5'
+S'97'
 p2922
-aa(lp2923
-(I0
-I127
-I1
-tp2924
-ag2900
-aS'Arp Pattern Step/Glide/Accent 6'
+S'98'
+p2923
+S'99'
+p2924
+S'100'
 p2925
-ag2925
-ag849
-aS'Arp_Pattern_Step_Glide_Accent_6'
+S'101'
 p2926
-aa(lp2927
-(I0
-I127
-I1
-tp2928
-ag2900
-aS'Arp Pattern Step/Glide/Accent 7'
+S'102'
+p2927
+S'103'
+p2928
+S'104'
 p2929
-ag2929
-ag849
-aS'Arp_Pattern_Step_Glide_Accent_7'
+S'105'
 p2930
-aa(lp2931
-(I0
-I127
-I1
-tp2932
-ag2900
-aS'Arp Pattern Step/Glide/Accent 8'
+S'106'
+p2931
+S'107'
+p2932
+S'108'
 p2933
-ag2933
-ag849
-aS'Arp_Pattern_Step_Glide_Accent_8'
+S'109'
 p2934
-aa(lp2935
-(I0
-I127
-I1
-tp2936
-ag2900
-aS'Arp Pattern Step/Glide/Accent 9'
+S'110'
+p2935
+S'111'
+p2936
+S'112'
 p2937
-ag2937
-ag849
-aS'Arp_Pattern_Step_Glide_Accent_9'
+S'113'
 p2938
-aa(lp2939
-(I0
-I127
-I1
-tp2940
-ag2900
-aS'Arp Pattern Step/Glide/Accent 10'
+S'114'
+p2939
+S'115'
+p2940
+S'116'
 p2941
-ag2941
-ag849
-aS'Arp_Pattern_Step_Glide_Accent_10'
+S'117'
 p2942
-aa(lp2943
-(I0
-I127
-I1
-tp2944
-ag2900
-aS'Arp Pattern Step/Glide/Accent 11'
+S'118'
+p2943
+S'119'
+p2944
+S'120'
 p2945
-ag2945
-ag849
-aS'Arp_Pattern_Step_Glide_Accent_11'
+S'121'
 p2946
-aa(lp2947
-(I0
-I127
-I1
-tp2948
-ag2900
-aS'Arp Pattern Step/Glide/Accent 12'
+S'122'
+p2947
+S'123'
+p2948
+S'124'
 p2949
-ag2949
-ag849
-aS'Arp_Pattern_Step_Glide_Accent_12'
+S'125'
 p2950
-aa(lp2951
-(I0
-I127
-I1
-tp2952
-ag2900
-aS'Arp Pattern Step/Glide/Accent 13'
+S'126'
+p2951
+S'127'
+p2952
+S'128'
 p2953
-ag2953
-ag849
-aS'Arp_Pattern_Step_Glide_Accent_13'
+S'129'
 p2954
-aa(lp2955
-(I0
-I127
-I1
-tp2956
-ag2900
-aS'Arp Pattern Step/Glide/Accent 14'
+S'130'
+p2955
+S'131'
+p2956
+S'132'
 p2957
-ag2957
-ag849
-aS'Arp_Pattern_Step_Glide_Accent_14'
+S'133'
 p2958
-aa(lp2959
-(I0
-I127
-I1
-tp2960
-ag2900
-aS'Arp Pattern Step/Glide/Accent 15'
+S'134'
+p2959
+S'135'
+p2960
+S'136'
 p2961
-ag2961
-ag849
-aS'Arp_Pattern_Step_Glide_Accent_15'
+S'137'
 p2962
-aa(lp2963
-(I0
-I127
-I1
-tp2964
-ag2900
-aS'Arp Pattern Step/Glide/Accent 16'
+S'138'
+p2963
+S'139'
+p2964
+S'140'
 p2965
-ag2965
-ag849
-aS'Arp_Pattern_Step_Glide_Accent_16'
+S'141'
 p2966
-aa(lp2967
-(I0
-I127
-I1
-tp2968
-ag2900
-aS'Arp Pattern Timing/Length 1'
+S'142'
+p2967
+S'143'
+p2968
+S'144'
 p2969
-ag2969
-ag849
-aS'Arp_Pattern_Timing_Length_1'
+S'145'
 p2970
-aa(lp2971
-(I0
-I127
-I1
-tp2972
-ag2900
-aS'Arp Pattern Timing/Length 2'
+S'146'
+p2971
+S'147'
+p2972
+S'148'
 p2973
-ag2973
-ag849
-aS'Arp_Pattern_Timing_Length_2'
+S'149'
 p2974
-aa(lp2975
-(I0
-I127
-I1
-tp2976
-ag2900
-aS'Arp Pattern Timing/Length 3'
+S'150'
+p2975
+S'151'
+p2976
+S'152'
 p2977
-ag2977
-ag849
-aS'Arp_Pattern_Timing_Length_3'
+S'153'
 p2978
-aa(lp2979
-(I0
-I127
-I1
-tp2980
-ag2900
-aS'Arp Pattern Timing/Length 4'
+S'154'
+p2979
+S'155'
+p2980
+S'156'
 p2981
-ag2981
-ag849
-aS'Arp_Pattern_Timing_Length_4'
+S'157'
 p2982
-aa(lp2983
-(I0
-I127
-I1
-tp2984
-ag2900
-aS'Arp Pattern Timing/Length 5'
+S'158'
+p2983
+S'159'
+p2984
+S'160'
 p2985
-ag2985
-ag849
-aS'Arp_Pattern_Timing_Length_5'
+S'161'
 p2986
-aa(lp2987
-(I0
-I127
-I1
-tp2988
-ag2900
-aS'Arp Pattern Timing/Length 6'
+S'162'
+p2987
+S'163'
+p2988
+S'164'
 p2989
-ag2989
-ag849
-aS'Arp_Pattern_Timing_Length_6'
+S'165'
 p2990
-aa(lp2991
-(I0
-I127
-I1
-tp2992
-ag2900
-aS'Arp Pattern Timing/Length 7'
+S'170'
+p2991
+S'175'
+p2992
+S'180'
 p2993
-ag2993
-ag849
-aS'Arp_Pattern_Timing_Length_7'
+S'185'
 p2994
-aa(lp2995
-(I0
-I127
-I1
-tp2996
-ag2900
-aS'Arp Pattern Timing/Length 8'
+S'190'
+p2995
+S'195'
+p2996
+S'200'
 p2997
-ag2997
-ag849
-aS'Arp_Pattern_Timing_Length_8'
+S'205'
 p2998
-aa(lp2999
-(I0
-I127
-I1
-tp3000
-ag2900
-aS'Arp Pattern Timing/Length 9'
+S'210'
+p2999
+S'215'
+p3000
+S'220'
 p3001
-ag3001
-ag849
-aS'Arp_Pattern_Timing_Length_9'
+S'225'
 p3002
-aa(lp3003
-(I0
-I127
-I1
-tp3004
-ag2900
-aS'Arp Pattern Timing/Length 10'
+S'230'
+p3003
+S'235'
+p3004
+S'240'
 p3005
-ag3005
-ag849
-aS'Arp_Pattern_Timing_Length_10'
+S'245'
 p3006
-aa(lp3007
-(I0
-I127
-I1
-tp3008
-ag2900
-aS'Arp Pattern Timing/Length 11'
+S'250'
+p3007
+S'255'
+p3008
+S'260'
 p3009
-ag3009
-ag849
-aS'Arp_Pattern_Timing_Length_11'
+S'265'
 p3010
-aa(lp3011
-(I0
-I127
-I1
-tp3012
-ag2900
-aS'Arp Pattern Timing/Length 12'
+S'270'
+p3011
+S'275'
+p3012
+S'280'
 p3013
-ag3013
-ag849
-aS'Arp_Pattern_Timing_Length_12'
+S'285'
 p3014
-aa(lp3015
-(I0
-I127
-I1
-tp3016
-ag2900
-aS'Arp Pattern Timing/Length 13'
+S'290'
+p3015
+S'295'
+p3016
+S'300'
 p3017
-ag3017
-ag849
-aS'Arp_Pattern_Timing_Length_13'
-p3018
-aa(lp3019
-(I0
-I127
-I1
-tp3020
-ag2900
-aS'Arp Pattern Timing/Length 14'
+tp3018
+aS'Arpeggiator Tempo'
+p3019
+aS'Tempo'
+p3020
+aS'Arpeggiator'
 p3021
-ag3021
-ag849
-aS'Arp_Pattern_Timing_Length_14'
+aS'Arpeggiator_Tempo'
 p3022
 aa(lp3023
 (I0
 I127
 I1
 tp3024
-ag2900
-aS'Arp Pattern Timing/Length 15'
+ag3018
+aS'Arp Pattern Step/Glide/Accent 1'
 p3025
-ag3025
-ag849
-aS'Arp_Pattern_Timing_Length_15'
+ag399
+aS'Arp Pattern Step/Glide/Accent'
 p3026
-aa(lp3027
+aS'Arp_Pattern_Step_Glide_Accent_1'
+p3027
+aa(lp3028
 (I0
 I127
 I1
-tp3028
-ag2900
-aS'Arp Pattern Timing/Length 16'
-p3029
-ag3029
-ag849
-aS'Arp_Pattern_Timing_Length_16'
+tp3029
+ag3018
+aS'Arp Pattern Step/Glide/Accent 2'
 p3030
+ag400
+aS'Arp Pattern Step/Glide/Accent'
+p3031
+aS'Arp_Pattern_Step_Glide_Accent_2'
+p3032
+aa(lp3033
+(I0
+I127
+I1
+tp3034
+ag3018
+aS'Arp Pattern Step/Glide/Accent 3'
+p3035
+ag401
+aS'Arp Pattern Step/Glide/Accent'
+p3036
+aS'Arp_Pattern_Step_Glide_Accent_3'
+p3037
+aa(lp3038
+(I0
+I127
+I1
+tp3039
+ag3018
+aS'Arp Pattern Step/Glide/Accent 4'
+p3040
+ag402
+aS'Arp Pattern Step/Glide/Accent'
+p3041
+aS'Arp_Pattern_Step_Glide_Accent_4'
+p3042
+aa(lp3043
+(I0
+I127
+I1
+tp3044
+ag3018
+aS'Arp Pattern Step/Glide/Accent 5'
+p3045
+ag403
+aS'Arp Pattern Step/Glide/Accent'
+p3046
+aS'Arp_Pattern_Step_Glide_Accent_5'
+p3047
+aa(lp3048
+(I0
+I127
+I1
+tp3049
+ag3018
+aS'Arp Pattern Step/Glide/Accent 6'
+p3050
+ag404
+aS'Arp Pattern Step/Glide/Accent'
+p3051
+aS'Arp_Pattern_Step_Glide_Accent_6'
+p3052
+aa(lp3053
+(I0
+I127
+I1
+tp3054
+ag3018
+aS'Arp Pattern Step/Glide/Accent 7'
+p3055
+ag405
+aS'Arp Pattern Step/Glide/Accent'
+p3056
+aS'Arp_Pattern_Step_Glide_Accent_7'
+p3057
+aa(lp3058
+(I0
+I127
+I1
+tp3059
+ag3018
+aS'Arp Pattern Step/Glide/Accent 8'
+p3060
+ag406
+aS'Arp Pattern Step/Glide/Accent'
+p3061
+aS'Arp_Pattern_Step_Glide_Accent_8'
+p3062
+aa(lp3063
+(I0
+I127
+I1
+tp3064
+ag3018
+aS'Arp Pattern Step/Glide/Accent 9'
+p3065
+ag407
+aS'Arp Pattern Step/Glide/Accent'
+p3066
+aS'Arp_Pattern_Step_Glide_Accent_9'
+p3067
+aa(lp3068
+(I0
+I127
+I1
+tp3069
+ag3018
+aS'Arp Pattern Step/Glide/Accent 10'
+p3070
+aS'10'
+p3071
+aS'Arp Pattern Step/Glide/Accent'
+p3072
+aS'Arp_Pattern_Step_Glide_Accent_10'
+p3073
+aa(lp3074
+(I0
+I127
+I1
+tp3075
+ag3018
+aS'Arp Pattern Step/Glide/Accent 11'
+p3076
+aS'11'
+p3077
+aS'Arp Pattern Step/Glide/Accent'
+p3078
+aS'Arp_Pattern_Step_Glide_Accent_11'
+p3079
+aa(lp3080
+(I0
+I127
+I1
+tp3081
+ag3018
+aS'Arp Pattern Step/Glide/Accent 12'
+p3082
+aS'12'
+p3083
+aS'Arp Pattern Step/Glide/Accent'
+p3084
+aS'Arp_Pattern_Step_Glide_Accent_12'
+p3085
+aa(lp3086
+(I0
+I127
+I1
+tp3087
+ag3018
+aS'Arp Pattern Step/Glide/Accent 13'
+p3088
+aS'13'
+p3089
+aS'Arp Pattern Step/Glide/Accent'
+p3090
+aS'Arp_Pattern_Step_Glide_Accent_13'
+p3091
+aa(lp3092
+(I0
+I127
+I1
+tp3093
+ag3018
+aS'Arp Pattern Step/Glide/Accent 14'
+p3094
+aS'14'
+p3095
+aS'Arp Pattern Step/Glide/Accent'
+p3096
+aS'Arp_Pattern_Step_Glide_Accent_14'
+p3097
+aa(lp3098
+(I0
+I127
+I1
+tp3099
+ag3018
+aS'Arp Pattern Step/Glide/Accent 15'
+p3100
+aS'15'
+p3101
+aS'Arp Pattern Step/Glide/Accent'
+p3102
+aS'Arp_Pattern_Step_Glide_Accent_15'
+p3103
+aa(lp3104
+(I0
+I127
+I1
+tp3105
+ag3018
+aS'Arp Pattern Step/Glide/Accent 16'
+p3106
+aS'16'
+p3107
+aS'Arp Pattern Step/Glide/Accent'
+p3108
+aS'Arp_Pattern_Step_Glide_Accent_16'
+p3109
+aa(lp3110
+(I0
+I127
+I1
+tp3111
+ag3018
+aS'Arp Pattern Timing/Length 1'
+p3112
+ag399
+aS'Arp Pattern Timing/Length'
+p3113
+aS'Arp_Pattern_Timing_Length_1'
+p3114
+aa(lp3115
+(I0
+I127
+I1
+tp3116
+ag3018
+aS'Arp Pattern Timing/Length 2'
+p3117
+ag400
+aS'Arp Pattern Timing/Length'
+p3118
+aS'Arp_Pattern_Timing_Length_2'
+p3119
+aa(lp3120
+(I0
+I127
+I1
+tp3121
+ag3018
+aS'Arp Pattern Timing/Length 3'
+p3122
+ag401
+aS'Arp Pattern Timing/Length'
+p3123
+aS'Arp_Pattern_Timing_Length_3'
+p3124
+aa(lp3125
+(I0
+I127
+I1
+tp3126
+ag3018
+aS'Arp Pattern Timing/Length 4'
+p3127
+ag402
+aS'Arp Pattern Timing/Length'
+p3128
+aS'Arp_Pattern_Timing_Length_4'
+p3129
+aa(lp3130
+(I0
+I127
+I1
+tp3131
+ag3018
+aS'Arp Pattern Timing/Length 5'
+p3132
+ag403
+aS'Arp Pattern Timing/Length'
+p3133
+aS'Arp_Pattern_Timing_Length_5'
+p3134
+aa(lp3135
+(I0
+I127
+I1
+tp3136
+ag3018
+aS'Arp Pattern Timing/Length 6'
+p3137
+ag404
+aS'Arp Pattern Timing/Length'
+p3138
+aS'Arp_Pattern_Timing_Length_6'
+p3139
+aa(lp3140
+(I0
+I127
+I1
+tp3141
+ag3018
+aS'Arp Pattern Timing/Length 7'
+p3142
+ag405
+aS'Arp Pattern Timing/Length'
+p3143
+aS'Arp_Pattern_Timing_Length_7'
+p3144
+aa(lp3145
+(I0
+I127
+I1
+tp3146
+ag3018
+aS'Arp Pattern Timing/Length 8'
+p3147
+ag406
+aS'Arp Pattern Timing/Length'
+p3148
+aS'Arp_Pattern_Timing_Length_8'
+p3149
+aa(lp3150
+(I0
+I127
+I1
+tp3151
+ag3018
+aS'Arp Pattern Timing/Length 9'
+p3152
+ag407
+aS'Arp Pattern Timing/Length'
+p3153
+aS'Arp_Pattern_Timing_Length_9'
+p3154
+aa(lp3155
+(I0
+I127
+I1
+tp3156
+ag3018
+aS'Arp Pattern Timing/Length 10'
+p3157
+aS'10'
+p3158
+aS'Arp Pattern Timing/Length'
+p3159
+aS'Arp_Pattern_Timing_Length_10'
+p3160
+aa(lp3161
+(I0
+I127
+I1
+tp3162
+ag3018
+aS'Arp Pattern Timing/Length 11'
+p3163
+aS'11'
+p3164
+aS'Arp Pattern Timing/Length'
+p3165
+aS'Arp_Pattern_Timing_Length_11'
+p3166
+aa(lp3167
+(I0
+I127
+I1
+tp3168
+ag3018
+aS'Arp Pattern Timing/Length 12'
+p3169
+aS'12'
+p3170
+aS'Arp Pattern Timing/Length'
+p3171
+aS'Arp_Pattern_Timing_Length_12'
+p3172
+aa(lp3173
+(I0
+I127
+I1
+tp3174
+ag3018
+aS'Arp Pattern Timing/Length 13'
+p3175
+aS'13'
+p3176
+aS'Arp Pattern Timing/Length'
+p3177
+aS'Arp_Pattern_Timing_Length_13'
+p3178
+aa(lp3179
+(I0
+I127
+I1
+tp3180
+ag3018
+aS'Arp Pattern Timing/Length 14'
+p3181
+aS'14'
+p3182
+aS'Arp Pattern Timing/Length'
+p3183
+aS'Arp_Pattern_Timing_Length_14'
+p3184
+aa(lp3185
+(I0
+I127
+I1
+tp3186
+ag3018
+aS'Arp Pattern Timing/Length 15'
+p3187
+aS'15'
+p3188
+aS'Arp Pattern Timing/Length'
+p3189
+aS'Arp_Pattern_Timing_Length_15'
+p3190
+aa(lp3191
+(I0
+I127
+I1
+tp3192
+ag3018
+aS'Arp Pattern Timing/Length 16'
+p3193
+aS'16'
+p3194
+aS'Arp Pattern Timing/Length'
+p3195
+aS'Arp_Pattern_Timing_Length_16'
+p3196
 aag2
 ag2
 ag2
 ag2
-a(lp3031
+a(lp3197
 (I32
 I127
 I1
-tp3032
+tp3198
 a(S' '
-p3033
+p3199
 S'!'
-p3034
+p3200
 S'"'
-p3035
+p3201
 S'#'
-p3036
+p3202
 S'$'
-p3037
+p3203
 S'%'
-p3038
+p3204
 S'&'
-p3039
+p3205
 S"'"
-p3040
+p3206
 S'('
-p3041
+p3207
 S')'
-p3042
+p3208
 S'*'
-p3043
+p3209
 S'+'
-p3044
+p3210
 S','
-p3045
+p3211
 S'-'
-p3046
+p3212
 S'.'
-p3047
+p3213
 S'/'
-p3048
+p3214
 S'0'
-p3049
+p3215
 S'1'
-p3050
+p3216
 S'2'
-p3051
+p3217
 S'3'
-p3052
+p3218
 S'4'
-p3053
+p3219
 S'5'
-p3054
+p3220
 S'6'
-p3055
+p3221
 S'7'
-p3056
+p3222
 S'8'
-p3057
+p3223
 S'9'
-p3058
+p3224
 S':'
-p3059
+p3225
 S';'
-p3060
+p3226
 S'<'
-p3061
+p3227
 S'='
-p3062
+p3228
 S'>'
-p3063
+p3229
 S'?'
-p3064
+p3230
 S'@'
-p3065
+p3231
 S'A'
-p3066
+p3232
 S'B'
-p3067
+p3233
 S'C'
-p3068
+p3234
 S'D'
-p3069
+p3235
 S'E'
-p3070
+p3236
 S'F'
-p3071
+p3237
 S'G'
-p3072
+p3238
 S'H'
-p3073
+p3239
 S'I'
-p3074
+p3240
 S'J'
-p3075
+p3241
 S'K'
-p3076
+p3242
 S'L'
-p3077
+p3243
 S'M'
-p3078
+p3244
 S'N'
-p3079
+p3245
 S'O'
-p3080
+p3246
 S'P'
-p3081
+p3247
 S'Q'
-p3082
+p3248
 S'R'
-p3083
+p3249
 S'S'
-p3084
+p3250
 S'T'
-p3085
+p3251
 S'U'
-p3086
+p3252
 S'V'
-p3087
+p3253
 S'W'
-p3088
+p3254
 S'X'
-p3089
+p3255
 S'Y'
-p3090
+p3256
 S'Z'
-p3091
+p3257
 S'['
-p3092
+p3258
 S'\\'
-p3093
+p3259
 S']'
-p3094
+p3260
 S'^'
-p3095
+p3261
 S'_'
-p3096
+p3262
 S'`'
-p3097
+p3263
 S'a'
-p3098
+p3264
 S'b'
-p3099
+p3265
 S'c'
-p3100
+p3266
 S'd'
-p3101
+p3267
 S'e'
-p3102
+p3268
 S'f'
-p3103
+p3269
 S'g'
-p3104
+p3270
 S'h'
-p3105
+p3271
 S'i'
-p3106
+p3272
 S'j'
-p3107
+p3273
 S'k'
-p3108
+p3274
 S'l'
-p3109
+p3275
 S'm'
-p3110
+p3276
 S'n'
-p3111
+p3277
 S'o'
-p3112
+p3278
 S'p'
-p3113
+p3279
 S'q'
-p3114
+p3280
 S'r'
-p3115
+p3281
 S's'
-p3116
+p3282
 S't'
-p3117
+p3283
 S'u'
-p3118
+p3284
 S'v'
-p3119
+p3285
 S'w'
-p3120
+p3286
 S'x'
-p3121
+p3287
 S'y'
-p3122
+p3288
 S'z'
-p3123
+p3289
 S'{'
-p3124
+p3290
 S'|'
-p3125
+p3291
 S'}'
-p3126
+p3292
 S'~'
-p3127
+p3293
 S'\xc2\xb0'
-p3128
-tp3129
+p3294
+tp3295
 aS'Name Char 00'
-p3130
-ag3130
-ag849
+p3296
+aS'00'
+p3297
+aS'Name Char'
+p3298
 aS'Name_Char_00'
-p3131
-aa(lp3132
+p3299
+aa(lp3300
 (I32
 I127
 I1
-tp3133
-ag3129
+tp3301
+ag3295
 aS'Name Char 01'
-p3134
-ag3134
-ag849
+p3302
+aS'01'
+p3303
+aS'Name Char'
+p3304
 aS'Name_Char_01'
-p3135
-aa(lp3136
+p3305
+aa(lp3306
 (I32
 I127
 I1
-tp3137
-ag3129
+tp3307
+ag3295
 aS'Name Char 02'
-p3138
-ag3138
-ag849
+p3308
+aS'02'
+p3309
+aS'Name Char'
+p3310
 aS'Name_Char_02'
-p3139
-aa(lp3140
+p3311
+aa(lp3312
 (I32
 I127
 I1
-tp3141
-ag3129
+tp3313
+ag3295
 aS'Name Char 03'
-p3142
-ag3142
-ag849
+p3314
+aS'03'
+p3315
+aS'Name Char'
+p3316
 aS'Name_Char_03'
-p3143
-aa(lp3144
+p3317
+aa(lp3318
 (I32
 I127
 I1
-tp3145
-ag3129
+tp3319
+ag3295
 aS'Name Char 04'
-p3146
-ag3146
-ag849
+p3320
+aS'04'
+p3321
+aS'Name Char'
+p3322
 aS'Name_Char_04'
-p3147
-aa(lp3148
+p3323
+aa(lp3324
 (I32
 I127
 I1
-tp3149
-ag3129
+tp3325
+ag3295
 aS'Name Char 05'
-p3150
-ag3150
-ag849
+p3326
+aS'05'
+p3327
+aS'Name Char'
+p3328
 aS'Name_Char_05'
-p3151
-aa(lp3152
+p3329
+aa(lp3330
 (I32
 I127
 I1
-tp3153
-ag3129
+tp3331
+ag3295
 aS'Name Char 06'
-p3154
-ag3154
-ag849
+p3332
+aS'06'
+p3333
+aS'Name Char'
+p3334
 aS'Name_Char_06'
-p3155
-aa(lp3156
+p3335
+aa(lp3336
 (I32
 I127
 I1
-tp3157
-ag3129
+tp3337
+ag3295
 aS'Name Char 07'
-p3158
-ag3158
-ag849
+p3338
+aS'07'
+p3339
+aS'Name Char'
+p3340
 aS'Name_Char_07'
-p3159
-aa(lp3160
+p3341
+aa(lp3342
 (I32
 I127
 I1
-tp3161
-ag3129
+tp3343
+ag3295
 aS'Name Char 08'
-p3162
-ag3162
-ag849
+p3344
+aS'08'
+p3345
+aS'Name Char'
+p3346
 aS'Name_Char_08'
-p3163
-aa(lp3164
+p3347
+aa(lp3348
 (I32
 I127
 I1
-tp3165
-ag3129
+tp3349
+ag3295
 aS'Name Char 09'
-p3166
-ag3166
-ag849
+p3350
+aS'09'
+p3351
+aS'Name Char'
+p3352
 aS'Name_Char_09'
-p3167
-aa(lp3168
+p3353
+aa(lp3354
 (I32
 I127
 I1
-tp3169
-ag3129
+tp3355
+ag3295
 aS'Name Char 10'
-p3170
-ag3170
-ag849
+p3356
+aS'10'
+p3357
+aS'Name Char'
+p3358
 aS'Name_Char_10'
-p3171
-aa(lp3172
+p3359
+aa(lp3360
 (I32
 I127
 I1
-tp3173
-ag3129
+tp3361
+ag3295
 aS'Name Char 11'
-p3174
-ag3174
-ag849
+p3362
+aS'11'
+p3363
+aS'Name Char'
+p3364
 aS'Name_Char_11'
-p3175
-aa(lp3176
+p3365
+aa(lp3366
 (I32
 I127
 I1
-tp3177
-ag3129
+tp3367
+ag3295
 aS'Name Char 12'
-p3178
-ag3178
-ag849
+p3368
+aS'12'
+p3369
+aS'Name Char'
+p3370
 aS'Name_Char_12'
-p3179
-aa(lp3180
+p3371
+aa(lp3372
 (I32
 I127
 I1
-tp3181
-ag3129
+tp3373
+ag3295
 aS'Name Char 13'
-p3182
-ag3182
-ag849
+p3374
+aS'13'
+p3375
+aS'Name Char'
+p3376
 aS'Name_Char_13'
-p3183
-aa(lp3184
+p3377
+aa(lp3378
 (I32
 I127
 I1
-tp3185
-ag3129
+tp3379
+ag3295
 aS'Name Char 14'
-p3186
-ag3186
-ag849
+p3380
+aS'14'
+p3381
+aS'Name Char'
+p3382
 aS'Name_Char_14'
-p3187
-aa(lp3188
+p3383
+aa(lp3384
 (I32
 I127
 I1
-tp3189
-ag3129
+tp3385
+ag3295
 aS'Name Char 15'
-p3190
-ag3190
-ag849
+p3386
+aS'15'
+p3387
+aS'Name Char'
+p3388
 aS'Name_Char_15'
-p3191
-aa(lp3192
+p3389
+aa(lp3390
 (I0
 I12
 I1
-tp3193
-a(lp3194
+tp3391
+a(lp3392
 S'Init'
-p3195
+p3393
 aS'Arp '
-p3196
+p3394
 aS'Atmo'
-p3197
+p3395
 aS'Bass'
-p3198
+p3396
 aS'Drum'
-p3199
+p3397
 aS'FX  '
-p3200
+p3398
 aS'Keys'
-p3201
+p3399
 aS'Lead'
-p3202
+p3400
 aS'Mono'
-p3203
+p3401
 aS'Pad '
-p3204
+p3402
 aS'Perc'
-p3205
+p3403
 aS'Poly'
-p3206
+p3404
 aS'Seq '
-p3207
+p3405
 aaS'Category'
-p3208
-ag3208
+p3406
+ag3406
 ag849
-ag3208
+ag3406
 aag2
 ag2
 ag2
