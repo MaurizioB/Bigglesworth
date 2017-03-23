@@ -35,6 +35,15 @@ class Sound(QtCore.QObject):
 
         self._done = True
 
+    def __dir__(self):
+        return self.__dict__.keys() + Params.param_names.keys()
+
+    def trait_names(self):
+        return None
+
+    def _getAttributeNames(self):
+        return None
+
     def __getattr__(self, attr):
         try:
             index = Params.index_from_attr(attr)

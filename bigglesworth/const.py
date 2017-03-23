@@ -185,6 +185,7 @@ class ParamsClass(object):
             elif i in list(range(343, 359)):
                 v = AdvParam('0lll0ttt', l=('Length', arp_step_lengths), t=('Timing', arp_step_timings))
             param_list.append(param_values_nt(r, v, n, s, f, a))
+            if a is None: continue
             param_names[a] = param_names_nt(r, v, n, s, f, a, i)
 
     def attr_from_index(self, index):

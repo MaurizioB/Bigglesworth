@@ -956,8 +956,6 @@ class Librarian(QtGui.QMainWindow):
 
 
     def sound_update(self, item, _=None):
-        print 'updating {}'.format(item.column())
-#        print self.sender()
         if item.column() == STATUS:
             status = item.data(EditedRole).toPyObject()
             item.setText(get_status(status))

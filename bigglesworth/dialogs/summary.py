@@ -19,6 +19,15 @@ WidgetRole = QtCore.Qt.UserRole + 1
 
 dots = QtCore.QString.fromUtf8('…')
 
+class GrowingLineEdit(QtGui.QLineEdit):
+    def __init__(self, *args, **kwargs):
+        QtGui.QLineEdit.__init__(self, *args, **kwargs)
+
+    def setText(self, text):
+        QtGui.QLineEdit.setText(self, text)
+        self.setMinimumWidth(self.fontMetrics().boundingRect(text).width() + 8)
+
+
 class SummaryWidget(QtGui.QSplitter):
     def __init__(self, *args, **kwargs):
         QtGui.QSplitter.__init__(self, *args, **kwargs)
@@ -27,6 +36,7 @@ class SummaryWidget(QtGui.QSplitter):
         self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.MinimumExpanding)
 
         self.tree = QtGui.QTreeView()
+        self.eater = False
         self.addWidget(self.tree)
         self.tree.setEditTriggers(QtGui.QTreeView.NoEditTriggers)
         self.tree.setExpandsOnDoubleClick(False)
@@ -34,7 +44,9 @@ class SummaryWidget(QtGui.QSplitter):
         self.tree.setTextElideMode(QtCore.Qt.ElideNone)
         self.model = QtGui.QStandardItemModel()
         self.tree.setModel(self.model)
+#        self.tree.activated.connect(self.param_select)
         self.tree.clicked.connect(self.param_select)
+        self.tree.currentChanged = self.param_select
 
         self.param_widget = QtGui.QWidget()
         self.addWidget(self.param_widget)
@@ -99,6 +111,8 @@ class SummaryWidget(QtGui.QSplitter):
                     add_family_param('Effects', p)
                 else:
                     add_param(p.family, p)
+            else:
+                add_param('Common', p)
         stack = QtGui.QStackedLayout()
         self.param_widget.setLayout(stack)
         self.empty_params = QtGui.QWidget()
@@ -117,7 +131,7 @@ class SummaryWidget(QtGui.QSplitter):
             layout.setFormAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
             scroll_widget.setLayout(layout)
             for param in params:
-                edit = QtGui.QLineEdit()
+                edit = GrowingLineEdit()
                 edit.setReadOnly(True)
                 edit.setMinimumWidth(64)
                 layout.addRow('{}:'.format(param.name), edit)
@@ -150,33 +164,41 @@ class SummaryWidget(QtGui.QSplitter):
         self.setStretchFactor(0, 1)
         self.setStretchFactor(1, 3)
 
-    def param_select(self, index):
+    def param_select(self, index, prev=None):
+        self.tree.scrollTo(index)
         widget = index.data(WidgetRole).toPyObject()
+        empty = False
         if isinstance(widget, QtGui.QGroupBox):
             self.param_widget.layout().setCurrentWidget(widget)
         else:
             self.param_widget.layout().setCurrentWidget(self.empty_params)
+            empty = True
         if self.model.itemFromIndex(index).hasChildren():
-            self.tree.setExpanded(index, False if self.tree.isExpanded(index) else True)
+            if not self.tree.isExpanded(index):
+                self.tree.setExpanded(index, True)
+            if empty:
+                print 'son qui'
+                QtCore.QTimer.singleShot(0, lambda: self.tree.setCurrentIndex(index.child(0, 0)))
 
     def setSoundData(self, data):
         for i, p in enumerate(Params.param_list):
             if p.range == 'reserved': continue
-            if isinstance(p.values, AdvParam):
-                print 'Advanced parameter! {}'.format(p.name)
-                continue
             try:
-                param, edit = self.param_objects[i]
-                value = data[i]
-                if param.range[2] != 1:
-                    value = value / param.range[2]
+                if isinstance(p.values, AdvParam):
+                    param, edit = self.param_objects[i]
+                    edit.setText(', '.join(p.values[data[i]]))
                 else:
-                    value = value - param.range[0]
-                edit.setText(param.values[value])
+                    param, edit = self.param_objects[i]
+                    value = data[i]
+                    if param.range[2] != 1:
+                        value = value / param.range[2]
+                    else:
+                        value = value - param.range[0]
+                    edit.setText(param.values[value])
             except Exception as e:
                 print 'Exception: {}'.format(e)
                 try:
-                    print 'Something wrong with param "{}": {}'.format(param.name, param.values[data[i]])
+                    print 'Something wrong with param {} "{}": {}'.format(i, param.name, param.values[data[i]])
                 except:
                     print 'Out of range for param "{}" (range: {}): {}'.format(param.name, param.range, data[i])
 
@@ -229,6 +251,7 @@ class SummaryDialog(QtGui.QDialog):
         self.bank_combo.addItems([uppercase[l] for l in range(8)])
         self.import_btn.clicked.connect(self.open)
         self.buttonBox.button(QtGui.QDialogButtonBox.Discard).clicked.connect(self.reject)
+        self.summary_widget.setFocus()
 
 
     def open(self):
@@ -298,8 +321,8 @@ class SummaryDialog(QtGui.QDialog):
                 print e
         else:
             self.source_lbl.setText('Local library' if sound.source == SRC_LIBRARY else 'Blofeld dump')
-        self.summary_widget.setSoundData(sound.data)
         self.show()
+        self.summary_widget.setSoundData(sound.data)
 
 
 
