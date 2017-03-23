@@ -280,6 +280,13 @@ EditedRole = CatRole + 1
 PortRole = EditedRole + 1
 ClientRole = PortRole + 1
 
+roles_dict = {
+              INDEX: IndexRole, 
+              BANK: BankRole, 
+              PROG: ProgRole, 
+              CATEGORY: CatRole, 
+              }
+
 note_scancodes = [
                   52, 39, 53, 40, 54, 55, 42, 56, 43, 57, 44, 58,
                   59, 46, 60, 47, 61, 24, 11, 25, 12, 26, 13, 27, 

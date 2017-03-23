@@ -195,19 +195,19 @@ class Library(QtCore.QObject):
         index_item.setData(bank*128+prog, IndexRole)
         index_item.setEditable(False)
         bank_item = QtGui.QStandardItem(uppercase[bank])
-        bank_item.setData(bank, UserRole)
+#        bank_item.setData(bank, UserRole)
         bank_item.setData(bank, BankRole)
         bank_item.setTextAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignCenter)
         bank_item.setEditable(False)
         prog_item = QtGui.QStandardItem('{:03}'.format(prog+1))
-        prog_item.setData(prog, UserRole)
+#        prog_item.setData(prog, UserRole)
         prog_item.setData(prog, ProgRole)
         prog_item.setEditable(False)
         name_item = QtGui.QStandardItem(sound.name)
 #        name_item.setData(sound.Osc_1_Shape, QtCore.Qt.ToolTipRole)
 #        name_item.setData(sound.name, QtCore.Qt.ToolTipRole)
         cat_item = QtGui.QStandardItem(categories[sound.cat])
-        cat_item.setData(sound.cat, UserRole)
+#        cat_item.setData(sound.cat, UserRole)
         cat_item.setData(sound.cat, CatRole)
 #        status_item = QtGui.QStandardItem('Dumped' if sound.state == DUMPED else 'Stored')
         status_item = QtGui.QStandardItem(status_dict[sound.state])
@@ -215,8 +215,8 @@ class Library(QtCore.QObject):
         status_item.setEditable(False)
         sound_item = QtGui.QStandardItem()
         sound_item.setData(sound, SoundRole)
-#        sound.bankChanged.connect(lambda bank, item=bank_item: item.setData(bank, BankRole))
-#        sound.progChanged.connect(lambda prog, item=prog_item: item.setData(prog, ProgRole))
+        sound.bankChanged.connect(lambda bank, item=bank_item: item.setData(bank, BankRole))
+        sound.progChanged.connect(lambda prog, item=prog_item: item.setData(prog, ProgRole))
         sound.indexChanged.connect(lambda index, item=index_item: item.setData(index, IndexRole))
         sound.nameChanged.connect(lambda name, item=name_item: item.setText(name))
         sound.catChanged.connect(lambda cat, bank=bank, item=cat_item: self.soundSetCategory(item, bank, cat))
@@ -343,13 +343,13 @@ class LibraryModel(QtGui.QStandardItemModel):
         self.cleared.emit()
 
     def sound(self, index):
-        return self.item(index.row(), 6).data(SoundRole).toPyObject()
+        return self.item(index.row(), SOUND).data(SoundRole).toPyObject()
 
 
 class LibraryProxy(QtGui.QSortFilterProxyModel):
     def __init__(self, parent=None):
         QtGui.QSortFilterProxyModel.__init__(self, parent)
-#        self.setDynamicSortFilter(True)
+        self.setDynamicSortFilter(True)
         self.filter_columns = {}
         self.text_filter = None
 
@@ -374,7 +374,7 @@ class LibraryProxy(QtGui.QSortFilterProxyModel):
         if not len(self.filter_columns) and not self.text_filter:
             return True
         model = self.sourceModel()
-        if len(self.filter_columns) and any([True for column, index in self.filter_columns.items() if model.item(row, column).data(UserRole) != index]):
+        if len(self.filter_columns) and any([True for column, index in self.filter_columns.items() if model.item(row, column).data(roles_dict[column]) != index]):
             return False
         if not self.text_filter:
             return True
