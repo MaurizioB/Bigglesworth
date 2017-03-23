@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>477</width>
-    <height>331</height>
+    <width>431</width>
+    <height>262</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,23 +18,15 @@
     <item row="0" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
-       <widget class="QPushButton" name="device_btn">
-        <property name="text">
-         <string>Device</string>
+       <widget class="QPushButton" name="dump_btn">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="globals_btn">
         <property name="text">
-         <string>Globals</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="Line" name="line_2">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
+         <string>Dump request</string>
         </property>
        </widget>
       </item>
@@ -93,16 +85,9 @@
         </property>
        </widget>
       </item>
-      <item>
-       <widget class="QPushButton" name="dump_btn">
-        <property name="text">
-         <string>Dump request</string>
-        </property>
-       </widget>
-      </item>
      </layout>
     </item>
-    <item row="1" column="0">
+    <item row="2" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
        <widget class="QLabel" name="label">
@@ -151,6 +136,62 @@
         </property>
        </widget>
       </item>
+     </layout>
+    </item>
+    <item row="3" column="0" colspan="2">
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <item>
+       <widget class="QLabel" name="label_5">
+        <property name="text">
+         <string>&amp;Seach filter</string>
+        </property>
+        <property name="buddy">
+         <cstring>search_edit</cstring>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="search_edit">
+        <property name="minimumSize">
+         <size>
+          <width>100</width>
+          <height>0</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="search_clear_btn">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>24</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="toolTip">
+         <string>Clear filter</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="flat">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="search_filter_chk">
+        <property name="text">
+         <string>Filter &amp;results</string>
+        </property>
+       </widget>
+      </item>
       <item>
        <widget class="Line" name="line_3">
         <property name="orientation">
@@ -170,41 +211,7 @@
       </item>
      </layout>
     </item>
-    <item row="2" column="0">
-     <layout class="QHBoxLayout" name="horizontalLayout_3">
-      <item>
-       <widget class="QLabel" name="label_5">
-        <property name="text">
-         <string>&amp;Seach filter</string>
-        </property>
-        <property name="buddy">
-         <cstring>search_edit</cstring>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="search_edit"/>
-      </item>
-      <item>
-       <widget class="QPushButton" name="search_clear_btn">
-        <property name="toolTip">
-         <string>Clear filter</string>
-        </property>
-        <property name="text">
-         <string>x</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="search_filter_chk">
-        <property name="text">
-         <string>Filter &amp;results</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-    <item row="3" column="0">
+    <item row="4" column="0" colspan="3">
      <widget class="QTableView" name="blofeld_sounds_table">
       <property name="editTriggers">
        <set>QAbstractItemView::NoEditTriggers</set>
@@ -235,6 +242,29 @@
       </attribute>
      </widget>
     </item>
+    <item row="2" column="1">
+     <spacer name="horizontalSpacer">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="sizeType">
+       <enum>QSizePolicy::MinimumExpanding</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>40</width>
+        <height>20</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+    <item row="1" column="0" colspan="2">
+     <widget class="Line" name="line_2">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -242,7 +272,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>477</width>
+     <width>431</width>
      <height>17</height>
     </rect>
    </property>
@@ -273,8 +303,16 @@
     <addaction name="separator"/>
     <addaction name="aboutQtAction"/>
    </widget>
+   <widget class="QMenu" name="menuBlofeld">
+    <property name="title">
+     <string>Blofeld</string>
+    </property>
+    <addaction name="deviceAction"/>
+    <addaction name="globalsAction"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menu_Windows"/>
+   <addaction name="menuBlofeld"/>
    <addaction name="menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -328,6 +366,22 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="deviceAction">
+   <property name="text">
+    <string>Device query...</string>
+   </property>
+   <property name="toolTip">
+    <string>Query Blofeld for device information</string>
+   </property>
+  </action>
+  <action name="globalsAction">
+   <property name="text">
+    <string>Global parameters...</string>
+   </property>
+   <property name="toolTip">
+    <string>Query Blofeld for Global configuration</string>
    </property>
   </action>
  </widget>

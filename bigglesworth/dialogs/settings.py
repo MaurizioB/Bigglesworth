@@ -32,11 +32,11 @@ class SettingsDialog(QtGui.QDialog):
         self.editor_appearance_efx_arp_latest = self.editor_appearance_filter_matrix_latest = 0
 
         self.previous_id = 0
-        self.connections = {INPUT: None, OUTPUT: None}
         self.deviceID_spin.valueChanged.connect(lambda value: self.deviceID_hex_lbl.setText('({:02X}h)'.format(value)))
         self.deviceID_spin.valueChanged.connect(self.check_broadcast)
         self.broadcast_chk.toggled.connect(self.set_broadcast)
         self.deviceID_detect_btn.clicked.connect(self.detect)
+        self.main.midi_duplex_state_change.connect(self.deviceID_detect_btn.setEnabled)
         self.detect_msgbox = QtGui.QMessageBox(QtGui.QMessageBox.Information, 'Detecting Device ID', 'Waiting for the Blofeld to reply, please wait...', QtGui.QMessageBox.Abort, self)
 
         self.detect_timer = QtCore.QTimer()
@@ -80,13 +80,6 @@ class SettingsDialog(QtGui.QDialog):
     def no_response(self):
         self.detect_msgbox.reject()
         self.no_response_msgbox.exec_()
-
-    def detect_connections(self, dir, conn):
-        self.connections[dir] = conn
-        if self.connections[INPUT] and self.connections[OUTPUT]:
-            self.deviceID_detect_btn.setEnabled(True)
-        else:
-            self.deviceID_detect_btn.setEnabled(False)
 
     def set_broadcast(self, state):
         if state:

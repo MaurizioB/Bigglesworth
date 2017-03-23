@@ -102,14 +102,15 @@ class NameDelegate(QtGui.QStyledItemDelegate):
         self.commitData.connect(self.set_data)
 
     def createEditor(self, parent, option, index):
-        self.index = index
+        self.proxy = index.model()
+        self.index = self.proxy.mapToSource(index)
         edit = QtGui.QLineEdit(parent)
         edit.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp('[\x20-\x7f°]*')))
         edit.setMaxLength(16)
         return edit
 
     def set_data(self, widget):
-        self.index.model().sourceModel().sound(self.index).name = str(widget.text().toUtf8())
+        self.index.model().sound(self.index).name = str(widget.text().toUtf8())
 
 
 class CategoryDelegate(QtGui.QStyledItemDelegate):
@@ -118,8 +119,8 @@ class CategoryDelegate(QtGui.QStyledItemDelegate):
         self.commitData.connect(self.set_data)
 
     def createEditor(self, parent, option, index):
-#        self.table = parent.parent()
-        self.index = index
+        self.proxy = index.model()
+        self.index = self.proxy.mapToSource(index)
         combo = QtGui.QComboBox(parent)
         model = QtGui.QStandardItemModel()
         [model.appendRow(QtGui.QStandardItem(cat)) for cat in categories]
@@ -129,7 +130,7 @@ class CategoryDelegate(QtGui.QStyledItemDelegate):
         return combo
 
     def set_data(self, widget):
-        sound = self.index.model().sourceModel().sound(self.index)
+        sound = self.index.model().sound(self.index)
         if sound.cat == widget.currentIndex(): return
-        self.index.model().sourceModel().sound(self.index).cat = widget.currentIndex()
+        self.index.model().sound(self.index).cat = widget.currentIndex()
 

@@ -10,7 +10,6 @@ from const import *
 from utils import *
 from alsa import *
 from midiutils import *
-from utils import *
 from classes import *
 from widgets import *
 from dialogs import *
@@ -19,7 +18,7 @@ from editor import Editor
 
 def process_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-s', '--sysex', help='Specify the configuration file to use', action='store_true')
+    parser.add_argument('-s', '--sysex', help='Print output SysEx messages to the terminal', action='store_true')
     return parser.parse_args()
 
 class BigglesworthObject(QtCore.QObject):
@@ -30,6 +29,7 @@ class BigglesworthObject(QtCore.QObject):
     program_change_received = QtCore.pyqtSignal(int, int)
     input_conn_state_change = QtCore.pyqtSignal(int)
     output_conn_state_change = QtCore.pyqtSignal(int)
+    midi_duplex_state_change = QtCore.pyqtSignal(bool)
     def __init__(self, app, args):
         QtCore.QObject.__init__(self)
         self.app = app
@@ -53,11 +53,8 @@ class BigglesworthObject(QtCore.QObject):
         self.seq = self.alsa.seq
         self.input = self.alsa.input
         self.output = self.alsa.output
-
-        self.deviceAction = QtGui.QAction(self)
-        self.deviceAction.triggered.connect(self.device_request)
-        self.globalsAction = QtGui.QAction('Global parameters...', self)
-        self.globalsAction.triggered.connect(self.globals_request)
+        self.connections = [0, 0]
+        self.midi_duplex_state = False
 
         self.blofeld_current = [None, None]
         self.blofeld_model = LibraryModel()
@@ -99,12 +96,20 @@ class BigglesworthObject(QtCore.QObject):
         self.librarian.editorAction.setIcon(dial_icon)
         self.quitAction.triggered.connect(self.quit)
         self.librarian.aboutQtAction.triggered.connect(lambda: QtGui.QMessageBox.aboutQt(self.librarian, 'About Qt'))
+        self.deviceAction = self.librarian.deviceAction
+        self.deviceAction.triggered.connect(self.device_request)
+        self.globalsAction = self.librarian.globalsAction
+        self.globalsAction.triggered.connect(self.globals_request)
+
+        self.midi_duplex_state_change.connect(self.globalsAction.setEnabled)
+
         self.device_event.connect(lambda event: self.device_response(event, self.librarian))
         self.loader.loaded.connect(self.librarian.create_proxy)
         self.loading_win = LoadingWindow(self.librarian)
         self.librarian.shown.connect(self.loading_win.show)
         self.loading_win.shown.connect(self.loader_thread.start)
         self.loader.loaded.connect(self.loading_win.hide)
+        self.loader.loaded.connect(self.librarian.cat_count_update)
 
         self.librarian.dump_request.connect(self.dump_request)
         self.librarian.midi_event.connect(self.output_event)
@@ -220,8 +225,6 @@ class BigglesworthObject(QtCore.QObject):
 
         self.settings_dialog = SettingsDialog(self, self.librarian)
         self.settingsAction.triggered.connect(self.show_settings)
-        self.output_conn_state_change.connect(lambda conn: self.settings_dialog.detect_connections(OUTPUT, conn))
-        self.input_conn_state_change.connect(lambda conn: self.settings_dialog.detect_connections(INPUT, conn))
         self.editor.filter_matrix_toggle_state.connect(lambda state: setattr(self, 'editor_appearance_filter_matrix_latest', state))
         self.editor.efx_arp_toggle_state.connect(lambda state: setattr(self, 'editor_appearance_efx_arp_latest', state))
 
@@ -230,6 +233,7 @@ class BigglesworthObject(QtCore.QObject):
         self.summary.dump_send.connect(self.dump_send)
         self.sysexSoundImportAction = self.librarian.sysexSoundImportAction
         self.sysexSoundImportAction.triggered.connect(self.summary.open)
+        self.librarian.summary_request.connect(self.summary.setSound)
 
         self.midi_connect()
 #        self.dump_win.show()
@@ -396,6 +400,7 @@ class BigglesworthObject(QtCore.QObject):
         if conn.dest == self.input:
             conn_list = [c for c in self.input.connections.input if not c.hidden]
             self.input_conn_state_change.emit(len(conn_list))
+            self.duplex_state_check(INPUT, len(conn_list))
             if self.remember_connections and not conn.hidden:
                 port_fmt = '{}:{}'.format(conn.src.client.name, conn.src.name)
                 if port_fmt == 'Blofeld:Blofeld MIDI 1': return
@@ -407,6 +412,7 @@ class BigglesworthObject(QtCore.QObject):
         elif conn.src == self.output:
             conn_list = [c for c in self.output.connections.output if not c.hidden]
             self.output_conn_state_change.emit(len(conn_list))
+            self.duplex_state_check(OUTPUT, len(conn_list))
             if self.remember_connections and not conn.hidden:
                 port_fmt = '{}:{}'.format(conn.dest.client.name, conn.dest.name)
                 if port_fmt == 'Blofeld:Blofeld MIDI 1': return
@@ -415,6 +421,13 @@ class BigglesworthObject(QtCore.QObject):
                 else:
                     self.autoconnect[OUTPUT].discard(port_fmt)
                 self.settings.gMIDI.set_Autoconnect(self.autoconnect)
+
+    def duplex_state_check(self, dir, conn):
+        self.connections[dir] = conn
+        duplex_state = all(self.connections)
+        if self.midi_duplex_state != duplex_state:
+            self.midi_duplex_state_change.emit(duplex_state)
+            self.midi_duplex_state = duplex_state
 
     def midi_connect(self):
         if not (self.blofeld_autoconnect or self.remember_connections): return
@@ -495,7 +508,7 @@ class BigglesworthObject(QtCore.QObject):
                 self.editor.show()
                 self.editor.activateWindow()
                 return
-            res = self.dump_dialog.exec_(sound.name)
+            res = self.dump_dialog.exec_(sound)
             if not res or not any(res): return
             editor, library = res
             if not library:
@@ -726,9 +739,12 @@ class Librarian(QtGui.QMainWindow):
     dump_send = QtCore.pyqtSignal(object)
     midi_event = QtCore.pyqtSignal(object)
     activate_editor = QtCore.pyqtSignal(int, int)
+    summary_request = QtCore.pyqtSignal(object)
+
     def __init__(self, main):
         QtGui.QMainWindow.__init__(self, parent=None)
         load_ui(self, 'main.ui')
+        self.setContentsMargins(2, 2, 2, 2)
 
         self.main = main
 
@@ -747,18 +763,17 @@ class Librarian(QtGui.QMainWindow):
         for cat in categories:
             self.cat_filter_combo.addItem(cat, cat)
         self.bank_filter_combo.currentIndexChanged.connect(lambda index: self.blofeld_model_proxy.setMultiFilter(BANK, index))
-        self.bank_filter_combo.currentIndexChanged.connect(self.bank_list_update)
+        self.bank_filter_combo.currentIndexChanged.connect(self.cat_count_update)
         self.cat_filter_combo.currentIndexChanged.connect(lambda index: self.blofeld_model_proxy.setMultiFilter(CATEGORY, index))
 
         self.print_win = PrintDialog(main, self)
         self.textExportAction.triggered.connect(self.print_win.exec_)
 
-        self.device_btn.clicked.connect(self.main.deviceAction.trigger)
-        self.globals_btn.clicked.connect(self.main.globalsAction.trigger)
         self.dump_btn.clicked.connect(self.dump_request_create)
         self.bank_dump_combo.currentIndexChanged.connect(lambda b: self.sound_dump_combo.setEnabled(True if b != 0 else False))
         self.edit_btn.toggled.connect(self.edit_mode_set)
         self.search_edit.textChanged.connect(self.search_filter)
+        self.search_clear_btn.setIcon(self.style().standardIcon(QtGui.QStyle.SP_DialogResetButton))
         self.search_clear_btn.clicked.connect(lambda _: self.search_edit.setText(''))
         self.search_filter_chk.toggled.connect(self.search_filter_set)
         self.blofeld_sounds_table.doubleClicked.connect(self.sound_doubleclick)
@@ -846,11 +861,12 @@ class Librarian(QtGui.QMainWindow):
         header.setSeparator(True)
         menu.addAction(header)
         edit_item = QtGui.QAction('Edit...', menu)
+        summary_item = QtGui.QAction('Show summary', menu)
         sep = QtGui.QAction(menu)
         sep.setSeparator(True)
         dump_request_item = QtGui.QAction('Request dump', menu)
         dump_send_item = QtGui.QAction('Dump to Blofeld', menu)
-        menu.addActions([edit_item, sep, dump_request_item, dump_send_item])
+        menu.addActions([edit_item, summary_item, sep, dump_request_item, dump_send_item])
         if len(rows) > 1:
             dump_bulk_send_item = QtGui.QAction('Dump selected sounds', menu)
             menu.addAction(dump_bulk_send_item)
@@ -868,6 +884,8 @@ class Librarian(QtGui.QMainWindow):
         if not res: return
         elif res == edit_item:
             self.activate_editor.emit(sound.bank, sound.prog)
+        elif res == summary_item:
+            self.summary_request.emit(sound)
         elif res == dump_request_item:
             self.dump_request.emit((sound.bank, sound.prog))
         elif res == dump_send_item:
@@ -938,7 +956,7 @@ class Librarian(QtGui.QMainWindow):
 
 
     def sound_update(self, item, _=None):
-#        print 'updating {}'.format(item.column())
+        print 'updating {}'.format(item.column())
 #        print self.sender()
         if item.column() == STATUS:
             status = item.data(EditedRole).toPyObject()
@@ -976,14 +994,10 @@ class Librarian(QtGui.QMainWindow):
         self.blofeld_sounds_table.resizeColumnToContents(PROG)
 
 
-    def bank_list_update(self, bank):
-        self.cat_count_update()
-
     def cat_count_update(self):
         cat_len = [0 for cat_id in categories]
         current_bank = self.bank_filter_combo.currentIndex()
-        return
-        for bank, sound_list in enumerate(self.blofeld_library):
+        for bank, sound_list in enumerate(self.blofeld_library.data):
             if current_bank != 0 and current_bank != bank+1: continue
             for s in sound_list:
                 if s.data is None: continue

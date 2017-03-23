@@ -4,7 +4,7 @@ from string import uppercase, ascii_letters
 from PyQt4 import QtCore, QtGui
 
 import midifile
-from const import *
+from bigglesworth.const import *
 
 
 class Sound(QtCore.QObject):
@@ -248,8 +248,8 @@ class Library(QtCore.QObject):
         for empty in reversed(delete_list):
             self.data.pop(empty)
         self.banks = len(self.data)
-        self.model.sort(2)
-        self.model.sort(1)
+        self.model.sort(PROG)
+        self.model.sort(BANK)
         self.sorted.reload()
 
     def swap(self, source, target):
@@ -349,7 +349,7 @@ class LibraryModel(QtGui.QStandardItemModel):
 class LibraryProxy(QtGui.QSortFilterProxyModel):
     def __init__(self, parent=None):
         QtGui.QSortFilterProxyModel.__init__(self, parent)
-        self.setDynamicSortFilter(True)
+#        self.setDynamicSortFilter(True)
         self.filter_columns = {}
         self.text_filter = None
 

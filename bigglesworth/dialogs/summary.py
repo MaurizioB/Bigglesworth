@@ -29,7 +29,9 @@ class SummaryWidget(QtGui.QSplitter):
         self.tree = QtGui.QTreeView()
         self.addWidget(self.tree)
         self.tree.setEditTriggers(QtGui.QTreeView.NoEditTriggers)
+        self.tree.setExpandsOnDoubleClick(False)
         self.tree.setHeaderHidden(True)
+        self.tree.setTextElideMode(QtCore.Qt.ElideNone)
         self.model = QtGui.QStandardItemModel()
         self.tree.setModel(self.model)
         self.tree.clicked.connect(self.param_select)
@@ -37,77 +39,112 @@ class SummaryWidget(QtGui.QSplitter):
         self.param_widget = QtGui.QWidget()
         self.addWidget(self.param_widget)
         self.build_summary()
+        self.tree.header().setResizeMode(QtGui.QHeaderView.ResizeToContents)
+#        self.tree.header().setStretchLastSection(False)
+        self.tree.expandAll()
+        self.tree.setMinimumWidth(self.tree.sizeHintForColumn(0))
+        self.tree.collapseAll()
 
     def build_summary(self):
-        self.param_objects = {}
-        def add_param(granpa, param):
+        def add_family_param(granpa, param, parent=False):
+            family = param.family if not parent else None
             if not granpa in families:
 #                families[granpa] = {param.family: [param]}
-                families[granpa] = OrderedDict([(param.family, [param])])
+                families[granpa] = OrderedDict([(family, [param])])
                 return
-            if not param.family in families[granpa]:
-                families[granpa][param.family] = [param]
+            if not family in families[granpa]:
+                families[granpa][family] = [param]
             else:
-                families[granpa][param.family].append(param)
+                families[granpa][family].append(param)
+
+        def add_param(parent, param):
+            if not parent in families:
+                families[parent] = [param]
+            else:
+                families[parent].append(param)
+
+        self.param_objects = {}
         families = OrderedDict()
-        empty = []
         for p in Params.param_list:
             if p.range == 'reserved': continue
             if p.family:
                 if 'Envelope' in p.family:
-                    add_param('Envelope', p)
-                elif 'Arpeggiator' in p.family:
-                    add_param('Arpeggiator', p)
+                    add_family_param('Envelopes', p)
+                elif p.family.startswith('Arp'):
+                    if p.family.startswith('Arpeggiator'):
+                        add_family_param('Arpeggiator', p, True)
+                    else:
+                        add_family_param('Arpeggiator', p)
                 elif p.family.startswith('LFO'):
-                    add_param('LFOs', p)
+                    add_family_param('LFOs', p)
                 elif p.family.startswith('Mixer'):
-                    add_param('Mixer', p)
-#                elif p.family.startswith('Modulation '):
-#                    add_param('Modulation', p)
+                    add_family_param('Mixer', p, True)
                 elif p.family.startswith('Modifier '):
-                    add_param('Modifiers', p)
+                    add_family_param('Modifiers', p, True)
                 elif p.family.startswith('Osc '):
-                    add_param('Oscillators', p)
-#                if not p.family in families:
-#                    families[p.family] = [p]
-#                else:
-#                    families[p.family].append(p)
-#            else:
-#                empty.append(p.short_name)
+                    if p.family == 'Osc Pitch':
+                        add_family_param('Oscillators', p, True)
+                    else:
+                        add_family_param('Oscillators', p)
+                elif p.family.startswith('Modulation '):
+                    add_param('Modulations', p)
+                elif p.family.startswith('Amplifier'):
+                    add_param('Amplifier', p)
+                elif p.family.startswith('Filter'):
+                    if p.family == 'Filter':
+                        add_family_param('Filters', p, True)
+                    else:
+                        add_family_param('Filters', p)
+                elif p.family.startswith('Effect'):
+                    add_family_param('Effects', p)
+                else:
+                    add_param(p.family, p)
         stack = QtGui.QStackedLayout()
         self.param_widget.setLayout(stack)
         self.empty_params = QtGui.QWidget()
         stack.addWidget(self.empty_params)
+
+        def create_view(name, params):
+            widget = QtGui.QGroupBox(name)
+            stack.addWidget(widget)
+            widget.setLayout(QtGui.QVBoxLayout())
+            scroll = QtGui.QScrollArea(widget)
+            scroll.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
+            widget.layout().addWidget(scroll)
+            scroll_widget = QtGui.QWidget(scroll)
+            scroll.setWidget(scroll_widget)
+            layout = QtGui.QFormLayout()
+            layout.setFormAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
+            scroll_widget.setLayout(layout)
+            for param in params:
+                edit = QtGui.QLineEdit()
+                edit.setReadOnly(True)
+                edit.setMinimumWidth(64)
+                layout.addRow('{}:'.format(param.name), edit)
+                self.param_objects[Params.index_from_attr(param.attr)] = (param, edit)
+            layout.setSizeConstraint(QtGui.QFormLayout.SetMinAndMaxSize)
+            return widget, layout.minimumSize().width()
+
         param_width = 0
         for family, children in families.items():
             fam_item = QtGui.QStandardItem(family)
             self.model.appendRow(fam_item)
             if isinstance(children, dict):
                 for child, params in children.items():
+                    if child is None:
+                        child_widget, width = create_view(family, params)
+                        fam_item.setData(child_widget, WidgetRole)
+                        param_width = max(param_width, width)
+                        continue
                     child_item = QtGui.QStandardItem(child)
                     fam_item.appendRow([child_item])
-                    child_widget = QtGui.QGroupBox(child)
-                    stack.addWidget(child_widget)
-                    child_widget.setLayout(QtGui.QVBoxLayout())
-                    scroll = QtGui.QScrollArea(child_widget)
-                    scroll.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
-                    child_widget.layout().addWidget(scroll)
-                    scroll_widget = QtGui.QWidget(scroll)
-                    scroll_widget.setMinimumSize(50, 50)
-                    scroll.setWidget(scroll_widget)
-                    layout = QtGui.QFormLayout()
-                    layout.setFormAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
-#                    layout.setFieldGrowthPolicy(QtGui.QFormLayout.FieldsStayAtSizeHint)
-                    scroll_widget.setLayout(layout)
+                    child_widget, width = create_view(child, params)
                     child_item.setData(child_widget, WidgetRole)
-                    for param in params:
-                        edit = QtGui.QLineEdit()
-                        edit.setReadOnly(True)
-                        edit.setMinimumWidth(48)
-                        layout.addRow('{}:'.format(param.name), edit)
-                        self.param_objects[Params.index_from_attr(param.attr)] = (param, edit)
-                    layout.setSizeConstraint(QtGui.QFormLayout.SetMinAndMaxSize)
-                    param_width = max(param_width, layout.minimumSize().width())
+                    param_width = max(param_width, width)
+            else:
+                child_widget, width = create_view(family, children)
+                fam_item.setData(child_widget, WidgetRole)
+                param_width = max(param_width, width)
         margins = child_widget.getContentsMargins()
         self.param_widget.setMinimumWidth(param_width + margins[0] + margins[2])
         self.setStretchFactor(0, 1)
@@ -118,8 +155,9 @@ class SummaryWidget(QtGui.QSplitter):
         if isinstance(widget, QtGui.QGroupBox):
             self.param_widget.layout().setCurrentWidget(widget)
         else:
-            self.tree.setExpanded(index, False if self.tree.isExpanded(index) else True)
             self.param_widget.layout().setCurrentWidget(self.empty_params)
+        if self.model.itemFromIndex(index).hasChildren():
+            self.tree.setExpanded(index, False if self.tree.isExpanded(index) else True)
 
     def setSoundData(self, data):
         for i, p in enumerate(Params.param_list):
@@ -189,6 +227,8 @@ class SummaryDialog(QtGui.QDialog):
         edit_btn.setIcon(dial_icon)
         self.buttonBox.addButton(edit_btn, QtGui.QDialogButtonBox.AcceptRole)
         self.bank_combo.addItems([uppercase[l] for l in range(8)])
+        self.import_btn.clicked.connect(self.open)
+        self.buttonBox.button(QtGui.QDialogButtonBox.Discard).clicked.connect(self.reject)
 
 
     def open(self):
@@ -244,14 +284,22 @@ class SummaryDialog(QtGui.QDialog):
         prog = sound.prog
         if (bank, prog) == SMEB:
             self.sound_buffer_radio.setChecked(True)
-        self.prog_spin.setValue(prog)
+        elif bank == 0x7f:
+            self.multi_buffer_radio.setChecked(True)
+            self.multi_spin.setValue(prog+1)
+        else:
+            self.bank_combo.setCurrentIndex(bank)
+            self.prog_spin.setValue(prog+1)
         self.name_lbl.setText(''.join([str(unichr(l)) for l in data[363:379]]))
         if source:
             try:
                 self.source_lbl.setEllipsisText(source)
             except Exception as e:
                 print e
+        else:
+            self.source_lbl.setText('Local library' if sound.source == SRC_LIBRARY else 'Blofeld dump')
         self.summary_widget.setSoundData(sound.data)
+        self.show()
 
 
 
