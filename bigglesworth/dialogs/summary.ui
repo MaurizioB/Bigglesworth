@@ -6,14 +6,24 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>494</width>
-    <height>326</height>
+    <width>493</width>
+    <height>244</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Patch Summary</string>
   </property>
   <layout class="QGridLayout" name="gridLayout_5">
+   <item row="2" column="0" colspan="2">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Discard</set>
+     </property>
+    </widget>
+   </item>
    <item row="0" column="1">
     <spacer name="horizontalSpacer">
      <property name="orientation">
@@ -29,6 +39,9 @@
       </size>
      </property>
     </spacer>
+   </item>
+   <item row="1" column="0" colspan="2">
+    <widget class="SummaryWidget" name="summary_widget" native="true"/>
    </item>
    <item row="0" column="0">
     <layout class="QGridLayout" name="gridLayout_2">
@@ -71,7 +84,7 @@
         <item row="2" column="4">
          <widget class="QLabel" name="label_5">
           <property name="text">
-           <string>Program:</string>
+           <string>Prog:</string>
           </property>
          </widget>
         </item>
@@ -98,19 +111,6 @@
          <widget class="QLabel" name="label_3">
           <property name="text">
            <string>Bank:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="5">
-         <widget class="QComboBox" name="bank_combo">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
           </property>
          </widget>
         </item>
@@ -177,6 +177,19 @@
           </attribute>
          </widget>
         </item>
+        <item row="1" column="5">
+         <widget class="QComboBox" name="bank_combo">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
      </item>
@@ -233,32 +246,19 @@
      </item>
     </layout>
    </item>
-   <item row="2" column="0" colspan="2">
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Discard</set>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="0" colspan="2">
-    <widget class="SummaryWidget" name="summary_widget" native="true"/>
-   </item>
   </layout>
  </widget>
  <customwidgets>
-  <customwidget>
-   <class>FileLabel</class>
-   <extends>QLabel</extends>
-   <header>bigglesworth.dialogs.summary</header>
-  </customwidget>
   <customwidget>
    <class>SummaryWidget</class>
    <extends>QWidget</extends>
    <header>bigglesworth.dialogs.summary</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>FileLabel</class>
+   <extends>QLabel</extends>
+   <header>bigglesworth.dialogs.summary</header>
   </customwidget>
  </customwidgets>
  <resources/>
@@ -270,12 +270,12 @@
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>242</x>
-     <y>308</y>
+     <x>246</x>
+     <y>239</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
-     <y>274</y>
+     <y>243</y>
     </hint>
    </hints>
   </connection>
@@ -286,12 +286,12 @@
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>310</x>
-     <y>308</y>
+     <x>314</x>
+     <y>239</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>
-     <y>274</y>
+     <y>243</y>
     </hint>
    </hints>
   </connection>
@@ -302,12 +302,12 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>367</x>
-     <y>22</y>
+     <x>468</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
-     <x>392</x>
-     <y>47</y>
+     <x>468</x>
+     <y>58</y>
     </hint>
    </hints>
   </connection>
@@ -318,12 +318,12 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>367</x>
-     <y>22</y>
+     <x>468</x>
+     <y>32</y>
     </hint>
     <hint type="destinationlabel">
-     <x>392</x>
-     <y>73</y>
+     <x>468</x>
+     <y>84</y>
     </hint>
    </hints>
   </connection>
@@ -334,12 +334,12 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>209</x>
-     <y>73</y>
+     <x>303</x>
+     <y>83</y>
     </hint>
     <hint type="destinationlabel">
-     <x>283</x>
-     <y>73</y>
+     <x>359</x>
+     <y>84</y>
     </hint>
    </hints>
   </connection>

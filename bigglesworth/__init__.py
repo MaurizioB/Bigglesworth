@@ -235,6 +235,13 @@ class BigglesworthObject(QtCore.QObject):
         self.sysexSoundImportAction.triggered.connect(self.summary.open)
         self.librarian.summary_request.connect(self.summary.setSound)
 
+        #MIDI IMPORT
+        self.midi_import = MidiImportDialog(self, self.librarian)
+        self.midi_import.dump_send.connect(self.dump_send)
+        self.MIDIImportAction = self.librarian.MIDIImportAction
+        self.MIDIImportAction.triggered.connect(self.midi_import.file_open)
+        self.output_conn_state_change.connect(self.midi_import.midi_output_state)
+
         self.midi_connect()
 #        self.dump_win.show()
 
@@ -651,7 +658,6 @@ class BigglesworthObject(QtCore.QObject):
         _last = (last[0], last[1]+1) if last[1]+1 <= 127 else (last[0]+1, 0)
         dump_bulk_list = []
         while (bank, prog) != _last:
-#            print 'send {}:{:03} "{}"'.format(bank, prog, self.blofeld_library[bank, prog])
             dump_bulk_list.append(self.blofeld_library[bank, prog])
             prog += 1
             if prog > 127:
@@ -663,6 +669,31 @@ class BigglesworthObject(QtCore.QObject):
         self.dump_send_win.show()
         self.dump_send_timer.timeout.connect(consume)
         self.dump_send(dump_bulk_list.pop(0))
+        self.dump_send_timer.start()
+        self.dump_elapsed.start()
+
+    def external_dump_bulk_send(self, sound_list):
+        def consume():
+            if not sound_list:
+                self.dump_send_win.accept()
+                return
+            sound = sound_list.pop(0)
+            self.dump_send(sound)
+            current = tot_sounds-len(sound_list)
+            self.dump_send_win.bank_lbl.setText('{} {}/{}'.format(uppercase[sound.bank], tot_banks-last[0]+sound.bank, tot_banks))
+            self.dump_send_win.sound_lbl.setText('{:03} {}/{}'.format(sound.prog+1, current, tot_sounds))
+            self.dump_send_win.progress.setValue(current)
+            dump_time = None
+            if (tot_sounds > 100 and current > 10) or (tot_sounds <= 100 and current > 5):
+                dump_time = self.dump_elapsed.elapsed()/float(current)*(len(sound_list))/1000
+            if dump_time is not None:
+                self.dump_send_win.time.setText('{}:{:02}'.format(*divmod(int(dump_time)+1, 60)))
+        tot_banks = len(set([s.bank for s in sound_list]))
+        tot_sounds = len(sound_list)
+        self.dump_send_win.progress.setMaximum(tot_sounds)
+        self.dump_send_win.show()
+        self.dump_send_timer.timeout.connect(consume)
+        self.dump_send(sound_list.pop(0))
         self.dump_send_timer.start()
         self.dump_elapsed.start()
 
@@ -809,9 +840,14 @@ class Librarian(QtGui.QMainWindow):
 
     def edit_mode_set(self, state):
         self.edit_mode = state
-        self.blofeld_sounds_table.setEditTriggers(QtGui.QTableView.DoubleClicked|QtGui.QTableView.EditKeyPressed if state else QtGui.QTableView.NoEditTriggers)
-        self.blofeld_sounds_table.setDragEnabled(False if state else True)
-        self.blofeld_sounds_table.setSelectionMode(QtGui.QTableView.SingleSelection if state else QtGui.QTableView.ContiguousSelection)
+        if state:
+            self.blofeld_sounds_table.setEditTriggers(QtGui.QTableView.DoubleClicked|QtGui.QTableView.EditKeyPressed)
+            self.blofeld_sounds_table.setDragEnabled(False)
+            self.blofeld_sounds_table.setSelectionMode(QtGui.QTableView.SingleSelection)
+        else:
+            self.blofeld_sounds_table.setEditTriggers(QtGui.QTableView.NoEditTriggers)
+            self.blofeld_sounds_table.setDragEnabled(True)
+            self.blofeld_sounds_table.setSelectionMode(QtGui.QTableView.ContiguousSelection)
 
     def search_filter_set(self, state):
         if not state:

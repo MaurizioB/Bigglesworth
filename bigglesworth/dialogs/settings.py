@@ -2,7 +2,7 @@
 
 from PyQt4 import QtCore, QtGui
 from bigglesworth.utils import load_ui
-from bigglesworth.const import INPUT, OUTPUT, PGMSEND, MIDISEND
+from bigglesworth.const import PGMSEND, MIDISEND
 
 class SettingsDialog(QtGui.QDialog):
     preset_texts = {

@@ -9,3 +9,4 @@ from bigglesworth.dialogs.about import *
 from bigglesworth.dialogs.sounddump import *
 from bigglesworth.dialogs.loading import *
 from bigglesworth.dialogs.summary import *
+from bigglesworth.dialogs.midi_import import *

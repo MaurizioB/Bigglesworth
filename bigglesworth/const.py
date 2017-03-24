@@ -14,7 +14,7 @@ def local_path(name):
 
 MAJ_VERSION = 0
 MIN_VERSION = 8
-REV_VERSION = 4
+REV_VERSION = 6
 VERSION = '{}.{}.{}'.format(MAJ_VERSION, MIN_VERSION, REV_VERSION)
 
 QWIDGETSIZE_MAX = ((1 << 24) - 1)

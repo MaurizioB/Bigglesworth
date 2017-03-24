@@ -35,6 +35,9 @@ class Sound(QtCore.QObject):
 
         self._done = True
 
+    def copy(self):
+        return Sound([self.bank, self.prog] + self.data)
+
     def __dir__(self):
         return self.__dict__.keys() + Params.param_names.keys()
 
@@ -116,10 +119,10 @@ class Sound(QtCore.QObject):
     def name(self, name):
         name = name.replace('\xc2\xb0', '\x7f')
         if name == self._name: return
-        while len(name) < 16:
-            name += ' '
         if len(name) > 16:
             name = name[:16]
+        else:
+            name.ljust(16, ' ')
         self._name = name
         self.data[363:379] = [ord(l) for l in name]
         self.nameChanged.emit(name)

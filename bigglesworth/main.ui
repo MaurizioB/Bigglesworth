@@ -283,6 +283,7 @@
     <addaction name="saveAction"/>
     <addaction name="textExportAction"/>
     <addaction name="separator"/>
+    <addaction name="MIDIImportAction"/>
     <addaction name="sysexSoundImportAction"/>
     <addaction name="separator"/>
     <addaction name="quitAction"/>
@@ -382,6 +383,14 @@
    </property>
    <property name="toolTip">
     <string>Query Blofeld for Global configuration</string>
+   </property>
+  </action>
+  <action name="MIDIImportAction">
+   <property name="text">
+    <string>Import MID file...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+M</string>
    </property>
   </action>
  </widget>

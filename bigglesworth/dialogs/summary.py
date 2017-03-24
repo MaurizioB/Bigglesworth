@@ -17,8 +17,6 @@ sources = {
            }
 WidgetRole = QtCore.Qt.UserRole + 1
 
-dots = QtCore.QString.fromUtf8('…')
-
 class GrowingLineEdit(QtGui.QLineEdit):
     def __init__(self, *args, **kwargs):
         QtGui.QLineEdit.__init__(self, *args, **kwargs)
@@ -44,7 +42,6 @@ class SummaryWidget(QtGui.QSplitter):
         self.tree.setTextElideMode(QtCore.Qt.ElideNone)
         self.model = QtGui.QStandardItemModel()
         self.tree.setModel(self.model)
-#        self.tree.activated.connect(self.param_select)
         self.tree.clicked.connect(self.param_select)
         self.tree.currentChanged = self.param_select
 
@@ -52,7 +49,6 @@ class SummaryWidget(QtGui.QSplitter):
         self.addWidget(self.param_widget)
         self.build_summary()
         self.tree.header().setResizeMode(QtGui.QHeaderView.ResizeToContents)
-#        self.tree.header().setStretchLastSection(False)
         self.tree.expandAll()
         self.tree.setMinimumWidth(self.tree.sizeHintForColumn(0))
         self.tree.collapseAll()
@@ -191,7 +187,7 @@ class SummaryWidget(QtGui.QSplitter):
                     param, edit = self.param_objects[i]
                     value = data[i]
                     if param.range[2] != 1:
-                        value = value / param.range[2]
+                        value = (value - param.range[0]) / param.range[2]
                     else:
                         value = value - param.range[0]
                     edit.setText(param.values[value])
@@ -200,11 +196,13 @@ class SummaryWidget(QtGui.QSplitter):
                 try:
                     print 'Something wrong with param {} "{}": {}'.format(i, param.name, param.values[data[i]])
                 except:
-                    print 'Out of range for param "{}" (range: {}): {}'.format(param.name, param.range, data[i])
+                    print 'Out of range for param "{}" (range: {}): {} (value: {})'.format(param.name, param.range, data[i], value)
 
 
 
 class FileLabel(QtGui.QLabel):
+    dots = QtCore.QString.fromUtf8('…')
+
     def __init__(self, *args, **kwargs):
         QtGui.QLabel.__init__(self, *args, **kwargs)
         self.font_metrics = QtGui.QFontMetrics(self.font())
@@ -215,17 +213,15 @@ class FileLabel(QtGui.QLabel):
             self.setText(text)
             return
         split = text.split('/')
-        file = split[-1]
-        path = split[:-1].join('/')+'/'
+        file = '/'+split[-1]
+        path = split[:-1].join('/')
         path_len = len(path)
         cutter = 1
         while self.font_metrics.width(text) > self.width():
-            text = path[:-cutter] + dots + file
+            text = path[:-cutter] + self.dots + file
             cutter += 1
             if cutter == path_len:
                 break
-        self.setText(text)
-        return
         self.setText(text)
 
 
@@ -248,6 +244,7 @@ class SummaryDialog(QtGui.QDialog):
         edit_btn.clicked.connect(self.sound_edit)
         edit_btn.setIcon(dial_icon)
         self.buttonBox.addButton(edit_btn, QtGui.QDialogButtonBox.AcceptRole)
+
         self.bank_combo.addItems([uppercase[l] for l in range(8)])
         self.import_btn.clicked.connect(self.open)
         self.buttonBox.button(QtGui.QDialogButtonBox.Discard).clicked.connect(self.reject)

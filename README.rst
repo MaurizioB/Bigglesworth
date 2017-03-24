@@ -18,8 +18,10 @@ Features in *italics* are still under development
 - Direct sound parameter editing
 - Virtual keyboard (with input from the computer keyboard)
 - Dumping sounds from Blofeld
-- *Dumping sounds to Blofeld (not yet)*
-- *Organizing sounds and adding/restoring them from factory presets (not yet)*
+- Dumping sounds to Blofeld
+- Organizing sounds and adding/restoring them from factory presets
+- Import sounds and sound sets from .MID files
+- Import sounds from .syx files
 
 Requirements
 ------------
@@ -64,8 +66,6 @@ What doesn't work (yet)
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 - Multi Mode editing
-- Everything related to sound saving (rename, saving current sound parameters, 
-  ordering)
 
 Future
 ~~~~~~
@@ -77,11 +77,9 @@ and fixing the whole Editor window, I'll add:
 - MIDI input and mapping, to allow the use of an external control surface, also
   using a "live mode": a simple MIDI interface for the control surface, without
   the need to load presets or the whole editor window
-- direct sysex file loading and saving
 - sound template "favorites" library
 - arpeggiator template library
-- WaveTable management (and editing?); but I'm afraid I'll need the sampling 
-  license for that...
+- WaveTable management (and editing?)
 - Online shared sound presets
 - coffee maker
 
