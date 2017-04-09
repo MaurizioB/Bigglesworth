@@ -434,15 +434,20 @@ class LoadingThread(QtCore.QObject):
             if isinstance(event, midifile.SysexEvent):
                 sound_list.append(Sound(event.data[6:391]))
                 i += 1
-                if i == self.limit: break
+                if i == self.limit:
+                    break
         print 'done: {}'.format(len(sound_list))
         return sound_list
 
     def load_library(self):
         sound_list = []
         with open(local_path('presets/personal_library'), 'rb') as of:
+            i = 0
             for data in pickle.load(of):
                 sound_list.append(Sound(list(data)))
+                i += 1
+                if i == self.limit:
+                    break
         return sound_list
 
 

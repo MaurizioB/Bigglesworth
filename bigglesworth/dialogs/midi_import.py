@@ -247,13 +247,13 @@ class MidiImportDialog(QtGui.QDialog):
 
     def file_open(self):
         while True:
-            file = QtGui.QFileDialog.getOpenFileName(self, 'Open MIDI sound set', QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.HomeLocation), 'MIDI files (*.mid);; All files (*)')
-            if not file: return
-            if not file_exists(str(file)):
+            path = QtGui.QFileDialog.getOpenFileName(self, 'Open MIDI sound set', QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.HomeLocation), 'MIDI files (*.mid);; All files (*)')
+            if not path: return
+            if not file_exists(str(path)):
                 QtGui.QMessageBox.warning(self, 'File does not exists', 'The selected does not exist.\nCheck the file name and path.')
             else:
                 try:
-                    res = self.midi_load(file)
+                    res = self.midi_load(path)
                     if not res:
                         retry = QtGui.QMessageBox.information(
                                                       self, 'No sounds found', 
@@ -264,8 +264,11 @@ class MidiImportDialog(QtGui.QDialog):
                     break
                 except:
                     QtGui.QMessageBox.warning(self, 'Unexpected error', 'Something is wrong with the selected file...\nTry with another one.')
+        self.setSource(res, path)
+
+    def setSource(self, res, path):
         self.build(res)
-        self.source_lbl.setText(file)
+        self.source_lbl.setText(path)
         self.show()
 
     def midi_load(self, path):

@@ -283,8 +283,7 @@
     <addaction name="saveAction"/>
     <addaction name="textExportAction"/>
     <addaction name="separator"/>
-    <addaction name="MIDIImportAction"/>
-    <addaction name="sysexSoundImportAction"/>
+    <addaction name="importAction"/>
     <addaction name="separator"/>
     <addaction name="quitAction"/>
    </widget>
@@ -293,6 +292,7 @@
      <string>&amp;Windows</string>
     </property>
     <addaction name="editorAction"/>
+    <addaction name="wavetableAction"/>
     <addaction name="separator"/>
     <addaction name="settingsAction"/>
    </widget>
@@ -385,12 +385,17 @@
     <string>Query Blofeld for Global configuration</string>
    </property>
   </action>
-  <action name="MIDIImportAction">
+  <action name="importAction">
    <property name="text">
-    <string>Import MID file...</string>
+    <string>Import sound from file...</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+M</string>
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="wavetableAction">
+   <property name="text">
+    <string>Wavetables</string>
    </property>
   </action>
  </widget>

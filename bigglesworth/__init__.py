@@ -15,10 +15,13 @@ from widgets import *
 from dialogs import *
 
 from editor import Editor
+from wavetable import WaveTableEditor
 
 def process_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--sysex', help='Print output SysEx messages to the terminal', action='store_true')
+    parser.add_argument('-l', '--library-limit', metavar='N', type=int, help='Limit library to N sounds')
+    parser.add_argument('-w', '--wavetable', metavar='WTFILE', nargs='?', const=True, help='Open Wavetable editor (with optional WTFILE)')
     return parser.parse_args()
 
 class BigglesworthObject(QtCore.QObject):
@@ -69,7 +72,12 @@ class BigglesworthObject(QtCore.QObject):
             self.debug_sysex = True
         else:
             self.debug_sysex = False
-        limit = None
+        if args.library_limit:
+            limit = args.library_limit
+        else:
+            limit = None
+        if args.wavetable:
+            wavetable_show = args.wavetable
 
         #LOADING
         self.loader = LoadingThread(self, self.blofeld_library, self.source_library, limit=limit)
@@ -86,6 +94,8 @@ class BigglesworthObject(QtCore.QObject):
         self.librarian.dump_send.connect(self.dump_send)
         self.librarian.dump_bulk_send.connect(self.dump_bulk_send)
         self.quitAction = self.librarian.quitAction
+        self.importAction = self.librarian.importAction
+        self.importAction.triggered.connect(self.file_import)
         self.saveAction = self.librarian.saveAction
         self.saveAction.triggered.connect(self.save_library)
         self.settingsAction = self.librarian.settingsAction
@@ -94,6 +104,9 @@ class BigglesworthObject(QtCore.QObject):
         dial_icon = QtGui.QIcon()
         dial_icon.addFile(local_path('dial_icon.png'))
         self.librarian.editorAction.setIcon(dial_icon)
+        wt_icon = QtGui.QIcon()
+        wt_icon.addFile(local_path('wt_icon.png'))
+        self.librarian.wavetableAction.setIcon(wt_icon)
         self.quitAction.triggered.connect(self.quit)
         self.librarian.aboutQtAction.triggered.connect(lambda: QtGui.QMessageBox.aboutQt(self.librarian, 'About Qt'))
         self.deviceAction = self.librarian.deviceAction
@@ -231,22 +244,38 @@ class BigglesworthObject(QtCore.QObject):
         #SUMMARY
         self.summary = SummaryDialog(self, self.librarian)
         self.summary.dump_send.connect(self.dump_send)
-        self.sysexSoundImportAction = self.librarian.sysexSoundImportAction
-        self.sysexSoundImportAction.triggered.connect(self.summary.open)
         self.librarian.summary_request.connect(self.summary.setSound)
 
         #MIDI IMPORT
         self.midi_import = MidiImportDialog(self, self.librarian)
         self.midi_import.dump_send.connect(self.dump_send)
-        self.MIDIImportAction = self.librarian.MIDIImportAction
-        self.MIDIImportAction.triggered.connect(self.midi_import.file_open)
         self.output_conn_state_change.connect(self.midi_import.midi_output_state)
+
+        #WAVE IMPORT
+        self.wave_import = WaveLoad(self)
+
+        #WAVETABLE
+        self.wave_table = WaveTableEditor(self)
+        self.librarian.wavetableAction.triggered.connect(lambda: [self.wave_table.show(), self.wave_table.activateWindow()])
+        if args.wavetable:
+            if args.wavetable is True:
+                self.wave_table.show()
+        self.wave_table.wavetable_send.connect(self.wavetable_send)
 
         self.midi_connect()
 #        self.dump_win.show()
 
     def show_settings(self):
         self.settings_dialog.exec_()
+
+    def file_import(self):
+        dialog = FileOpen()
+        res = dialog.exec_()
+        if not res: return
+        if isinstance(dialog.res[0], Sound):
+            self.summary.setSound(*res)
+        else:
+            self.midi_import.setSource(*res)
 
     def save_library(self):
         data = []
@@ -636,6 +665,8 @@ class BigglesworthObject(QtCore.QObject):
             prog = sound.prog
         self.output_event(SysExEvent(1, [INIT, IDW, IDE, self.blofeld_id, SNDD, bank, prog] + data + [CHK, END]))
 
+    def wavetable_send(self, sysex):
+        self.output_event(SysExEvent(1, sysex))
     
     def dump_bulk_send(self, first, last):
         def consume():
@@ -1034,6 +1065,7 @@ class Librarian(QtGui.QMainWindow):
         for bank, sound_list in enumerate(self.blofeld_library.data):
             if current_bank != 0 and current_bank != bank+1: continue
             for s in sound_list:
+                if not s: break
                 if s.data is None: continue
                 cat_len[s.cat] += 1
         for cat_id in range(1, self.cat_filter_combo.model().rowCount()):

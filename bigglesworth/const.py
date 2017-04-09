@@ -17,6 +17,8 @@ MIN_VERSION = 8
 REV_VERSION = 6
 VERSION = '{}.{}.{}'.format(MAJ_VERSION, MIN_VERSION, REV_VERSION)
 
+MIDFILE, SYXFILE = 1, 2
+
 QWIDGETSIZE_MAX = ((1 << 24) - 1)
 INPUT, OUTPUT = 0, 1
 LEGATO = 0
@@ -53,8 +55,10 @@ SNDD = 0x10
 SNDP = 0x20
 GLBR = 0x4
 GLBD = 0x14
+WTBD = 0x12
 
 CURSOR_NORMAL, CURSOR_INSERT = range(2)
+CURSOR_LINE, CURSOR_CURVE = range(1, 3)
 
 class AdvParam(object):
     def __init__(self, fmt, **kwargs):

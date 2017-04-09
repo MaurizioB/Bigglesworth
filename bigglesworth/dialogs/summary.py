@@ -167,13 +167,12 @@ class SummaryWidget(QtGui.QSplitter):
         if isinstance(widget, QtGui.QGroupBox):
             self.param_widget.layout().setCurrentWidget(widget)
         else:
-            self.param_widget.layout().setCurrentWidget(self.empty_params)
+#            self.param_widget.layout().setCurrentWidget(self.empty_params)
             empty = True
         if self.model.itemFromIndex(index).hasChildren():
             if not self.tree.isExpanded(index):
                 self.tree.setExpanded(index, True)
             if empty:
-                print 'son qui'
                 QtCore.QTimer.singleShot(0, lambda: self.tree.setCurrentIndex(index.child(0, 0)))
 
     def setSoundData(self, data):

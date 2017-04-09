@@ -2,7 +2,69 @@
 
 from PyQt4 import QtCore, QtGui
 
-from bigglesworth.const import categories, CatRole
+from bigglesworth.const import categories, CatRole, local_path
+
+class MagnifyingCursor(QtGui.QCursor):
+    def __init__(self):
+        pixmap = QtGui.QPixmap(local_path('magnifying-glass.png'))
+        QtGui.QCursor.__init__(self, pixmap)
+
+
+class LineCursor(QtGui.QCursor):
+    def __init__(self):
+        pixmap = QtGui.QPixmap(16, 16)
+        pixmap.fill(QtCore.Qt.transparent)
+        qp = QtGui.QPainter(pixmap)
+        qp.setRenderHints(QtGui.QPainter.Antialiasing)
+        qp.setPen(QtGui.QPen(QtCore.Qt.black, 2))
+        qp.translate(.5, .5)
+        qp.drawLine(0, 4, 12, 14)
+        qp.end()
+        QtGui.QCursor.__init__(self, pixmap, 0, 0)
+
+
+class FreeDrawIcon(QtGui.QIcon):
+    def __init__(self):
+        pixmap = QtGui.QPixmap(12, 12)
+        pixmap.fill(QtCore.Qt.transparent)
+        qp = QtGui.QPainter(pixmap)
+        qp.setRenderHints(QtGui.QPainter.Antialiasing)
+        qp.setPen(QtGui.QPen(QtCore.Qt.black, 1))
+        qp.translate(.5, .5)
+        path = QtGui.QPainterPath()
+        path.arcTo(0, -2.5, 5, 5, 180, 90)
+        path.arcTo(0, 2.5, 8, 12.5, 90, -90)
+        path.lineTo(11, 5)
+        qp.drawPath(path)
+        qp.end()
+        QtGui.QIcon.__init__(self, pixmap)
+
+
+class LineDrawIcon(QtGui.QIcon):
+    def __init__(self):
+        pixmap = QtGui.QPixmap(12, 12)
+        pixmap.fill(QtCore.Qt.transparent)
+        qp = QtGui.QPainter(pixmap)
+        qp.setRenderHints(QtGui.QPainter.Antialiasing)
+        qp.setPen(QtGui.QPen(QtCore.Qt.black, 1))
+        qp.translate(.5, .5)
+        qp.drawLine(0, 0, 11, 11)
+        qp.end()
+        QtGui.QIcon.__init__(self, pixmap)
+
+
+class CurveDrawIcon(QtGui.QIcon):
+    def __init__(self):
+        pixmap = QtGui.QPixmap(12, 12)
+        pixmap.fill(QtCore.Qt.transparent)
+        qp = QtGui.QPainter(pixmap)
+        qp.setRenderHints(QtGui.QPainter.Antialiasing)
+        qp.setPen(QtGui.QPen(QtCore.Qt.black, 1))
+        qp.translate(.5, .5)
+        qp.drawArc(0, -11, 22, 22, 2880, 1440)
+        qp.end()
+        QtGui.QIcon.__init__(self, pixmap)
+
 
 class DirCursorClass(QtGui.QCursor):
     limit_pen = QtGui.QPen(QtCore.Qt.black, 2)
