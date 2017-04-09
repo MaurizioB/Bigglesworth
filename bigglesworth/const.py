@@ -13,8 +13,8 @@ def local_path(name):
 #    sound_params = pickle.load(_params_file)
 
 MAJ_VERSION = 0
-MIN_VERSION = 8
-REV_VERSION = 6
+MIN_VERSION = 9
+REV_VERSION = 0
 VERSION = '{}.{}.{}'.format(MAJ_VERSION, MIN_VERSION, REV_VERSION)
 
 MIDFILE, SYXFILE = 1, 2

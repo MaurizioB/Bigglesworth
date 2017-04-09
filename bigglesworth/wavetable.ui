@@ -501,7 +501,7 @@
            </sizepolicy>
           </property>
           <property name="title">
-           <string>Something</string>
+           <string>Wave editing</string>
           </property>
           <layout class="QGridLayout" name="gridLayout"/>
          </widget>

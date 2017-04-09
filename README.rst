@@ -22,6 +22,7 @@ Features in *italics* are still under development
 - Organizing sounds and adding/restoring them from factory presets
 - Import sounds and sound sets from .MID files
 - Import sounds from .syx files
+- Wavetable editor
 
 Requirements
 ------------
@@ -79,7 +80,6 @@ and fixing the whole Editor window, I'll add:
   the need to load presets or the whole editor window
 - sound template "favorites" library
 - arpeggiator template library
-- WaveTable management (and editing?)
 - Online shared sound presets
 - coffee maker
 
