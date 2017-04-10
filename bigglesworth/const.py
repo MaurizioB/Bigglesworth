@@ -60,6 +60,15 @@ WTBD = 0x12
 CURSOR_NORMAL, CURSOR_INSERT = range(2)
 CURSOR_LINE, CURSOR_CURVE = range(1, 3)
 
+
+class InvalidException(Exception):
+    def __init__(self, params=None):
+        self.params = params
+
+    def __str__(self):
+        return repr(self.params)
+
+
 class AdvParam(object):
     def __init__(self, fmt, **kwargs):
         self.fmt = fmt

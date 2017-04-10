@@ -379,7 +379,7 @@ class PrintDialog(QtGui.QDialog):
         if not res: return
         if self.mode == TEXT:
             while True:
-                file = QtGui.QFileDialog.getSaveFileName(self, 'Export to text file', QtCore.QDir.homePath()+'/blofeld_presets.txt', 'Text files (*.txt);; All files (*)')
+                file = QtGui.QFileDialog.getSaveFileName(self, 'Export to text file', QtCore.QDir.homePath()+'/blofeld_presets.txt', 'Text files (*.txt);;All files (*)')
                 if not file: return
                 try:
                     with open(file, 'wb') as of:
@@ -388,7 +388,7 @@ class PrintDialog(QtGui.QDialog):
                 except:
                     QtGui.QMessageBox.critical(self, 'Error saving the file', 'There was a problem saving the file.\nBe sure to have write permissions and sufficient free space for the selected path.')
         while True:
-            file = QtGui.QFileDialog.getSaveFileName(self, 'Export to PDF file', QtCore.QDir.homePath()+'/blofeld_presets.pdf', 'PDF files (*.pdf);; All files (*)')
+            file = QtGui.QFileDialog.getSaveFileName(self, 'Export to PDF file', QtCore.QDir.homePath()+'/blofeld_presets.pdf', 'PDF files (*.pdf);;All files (*)')
             if not file: break
             try:
                 self.output.setOutputFileName(file)

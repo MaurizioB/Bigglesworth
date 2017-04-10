@@ -10,6 +10,7 @@ from bigglesworth.utils import load_ui
 from bigglesworth.const import *
 from bigglesworth.dialogs import WaveLoad
 from bigglesworth.widgets import MagnifyingCursor, LineCursor, FreeDrawIcon, LineDrawIcon, CurveDrawIcon
+from bigglesworth import midifile
 
 sqrt_center = 4*(sqrt(2)-1)/3
 _x0 = _y3 = 0
@@ -51,6 +52,13 @@ def compute_linear_curve(t):
     return t, 1 - t
 
 compute_fn = compute_linear_curve, compute_sqrt_curve
+
+invalid_msgbox = lambda parent, msg=None: QtGui.QMessageBox.warning(
+                                                          parent, 'Wavetable import error', 
+                                                          'The selected file does not seem to be a Blofeld Wavetable.{}'.format('\n{}'.format(msg) if msg else '')
+                                                          )
+
+
 
 class DumpDialog(QtGui.QDialog):
     def __init__(self, main):
@@ -601,8 +609,10 @@ class WaveSourceView(QtGui.QGraphicsView):
 
 class WavePlaceHolderItem(QtGui.QGraphicsWidget):
     bgd_normal_brush = QtGui.QBrush(QtCore.Qt.NoBrush)
-    bgd_sweep_brush = QtGui.QBrush(QtGui.QColor(128, 128, 128, 128))
-    bgd_brushes = bgd_normal_brush, bgd_sweep_brush
+    bgd_highlight_brush = QtGui.QBrush(QtGui.QColor(128, 192, 192, 128))
+    bgd_selected_brush = QtGui.QBrush(QtGui.QColor(192, 192, 192, 128))
+    bgd_selected_highlight_brush = QtGui.QBrush(QtGui.QColor(96, 128, 128, 128))
+    bgd_brushes = bgd_normal_brush, bgd_highlight_brush, bgd_selected_brush, bgd_selected_highlight_brush
 
     def __init__(self, main, index, rect, *args, **kwargs):
         QtGui.QGraphicsWidget.__init__(self, *args, **kwargs)
@@ -625,6 +635,8 @@ class WavePlaceHolderItem(QtGui.QGraphicsWidget):
             self.index_item.setVisible(False)
         else:
             self.index_item.setX(-16)
+        self.selected = False
+        self.highlight = False
 
     def hoverEnterEvent(self, event):
         self.main.hover.emit(True)
@@ -643,9 +655,16 @@ class WavePlaceHolderItem(QtGui.QGraphicsWidget):
 
     def mousePressEvent(self, event):
         self.main.selected.emit(self.main)
+        QtGui.QGraphicsWidget.mousePressEvent(self, event)
 
-    def sweepHighlight(self, state):
-        self.brush = self.bgd_brushes[state]
+    def setSelected(self, state):
+        self.brush = self.bgd_brushes[self.highlight + state * 2]
+        self.selected = state
+        self.update()
+
+    def setHighlight(self, state):
+        self.brush = self.bgd_brushes[state + self.selected * 2]
+        self.highlight = state
         self.update()
 
     def paint(self, painter, *args, **kwargs):
@@ -682,6 +701,7 @@ class WaveObject(QtCore.QObject):
         #do we really need to create a self.preview_path?
         self.preview_path = QtGui.QPainterPath(self.sine_preview_wavepath)
         self.preview_path_item = QtGui.QGraphicsPathItem(self.preview_path)
+        self.preview_path_item.setFlag(QtGui.QGraphicsPathItem.ItemIsSelectable)
         self.preview_rect = WavePlaceHolderItem(self, index, self.preview_path_item.boundingRect())
         self.path = QtGui.QPainterPath(self.sine_wavepath)
         self.hover.connect(self.preview_highlight)
@@ -729,6 +749,106 @@ class WaveTableView(QtGui.QGraphicsView):
         self.setRenderHints(QtGui.QPainter.Antialiasing)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.customContextMenuRequested.connect(self.show_menu)
+        self.clipboard = None
+        self.selection = None
+        self.currentWave = 0
+        self.scene().selectionChanged.connect(self.selection_update)
+        self.setDragMode(self.RubberBandDrag)
+
+    def createDragData(self):
+        if not self.selection: return
+        start = self.selection[0]
+        end = self.selection[-1]
+        self.drag = QtGui.QDrag(self)
+        data = QtCore.QMimeData()
+        data.setData('audio/waves', QtCore.QByteArray('{}:{}'.format(start, end)))
+#        wave_len = self.selection[1] + 1 - self.selection[0]
+#        samples = self.current_data[self.selection[0] * 256 + self.offset:(self.selection[1] + 1) * 256 + self.offset]
+#        path = QtGui.QPainterPath()
+#        sampwidth_int = self.current_sampwidth_int / 2
+#        path.moveTo(0, sampwidth_int - audioop.getsample(samples, self.current_sampwidth, 0))
+#        for s in xrange(1, len(samples)/2):
+#            path.lineTo(s, sampwidth_int - audioop.getsample(samples, self.current_sampwidth, s))
+#        wave_size = self.main.wavetable_view.width() / 64
+#        pixmap = QtGui.QPixmap(wave_size * wave_len, 48)
+#        pixmap.fill(QtCore.Qt.transparent)
+#        qp = QtGui.QPainter(pixmap)
+#        qp.setRenderHints(qp.Antialiasing)
+#        qp.scale((wave_size * wave_len / path.boundingRect().width()), 48. / self.current_sampwidth_int)
+#        qp.drawPath(path)
+#        qp.end()
+#        self.drag.setPixmap(pixmap)
+        pixmap = QtGui.QPixmap(int(self.viewport().rect().width() / 64. * (end - start + 1)), self.height())
+        pixmap.fill(QtCore.Qt.transparent)
+        qp = QtGui.QPainter(pixmap)
+        qp.setRenderHints(qp.Antialiasing)
+        x = self.mapFromScene(self.waveobj_list[start].preview_rect.pos()).x()
+        width = self.mapFromScene(self.waveobj_list[end].preview_rect.pos()).x() + self.mapFromScene(self.waveobj_list[end].preview_rect.boundingRect().topRight()).x() - x
+        self.render(qp, source=QtCore.QRect(x, self.wavegroup.boundingRect().y(), width, self.mapToScene(self.viewport().rect()).boundingRect().height()), mode=QtCore.Qt.IgnoreAspectRatio)
+        qp.end()
+        self.drag.setPixmap(pixmap)
+        self.drag.setMimeData(data)
+        self.drag.exec_()
+
+    def selection_update(self):
+        select_path = self.scene().selectionArea()
+        items = [i for i in self.scene().items(select_path) if isinstance(i, WavePlaceHolderItem)]
+        if not items: return
+        selection = [item.index for item in items]
+        for i, r in enumerate(self.waveobj_list):
+            r.preview_rect.setSelected(True if i in selection else False)
+        self.selection = sorted(selection)
+
+
+    def mousePressEvent(self, event):
+        QtGui.QGraphicsView.mousePressEvent(self, event)
+        if event.modifiers() == QtCore.Qt.ShiftModifier:
+            self.setDragMode(self.RubberBandDrag)
+        else:
+            self.setDragMode(self.NoDrag)
+            items = [i.index for i in self.items(event.pos()) if isinstance(i, WavePlaceHolderItem)]
+            if not items: return
+            if self.selection:
+                if items[0] not in self.selection:
+                    self.selection = [items[0]]
+                    [r.preview_rect.setSelected(False) for r in self.waveobj_list]
+            else:
+                self.selection = [items[0]]
+
+    def mouseMoveEvent(self, event):
+        QtGui.QGraphicsView.mouseMoveEvent(self, event)
+        if event.buttons() == QtCore.Qt.LeftButton and not event.modifiers() == QtCore.Qt.ShiftModifier:
+            self.createDragData()
+
+    def focusOutEvent(self, event):
+        self.selection = None
+        [r.preview_rect.setSelected(False) for r in self.waveobj_list]
+
+    def show_menu(self, pos):
+        items = [i for i in self.items(pos) if isinstance(i, WavePlaceHolderItem)]
+        if not items: return
+        index = items[0].index
+        wave_obj = self.waveobj_list[index]
+        menu = QtGui.QMenu()
+        menu.setSeparatorsCollapsible(False)
+        title = QtGui.QAction('Wave {}'.format(index + 1), menu)
+        title.setSeparator(True)
+        copy = QtGui.QAction('Copy', menu)
+        if self.clipboard is not None:
+            paste = QtGui.QAction('Paste wave {} here'.format(self.clipboard + 1), self)
+            if index == self.clipboard:
+                paste.setEnabled(False)
+        else:
+            paste = QtGui.QAction('Paste', self)
+            paste.setEnabled(False)
+        menu.addActions([title, copy, paste])
+        res = menu.exec_(pos.globalPos())
+        if res == copy:
+            self.clipboard = index
+        elif res == paste:
+            wave_obj.setValues(self.waveobj_list[self.clipboard].values)
+            wave_obj.selected.emit(wave_obj)
 
     def setWaveTable(self, waveobj_list):
         self.waveobj_list = waveobj_list
@@ -736,6 +856,7 @@ class WaveTableView(QtGui.QGraphicsView):
         for i, wave_obj in enumerate(waveobj_list):
 #            wave_obj.selected.connect(self.select)
             wave_obj.preview_path_item.setX(i*128)
+            wave_obj.selected.connect(lambda o, index=i: setattr(self, 'currentWave', index))
             self.wavegroup.addToGroup(wave_obj.preview_path_item)
             rect = wave_obj.preview_rect
             self.scene().addItem(rect)
@@ -750,53 +871,74 @@ class WaveTableView(QtGui.QGraphicsView):
         self.scene().addItem(self.wavegroup)
         self.setSceneRect(self.wavegroup.boundingRect())
 
-#    def select(self, *args):
-#        pass
-
     def dragEnterEvent(self, event):
-        if event.mimeData().hasFormat('audio/samples'):
+        if event.mimeData().hasFormat('audio/samples') or event.mimeData().hasFormat('audio/waves'):
             event.accept()
         else:
             event.ignore()
 
     def dragLeaveEvent(self, event):
-        pass
+        for r in self.waveobj_list:
+            r.preview_rect.setHighlight(False)
 
     def dragMoveEvent(self, event):
-        if not event.mimeData().hasFormat('audio/samples'):
+        if event.mimeData().hasFormat('audio/samples'):
+            data = event.mimeData().data('audio/samples')
+            wave_len = int(len(data) * 0.00390625)
+        elif event.mimeData().hasFormat('audio/waves'):
+            data = event.mimeData().data('audio/waves')
+            start, end = map(int, str(data).split(':'))
+            wave_len = end - start + 1
+        else:
             event.ignore()
             return
-        data = event.mimeData().data('audio/samples')
-        wave_len = int(len(data) * 0.00390625)
         items = [i for i in self.items(event.pos()) if isinstance(i, WavePlaceHolderItem)]
         if not items: return
         index = items[0].index
         for r in self.waveobj_list[:index]:
-            r.preview_rect.sweepHighlight(False)
+            r.preview_rect.setHighlight(False)
         if index + wave_len > 64:
             event.ignore()
             for r in self.waveobj_list[index:-1]:
-                r.preview_rect.sweepHighlight(True)
+                r.preview_rect.setHighlight(True)
         else:
             event.accept()
             for r in self.waveobj_list[index:index + wave_len + 1]:
-                r.preview_rect.sweepHighlight(True)
+                r.preview_rect.setHighlight(True)
             for r in self.waveobj_list[index + wave_len:]:
-                r.preview_rect.sweepHighlight(False)
+                r.preview_rect.setHighlight(False)
 
     def dropEvent(self, event):
         items = [i for i in self.items(event.pos()) if isinstance(i, WavePlaceHolderItem)]
         if not items: return
         index = items[0].index
-        data = event.mimeData().data('audio/samples')
-        for w in xrange(len(data) / 256):
-            values = []
-            for s in xrange(128):
-                values.append(audioop.getsample(data, 2, w * 128 + s) * 31)
-            self.waveobj_list[index + w].setValues(values)
-        for r in self.waveobj_list:
-            r.preview_rect.sweepHighlight(False)
-        event.accept()
+        if event.mimeData().hasFormat('audio/samples'):
+            data = event.mimeData().data('audio/samples')
+            for w in xrange(len(data) / 256):
+                values = []
+                for s in xrange(128):
+                    values.append(audioop.getsample(data, 2, w * 128 + s) * 31)
+                self.waveobj_list[index + w].setValues(values)
+            for r in self.waveobj_list:
+                r.preview_rect.setHighlight(False)
+            event.accept()
+        elif event.mimeData().hasFormat('audio/waves'):
+            start, end = map(int, str(event.mimeData().data('audio/waves')).split(':'))
+            data_list = []
+            wave_len = end - start + 1
+            for wave_obj in self.waveobj_list[start:end + 1]:
+                data_list.append(wave_obj.values)
+            for i, wave_obj in enumerate(self.waveobj_list[index:index + wave_len]):
+                wave_obj.setValues(data_list[i])
+            for r in self.waveobj_list:
+                r.preview_rect.setHighlight(False)
+            selection = xrange(index, index + wave_len)
+            for i, r in enumerate(self.waveobj_list):
+                r.preview_rect.setSelected(True if i in selection else False)
+            self.selection = selection
+            event.accept()
+        else:
+            event.ignore()
 
     def resizeEvent(self, event):
         self.fitInView(self.wavegroup)
@@ -879,7 +1021,7 @@ class WaveScene(QtGui.QGraphicsScene):
                 hor.setPen(smallpen)
                 ver = self.addLine(pos, 0, pos, pow21)
                 ver.setPen(smallpen)
-        hor = self.addLine(0, pow21, pow21, pow21)
+        hor = self.addLine(0, pow21, h_length, pow21)
         hor.setPen(pen)
         main_h_lines[16].setPen(QtGui.QPen(QtGui.QColor(200, 0, 100), 4096))
 
@@ -902,7 +1044,8 @@ class WaveScene(QtGui.QGraphicsScene):
         self.cursor.addToGroup(self.cursor_text)
 
         self.addItem(self.cursor)
-        self.cursor.setPos(-16384, -16384)
+        self.cursor.setVisible(False)
+#        self.cursor.setPos(-16384, -16384)
 
         line_pen = QtGui.QPen(QtCore.Qt.red, 4096)
         self.linedraw = self.addLine(-16384, -16384, -16384, -16384)
@@ -1369,6 +1512,10 @@ class WaveTableEditor(QtGui.QMainWindow):
         self.main = main
         load_ui(self, 'wavetable.ui')
         self.currentStream = None
+
+        self.wavImportAction.triggered.connect(lambda: self.load_wave())
+        self.wavetableImportAction.triggered.connect(self.load_wavetable)
+
         self.wave_source_view = WaveSourceView(self)
         self.wave_source_view.setMinimumHeight(100)
         self.wave_source_view.installEventFilter(self)
@@ -1387,7 +1534,11 @@ class WaveTableEditor(QtGui.QMainWindow):
         self.draw_timer.timeout.connect(self.resetWave)
 
         self.wave_list.currentChanged = self.setWaveSource
-        self.add_wave_btn.clicked.connect(self.load_wave)
+        self.wave_list.dragEnterEvent = self.wavelistDragEnterEvent
+        self.wave_list.dragMoveEvent = self.wavelistDragMoveEvent
+        self.wave_list.dragLeaveEvent = self.wavelistDragLeaveEvent
+        self.wave_list.dropEvent = self.wavelistDropEvent
+        self.add_wave_btn.clicked.connect(lambda: self.load_wave())
         self.del_wave_btn.clicked.connect(self.unload_wave)
 
         self.bal_toggle.clicked.connect(lambda: self.bal_panel.setVisible(True if not self.bal_panel.isVisible() else False))
@@ -1470,6 +1621,38 @@ class WaveTableEditor(QtGui.QMainWindow):
 
         self.installEventFilter(self)
 
+    def wavelistDragEnterEvent(self, event):
+        for fmt in event.mimeData().formats():
+            if fmt.toLower().contains('text') or fmt.toLower().contains('string'):
+                s = QtCore.QString(event.mimeData().data(fmt))
+                if s.startsWith('file://'):
+                    try:
+                        path = str(QtCore.QUrl(s).toLocalFile())
+                        source = wave.open(path)
+                        if source.getnchannels() > 2 or source.getsampwidth() > 2:
+                            raise
+                        framerate = source.getframerate()
+                        frames = source.getnframes()
+                        if frames/float(framerate) > 60:
+                            raise
+                        break
+                    except:
+                        continue
+        else:
+            event.ignore()
+            return
+        event.accept()
+        self.wave_accepted_fmt = fmt
+
+    def wavelistDragMoveEvent(self, event):
+        event.accept()
+
+    def wavelistDragLeaveEvent(self, event):
+        self.wave_accepted_fmt = None
+
+    def wavelistDropEvent(self, event):
+        self.load_wave(QtCore.QUrl(QtCore.QString(event.mimeData().data(self.wave_accepted_fmt))).toLocalFile())
+
     def setSampleSelection(self, *args):
         sender = self.sender()
         if sender == self.wave_source_view:
@@ -1508,8 +1691,8 @@ class WaveTableEditor(QtGui.QMainWindow):
         if index > 63:
             index = 127 - index
         if index != self.sweep_index:
-            self.waveobj_list[self.sweep_index].preview_rect.sweepHighlight(False)
-            self.waveobj_list[index].preview_rect.sweepHighlight(True)
+            self.waveobj_list[self.sweep_index].preview_rect.setHighlight(False)
+            self.waveobj_list[index].preview_rect.setHighlight(True)
             self.wavetable3d_view.wave_list[self.sweep_index].highlight(False)
             self.wavetable3d_view.wave_list[index].highlight(True)
             self.sweep_index = index
@@ -1529,7 +1712,7 @@ class WaveTableEditor(QtGui.QMainWindow):
             self.output.reset()
             self.audio_buffer.reset()
             if self.audio_buffer.full_mode:
-                self.waveobj_list[self.sweep_index].preview_rect.sweepHighlight(False)
+                self.waveobj_list[self.sweep_index].preview_rect.setHighlight(False)
                 self.wavetable3d_view.wave_list[self.sweep_index].highlight(False)
 
     def full_mode(self, state):
@@ -1542,7 +1725,7 @@ class WaveTableEditor(QtGui.QMainWindow):
                 QtCore.QTimer.singleShot(0, lambda: self.audio_timer.start())
             else:
                 self.audio_timer.stop()
-                self.waveobj_list[self.sweep_index].preview_rect.sweepHighlight(False)
+                self.waveobj_list[self.sweep_index].preview_rect.setHighlight(False)
                 self.wavetable3d_view.wave_list[self.sweep_index].highlight(False)
 
 #    def showEvent(self, event):
@@ -1654,16 +1837,17 @@ class WaveTableEditor(QtGui.QMainWindow):
             self.gain_dial.blockSignals(False)
         self.draw_timer.start()
 
-    def load_wave(self):
-        res = WaveLoad(self.main).exec_()
-        if not res: return
-        if self.wave_model.findItems(res, column=1):
+    def load_wave(self, path=None):
+        if path is None:
+            path = WaveLoad(self.main).exec_()
+            if not path: return
+        if self.wave_model.findItems(path, column=1):
             QtGui.QMessageBox.information(self, 'File already imported', 'The selected file is already in the wave list.')
             return
-        stream = wave.open(str(res.toUtf8()))
-        info = QtCore.QFileInfo(res)
+        stream = wave.open(str(path.toUtf8()))
+        info = QtCore.QFileInfo(path)
         item = QtGui.QStandardItem(info.fileName())
-        item.setData(res, pathRole)
+        item.setData(path, pathRole)
         item.setData(stream, streamRole)
         item.setData(1., gainRole)
         if stream.getnchannels() > 1:
@@ -1672,12 +1856,68 @@ class WaveTableEditor(QtGui.QMainWindow):
             item.setData(50, balanceValueRole)
             item.setData(.5, balanceLeftRole)
             item.setData(.5, balanceRightRole)
-        path_item = QtGui.QStandardItem(res)
+        path_item = QtGui.QStandardItem(path)
         self.wave_model.appendRow([item, path_item])
         self.setWaveSource(item, force=True)
         self.wave_list.selectionModel().select(self.wave_model.index(self.wave_model.rowCount()-1, 0), QtGui.QItemSelectionModel.ClearAndSelect)
         self.wave_panel.setEnabled(True)
         self.del_wave_btn.setEnabled(True)
+
+    def load_wavetable(self):
+        path = QtGui.QFileDialog.getOpenFileName(self, 'Import Wavetable', filter = 'Wavetable files (*.mid, *.syx)(*.mid *.syx);;SysEx files (*.syx);;MIDI files (*.mid);;All files (*)')
+        if not path: return
+        try:
+            pattern = midifile.read_midifile(str(path.toUtf8()))
+            if len(pattern) < 1:
+                raise InvalidException('Empty MIDI file')
+            track = pattern[0]
+            if len(track) < 64:
+                raise InvalidException('MIDI file too small')
+            wt_list = []
+            #todo: check for actual wave number order?
+            for event in track:
+                if isinstance(event, midifile.SysexEvent) and len(event.data) == 410:
+                    data = event.data[2:-1]
+                    if data[:2] != [IDW, IDE] and data[3] != WTBD and data[6] != 0:
+                        raise InvalidException
+                    wt_list.append(data[7:391])
+            if len(wt_list) != 64:
+                raise InvalidException('Wrong number of SysEx events')
+#            wt_slot = data[4]
+#            wt_name = ''.join([str(unichr(l)) for l in data[391:405]])
+        except InvalidException as error:
+            invalid_msgbox(self, error)
+            return
+        except Exception:
+            try:
+                with open(str(path.toUtf8()), 'rb') as sf:
+                    sysex_list = list(ord(i) for i in sf.read())
+                if len(sysex_list) != 26240:
+                    raise
+                wt_list = []
+                for w in xrange(64):
+                    data = sysex_list[w * 410 + 1:w * 410 + 408]
+                    if data[:3] != [IDW, IDE] and data[3] != WTBD and data[6] != 0:
+                        raise
+                    wt_list.append(data[7:391])
+            except:
+                invalid_msgbox(self)
+                return
+        wt_slot = data[4]
+        wt_name = ''.join([str(unichr(l)) for l in data[391:405]])
+        self.slot_spin.setValue(wt_slot)
+        self.name_edit.setText(wt_name)
+
+        for w, wave_obj in enumerate(self.waveobj_list):
+            values_iter = iter(wt_list[w])
+            values = []
+            for s in xrange(128):
+                value = (values_iter.next() << 14) + (values_iter.next() << 7) + values_iter.next()
+                if value >= 1048576:
+                    value -= 2097152
+                values.append(value)
+            wave_obj.setValues(values)
+        self.setWave(self.waveobj_list[self.currentWave])
 
     def unload_wave(self):
         row = self.currentStream.row()

@@ -252,7 +252,7 @@ class SummaryDialog(QtGui.QDialog):
 
     def open(self):
         while True:
-            file = QtGui.QFileDialog.getOpenFileName(self, 'Open SysEx sound file', QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.HomeLocation), 'SysEx files (*.syx);; All files (*)')
+            file = QtGui.QFileDialog.getOpenFileName(self, 'Open SysEx sound file', QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.HomeLocation), 'SysEx files (*.syx);;All files (*)')
             if not file: return
             if not file_exists(str(file)):
                 QtGui.QMessageBox.warning(self, 'File does not exists', 'The selected does not exist.\nCheck the file name and path.')

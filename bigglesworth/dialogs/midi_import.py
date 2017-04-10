@@ -247,7 +247,7 @@ class MidiImportDialog(QtGui.QDialog):
 
     def file_open(self):
         while True:
-            path = QtGui.QFileDialog.getOpenFileName(self, 'Open MIDI sound set', QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.HomeLocation), 'MIDI files (*.mid);; All files (*)')
+            path = QtGui.QFileDialog.getOpenFileName(self, 'Open MIDI sound set', QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.HomeLocation), 'MIDI files (*.mid);;All files (*)')
             if not path: return
             if not file_exists(str(path)):
                 QtGui.QMessageBox.warning(self, 'File does not exists', 'The selected does not exist.\nCheck the file name and path.')

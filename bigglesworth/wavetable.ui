@@ -78,6 +78,9 @@
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
+              <property name="acceptDrops">
+               <bool>true</bool>
+              </property>
               <property name="editTriggers">
                <set>QAbstractItemView::NoEditTriggers</set>
               </property>
@@ -542,6 +545,9 @@
             <height>50</height>
            </size>
           </property>
+          <property name="contextMenuPolicy">
+           <enum>Qt::CustomContextMenu</enum>
+          </property>
           <property name="acceptDrops">
            <bool>true</bool>
           </property>
@@ -802,8 +808,26 @@
      <height>17</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menu_File">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <addaction name="wavImportAction"/>
+    <addaction name="wavetableImportAction"/>
+   </widget>
+   <addaction name="menu_File"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="wavImportAction">
+   <property name="text">
+    <string>Import .&amp;WAV file...</string>
+   </property>
+  </action>
+  <action name="wavetableImportAction">
+   <property name="text">
+    <string>Import Wave&amp;table...</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>

@@ -266,7 +266,8 @@ class WavePanel(QtGui.QWidget):
 class WaveLoad(QtGui.QFileDialog):
     def __init__(self, main, *args, **kwargs):
         QtGui.QFileDialog.__init__(self, *args, **kwargs)
-        self.setDirectory(QtCore.QDir.homePath())
+#        self.setDirectory(QtCore.QDir.homePath())
+        self.setDirectory('/home/mauriziob/data/code/blofeld/test/')
         self.main = main
         self.setOption(self.DontUseNativeDialog)
         self.setAcceptMode(self.AcceptOpen)
