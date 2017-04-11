@@ -23,6 +23,19 @@ class LineCursor(QtGui.QCursor):
         QtGui.QCursor.__init__(self, pixmap, 0, 0)
 
 
+class CurveCursor(QtGui.QCursor):
+    def __init__(self):
+        pixmap = QtGui.QPixmap(16, 16)
+        pixmap.fill(QtCore.Qt.transparent)
+        qp = QtGui.QPainter(pixmap)
+        qp.setRenderHints(QtGui.QPainter.Antialiasing)
+        qp.setPen(QtGui.QPen(QtCore.Qt.black, 2))
+        qp.translate(.5, .5)
+        qp.drawArc(0, -7, 22, 22, 2880, 1440)
+        qp.end()
+        QtGui.QCursor.__init__(self, pixmap, 0, 0)
+
+
 class FreeDrawIcon(QtGui.QIcon):
     def __init__(self):
         pixmap = QtGui.QPixmap(12, 12)

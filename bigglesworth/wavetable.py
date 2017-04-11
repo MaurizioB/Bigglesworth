@@ -3,13 +3,14 @@
 
 import struct
 import wave, audioop
+from random import shuffle
 from math import sqrt, pow, sin, pi
 from PyQt4 import QtCore, QtGui, QtMultimedia
 
 from bigglesworth.utils import load_ui
 from bigglesworth.const import *
 from bigglesworth.dialogs import WaveLoad
-from bigglesworth.widgets import MagnifyingCursor, LineCursor, FreeDrawIcon, LineDrawIcon, CurveDrawIcon
+from bigglesworth.widgets import MagnifyingCursor, LineCursor, CurveCursor, FreeDrawIcon, LineDrawIcon, CurveDrawIcon
 from bigglesworth import midifile
 
 sqrt_center = 4*(sqrt(2)-1)/3
@@ -86,7 +87,7 @@ class DumpDialog(QtGui.QDialog):
         self.name = name
 
     def setIndex(self, index):
-        self.label.setText('Dumping wavetable "{}" to Blofeld slot {}, current wave: {}'.format(self.name, self.slot, index))
+        self.label.setText(QtCore.QString.fromUtf8('Dumping wavetable "{}" to Blofeld slot {}, current wave: {}'.format(str(self.name.toUtf8()), self.slot, index)))
 
     def closeEvent(self, event):
         event.ignore()
@@ -684,7 +685,7 @@ class WaveObject(QtCore.QObject):
     sine_wavepath = QtGui.QPainterPath()
     for p, sine in enumerate(sine128):
         sine_preview_wavepath.lineTo(p, -sine*16)
-        _value = sine*pow19
+        _value = int(sine*pow19)
         sine_values.append(_value)
         sine_wavepath.lineTo(p*16384, -_value)
     sine_preview_wavepath.translate(0, 32)
@@ -732,10 +733,31 @@ class WaveObject(QtCore.QObject):
     def setValue(self, index, value):
         self.values[index] = value
         self.valueChanged.emit(self)
-#        return
         self.preview_path.setElementPositionAt(index, index, 32 - value/32768)
         self.preview_path_item.setPath(self.preview_path)
         self.path.setElementPositionAt(index, index*16384, pow20 - value)
+
+    def reset(self):
+        self.values = self.sine_values[:]
+        self.preview_path = QtGui.QPainterPath(self.sine_preview_wavepath)
+        self.preview_path_item.setPath(self.preview_path)
+        self.path = QtGui.QPainterPath(self.sine_wavepath)
+        self.changed.emit(self)
+        self.valueChanged.emit(self)
+
+    def clear(self):
+        self.values = []
+        self.preview_path = QtGui.QPainterPath()
+        self.path = QtGui.QPainterPath()
+        for p in xrange(128):
+            self.values.append(0)
+            self.preview_path.lineTo(p, 0)
+            self.path.lineTo(p*16384, 0)
+        self.preview_path.translate(0, 32)
+        self.path.translate(0, pow20)
+        self.preview_path_item.setPath(self.preview_path)
+        self.changed.emit(self)
+        self.valueChanged.emit(self)
 
     def preview_highlight(self, state):
         if not self.selected_state:
@@ -760,6 +782,8 @@ class WaveTableView(QtGui.QGraphicsView):
         if not self.selection: return
         start = self.selection[0]
         end = self.selection[-1]
+        if start == end:
+            self.waveobj_list[start].preview_rect.setSelected(True)
         self.drag = QtGui.QDrag(self)
         data = QtCore.QMimeData()
         data.setData('audio/waves', QtCore.QByteArray('{}:{}'.format(start, end)))
@@ -780,7 +804,7 @@ class WaveTableView(QtGui.QGraphicsView):
 #        qp.end()
 #        self.drag.setPixmap(pixmap)
         pixmap = QtGui.QPixmap(int(self.viewport().rect().width() / 64. * (end - start + 1)), self.height())
-        pixmap.fill(QtCore.Qt.transparent)
+        pixmap.fill(QtGui.QColor(192, 192, 192, 128))
         qp = QtGui.QPainter(pixmap)
         qp.setRenderHints(qp.Antialiasing)
         x = self.mapFromScene(self.waveobj_list[start].preview_rect.pos()).x()
@@ -822,8 +846,9 @@ class WaveTableView(QtGui.QGraphicsView):
             self.createDragData()
 
     def focusOutEvent(self, event):
-        self.selection = None
-        [r.preview_rect.setSelected(False) for r in self.waveobj_list]
+        if event.reason() != QtCore.Qt.PopupFocusReason:
+            self.selection = None
+            [r.preview_rect.setSelected(False) for r in self.waveobj_list]
 
     def show_menu(self, pos):
         items = [i for i in self.items(pos) if isinstance(i, WavePlaceHolderItem)]
@@ -832,23 +857,81 @@ class WaveTableView(QtGui.QGraphicsView):
         wave_obj = self.waveobj_list[index]
         menu = QtGui.QMenu()
         menu.setSeparatorsCollapsible(False)
-        title = QtGui.QAction('Wave {}'.format(index + 1), menu)
-        title.setSeparator(True)
-        copy = QtGui.QAction('Copy', menu)
-        if self.clipboard is not None:
-            paste = QtGui.QAction('Paste wave {} here'.format(self.clipboard + 1), self)
-            if index == self.clipboard:
-                paste.setEnabled(False)
-        else:
-            paste = QtGui.QAction('Paste', self)
-            paste.setEnabled(False)
-        menu.addActions([title, copy, paste])
-        res = menu.exec_(pos.globalPos())
-        if res == copy:
-            self.clipboard = index
-        elif res == paste:
-            wave_obj.setValues(self.waveobj_list[self.clipboard].values)
+        if len(self.selection) > 1 and index in self.selection:
+            title = QtGui.QAction('Selection', menu)
+            title.setSeparator(True)
+            reverse = QtGui.QAction('Reverse wave order', menu)
+            shuffle_ = QtGui.QAction('Randomize wave order', menu)
+            sine = QtGui.QAction('Reset waves to sine', menu)
+            clear = QtGui.QAction('Clear waves', menu)
+            menu.addActions([title, reverse, shuffle_, sine, clear])
+            res = menu.exec_(self.mapToGlobal(pos))
+            if not res: return
+            if res == reverse:
+                self.reverse_waves(self.selection)
+            elif res == shuffle_:
+                self.shuffle_waves(self.selection)
+            elif res == sine:
+                self.sine_waves(self.selection)
+            elif res == clear:
+                self.clear_waves(self.selection)
             wave_obj.selected.emit(wave_obj)
+        else:
+            title = QtGui.QAction('Wave {}'.format(index + 1), menu)
+            title.setSeparator(True)
+            copy = QtGui.QAction('Copy', menu)
+            if self.clipboard is not None:
+                paste = QtGui.QAction('Paste wave {} here'.format(self.clipboard + 1), menu)
+                if index == self.clipboard:
+                    paste.setEnabled(False)
+            else:
+                paste = QtGui.QAction('Paste', menu)
+                paste.setEnabled(False)
+            sep = QtGui.QAction(menu)
+            sep.setSeparator(True)
+            selectall = QtGui.QAction('Select all', menu)
+            menu.addActions([title, copy, paste, sep, selectall])
+            res = menu.exec_(self.mapToGlobal(pos))
+            if not res: return
+            if res == copy:
+                self.clipboard = index
+            elif res == paste:
+                wave_obj.setValues(self.waveobj_list[self.clipboard].values)
+                wave_obj.selected.emit(wave_obj)
+            elif res == selectall:
+                for r in self.waveobj_list:
+                    r.preview_rect.setSelected(True)
+                self.selection = list(xrange(64))
+
+    def reverse_waves(self, selection=None):
+        if not selection:
+            selection = tuple(xrange(64))
+        values_list = [wave_obj.values for wave_obj in self.waveobj_list[selection[-1]:selection[0] - 1:-1]]
+        for i, wave_obj in enumerate(self.waveobj_list[selection[0]:selection[-1] + 1]):
+            wave_obj.setValues(values_list[i])
+
+    def shuffle_waves(self, selection=None):
+        if not selection:
+            selection = tuple(xrange(64))
+            shuffled = tuple(xrange(64))
+        else:
+            shuffled = selection[:]
+        shuffle(shuffled)
+        values_list = [self.waveobj_list[i].values for i in shuffled]
+        for i, wave_obj in enumerate(self.waveobj_list[selection[0]:selection[-1] + 1]):
+            wave_obj.setValues(values_list[i])
+
+    def sine_waves(self, selection=None):
+        if not selection:
+            selection = tuple(xrange(64))
+        for wave_obj in self.waveobj_list[selection[0]:selection[-1] + 1]:
+            wave_obj.reset()
+
+    def clear_waves(self, selection=None):
+        if not selection:
+            selection = tuple(xrange(64))
+        for wave_obj in self.waveobj_list[selection[0]:selection[-1] + 1]:
+            wave_obj.clear()
 
     def setWaveTable(self, waveobj_list):
         self.waveobj_list = waveobj_list
@@ -955,12 +1038,13 @@ class ControlPoint(QtGui.QGraphicsWidget):
     brush = QtGui.QBrush(QtGui.QColor(255, 88, 88, 150))
     moved = QtCore.pyqtSignal(float, float)
 
-    def __init__(self, parent=None):
-        QtGui.QGraphicsWidget.__init__(self, parent)
+    def __init__(self, wave_path):
+        QtGui.QGraphicsWidget.__init__(self, parent=None)
         self.setFlags(self.ItemIsMovable|self.ItemSendsGeometryChanges)
         self.setAcceptHoverEvents(True)
         self.shape_path = QtGui.QPainterPath()
         self.shape_path.addRect(-15000, -15000, 30000, 30000)
+        self.wave_path = wave_path
 
     def setMoveFunction(self, fn):
         self.move = fn
@@ -968,6 +1052,20 @@ class ControlPoint(QtGui.QGraphicsWidget):
     def itemChange(self, change, value):
         if change == self.ItemPositionChange:
             pos = value.toPyObject()
+            if self.isVisible():
+                if QtGui.QApplication.keyboardModifiers() == QtCore.Qt.ShiftModifier:
+                    colliding = [i for i in self.collidingItems() if isinstance(i, ControlPoint)]
+                    if colliding:
+                        if colliding[0].contains(self.mapFromScene(pos)):
+                            pos = colliding[0].pos()
+                            self.moved.emit(pos.x(), pos.y())
+                            return pos
+                elif QtGui.QApplication.keyboardModifiers() == QtCore.Qt.ControlModifier:
+                    if self.wave_path in self.collidingItems():
+                        sample = int(pos.x() / 16384)
+                        pos = self.wave_path.path().elementAt(sample)
+                        self.moved.emit(pos.x, pos.y)
+                        return QtCore.QPointF(pos.x, pos.y)
 #            if not self.move(self, pos.x(), pos.y()):
 #                return self.pos()
             self.moved.emit(pos.x(), pos.y())
@@ -994,6 +1092,19 @@ class ControlPoint(QtGui.QGraphicsWidget):
         painter.setBrush(self.brush)
         painter.drawEllipse(-10000, -10000, 20000, 20000)
 
+
+class WavePath(QtGui.QGraphicsPathItem):
+    def __init__(self, *args, **kwargs):
+        QtGui.QGraphicsPathItem.__init__(self, *args, **kwargs)
+        self.stroker = QtGui.QPainterPathStroker()
+        self.shape_path = self.stroker.createStroke(self.path())
+
+    def setPath(self, path):
+        self.shape_path = self.stroker.createStroke(path)
+        QtGui.QGraphicsPathItem.setPath(self, path)
+
+    def shape(self):
+        return self.shape_path
 
 class WaveScene(QtGui.QGraphicsScene):
     curve_valid_pen = QtGui.QPen(QtCore.Qt.darkGreen)
@@ -1025,9 +1136,11 @@ class WaveScene(QtGui.QGraphicsScene):
         hor.setPen(pen)
         main_h_lines[16].setPen(QtGui.QPen(QtGui.QColor(200, 0, 100), 4096))
 
+        self.wave_path = WavePath(QtGui.QPainterPath())
+        self.addItem(self.wave_path)
+
         self.cursor = QtGui.QGraphicsItemGroup()
         rule_pen = QtGui.QPen(QtCore.Qt.blue, 2048)
-#        rule_pen.setStyle(QtCore.Qt.DotLine)
 
         self.h_line = self.addLine(-pow21, 0, pow22, 0)
         self.h_line.setPen(rule_pen)
@@ -1057,13 +1170,13 @@ class WaveScene(QtGui.QGraphicsScene):
         self.curve_valid = True
         self.addItem(self.curvepath)
 
-        self.curve_cp1 = ControlPoint()
+        self.curve_cp1 = ControlPoint(self.wave_path)
         self.curve_cp1.setVisible(False)
 #        self.curve_cp1.setMoveFunction(self.curve_cp_move)
         self.curve_cp1.moved.connect(self.curve_cp_move)
         self.addItem(self.curve_cp1)
 
-        self.curve_cp2 = ControlPoint()
+        self.curve_cp2 = ControlPoint(self.wave_path)
         self.curve_cp2.setVisible(False)
 #        self.curve_cp2.setMoveFunction(self.curve_cp_move)
         self.curve_cp2.moved.connect(self.curve_cp_move)
@@ -1173,6 +1286,8 @@ class WaveScene(QtGui.QGraphicsScene):
 
 class WaveView(QtGui.QWidget):
     valueChanged = QtCore.pyqtSignal(int, int)
+    statusTip = QtCore.pyqtSignal(str)
+
     def __init__(self, *args, **kwargs):
         QtGui.QWidget.__init__(self, *args, **kwargs)
         self.setContentsMargins(0, 0, 0, 0)
@@ -1194,12 +1309,12 @@ class WaveView(QtGui.QWidget):
         self.view.mouseReleaseEvent = self.viewMouseReleaseEvent
         self.view.focusOutEvent = self.viewFocusOutEvent
         self.view.fitInView(0, 0, pow21, pow21)
-        self.wave_path = self.scene.addPath(QtGui.QPainterPath())
+        self.wave_path = self.scene.wave_path
         self.mouse_prev = None
         self.cursors = {
                         CURSOR_NORMAL: self.cursor(), 
                         CURSOR_LINE: LineCursor(), 
-                        CURSOR_CURVE: LineCursor(), 
+                        CURSOR_CURVE: CurveCursor(), 
                         }
         self.draw_mode = _NORMAL
 
@@ -1214,7 +1329,7 @@ class WaveView(QtGui.QWidget):
 
     def setDrawMode(self, mode):
         self.draw_mode = mode
-        self.setCursor(self.cursors[mode])
+        self.view.setCursor(self.cursors[mode])
 
     def computePos(self, x):
         sample, rem = divmod(x, 16384)
@@ -1287,9 +1402,16 @@ class WaveView(QtGui.QWidget):
 
     def viewEnterEvent(self, event):
         self.scene.cursor.setVisible(True)
+        text = 'Ctrl+Shift to snap to horizontal grid.'
+        if self.draw_mode == CURSOR_FREE:
+            text += ' Ctrl to draw horizontal lines.'
+        elif self.draw_mode == CURSOR_CURVE:
+            text += ' Ctrl to snap to existing wave. Press Enter to finalize the curve, Esc to ignore it.'
+        self.statusTip.emit(text)
 
     def viewLeaveEvent(self, event):
         self.scene.cursor.setVisible(False)
+        self.statusTip.emit('')
 
     def viewMousePressEvent(self, event):
 #        QtGui.QGraphicsView.mousePressEvent(self.view, event)
@@ -1320,10 +1442,6 @@ class WaveView(QtGui.QWidget):
 
 #        QtGui.QGraphicsView.mouseMoveEvent(self.view, event)
         pos = self.view.mapToScene(event.pos())
-#        item = self.scene.itemAt(pos, self.view.transform())
-#        if isinstance(item, ControlPoint):
-##            item.mouseMoveEvent(event)
-#            return
         sample, value = self.computePosValue(pos)
         self.scene.cursor.setPos(sample * 16384, pow20 - value)
         self.scene.cursor_text.setPlainText('Sample: {}\nValue: {}'.format(sample + 1, value))
@@ -1340,16 +1458,20 @@ class WaveView(QtGui.QWidget):
                 path = QtGui.QPainterPath()
                 x1, y1 = self.scene.curve_start
                 x2 = sample * 16384
-                y2 = pow20 - value
+                if event.modifiers() & QtCore.Qt.ControlModifier:
+                    y2 = self.wave_path.path().elementAt(sample).y
+                else:
+                    y2 = pow20 - value
+#                print self.wave_path.path().elementAt(sample).y, y2
                 path.moveTo(x1, y1)
                 path.cubicTo(x2, y1, x2, y1, x2, y2)
                 self.scene.curvepath.setPath(path)
                 return
             prev_sample, prev_value = self.mouse_prev
             delta_sample = abs(sample - prev_sample)
+            if event.modifiers() == QtCore.Qt.ControlModifier:
+                value = prev_value
             if delta_sample <= 1:
-                if event.modifiers() == QtCore.Qt.ControlModifier:
-                    value = prev_value
                 self.valueChanged.emit(sample, value)
                 self.mouse_prev = sample, value
                 return
@@ -1389,7 +1511,10 @@ class WaveView(QtGui.QWidget):
                 return QtGui.QGraphicsView.mouseReleaseEvent(self.view, event)
             sample, value = self.computePosValue(self.view.mapToScene(event.pos()))
             x2 = sample * 16384
-            y2 = pow20 - value
+            if event.modifiers() & QtCore.Qt.ControlModifier:
+                y2 = self.wave_path.path().elementAt(sample).y
+            else:
+                y2 = pow20 - value
             self.scene.setCurveEnd(x2, y2, sample)
         self.mouse_prev = None
 
@@ -1480,28 +1605,9 @@ class AudioBuffer(QtCore.QBuffer):
         return len(self.current_data)
 
     def readData(self, size):
-#        rest = (self.start + size) % self.delta
         slice = str(self.current_data.mid(self.start, size))
         self.start = (self.start + size) % self.delta
-#        if rest:
-#            self.start = rest
-#        else:
-#            self.start = 0
-#        try:
         return slice
-#        finally:
-#            if self.full_mode:
-#                pos = self.start / 1024
-#                if pos < 64:
-#                    index = pos
-#                elif pos < 126:
-#                    index = 126 - pos
-#                elif pos < 190:
-#                    index = 126 + pos
-#                else:
-#                    index = 252 - pos
-#                print index/4
-##                self.sweep.emit(self.start % self.delta)
 
 
 class WaveTableEditor(QtGui.QMainWindow):
@@ -1524,6 +1630,10 @@ class WaveTableEditor(QtGui.QMainWindow):
         self.wave_source_view.sampleSelectionChanged.connect(self.setSampleSelection)
         self.sel_start = 0
         self.sel_end = 127
+        self.splitter.splitterMoved.connect(self.splitterMoved)
+        self.splitter_pos = 120
+        self.wavesource_toggle.setVisible(False)
+        self.wavesource_toggle.clicked.connect(lambda: (self.wavesource_toggle.setVisible(False), self.splitter.moveSplitter(20, 0)))
 
         self.wave_model = QtGui.QStandardItemModel()
         self.wave_list.setModel(self.wave_model)
@@ -1583,6 +1693,7 @@ class WaveTableEditor(QtGui.QMainWindow):
         self.setWave(self.waveobj_list[0])
 
         self.wave_view.valueChanged.connect(self.setWaveValue)
+        self.wave_view.statusTip.connect(self.setStatusTip)
 
         self.freedraw_btn.setIcon(FreeDrawIcon())
         self.drawmode_group.setId(self.freedraw_btn, 0)
@@ -1602,6 +1713,7 @@ class WaveTableEditor(QtGui.QMainWindow):
         self.dump_btn.setIcon(self.style().standardIcon(QtGui.QStyle.SP_ArrowRight))
         self.dump_btn.clicked.connect(self.dump)
         self.export_btn.setIcon(self.style().standardIcon(QtGui.QStyle.SP_DialogSaveButton))
+        self.export_btn.clicked.connect(self.export)
 
         self.audio_buffer = AudioBuffer(self.waveobj_list)
 
@@ -1619,7 +1731,19 @@ class WaveTableEditor(QtGui.QMainWindow):
 
         self.dump_dialog = DumpDialog(self)
 
+        self.name_edit.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp('[\x20-\x7f°]*')))
+        self.name_edit.editingFinished.connect(lambda: (self.name_edit.setText(self.name_edit.text().leftJustified(14)), self.setFocus(QtCore.Qt.OtherFocusReason)))
+
+        self.addAction(self.wavetablePlayAction)
+        self.wavetablePlayAction.triggered.connect(lambda: self.play_btn.setChecked(not self.play_btn.isChecked()))
+
         self.installEventFilter(self)
+
+    def setStatusTip(self, text):
+        if not text:
+            self.statusbar.clearMessage()
+        else:
+            self.statusbar.showMessage(text)
 
     def wavelistDragEnterEvent(self, event):
         for fmt in event.mimeData().formats():
@@ -1733,6 +1857,11 @@ class WaveTableEditor(QtGui.QMainWindow):
 #        sizes[0] = 0
 #        self.splitter.setSizes(sizes)
 
+    def splitterMoved(self, pos, index):
+        self.wavesource_toggle.setVisible(not pos)
+        if pos and pos != self.splitter_pos:
+            self.splitter_pos = pos
+
     def dump(self):
         def send(index):
             self.dump_dialog.setIndex(index)
@@ -1748,26 +1877,29 @@ class WaveTableEditor(QtGui.QMainWindow):
         send(0)
 
     def export(self):
-        data = self.createSysExData(False)
-        print len(data[0])
+        name = QtCore.QDir.homePath() + '/' + self.name_edit.text() + '.syx'
+        path = QtGui.QFileDialog.getSaveFileName(self, 'Export wavetable', name, 'SysEx files (*.syx)')
+        if not path: return
+        data_list = self.createSysExData()
+        data = []
+        for w_data in data_list:
+            data.extend(w_data)
+        with open(str(path.toUtf8()), 'wb') as sf:
+            sf.write(bytearray(data))
 
-    def createSysExData(self, midi=True):
-        #to do: text check (and remove int from for cycle)
+    def createSysExData(self):
         sysex_list = []
         slot = self.slot_spin.value()
-        name = (ord(l) for l in str(self.name_edit.text().toUtf8()).ljust(14, ' '))
+        name = tuple(ord(l) if l != '°' else 127 for l in str(self.name_edit.text().toUtf8()).replace('\xc2\xb0', '\x7f').ljust(14, ' '))
         for n, wave_obj in enumerate(self.waveobj_list):
-            sysex_data = [IDW, IDE, self.main.blofeld_id, WTBD, slot, n, 0]
+            sysex_data = [INIT, IDW, IDE, self.main.blofeld_id, WTBD, slot, n, 0]
             for value in wave_obj.values:
-                value = int(value)
                 if value < 0:
                     value = pow21 + value
                 sysex_data.extend((value >> 14, (value >> 7) & 127,  value & 127))
             sysex_data.extend(name)
             sysex_data.extend((0, 0, CHK))
-            if midi:
-                sysex_data.insert(0, INIT)
-                sysex_data.append(END)
+            sysex_data.append(END)
 
             sysex_list.append(sysex_data)
         return sysex_list
@@ -1883,8 +2015,6 @@ class WaveTableEditor(QtGui.QMainWindow):
                     wt_list.append(data[7:391])
             if len(wt_list) != 64:
                 raise InvalidException('Wrong number of SysEx events')
-#            wt_slot = data[4]
-#            wt_name = ''.join([str(unichr(l)) for l in data[391:405]])
         except InvalidException as error:
             invalid_msgbox(self, error)
             return

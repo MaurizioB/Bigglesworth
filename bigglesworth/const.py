@@ -58,7 +58,7 @@ GLBD = 0x14
 WTBD = 0x12
 
 CURSOR_NORMAL, CURSOR_INSERT = range(2)
-CURSOR_LINE, CURSOR_CURVE = range(1, 3)
+CURSOR_FREE, CURSOR_LINE, CURSOR_CURVE = range(3)
 
 
 class InvalidException(Exception):
