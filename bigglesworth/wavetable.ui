@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>811</width>
-    <height>679</height>
+    <width>869</width>
+    <height>688</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -250,9 +250,6 @@
            </item>
            <item row="1" column="3">
             <widget class="QDial" name="gain_dial">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
              <property name="maximumSize">
               <size>
                <width>16777215</width>
@@ -504,14 +501,14 @@
        </layout>
       </widget>
       <widget class="QWidget" name="gridLayoutWidget">
-       <layout class="QGridLayout" name="waveLayout" rowstretch="0,0,1,1,1,1,0,0">
-        <item row="4" column="2">
+       <layout class="QGridLayout" name="waveLayout" rowstretch="0,0,1,0,0,0,0">
+        <item row="3" column="1">
          <spacer name="verticalSpacer">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
           </property>
           <property name="sizeType">
-           <enum>QSizePolicy::MinimumExpanding</enum>
+           <enum>QSizePolicy::Preferred</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -521,7 +518,7 @@
           </property>
          </spacer>
         </item>
-        <item row="0" column="1" colspan="2">
+        <item row="0" column="0" colspan="2">
          <widget class="WaveTableView" name="wavetable_view" native="true">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -549,26 +546,7 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="1" rowspan="4">
-         <widget class="WaveView" name="wave_view" native="true">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>256</width>
-            <height>256</height>
-           </size>
-          </property>
-          <property name="focusPolicy">
-           <enum>Qt::StrongFocus</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="2" rowspan="2">
+        <item row="4" column="1" rowspan="2">
          <widget class="WaveTable3DView" name="wavetable3d_view" native="true">
           <property name="minimumSize">
            <size>
@@ -584,7 +562,7 @@
           </property>
          </widget>
         </item>
-        <item row="7" column="2">
+        <item row="6" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_4">
           <item>
            <widget class="QPushButton" name="dump_btn">
@@ -602,41 +580,7 @@
           </item>
          </layout>
         </item>
-        <item row="6" column="1" rowspan="2">
-         <layout class="QHBoxLayout" name="horizontalLayout_3">
-          <item>
-           <widget class="QPushButton" name="play_btn">
-            <property name="text">
-             <string>Play</string>
-            </property>
-            <property name="checkable">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="full_sweep_chk">
-            <property name="text">
-             <string>Full wavetable sweep</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer_3">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>0</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
-        </item>
-        <item row="1" column="1">
+        <item row="1" column="0">
          <widget class="QFrame" name="frame">
           <layout class="QHBoxLayout" name="horizontalLayout">
            <item>
@@ -728,7 +672,7 @@
           </layout>
          </widget>
         </item>
-        <item row="1" column="2">
+        <item row="1" column="1">
          <widget class="QFrame" name="frame_2">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
@@ -786,13 +730,97 @@
           </layout>
          </widget>
         </item>
-        <item row="2" column="2" rowspan="2">
-         <widget class="QGroupBox" name="groupBox">
-          <property name="title">
-           <string>Wave editing</string>
+        <item row="6" column="0">
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <widget class="QPushButton" name="play_btn">
+            <property name="text">
+             <string>Play</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="full_sweep_chk">
+            <property name="text">
+             <string>&amp;Full wavetable sweep</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_3">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>0</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item row="2" column="0" rowspan="4">
+         <widget class="WaveView" name="wave_view" native="true">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
           </property>
-          <layout class="QGridLayout" name="gridLayout"/>
+          <property name="minimumSize">
+           <size>
+            <width>256</width>
+            <height>256</height>
+           </size>
+          </property>
+          <property name="focusPolicy">
+           <enum>Qt::StrongFocus</enum>
+          </property>
          </widget>
+        </item>
+        <item row="2" column="1">
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_4">
+            <item>
+             <widget class="QGroupBox" name="groupBox_3">
+              <property name="title">
+               <string>Wave editing</string>
+              </property>
+              <layout class="QGridLayout" name="gridLayout_10">
+               <item row="0" column="0">
+                <widget class="QPushButton" name="reverse_btn">
+                 <property name="text">
+                  <string>Reverse</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QPushButton" name="invert_btn">
+                 <property name="text">
+                  <string>Invert</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="groupBox_2">
+              <property name="title">
+               <string>Wave path editing</string>
+              </property>
+              <layout class="QGridLayout" name="gridLayout_9"/>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
         </item>
        </layout>
       </widget>
@@ -805,7 +833,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>811</width>
+     <width>869</width>
      <height>17</height>
     </rect>
    </property>

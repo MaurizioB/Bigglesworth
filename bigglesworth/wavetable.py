@@ -290,11 +290,12 @@ class WaveTable3DView(QtGui.QGraphicsView):
 
 class WaveSourceView(QtGui.QGraphicsView):
     sampleSelectionChanged = QtCore.pyqtSignal(int, int)
+    statusTip = QtCore.pyqtSignal(str)
 
     def __init__(self, main, *args, **kwargs):
         QtGui.QGraphicsView.__init__(self, main, *args, **kwargs)
         self.main = main
-        self.setToolTip('Shift+click to select a wave range, then drag the selection to the wave table list.')
+#        self.setToolTip('Shift+click to select a wave range, then drag the selection to the wave table list.')
         self.setScene(QtGui.QGraphicsScene())
         self.setRenderHints(QtGui.QPainter.Antialiasing)
         self.setBackgroundBrush(QtCore.Qt.white)
@@ -561,7 +562,12 @@ class WaveSourceView(QtGui.QGraphicsView):
         self.wavepath.setPen(self.wave_pen_ghost)
         self.samplepath = path_item
 
+    def enterEvent(self, event):
+        QtGui.QGraphicsView.enterEvent(self, event)
+        self.statusTip.emit('Ctrl+MouseWheel for zoom, Shift to select a sample range.')
+
     def leaveEvent(self, event):
+        self.statusTip.emit('')
         self.wavepath.setPen(self.wave_pen)
         self.scene().removeItem(self.samplepath)
         self.scene().removeItem(self.current_samplepath)
@@ -721,7 +727,7 @@ class WaveObject(QtCore.QObject):
             self.preview_path_item.setPen(self.preview_pens[2])
 
     def setValues(self, values):
-        self.values = values
+        self.values = list(values)
         for index, value in enumerate(values):
             self.preview_path.setElementPositionAt(index, index, 32 - value/32768)
             self.preview_path_item.setPath(self.preview_path)
@@ -737,11 +743,12 @@ class WaveObject(QtCore.QObject):
         self.preview_path_item.setPath(self.preview_path)
         self.path.setElementPositionAt(index, index*16384, pow20 - value)
 
-    def reset(self):
-        self.values = self.sine_values[:]
-        self.preview_path = QtGui.QPainterPath(self.sine_preview_wavepath)
-        self.preview_path_item.setPath(self.preview_path)
-        self.path = QtGui.QPainterPath(self.sine_wavepath)
+    def reset(self, ratio=1.):
+        if ratio == 1:
+            self.values = self.sine_values[:]
+            self.preview_path = QtGui.QPainterPath(self.sine_preview_wavepath)
+            self.preview_path_item.setPath(self.preview_path)
+            self.path = QtGui.QPainterPath(self.sine_wavepath)
         self.changed.emit(self)
         self.valueChanged.emit(self)
 
@@ -861,14 +868,27 @@ class WaveTableView(QtGui.QGraphicsView):
             title = QtGui.QAction('Selection', menu)
             title.setSeparator(True)
             reverse = QtGui.QAction('Reverse wave order', menu)
+            reverse_values = QtGui.QAction('Reverse wave values', menu)
+            reverse_full = QtGui.QAction('Reverse wave values and order', menu)
+            invert = QtGui.QAction('Invert waves', menu)
+            sep0 = QtGui.QAction(menu)
+            sep0.setSeparator(True)
             shuffle_ = QtGui.QAction('Randomize wave order', menu)
+            sep1 = QtGui.QAction(menu)
+            sep1.setSeparator(True)
             sine = QtGui.QAction('Reset waves to sine', menu)
             clear = QtGui.QAction('Clear waves', menu)
-            menu.addActions([title, reverse, shuffle_, sine, clear])
+            menu.addActions([title, reverse, reverse_values, reverse_full, invert, sep0, shuffle_, sep1, sine, clear])
             res = menu.exec_(self.mapToGlobal(pos))
             if not res: return
             if res == reverse:
                 self.reverse_waves(self.selection)
+            elif res == reverse_values:
+                self.reverse_wave_values(self.selection)
+            elif res == reverse_full:
+                self.reverse_full(self.selection)
+            elif res == invert:
+                self.invert_waves(self.selection)
             elif res == shuffle_:
                 self.shuffle_waves(self.selection)
             elif res == sine:
@@ -879,7 +899,14 @@ class WaveTableView(QtGui.QGraphicsView):
         else:
             title = QtGui.QAction('Wave {}'.format(index + 1), menu)
             title.setSeparator(True)
+            reverse = QtGui.QAction('Reverse wave', menu)
+            invert = QtGui.QAction('Invert wave', menu)
+            sine = QtGui.QAction('Reset wave to sine', menu)
+            clear = QtGui.QAction('Clear wave', menu)
+            sep0 = QtGui.QAction(menu)
+            sep0.setSeparator(True)
             copy = QtGui.QAction('Copy', menu)
+            duplicate = QtGui.QAction('Duplicate to all wavetable', menu)
             if self.clipboard is not None:
                 paste = QtGui.QAction('Paste wave {} here'.format(self.clipboard + 1), menu)
                 if index == self.clipboard:
@@ -887,14 +914,30 @@ class WaveTableView(QtGui.QGraphicsView):
             else:
                 paste = QtGui.QAction('Paste', menu)
                 paste.setEnabled(False)
-            sep = QtGui.QAction(menu)
-            sep.setSeparator(True)
+            sep1 = QtGui.QAction(menu)
+            sep1.setSeparator(True)
             selectall = QtGui.QAction('Select all', menu)
-            menu.addActions([title, copy, paste, sep, selectall])
+            menu.addActions([title, reverse, invert, sine, clear, sep0, copy, duplicate, paste, sep1, selectall])
             res = menu.exec_(self.mapToGlobal(pos))
             if not res: return
-            if res == copy:
+            if res == reverse:
+                self.reverse_wave_values([index])
+                wave_obj.selected.emit(wave_obj)
+            elif res == invert:
+                self.invert_waves([index])
+                wave_obj.selected.emit(wave_obj)
+            elif res == sine:
+                self.sine_waves([index])
+                wave_obj.selected.emit(wave_obj)
+            elif res == clear:
+                self.clear_waves([index])
+                wave_obj.selected.emit(wave_obj)
+            elif res == copy:
                 self.clipboard = index
+            elif res == duplicate:
+                for w in self.waveobj_list:
+                    if w == wave_obj: continue
+                    w.setValues(wave_obj.values)
             elif res == paste:
                 wave_obj.setValues(self.waveobj_list[self.clipboard].values)
                 wave_obj.selected.emit(wave_obj)
@@ -906,9 +949,27 @@ class WaveTableView(QtGui.QGraphicsView):
     def reverse_waves(self, selection=None):
         if not selection:
             selection = tuple(xrange(64))
-        values_list = [wave_obj.values for wave_obj in self.waveobj_list[selection[-1]:selection[0] - 1:-1]]
+        values_list = [wave_obj.values for wave_obj in reversed(self.waveobj_list[selection[0]:selection[-1] - 1])]
         for i, wave_obj in enumerate(self.waveobj_list[selection[0]:selection[-1] + 1]):
             wave_obj.setValues(values_list[i])
+
+    def reverse_wave_values(self, selection=None):
+        if not selection:
+            selection = tuple(xrange(64))
+        for wave_obj in self.waveobj_list[selection[0]:selection[-1] + 1]:
+            wave_obj.setValues(tuple(reversed(wave_obj.values)))
+
+    def reverse_full(self, selection=None):
+        if not selection:
+            selection = tuple(xrange(64))
+        self.reverse_waves(selection)
+        self.reverse_wave_values(selection)
+
+    def invert_waves(self, selection=None):
+        if not selection:
+            selection = tuple(xrange(64))
+        for wave_obj in self.waveobj_list[selection[0]:selection[-1] + 1]:
+            wave_obj.setValues(tuple(v * -1 for v in wave_obj.values))
 
     def shuffle_waves(self, selection=None):
         if not selection:
@@ -1625,6 +1686,7 @@ class WaveTableEditor(QtGui.QMainWindow):
         self.wave_source_view = WaveSourceView(self)
         self.wave_source_view.setMinimumHeight(100)
         self.wave_source_view.installEventFilter(self)
+        self.wave_source_view.statusTip.connect(self.setStatusTip)
         self.wave_layout.insertWidget(0, self.wave_source_view)
         self.wave_source_view.setMain(self)
         self.wave_source_view.sampleSelectionChanged.connect(self.setSampleSelection)
@@ -1682,14 +1744,15 @@ class WaveTableEditor(QtGui.QMainWindow):
         self.sel_start_spin.valueChanged.connect(self.setSampleSelection)
         self.sel_end_spin.valueChanged.connect(self.setSampleSelection)
 
+        self.currentWave = 0
         self.waveobj_list = []
         for w in xrange(64):
             wave_obj = WaveObject(w)
             wave_obj.selected.connect(self.setWave)
+            wave_obj.changed.connect(lambda o, c=self.currentWave: o.selected.emit(o) if o.index == c else None)
             self.waveobj_list.append(wave_obj)
         self.wavetable_view.setWaveTable(self.waveobj_list)
         self.wavetable3d_view.setWaveTable(self.waveobj_list)
-        self.currentWave = 0
         self.setWave(self.waveobj_list[0])
 
         self.wave_view.valueChanged.connect(self.setWaveValue)
@@ -1736,6 +1799,10 @@ class WaveTableEditor(QtGui.QMainWindow):
 
         self.addAction(self.wavetablePlayAction)
         self.wavetablePlayAction.triggered.connect(lambda: self.play_btn.setChecked(not self.play_btn.isChecked()))
+
+        #wave editing
+        self.reverse_btn.clicked.connect(lambda: self.wavetable_view.reverse_wave_values([self.currentWave]))
+        self.invert_btn.clicked.connect(lambda: self.wavetable_view.invert_waves([self.currentWave]))
 
         self.installEventFilter(self)
 
