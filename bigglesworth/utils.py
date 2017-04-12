@@ -13,6 +13,17 @@ def setBold(item, bold=True):
     font.setBold(bold)
     item.setFont(font)
 
+def setItalic(item, italic=True):
+    font = item.font()
+    font.setItalic(italic)
+    item.setFont(font)
+
+def setBoldItalic(item, bold=True, italic=True):
+    font = item.font()
+    font.setBold(bold)
+    font.setItalic(italic)
+    item.setFont(font)
+
 def get_status(s):
     for k in sorted(status_dict, reverse=True):
         if k&s:

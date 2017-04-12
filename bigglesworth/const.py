@@ -14,7 +14,7 @@ def local_path(name):
 
 MAJ_VERSION = 0
 MIN_VERSION = 9
-REV_VERSION = 0
+REV_VERSION = 1
 VERSION = '{}.{}.{}'.format(MAJ_VERSION, MIN_VERSION, REV_VERSION)
 
 MIDFILE, SYXFILE = 1, 2
@@ -58,7 +58,6 @@ GLBD = 0x14
 WTBD = 0x12
 
 CURSOR_NORMAL, CURSOR_INSERT = range(2)
-CURSOR_FREE, CURSOR_LINE, CURSOR_CURVE = range(3)
 
 
 class InvalidException(Exception):

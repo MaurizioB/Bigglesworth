@@ -257,7 +257,7 @@
               </size>
              </property>
              <property name="maximum">
-              <number>400</number>
+              <number>800</number>
              </property>
              <property name="value">
               <number>100</number>
@@ -807,6 +807,13 @@
                  </property>
                 </widget>
                </item>
+               <item row="1" column="0">
+                <widget class="QPushButton" name="smooth_btn">
+                 <property name="text">
+                  <string>Smooth</string>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </widget>
             </item>
@@ -844,7 +851,16 @@
     <addaction name="wavImportAction"/>
     <addaction name="wavetableImportAction"/>
    </widget>
+   <widget class="QMenu" name="menu_Edit">
+    <property name="title">
+     <string>&amp;Edit</string>
+    </property>
+    <addaction name="undoAction"/>
+    <addaction name="redoAction"/>
+    <addaction name="undoHistoryAction"/>
+   </widget>
    <addaction name="menu_File"/>
+   <addaction name="menu_Edit"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="wavImportAction">
@@ -863,6 +879,27 @@
    </property>
    <property name="shortcut">
     <string>Space</string>
+   </property>
+  </action>
+  <action name="undoAction">
+   <property name="text">
+    <string>&amp;Undo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Z</string>
+   </property>
+  </action>
+  <action name="redoAction">
+   <property name="text">
+    <string>&amp;Redo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+Z</string>
+   </property>
+  </action>
+  <action name="undoHistoryAction">
+   <property name="text">
+    <string>Undo history...</string>
    </property>
   </action>
  </widget>
