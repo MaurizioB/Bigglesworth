@@ -38,7 +38,7 @@ pow14 = 2**14
 pow12 = 2**12
 
 DRAW_FREE, DRAW_LINE, DRAW_CURVE = range(3)
-REVERSE_WAVES, REVERSE_VALUES, REVERSE_FULL, INVERT_VALUES, SHUFFLE_WAVES, SINE_WAVES, CLEAR_WAVES, INTERPOLATE_VALUES, DROP_WAVE, DROP_WAVE_SOURCE = (16 + i for i in xrange(10))
+REVERSE_WAVES, REVERSE_VALUES, REVERSE_FULL, INVERT_VALUES, SHUFFLE_WAVES, SINE_WAVES, CLEAR_WAVES, INTERPOLATE_VALUES, MORPH_WAVES, DROP_WAVE, DROP_WAVE_SOURCE = (16 + i for i in xrange(11))
 
 sine128 = tuple(sin(2 * pi * r * (0.0078125)) for r in xrange(128))
 
@@ -169,6 +169,8 @@ class MultiWaveUndo(QtGui.QUndoCommand):
             self.setText('Clear values to 0 for wave{} {}'.format(plural, sel_text))
         elif mode == INTERPOLATE_VALUES:
             self.setText('Smooth wawe{} {}'.format(plural, sel_text))
+        elif mode == MORPH_WAVES:
+            self.setText('Morph wave{} {}'.format(plural, sel_text))
         elif mode == DROP_WAVE:
             self.setText('Drag and drop to wave{} {} from {}'.format(plural, sel_text, source))
 
@@ -944,22 +946,6 @@ class WaveTableView(QtGui.QGraphicsView):
         self.drag = QtGui.QDrag(self)
         data = QtCore.QMimeData()
         data.setData('audio/waves', QtCore.QByteArray('{}:{}'.format(start, end)))
-#        wave_len = self.selection[1] + 1 - self.selection[0]
-#        samples = self.current_data[self.selection[0] * 256 + self.offset:(self.selection[1] + 1) * 256 + self.offset]
-#        path = QtGui.QPainterPath()
-#        sampwidth_int = self.current_sampwidth_int / 2
-#        path.moveTo(0, sampwidth_int - audioop.getsample(samples, self.current_sampwidth, 0))
-#        for s in xrange(1, len(samples)/2):
-#            path.lineTo(s, sampwidth_int - audioop.getsample(samples, self.current_sampwidth, s))
-#        wave_size = self.main.wavetable_view.width() / 64
-#        pixmap = QtGui.QPixmap(wave_size * wave_len, 48)
-#        pixmap.fill(QtCore.Qt.transparent)
-#        qp = QtGui.QPainter(pixmap)
-#        qp.setRenderHints(qp.Antialiasing)
-#        qp.scale((wave_size * wave_len / path.boundingRect().width()), 48. / self.current_sampwidth_int)
-#        qp.drawPath(path)
-#        qp.end()
-#        self.drag.setPixmap(pixmap)
         pixmap = QtGui.QPixmap(int(self.viewport().rect().width() / 64. * (end - start + 1)), self.height())
         pixmap.fill(QtGui.QColor(192, 192, 192, 128))
         qp = QtGui.QPainter(pixmap)
@@ -987,7 +973,7 @@ class WaveTableView(QtGui.QGraphicsView):
                 wave_obj = self.waveobj_list[self.currentWave + 1]
                 wave_obj.selected.emit(wave_obj)
         elif event.key() in (QtCore.Qt.Key_Left, QtCore.Qt.Key_Up):
-            if self.currentWave > 1:
+            if self.currentWave > 0:
                 wave_obj = self.waveobj_list[self.currentWave - 1]
                 wave_obj.selected.emit(wave_obj)
         elif event.key() == QtCore.Qt.Key_Home:
@@ -1048,6 +1034,9 @@ class WaveTableView(QtGui.QGraphicsView):
             reverse_values = QtGui.QAction('Reverse wave values', menu)
             reverse_full = QtGui.QAction('Reverse wave values and order', menu)
             invert = QtGui.QAction('Invert waves', menu)
+            morph = QtGui.QAction('Morph waves', menu)
+            if len(self.selection) < 3:
+                morph.setEnabled(False)
             sep0 = QtGui.QAction(menu)
             sep0.setSeparator(True)
             shuffle_ = QtGui.QAction('Randomize wave order', menu)
@@ -1055,7 +1044,7 @@ class WaveTableView(QtGui.QGraphicsView):
             sep1.setSeparator(True)
             sine = QtGui.QAction('Reset waves to sine', menu)
             clear = QtGui.QAction('Clear waves', menu)
-            menu.addActions([title, reverse, reverse_values, reverse_full, invert, sep0, shuffle_, sep1, sine, clear])
+            menu.addActions([title, reverse, reverse_values, reverse_full, invert, morph, sep0, shuffle_, sep1, sine, clear])
             res = menu.exec_(self.mapToGlobal(pos))
             if not res: return
             if res == reverse:
@@ -1066,6 +1055,8 @@ class WaveTableView(QtGui.QGraphicsView):
                 self.reverse_full(self.selection)
             elif res == invert:
                 self.invert_waves(self.selection)
+            elif res == morph:
+                self.morph_waves(self.selection)
             elif res == shuffle_:
                 self.shuffle_waves(self.selection)
             elif res == sine:
@@ -1161,6 +1152,24 @@ class WaveTableView(QtGui.QGraphicsView):
         self.editAction.emit(INVERT_VALUES, True, waveobj_list)
         for wave_obj in waveobj_list:
             wave_obj.setValues(tuple(v * -1 for v in wave_obj.values))
+        self.editAction.emit(INVERT_VALUES, False, waveobj_list)
+
+    def morph_waves(self, selection=None):
+        if not selection:
+            selection = tuple(xrange(64))
+        waveobj_list = self.waveobj_list[selection[1]:selection[-1]]
+        self.editAction.emit(MORPH_WAVES, True, waveobj_list)
+        interpolation = [[] for i in xrange(len(waveobj_list))]
+        div = selection[-1] - selection[0] + 1
+        values_first = iter(self.waveobj_list[selection[0]].values)
+        values_last = iter(self.waveobj_list[selection[-1]].values)
+        for s in xrange(128):
+            first = values_first.next()
+            ratio = (values_last.next() - first) / div
+            for w in xrange(div - 2):
+                interpolation[w].append(first + (w + 1) * ratio)
+        for w, wave_obj in enumerate(waveobj_list):
+            wave_obj.setValues(interpolation[w])
         self.editAction.emit(INVERT_VALUES, False, waveobj_list)
 
     def shuffle_waves(self, selection=None):
