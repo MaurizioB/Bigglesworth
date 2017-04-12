@@ -5,6 +5,7 @@ import pickle
 from os import path
 from collections import namedtuple
 from PyQt4 import QtCore
+from bigglesworth import version
 
 def local_path(name):
     return path.join(path.dirname(path.abspath(__file__)), name)
@@ -12,10 +13,8 @@ def local_path(name):
 #with open('blofeld_params', 'rb') as _params_file:
 #    sound_params = pickle.load(_params_file)
 
-MAJ_VERSION = 0
-MIN_VERSION = 9
-REV_VERSION = 1
-VERSION = '{}.{}.{}'.format(MAJ_VERSION, MIN_VERSION, REV_VERSION)
+VERSION = version.VERSION
+
 
 MIDFILE, SYXFILE = 1, 2
 

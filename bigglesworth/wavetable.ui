@@ -745,7 +745,7 @@
           <item>
            <widget class="QCheckBox" name="full_sweep_chk">
             <property name="text">
-             <string>&amp;Full wavetable sweep</string>
+             <string>Full wavetable &amp;sweep</string>
             </property>
            </widget>
           </item>
