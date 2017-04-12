@@ -38,7 +38,7 @@ pow14 = 2**14
 pow12 = 2**12
 
 DRAW_FREE, DRAW_LINE, DRAW_CURVE = range(3)
-REVERSE_WAVES, REVERSE_VALUES, REVERSE_FULL, INVERT_VALUES, SHUFFLE_WAVES, SINE_WAVES, CLEAR_WAVES, INTERPOLATE_VALUES, MORPH_WAVES, DROP_WAVE, DROP_WAVE_SOURCE = (16 + i for i in xrange(11))
+REVERSE_WAVES, REVERSE_VALUES, REVERSE_FULL, INVERT_VALUES, SHUFFLE_WAVES, SINE_WAVES, CLEAR_WAVES, INTERPOLATE_VALUES, MORPH_WAVES, DROP_WAVE, DROP_WAVE_SOURCE, WAVETABLE_IMPORT = (16 + i for i in xrange(12))
 
 sine128 = tuple(sin(2 * pi * r * (0.0078125)) for r in xrange(128))
 
@@ -173,6 +173,8 @@ class MultiWaveUndo(QtGui.QUndoCommand):
             self.setText('Morph wave{} {}'.format(plural, sel_text))
         elif mode == DROP_WAVE:
             self.setText('Drag and drop to wave{} {} from {}'.format(plural, sel_text, source))
+        elif mode == WAVETABLE_IMPORT:
+            self.setText('Import wavetable from "{}"'.format(source))
 
     def finalize(self, waveobj_list):
         for wave_obj in waveobj_list:
@@ -1399,6 +1401,7 @@ class WaveScene(QtGui.QGraphicsScene):
     curve_valid_pen = QtGui.QPen(QtCore.Qt.darkGreen)
     curve_invalid_pen = QtGui.QPen(QtCore.Qt.red)
     curve_pens = curve_invalid_pen, curve_valid_pen
+
     def __init__(self, main, *args, **kwargs):
         QtGui.QGraphicsScene.__init__(self, *args, **kwargs)
         self.main = main
@@ -1449,6 +1452,13 @@ class WaveScene(QtGui.QGraphicsScene):
         self.cursor.setVisible(False)
 #        self.cursor.setPos(-16384, -16384)
 
+        self.index_item = self.addText('1', QtGui.QFont('Helvetica'))
+        index_transform = QtGui.QTransform().scale(16384, 16384)
+        self.index_item.setTransform(index_transform)
+        self.index_item.setDefaultTextColor(QtGui.QColor(96, 96, 96, 128))
+        self.index_item.setPos(-32768, -65536)
+        self.index_item.setZValue(-100)
+
         line_pen = QtGui.QPen(QtCore.Qt.red, 4096)
         self.linedraw = self.addLine(-16384, -16384, -16384, -16384)
         self.linedraw.setPen(line_pen)
@@ -1486,6 +1496,9 @@ class WaveScene(QtGui.QGraphicsScene):
 
 
         self.setSceneRect(0, 0, pow21, pow21)
+
+    def setIndex(self, index):
+        self.index_item.setPlainText(str(index + 1))
 
     def curve_cp_move(self, x, y):
         if not self.curve_complete: 
@@ -1819,6 +1832,7 @@ class WaveView(QtGui.QWidget):
 
     def setWavePath(self, wave_obj):
         self.wave_path.setPath(wave_obj.path)
+        self.scene.setIndex(wave_obj.index)
 
     def resizeEvent(self, event):
         width = event.size().width()
@@ -2375,6 +2389,7 @@ class WaveTableEditor(QtGui.QMainWindow):
         self.slot_spin.setValue(wt_slot)
         self.name_edit.setText(wt_name)
 
+        self.undo_push(WAVETABLE_IMPORT, True, self.waveobj_list, QtCore.QFileInfo(path).fileName())
         for w, wave_obj in enumerate(self.waveobj_list):
             values_iter = iter(wt_list[w])
             values = []
@@ -2384,6 +2399,7 @@ class WaveTableEditor(QtGui.QMainWindow):
                     value -= 2097152
                 values.append(value)
             wave_obj.setValues(values)
+        self.undo_push(WAVETABLE_IMPORT, False, self.waveobj_list, '')
         self.setWave(self.waveobj_list[self.currentWave])
 
     def unload_wave(self):
