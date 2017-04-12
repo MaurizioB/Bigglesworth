@@ -981,6 +981,33 @@ class WaveTableView(QtGui.QGraphicsView):
             r.preview_rect.setSelected(True if i in selection else False)
         self.selection = sorted(selection)
 
+    def keyPressEvent(self, event):
+        if event.key() in (QtCore.Qt.Key_Right, QtCore.Qt.Key_Down):
+            if self.currentWave < 63:
+                wave_obj = self.waveobj_list[self.currentWave + 1]
+                wave_obj.selected.emit(wave_obj)
+        elif event.key() in (QtCore.Qt.Key_Left, QtCore.Qt.Key_Up):
+            if self.currentWave > 1:
+                wave_obj = self.waveobj_list[self.currentWave - 1]
+                wave_obj.selected.emit(wave_obj)
+        elif event.key() == QtCore.Qt.Key_Home:
+            wave_obj = self.waveobj_list[0]
+            wave_obj.selected.emit(wave_obj)
+        elif event.key() == QtCore.Qt.Key_End:
+            wave_obj = self.waveobj_list[-1]
+            wave_obj.selected.emit(wave_obj)
+        elif event.key() == QtCore.Qt.Key_PageUp:
+            index = self.currentWave - 8
+            if index < 0:
+                index = 0
+            wave_obj = self.waveobj_list[index]
+            wave_obj.selected.emit(wave_obj)
+        elif event.key() == QtCore.Qt.Key_PageDown:
+            index = self.currentWave + 8
+            if index > 63:
+                index = 63
+            wave_obj = self.waveobj_list[index]
+            wave_obj.selected.emit(wave_obj)
 
     def mousePressEvent(self, event):
         QtGui.QGraphicsView.mousePressEvent(self, event)
