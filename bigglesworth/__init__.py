@@ -265,6 +265,20 @@ class BigglesworthObject(QtCore.QObject):
         self.midi_connect()
 #        self.dump_win.show()
 
+        self.startup_version_check()
+
+    def startup_version_check(self, active=False):
+        self.version_check = VersionCheck(self)
+        self.version_thread = QtCore.QThread()
+        self.version_check.moveToThread(self.version_thread)
+        self.version_thread.started.connect(self.version_check.run)
+        self.version_check.done.connect(self.version_thread.quit)
+        self.version_thread.start()
+        self.version_check.update.connect(lambda update: QtGui.QMessageBox.information(
+                                              self.librarian, 'New version', 
+                                              'A new version is available, go to the <a href="https://github.com/MaurizioB/Bigglesworth">website</a> for updates!')
+                                              if update else None)
+
     def show_settings(self):
         self.settings_dialog.exec_()
 

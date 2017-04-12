@@ -1,10 +1,59 @@
 # *-* coding: utf-8 *-*
 
+import urllib2
 from string import uppercase, ascii_letters
 from PyQt4 import QtCore, QtGui
 
 import midifile
 from bigglesworth.const import *
+from bigglesworth import version
+
+class VersionCheck(QtCore.QObject):
+    url = 'https://github.com/MaurizioB/Bigglesworth/raw/master/bigglesworth/version.py'
+    v_maj = version.MAJ_VERSION
+    v_min = version.MIN_VERSION
+    v_rev = version.REV_VERSION
+    res = QtCore.pyqtSignal(object)
+    error = QtCore.pyqtSignal()
+    done = QtCore.pyqtSignal()
+    update = QtCore.pyqtSignal(bool)
+
+    def __init__(self, main):
+        QtCore.QObject.__init__(self)
+        self.main = main
+        self.timer = QtCore.QTimer()
+        self.timer.setInterval(30000)
+        self.timer.timeout.connect(self.error.emit)
+
+    def run(self):
+        self.timer.start()
+        try:
+            try:
+                res = urllib2.urlopen(self.url)
+                self.timer.stop()
+                exec(res.read())
+                self.check(MAJ_VERSION, MIN_VERSION, REV_VERSION)
+            except:
+                self.timer.stop()
+                self.error.emit()
+        except:
+            self.timer.stop()
+            self.error.emit()
+        self.done.emit()
+
+    def check(self, v_maj, v_min, v_rev):
+#        print 'Current: {}.{}.{}'.format(self.v_maj, self.v_min, self.v_rev)
+#        print '{}.{}.{}'.format(v_maj, v_min, v_rev)
+#        print type(self.v_maj), type(v_maj)
+        if (self.v_maj, self.v_min, self.v_rev) == (v_maj, v_min, v_rev):
+            self.update.emit(False)
+            return
+        current = (self.v_maj << 32) + (self.v_min << 16) + self.v_rev
+        remote = (v_maj << 32) + (v_min << 16) + v_rev
+        if current > remote:
+            self.update.emit(False)
+        else:
+            self.update.emit(True)
 
 
 class Sound(QtCore.QObject):
