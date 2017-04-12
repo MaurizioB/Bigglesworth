@@ -1909,11 +1909,17 @@ class WaveTableEditor(QtGui.QMainWindow):
         load_ui(self, 'wavetable.ui')
         self.currentStream = None
         self.undo = UndoStack(self)
+        self.undo.canUndoChanged.connect(self.undo_btn.setEnabled)
+        self.undo.canRedoChanged.connect(self.redo_btn.setEnabled)
         self.undo_dialog = UndoDialog(self)
 
         self.undoAction.triggered.connect(self.undo.undo)
         self.redoAction.triggered.connect(self.undo.redo)
         self.undoHistoryAction.triggered.connect(self.undo_dialog.show)
+        self.undo_btn.setIcon(QtGui.QIcon.fromTheme('edit-undo'))
+        self.redo_btn.setIcon(QtGui.QIcon.fromTheme('edit-redo'))
+        self.undo_history_btn.setIcon(QtGui.QIcon.fromTheme('document-properties'))
+        self.undo_history_btn.clicked.connect(self.undo_dialog.show)
 
         self.wavImportAction.triggered.connect(lambda: self.load_wave())
         self.wavetableImportAction.triggered.connect(self.load_wavetable)
@@ -2314,6 +2320,8 @@ class WaveTableEditor(QtGui.QMainWindow):
         self.wave_list.selectionModel().select(self.wave_model.index(self.wave_model.rowCount()-1, 0), QtGui.QItemSelectionModel.ClearAndSelect)
         self.wave_panel.setEnabled(True)
         self.del_wave_btn.setEnabled(True)
+        if self.wavesource_toggle.isVisible():
+            self.splitter.moveSplitter(60, 0)
 
     def load_wavetable(self):
         path = QtGui.QFileDialog.getOpenFileName(self, 'Import Wavetable', filter = 'Wavetable files (*.mid, *.syx)(*.mid *.syx);;SysEx files (*.syx);;MIDI files (*.mid);;All files (*)')
