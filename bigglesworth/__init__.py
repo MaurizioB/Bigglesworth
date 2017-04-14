@@ -4,7 +4,7 @@
 import sys, argparse
 import pickle
 from string import uppercase
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 from const import *
 from utils import *
@@ -22,6 +22,7 @@ def process_args():
     parser.add_argument('-s', '--sysex', help='Print output SysEx messages to the terminal', action='store_true')
     parser.add_argument('-l', '--library-limit', metavar='N', type=int, help='Limit library to N sounds')
     parser.add_argument('-w', '--wavetable', metavar='WTFILE', nargs='?', const=True, help='Open Wavetable editor (with optional WTFILE)')
+    parser.add_argument('-e', '--editor', action='store_true')
     return parser.parse_args()
 
 class BigglesworthObject(QtCore.QObject):
@@ -76,8 +77,6 @@ class BigglesworthObject(QtCore.QObject):
             limit = args.library_limit
         else:
             limit = None
-        if args.wavetable:
-            wavetable_show = args.wavetable
 
         #LOADING
         self.loader = LoadingThread(self, self.blofeld_library, self.source_library, limit=limit)
@@ -89,7 +88,7 @@ class BigglesworthObject(QtCore.QObject):
         self.midi_lock.connect(lambda state: setattr(self, 'midi_lock_status', state))
 
         #LIBRARY
-        QtGui.QIcon.setThemeName(QtGui.QApplication.style().objectName())
+        QtGui.QIcon.setThemeName(QtWidgets.QApplication.style().objectName())
         self.librarian = Librarian(self)
         self.librarian.dump_send.connect(self.dump_send)
         self.librarian.dump_bulk_send.connect(self.dump_bulk_send)
@@ -108,7 +107,7 @@ class BigglesworthObject(QtCore.QObject):
         wt_icon.addFile(local_path('wt_icon.png'))
         self.librarian.wavetableAction.setIcon(wt_icon)
         self.quitAction.triggered.connect(self.quit)
-        self.librarian.aboutQtAction.triggered.connect(lambda: QtGui.QMessageBox.aboutQt(self.librarian, 'About Qt'))
+        self.librarian.aboutQtAction.triggered.connect(lambda: QtWidgets.QMessageBox.aboutQt(self.librarian, 'About Qt'))
         self.deviceAction = self.librarian.deviceAction
         self.deviceAction.triggered.connect(self.device_request)
         self.globalsAction = self.librarian.globalsAction
@@ -229,7 +228,7 @@ class BigglesworthObject(QtCore.QObject):
         self.globals = Globals(self, self.librarian)
         self.globals.midi_event.connect(self.output_event)
         self.globals_event.connect(self.activate_globals)
-        self.globals.buttonBox.button(QtGui.QDialogButtonBox.Reset).clicked.connect(self.globals_request)
+        self.globals.buttonBox.button(QtWidgets.QDialogButtonBox.Reset).clicked.connect(self.globals_request)
 
         self.librarian.show()
         self.midiwidget = MidiWidget(self)
@@ -257,13 +256,15 @@ class BigglesworthObject(QtCore.QObject):
         #WAVETABLE
         self.wave_table = WaveTableEditor(self)
         self.librarian.wavetableAction.triggered.connect(lambda: [self.wave_table.show(), self.wave_table.activateWindow()])
+        self.wave_table.wavetable_send.connect(self.wavetable_send)
+
         if args.wavetable:
             if args.wavetable is True:
                 self.wave_table.show()
-        self.wave_table.wavetable_send.connect(self.wavetable_send)
+        if args.editor:
+            self.editor.show()
 
         self.midi_connect()
-#        self.dump_win.show()
 
         self.startup_version_check()
 
@@ -274,7 +275,7 @@ class BigglesworthObject(QtCore.QObject):
         self.version_thread.started.connect(self.version_check.run)
         self.version_check.done.connect(self.version_thread.quit)
         self.version_thread.start()
-        self.version_check.update.connect(lambda update: QtGui.QMessageBox.information(
+        self.version_check.update.connect(lambda update: QtWidgets.QMessageBox.information(
                                               self.librarian, 'New version', 
                                               'A new version is available, go to the <a href="https://github.com/MaurizioB/Bigglesworth">website</a> for updates!')
                                               if update else None)
@@ -766,7 +767,7 @@ class BigglesworthObject(QtCore.QObject):
             dev_type = 'Blofeld Keyboard'
         dev_version = ''.join([str(unichr(l)) for l in sysex[10:14]]).strip()
         
-        QtGui.QMessageBox.information(parent, 'Device informations', 
+        QtWidgets.QMessageBox.information(parent, 'Device informations', 
                                       'Device info:\n\nManufacturer: {}\nModel: {}\nType: {}\nVersion: {}'.format(
                                        dev_man, dev_model, dev_type, dev_version))
 
@@ -778,20 +779,20 @@ class BigglesworthObject(QtCore.QObject):
                 return True
             if not self.library_changed():
                 return True
-        msgbox = QtGui.QMessageBox(
-                                   QtGui.QMessageBox.Question, 
+        msgbox = QtWidgets.QMessageBox(
+                                   QtWidgets.QMessageBox.Question, 
                                    'Confirm exit', 'The library has been modified, do you want to quit anyway?', 
-                                   QtGui.QMessageBox.Abort|QtGui.QMessageBox.Save|QtGui.QMessageBox.Cancel, 
+                                   QtWidgets.QMessageBox.Abort|QtWidgets.QMessageBox.Save|QtWidgets.QMessageBox.Cancel, 
                                    self.librarian
                                    )
-        buttonBox = msgbox.findChild(QtGui.QDialogButtonBox)
-        abort_btn = buttonBox.button(QtGui.QDialogButtonBox.Abort)
+        buttonBox = msgbox.findChild(QtWidgets.QDialogButtonBox)
+        abort_btn = buttonBox.button(QtWidgets.QDialogButtonBox.Abort)
         abort_btn.setText('Ignore and quit')
         abort_btn.setIcon(QtGui.QIcon.fromTheme('application-exit'))
         res = msgbox.exec_()
-        if res == QtGui.QMessageBox.Cancel:
+        if res == QtWidgets.QMessageBox.Cancel:
             return False
-        elif res == QtGui.QMessageBox.Abort:
+        elif res == QtWidgets.QMessageBox.Abort:
             return True
         self.save_library()
         return True
@@ -807,7 +808,7 @@ class BigglesworthObject(QtCore.QObject):
         self.app.quit()
 
 
-class Librarian(QtGui.QMainWindow):
+class Librarian(QtWidgets.QMainWindow):
     shown = QtCore.pyqtSignal()
     program_change_request = QtCore.pyqtSignal(int, int)
     dump_request = QtCore.pyqtSignal(object)
@@ -818,7 +819,7 @@ class Librarian(QtGui.QMainWindow):
     summary_request = QtCore.pyqtSignal(object)
 
     def __init__(self, main):
-        QtGui.QMainWindow.__init__(self, parent=None)
+        QtWidgets.QMainWindow.__init__(self, parent=None)
         load_ui(self, 'main.ui')
         self.setContentsMargins(2, 2, 2, 2)
 
@@ -849,7 +850,7 @@ class Librarian(QtGui.QMainWindow):
         self.bank_dump_combo.currentIndexChanged.connect(lambda b: self.sound_dump_combo.setEnabled(True if b != 0 else False))
         self.edit_btn.toggled.connect(self.edit_mode_set)
         self.search_edit.textChanged.connect(self.search_filter)
-        self.search_clear_btn.setIcon(self.style().standardIcon(QtGui.QStyle.SP_DialogResetButton))
+        self.search_clear_btn.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_DialogResetButton))
         self.search_clear_btn.clicked.connect(lambda _: self.search_edit.setText(''))
         self.search_filter_chk.toggled.connect(self.search_filter_set)
         self.blofeld_sounds_table.doubleClicked.connect(self.sound_doubleclick)
@@ -880,19 +881,19 @@ class Librarian(QtGui.QMainWindow):
                 self.search_edit.setText('')
         if source == self.search_filter_chk and event.type() == QtCore.QEvent.FocusIn and event.reason() == QtCore.Qt.OtherFocusReason:
             self.search_edit.setFocus()
-        return QtGui.QMainWindow.eventFilter(self, source, event)
+        return QtWidgets.QMainWindow.eventFilter(self, source, event)
 
 
     def edit_mode_set(self, state):
         self.edit_mode = state
         if state:
-            self.blofeld_sounds_table.setEditTriggers(QtGui.QTableView.DoubleClicked|QtGui.QTableView.EditKeyPressed)
+            self.blofeld_sounds_table.setEditTriggers(QtWidgets.QTableView.DoubleClicked|QtWidgets.QTableView.EditKeyPressed)
             self.blofeld_sounds_table.setDragEnabled(False)
-            self.blofeld_sounds_table.setSelectionMode(QtGui.QTableView.SingleSelection)
+            self.blofeld_sounds_table.setSelectionMode(QtWidgets.QTableView.SingleSelection)
         else:
-            self.blofeld_sounds_table.setEditTriggers(QtGui.QTableView.NoEditTriggers)
+            self.blofeld_sounds_table.setEditTriggers(QtWidgets.QTableView.NoEditTriggers)
             self.blofeld_sounds_table.setDragEnabled(True)
-            self.blofeld_sounds_table.setSelectionMode(QtGui.QTableView.ContiguousSelection)
+            self.blofeld_sounds_table.setSelectionMode(QtWidgets.QTableView.ContiguousSelection)
 
     def search_filter_set(self, state):
         if not state:
@@ -914,7 +915,7 @@ class Librarian(QtGui.QMainWindow):
         if self.edit_mode: return
         behaviour = self.main.library_doubleclick
         if behaviour == 0: return
-        sound = self.blofeld_model.item(self.blofeld_model_proxy.mapToSource(index).row(), SOUND).data(SoundRole).toPyObject()
+        sound = self.blofeld_model.item(self.blofeld_model_proxy.mapToSource(index).row(), SOUND).data(SoundRole)
         if behaviour == 1:
             self.program_change_request.emit(sound.bank, sound.prog)
         elif behaviour == 2:
@@ -929,27 +930,27 @@ class Librarian(QtGui.QMainWindow):
         elif event.key() == QtCore.Qt.Key_End:
             self.blofeld_sounds_table.selectRow(self.blofeld_model_proxy.rowCount()-1)
         else:
-            QtGui.QTableView.keyPressEvent(self.blofeld_sounds_table, event)
+            QtWidgets.QTableView.keyPressEvent(self.blofeld_sounds_table, event)
 
     def right_click(self, event):
         if event.button() != QtCore.Qt.RightButton: return
         rows = set([self.blofeld_model_proxy.mapToSource(index).row() for index in self.blofeld_sounds_table.selectedIndexes()])
         index = self.blofeld_sounds_table.indexAt(event.pos())
-        sound = self.blofeld_model.item(self.blofeld_model_proxy.mapToSource(index).row(), SOUND).data(SoundRole).toPyObject()
-        menu = QtGui.QMenu()
+        sound = self.blofeld_model.item(self.blofeld_model_proxy.mapToSource(index).row(), SOUND).data(SoundRole)
+        menu = QtWidgets.QMenu()
         menu.setSeparatorsCollapsible(False)
-        header = QtGui.QAction(sound.name, menu)
+        header = QtWidgets.QAction(sound.name, menu)
         header.setSeparator(True)
         menu.addAction(header)
-        edit_item = QtGui.QAction('Edit...', menu)
-        summary_item = QtGui.QAction('Show summary', menu)
-        sep = QtGui.QAction(menu)
+        edit_item = QtWidgets.QAction('Edit...', menu)
+        summary_item = QtWidgets.QAction('Show summary', menu)
+        sep = QtWidgets.QAction(menu)
         sep.setSeparator(True)
-        dump_request_item = QtGui.QAction('Request dump', menu)
-        dump_send_item = QtGui.QAction('Dump to Blofeld', menu)
+        dump_request_item = QtWidgets.QAction('Request dump', menu)
+        dump_send_item = QtWidgets.QAction('Dump to Blofeld', menu)
         menu.addActions([edit_item, summary_item, sep, dump_request_item, dump_send_item])
         if len(rows) > 1:
-            dump_bulk_send_item = QtGui.QAction('Dump selected sounds', menu)
+            dump_bulk_send_item = QtWidgets.QAction('Dump selected sounds', menu)
             menu.addAction(dump_bulk_send_item)
         menu.show()
         fm = QtGui.QFontMetrics(edit_item.font())
@@ -970,20 +971,20 @@ class Librarian(QtGui.QMainWindow):
         elif res == dump_request_item:
             self.dump_request.emit((sound.bank, sound.prog))
         elif res == dump_send_item:
-            res = QtGui.QMessageBox.question(self, 'Dump selected sound',
+            res = QtWidgets.QMessageBox.question(self, 'Dump selected sound',
                                              'You are going to send a sound dump to the Blofeld at location "{}{:03}".\nThis action cannot be undone. Do you want to proceed?'.format(uppercase[sound.bank], sound.prog+1), 
-                                             QtGui.QMessageBox.Ok|QtGui.QMessageBox.Cancel
+                                             QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel
                                              )
-            if not res == QtGui.QMessageBox.Ok: return
+            if not res == QtWidgets.QMessageBox.Ok: return
             self.dump_send.emit(sound)
         elif rows > 1 and res == dump_bulk_send_item:
-            first = self.blofeld_model.item(min(rows), SOUND).data(SoundRole).toPyObject()
-            last = self.blofeld_model.item(max(rows), SOUND).data(SoundRole).toPyObject()
-            res = QtGui.QMessageBox.question(self, 'Dump selected sounds',
+            first = self.blofeld_model.item(min(rows), SOUND).data(SoundRole)
+            last = self.blofeld_model.item(max(rows), SOUND).data(SoundRole)
+            res = QtWidgets.QMessageBox.question(self, 'Dump selected sounds',
                                              'You are going to send a sound dump to the Blofeld for locations "{}{:03}" through "{}{:03}".\nThis action cannot be undone. Do you want to proceed?'.format(uppercase[first.bank], first.prog+1, uppercase[last.bank], last.prog+1), 
-                                             QtGui.QMessageBox.Ok|QtGui.QMessageBox.Cancel
+                                             QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel
                                              )
-            if not res == QtGui.QMessageBox.Ok: return
+            if not res == QtWidgets.QMessageBox.Ok: return
             self.dump_bulk_send.emit((first.bank, first.prog), (last.bank, last.prog))
 
     def sound_drop_event(self, event):
@@ -995,7 +996,7 @@ class Librarian(QtGui.QMainWindow):
                 bank, prog = divmod(row, 128)
                 self.blofeld_model.item(row, BANK).setText(uppercase[bank])
                 self.blofeld_model.item(row, PROG).setText('{:03}'.format(prog+1))
-                sound = self.blofeld_model.item(row, SOUND).data(SoundRole).toPyObject()
+                sound = self.blofeld_model.item(row, SOUND).data(SoundRole)
                 sound.bank = bank
                 sound.prog = prog
         drop_pos = self.blofeld_sounds_table.dropIndicatorPosition()
@@ -1003,7 +1004,7 @@ class Librarian(QtGui.QMainWindow):
         current_bank = self.bank_filter_combo.currentIndex() - 1
         if len(rows) == 1:
             source = self.blofeld_model_proxy.mapToSource(self.blofeld_sounds_table.currentIndex()).row()
-            if drop_pos == QtGui.QTableView.OnViewport:
+            if drop_pos == QtWidgets.QTableView.OnViewport:
                 if current_bank < 0:
                     target = self.blofeld_model.rowCount()-1
                 else:
@@ -1015,7 +1016,7 @@ class Librarian(QtGui.QMainWindow):
             rename((source, target))
             self.blofeld_library.swap((source, ), target)
         else:
-            if drop_pos == QtGui.QTableView.OnViewport:
+            if drop_pos == QtWidgets.QTableView.OnViewport:
                 if current_bank < 0:
                     if max(rows) == self.blofeld_model.rowCount()-1: return
                     target = self.blofeld_model.rowCount()-1
@@ -1038,7 +1039,7 @@ class Librarian(QtGui.QMainWindow):
 
     def sound_update(self, item, _=None):
         if item.column() == STATUS:
-            status = item.data(EditedRole).toPyObject()
+            status = item.data(EditedRole)
             item.setText(get_status(status))
             setBold(item, True if status!=STORED else False)
 #        elif item.column() == NAME:
@@ -1061,15 +1062,15 @@ class Librarian(QtGui.QMainWindow):
         self.blofeld_model_proxy = LibraryProxy()
         self.blofeld_model_proxy.setSourceModel(self.blofeld_model)
         self.blofeld_sounds_table.setModel(self.blofeld_model_proxy)
-        self.blofeld_sounds_table.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
-        self.blofeld_sounds_table.horizontalHeader().setResizeMode(NAME, QtGui.QHeaderView.Stretch)
-        self.blofeld_sounds_table.verticalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
+        self.blofeld_sounds_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
+        self.blofeld_sounds_table.horizontalHeader().setSectionResizeMode(NAME, QtWidgets.QHeaderView.Stretch)
+        self.blofeld_sounds_table.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         self.blofeld_sounds_table.setItemDelegateForColumn(CATEGORY, CategoryDelegate(self))
         self.blofeld_sounds_table.setItemDelegateForColumn(NAME, NameDelegate(self))
         self.blofeld_sounds_table.setColumnHidden(INDEX, True)
         for c in range(len(sound_headers), self.blofeld_model.columnCount()):
             self.blofeld_sounds_table.setColumnHidden(c, True)
-        self.blofeld_sounds_table.horizontalHeader().setResizeMode(PROG, QtGui.QHeaderView.Fixed)
+        self.blofeld_sounds_table.horizontalHeader().setSectionResizeMode(PROG, QtWidgets.QHeaderView.Fixed)
         self.blofeld_sounds_table.resizeColumnToContents(PROG)
 
 
@@ -1084,7 +1085,7 @@ class Librarian(QtGui.QMainWindow):
                 cat_len[s.cat] += 1
         for cat_id in range(1, self.cat_filter_combo.model().rowCount()):
             self.cat_filter_combo.setItemText(cat_id, '{} ({})'.format(
-                                               self.cat_filter_combo.model().item(cat_id).data(QtCore.Qt.UserRole).toPyObject(),
+                                               self.cat_filter_combo.model().item(cat_id).data(QtCore.Qt.UserRole),
                                                cat_len[cat_id-1]
                                                ))
 
@@ -1093,7 +1094,7 @@ def main():
     args = process_args()
     argv = sys.argv[:]
     argv[0] = 'Bigglesworth'
-    app = QtGui.QApplication(argv)
+    app = QtWidgets.QApplication(argv)
     app.setOrganizationName('jidesk')
     app.setApplicationName('Bigglesworth')
 #    app.setQuitOnLastWindowClosed(False)

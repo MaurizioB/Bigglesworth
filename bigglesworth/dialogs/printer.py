@@ -1,30 +1,30 @@
 # *-* coding: utf-8 *-*
 
 from string import digits, uppercase
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets, QtPrintSupport, QtWidgets
 from bigglesworth.utils import load_ui
 
 TEXT, PDF = range(2)
 
-class PrinterOutsideWidget(QtGui.QWidget):
+class PrinterOutsideWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self, parent)
-        layout = QtGui.QHBoxLayout()
+        QtWidgets.QWidget.__init__(self, parent)
+        layout = QtWidgets.QHBoxLayout()
         self.setLayout(layout)
-        icon = self.style().standardIcon(QtGui.QStyle.SP_MessageBoxWarning)
-        icon_label = QtGui.QLabel(self)
+        icon = self.style().standardIcon(QtWidgets.QStyle.SP_MessageBoxWarning)
+        icon_label = QtWidgets.QLabel(self)
         icon_label.setPixmap(icon.pixmap(16, 16))
         layout.addWidget(icon_label)
-        self.label = QtGui.QLabel()
+        self.label = QtWidgets.QLabel()
         layout.addWidget(self.label)
 
     def setText(self, text):
         self.label.setText(text)
 
-class PrinterPageRect(QtGui.QGraphicsRectItem):
+class PrinterPageRect(QtWidgets.QGraphicsRectItem):
     chars = ''.join(chr(x) for x in range(32, 127))
     def __init__(self, main, device, font):
-        QtGui.QGraphicsRectItem.__init__(self)
+        QtWidgets.QGraphicsRectItem.__init__(self)
         self.setPen(QtCore.Qt.black)
         self.setBrush(QtCore.Qt.white)
         self.setRect(0, 0, 40, 60)
@@ -98,7 +98,7 @@ class PrinterPageRect(QtGui.QGraphicsRectItem):
         self.update()
 
     def paint(self, painter, *args, **kwargs):
-        QtGui.QGraphicsRectItem.paint(self, painter, *args, **kwargs)
+        QtWidgets.QGraphicsRectItem.paint(self, painter, *args, **kwargs)
         painter.setClipRect(self.text_rect)
         painter.setFont(self.font)
         space = self.font_metrics.lineSpacing()
@@ -127,10 +127,10 @@ class PrinterPageRect(QtGui.QGraphicsRectItem):
         self.main.outside.emit(outside)
 
 
-class MultiCombo(QtGui.QComboBox):
+class MultiCombo(QtWidgets.QComboBox):
     selectionChanged = QtCore.pyqtSignal(object)
     def __init__(self, parent):
-        QtGui.QComboBox.__init__(self, parent)
+        QtWidgets.QComboBox.__init__(self, parent)
         self.model = QtGui.QStandardItemModel()
         self.state_item = QtGui.QStandardItem('all')
         self.state_item.setEnabled(False)
@@ -154,7 +154,7 @@ class MultiCombo(QtGui.QComboBox):
 
     def hidePopup(self):
         if not self.view().rect().contains(self.view().mapFromGlobal(QtGui.QCursor().pos())):
-            QtGui.QComboBox.hidePopup(self)
+            QtWidgets.QComboBox.hidePopup(self)
 
     def check(self, index):
         if index == 1:
@@ -188,10 +188,10 @@ class MultiCombo(QtGui.QComboBox):
     def wheelEvent(self, event):
         event.ignore()
 
-class PrintDialog(QtGui.QDialog):
+class PrintDialog(QtWidgets.QDialog):
     outside = QtCore.pyqtSignal(bool)
     def __init__(self, main, parent):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         load_ui(self, 'dialogs/print_library.ui')
         self.setModal(True)
         self.main = main
@@ -205,11 +205,11 @@ class PrintDialog(QtGui.QDialog):
         self.format_group.buttonClicked[int].connect(self.mode_set)
 
         self.text = ''
-        self.monotext = QtGui.QGraphicsTextItem(self.text)
-        self.output = QtGui.QPrinter()
-        self.output.setOutputFormat(QtGui.QPrinter.PdfFormat)
+        self.monotext = QtWidgets.QGraphicsTextItem(self.text)
+        self.output = QtPrintSupport.QPrinter()
+        self.output.setOutputFormat(QtPrintSupport.QPrinter.PdfFormat)
         self.output.setFontEmbeddingEnabled(True)
-        self.output.setPaperSize(QtGui.QPrinter.A4)
+        self.output.setPaperSize(QtPrintSupport.QPrinter.A4)
         pagefont = QtGui.QFont('Monospace')
         pagefont.setPixelSize(9)
         self.page = PrinterPageRect(self, self.output, pagefont)
@@ -221,24 +221,24 @@ class PrintDialog(QtGui.QDialog):
         self.ps_ids = {}
         ps_id = 0
         a4_id = None
-        for attr in dir(QtGui.QPrinter):
-            ps = getattr(QtGui.QPrinter, attr)
+        for attr in dir(QtPrintSupport.QPrinter):
+            ps = getattr(QtPrintSupport.QPrinter, attr)
             if attr == 'Custom': continue
-            if isinstance(ps, QtGui.QPrinter.PageSize):
+            if isinstance(ps, QtPrintSupport.QPrinter.PageSize):
                 page_sizes.append(attr)
                 self.ps_ids[ps_id] = ps
                 if attr == 'A4': a4_id = ps_id
                 ps_id += 1
-        self.ps_ids[len(page_sizes)] = QtGui.QPrinter.Custom
+        self.ps_ids[len(page_sizes)] = QtPrintSupport.QPrinter.Custom
         page_sizes.append('Custom')
         self.format_combo.addItems(page_sizes)
 
         self.format_combo.setCurrentIndex(a4_id)
         self.page.pageUpdate()
 
-        self.printview = QtGui.QGraphicsView()
+        self.printview = QtWidgets.QGraphicsView()
         self.gridLayout.addWidget(self.printview)
-        self.printscene = QtGui.QGraphicsScene()
+        self.printscene = QtWidgets.QGraphicsScene()
         self.printscene.addItem(self.monotext)
         self.monotext.hide()
         self.printscene.addItem(self.page)
@@ -303,7 +303,7 @@ class PrintDialog(QtGui.QDialog):
             self.printview.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
             self.printview.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
             self.printscene.removeItem(self.monotext)
-            self.monotext = QtGui.QGraphicsTextItem()
+            self.monotext = QtWidgets.QGraphicsTextItem()
             self.monotext.setPlainText(self.text.replace('\t\t', '        ').replace('\t', '    '))
             self.monotext.setFont(self.monofont)
             self.printscene.addItem(self.monotext)
@@ -326,7 +326,7 @@ class PrintDialog(QtGui.QDialog):
     def bank_selection_update(self, selection):
         self.bank_selection = selection
         self.redraw()
-        self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(True if selection else False)
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(True if selection else False)
 
     def compute(self, cols=1, vertical=False):
         text = 'Blofeld preset list:\n\n'
@@ -375,20 +375,20 @@ class PrintDialog(QtGui.QDialog):
     def exec_(self):
         self.show()
         self.redraw()
-        res = QtGui.QDialog.exec_(self)
+        res = QtWidgets.QDialog.exec_(self)
         if not res: return
         if self.mode == TEXT:
             while True:
-                file = QtGui.QFileDialog.getSaveFileName(self, 'Export to text file', QtCore.QDir.homePath()+'/blofeld_presets.txt', 'Text files (*.txt);;All files (*)')
+                file = QtWidgets.QFileDialog.getSaveFileName(self, 'Export to text file', QtCore.QDir.homePath()+'/blofeld_presets.txt', 'Text files (*.txt);;All files (*)')
                 if not file: return
                 try:
                     with open(file, 'wb') as of:
                         of.write(self.text)
                     break
                 except:
-                    QtGui.QMessageBox.critical(self, 'Error saving the file', 'There was a problem saving the file.\nBe sure to have write permissions and sufficient free space for the selected path.')
+                    QtWidgets.QMessageBox.critical(self, 'Error saving the file', 'There was a problem saving the file.\nBe sure to have write permissions and sufficient free space for the selected path.')
         while True:
-            file = QtGui.QFileDialog.getSaveFileName(self, 'Export to PDF file', QtCore.QDir.homePath()+'/blofeld_presets.pdf', 'PDF files (*.pdf);;All files (*)')
+            file = QtWidgets.QFileDialog.getSaveFileName(self, 'Export to PDF file', QtCore.QDir.homePath()+'/blofeld_presets.pdf', 'PDF files (*.pdf);;All files (*)')
             if not file: break
             try:
                 self.output.setOutputFileName(file)
@@ -396,7 +396,7 @@ class PrintDialog(QtGui.QDialog):
                 break
             except Exception as e:
                 print e
-                QtGui.QMessageBox.critical(self, 'Error saving the file', 'There was a problem saving the file.\nBe sure to have write permissions and sufficient free space for the selected path.')
+                QtWidgets.QMessageBox.critical(self, 'Error saving the file', 'There was a problem saving the file.\nBe sure to have write permissions and sufficient free space for the selected path.')
 
     def pdf_print(self):
         painter = QtGui.QPainter()

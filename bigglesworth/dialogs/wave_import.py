@@ -2,7 +2,7 @@
 # *-* coding: utf-8 *-*
 
 import wave, audioop
-from PyQt4 import QtGui, QtCore, QtMultimedia
+from PyQt5 import QtGui, QtCore, QtMultimedia, QtWidgets
 
 from bigglesworth.utils import load_ui
 
@@ -12,16 +12,16 @@ def secs2time(secs):
     return '{:02}\' {:02}" {:.03}'.format(int(min), intsec, str(sec-intsec)[2:])
 
 
-class WaveImportSceneView(QtGui.QGraphicsView):
+class WaveImportSceneView(QtWidgets.QGraphicsView):
     def __init__(self, *args, **kwargs):
-        QtGui.QGraphicsView.__init__(self, *args, **kwargs)
-        self.scene = QtGui.QGraphicsScene()
+        QtWidgets.QGraphicsView.__init__(self, *args, **kwargs)
+        self.scene = QtWidgets.QGraphicsScene()
         self.setScene(self.scene)
         self.setRenderHints(QtGui.QPainter.Antialiasing)
         self.setMinimumHeight(128)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.Fixed)
+        self.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Fixed)
         self.setBackgroundBrush(QtCore.Qt.lightGray)
         self.pen = QtGui.QPen(QtGui.QColor(QtCore.Qt.darkGray), 2)
 
@@ -112,11 +112,11 @@ class WaveImportSceneView(QtGui.QGraphicsView):
             self.wavepath = None
 
 
-class WavePanel(QtGui.QWidget):
+class WavePanel(QtWidgets.QWidget):
     isValid = QtCore.pyqtSignal(bool)
 
     def __init__(self, *args, **kwargs):
-        QtGui.QWidget.__init__(self, *args, **kwargs)
+        QtWidgets.QWidget.__init__(self, *args, **kwargs)
         load_ui(self, 'dialogs/wave_panel.ui')
         width = self.fontMetrics().width('8'*32)
         self.setMinimumWidth(width)
@@ -126,7 +126,7 @@ class WavePanel(QtGui.QWidget):
         self.output = None
         self.file = None
 
-        icon = self.style().standardIcon(QtGui.QStyle.SP_MessageBoxWarning)
+        icon = self.style().standardIcon(QtWidgets.QStyle.SP_MessageBoxWarning)
         self.info_icon.setPixmap(icon.pixmap(16, 16))
         self.info_icon.setVisible(False)
 
@@ -140,7 +140,7 @@ class WavePanel(QtGui.QWidget):
 
     def setWave(self, file):
         try:
-            wavestream = wave.open(str(file.toUtf8()))
+            wavestream = wave.open(file)
             self.file = file
             self.info_lbl.setText('')
         except wave.Error:
@@ -244,7 +244,12 @@ class WavePanel(QtGui.QWidget):
                 self.output.deleteLater()
             except:
                 pass
-        self.output = QtMultimedia.QAudioOutput(format, self)
+#        self.output = QtMultimedia.QAudioOutput(format, self)
+        devices = [d for d in QtMultimedia.QAudioDeviceInfo.availableDevices(QtMultimedia.QAudio.AudioOutput) if d.deviceName().startswith('sysdefault:')]
+        if devices:
+            self.output = QtMultimedia.QAudioOutput(devices[0], format, self)
+        else:
+            self.output = QtMultimedia.QAudioOutput(format, self)
         self.output.stateChanged.connect(self.stop)
         buffer = QtCore.QBuffer(self)
         data = QtCore.QByteArray()
@@ -263,21 +268,21 @@ class WavePanel(QtGui.QWidget):
             self.output.deleteLater()
 
 
-class WaveLoad(QtGui.QFileDialog):
+class WaveLoad(QtWidgets.QFileDialog):
     def __init__(self, main, *args, **kwargs):
-        QtGui.QFileDialog.__init__(self, *args, **kwargs)
+        QtWidgets.QFileDialog.__init__(self, *args, **kwargs)
         self.setDirectory(QtCore.QDir.homePath())
 #        self.setDirectory('/home/mauriziob/data/code/blofeld/test/')
         self.main = main
         self.setOption(self.DontUseNativeDialog)
         self.setAcceptMode(self.AcceptOpen)
         self.setFileMode(self.ExistingFile)
-        self.buttonBox = self.findChildren(QtGui.QDialogButtonBox)[0]
-        self.open_btn = [b for b in self.buttonBox.buttons() if self.buttonBox.buttonRole(b) == QtGui.QDialogButtonBox.AcceptRole][0]
+        self.buttonBox = self.findChildren(QtWidgets.QDialogButtonBox)[0]
+        self.open_btn = [b for b in self.buttonBox.buttons() if self.buttonBox.buttonRole(b) == QtWidgets.QDialogButtonBox.AcceptRole][0]
         self.setNameFilters(('Wave files (*.wav)', 'Any files (*)'))
-        self.setSidebarUrls([QtCore.QUrl.fromLocalFile(QtCore.QDir.homePath()), QtCore.QUrl.fromLocalFile(QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.MusicLocation))])
+        self.setSidebarUrls([QtCore.QUrl.fromLocalFile(QtCore.QDir.homePath()), QtCore.QUrl.fromLocalFile(QtCore.QStandardPaths.standardLocations(QtCore.QStandardPaths.MusicLocation)[0])])
 
-        self.splitter = self.findChildren(QtGui.QSplitter)[0]
+        self.splitter = self.findChildren(QtWidgets.QSplitter)[0]
         self.wave_panel = WavePanel(self)
         self.wave_panel.isValid.connect(self.open_enable)
         self.valid = False
@@ -288,7 +293,7 @@ class WaveLoad(QtGui.QFileDialog):
 
     def accept(self):
         if self.valid:
-            QtGui.QFileDialog.accept(self)
+            QtWidgets.QFileDialog.accept(self)
 
     def open_enable(self, state):
         self.valid = state
@@ -296,7 +301,7 @@ class WaveLoad(QtGui.QFileDialog):
             QtCore.QTimer.singleShot(0, lambda: self.open_btn.setEnabled(state))
 
     def exec_(self):
-        res = QtGui.QFileDialog.exec_(self)
+        res = QtWidgets.QFileDialog.exec_(self)
         if res:
             return self.selectedFiles()[0]
         return res

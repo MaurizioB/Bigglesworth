@@ -6,7 +6,7 @@ from threading import Lock
 from pyalsa import alsaseq
 #import alsaseq
 from time import *
-from PyQt4 import QtCore
+from PyQt5 import QtCore
 
 
 class Const(object):

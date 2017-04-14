@@ -2,7 +2,7 @@
 
 import urllib2
 from string import uppercase, ascii_letters
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 import midifile
 from bigglesworth.const import *
@@ -21,11 +21,11 @@ class VersionCheck(QtCore.QObject):
     def __init__(self, main):
         QtCore.QObject.__init__(self)
         self.main = main
+
+    def run(self):
         self.timer = QtCore.QTimer()
         self.timer.setInterval(30000)
         self.timer.timeout.connect(self.error.emit)
-
-    def run(self):
         self.timer.start()
         try:
             try:
@@ -235,7 +235,7 @@ class Library(QtCore.QObject):
         self.model.cleared.connect(self.clear)
         self.clear()
         self.sorted = SortedLibrary(self)
-        self.menu = None
+#        self.menu = None
 #        self.create_menu()
 
     def clear(self):
@@ -292,14 +292,14 @@ class Library(QtCore.QObject):
     def addSound(self, sound):
         self._addSound(sound)
         self.sort()
-        self.create_menu()
+#        self.create_menu()
 
     def addSoundBulk(self, sound_list):
         for sound in sound_list:
             self._addSound(sound)
         self.sort()
-        if self.menu:
-            self.create_menu()
+#        if self.menu:
+#            self.create_menu()
 
     def sort(self):
         delete_list = []
@@ -338,49 +338,49 @@ class Library(QtCore.QObject):
                 self.data[b] = full[delta:delta+128]
         self.sorted.reload()
 
-    def create_menu(self):
-        del self.menu
-        menu = QtGui.QMenu()
-        by_bank = QtGui.QMenu('By bank', menu)
-        menu.addMenu(by_bank)
-        for id, bank in enumerate(self.sorted.by_bank):
-            if not any(bank): continue
-            bank_menu = QtGui.QMenu(uppercase[id], by_bank)
-            by_bank.addMenu(bank_menu)
-            for sound in bank:
-                if sound is None: continue
-                item = QtGui.QAction('{:03} {}'.format(sound.prog+1, sound.name), bank_menu)
-                item.setData((sound.bank, sound.prog))
-                bank_menu.addAction(item)
-        by_cat = QtGui.QMenu('By category', menu)
-        menu.addMenu(by_cat)
-        for cid, cat in enumerate(categories):
-            cat_menu = QtGui.QMenu(by_cat)
-            by_cat.addMenu(cat_menu)
-            cat_len = 0
-            for sound in self.sorted.by_cat[cid]:
-                cat_len += 1
-                item = QtGui.QAction(sound.name, cat_menu)
-                item.setData((sound.bank, sound.prog))
-                cat_menu.addAction(item)
-            if not len(cat_menu.actions()):
-                cat_menu.setEnabled(False)
-            cat_menu.setTitle('{} ({})'.format(cat, cat_len))
-        by_alpha = QtGui.QMenu('Alphabetical', menu)
-        menu.addMenu(by_alpha)
-        for alpha in sorted(self.sorted.by_alpha.keys()):
-            alpha_menu = QtGui.QMenu(by_alpha)
-            by_alpha.addMenu(alpha_menu)
-            alpha_len = 0
-            for sound in self.sorted.by_alpha[alpha]:
-                alpha_len += 1
-                item = QtGui.QAction(sound.name, alpha_menu)
-                item.setData((sound.bank, sound.prog))
-                alpha_menu.addAction(item)
-            if not len(alpha_menu.actions()):
-                alpha_menu.setEnabled(False)
-            alpha_menu.setTitle('{} ({})'.format(alpha, alpha_len))
-        self.menu = menu
+#    def create_menu(self):
+#        del self.menu
+#        menu = QtWidgets.QMenu()
+#        by_bank = QtWidgets.QMenu('By bank', menu)
+#        menu.addMenu(by_bank)
+#        for id, bank in enumerate(self.sorted.by_bank):
+#            if not any(bank): continue
+#            bank_menu = QtWidgets.QMenu(uppercase[id], by_bank)
+#            by_bank.addMenu(bank_menu)
+#            for sound in bank:
+#                if sound is None: continue
+#                item = QtWidgets.QAction('{:03} {}'.format(sound.prog+1, sound.name), bank_menu)
+#                item.setData((sound.bank, sound.prog))
+#                bank_menu.addAction(item)
+#        by_cat = QtWidgets.QMenu('By category', menu)
+#        menu.addMenu(by_cat)
+#        for cid, cat in enumerate(categories):
+#            cat_menu = QtWidgets.QMenu(by_cat)
+#            by_cat.addMenu(cat_menu)
+#            cat_len = 0
+#            for sound in self.sorted.by_cat[cid]:
+#                cat_len += 1
+#                item = QtWidgets.QAction(sound.name, cat_menu)
+#                item.setData((sound.bank, sound.prog))
+#                cat_menu.addAction(item)
+#            if not len(cat_menu.actions()):
+#                cat_menu.setEnabled(False)
+#            cat_menu.setTitle('{} ({})'.format(cat, cat_len))
+#        by_alpha = QtWidgets.QMenu('Alphabetical', menu)
+#        menu.addMenu(by_alpha)
+#        for alpha in sorted(self.sorted.by_alpha.keys()):
+#            alpha_menu = QtWidgets.QMenu(by_alpha)
+#            by_alpha.addMenu(alpha_menu)
+#            alpha_len = 0
+#            for sound in self.sorted.by_alpha[alpha]:
+#                alpha_len += 1
+#                item = QtWidgets.QAction(sound.name, alpha_menu)
+#                item.setData((sound.bank, sound.prog))
+#                alpha_menu.addAction(item)
+#            if not len(alpha_menu.actions()):
+#                alpha_menu.setEnabled(False)
+#            alpha_menu.setTitle('{} ({})'.format(alpha, alpha_len))
+#        self.menu = menu
 
     def soundSetCategory(self, cat_item, bank, cat):
         cat_item.setData(cat, CatRole)
@@ -407,9 +407,9 @@ class LibraryModel(QtGui.QStandardItemModel):
         return self.item(index.row(), SOUND).data(SoundRole).toPyObject()
 
 
-class LibraryProxy(QtGui.QSortFilterProxyModel):
+class LibraryProxy(QtCore.QSortFilterProxyModel):
     def __init__(self, parent=None):
-        QtGui.QSortFilterProxyModel.__init__(self, parent)
+        QtCore.QSortFilterProxyModel.__init__(self, parent)
         self.setDynamicSortFilter(True)
         self.filter_columns = {}
         self.text_filter = None
@@ -418,7 +418,7 @@ class LibraryProxy(QtGui.QSortFilterProxyModel):
         if not text:
             self.text_filter = None
         else:
-            self.text_filter = text.toLower()
+            self.text_filter = text.lower()
         self.invalidateFilter()
 
     def setMultiFilter(self, column, index):
@@ -439,7 +439,7 @@ class LibraryProxy(QtGui.QSortFilterProxyModel):
             return False
         if not self.text_filter:
             return True
-        if self.text_filter in model.item(row, NAME).text().toLower():
+        if self.text_filter in model.item(row, NAME).text():
             return True
         return False
 
@@ -505,8 +505,9 @@ class SettingsGroup(object):
         self._settings = settings
         self._group = settings.group()
         for k in settings.childKeys():
-            value = settings.value(k).toPyObject()
-            if isinstance(value, QtCore.QStringList):
+#            value = settings.value(k).toPyObject()
+            value = settings.value(k)
+            if isinstance(value, list):
                 _value = []
                 for v in value:
                     try:
@@ -523,7 +524,7 @@ class SettingsGroup(object):
                         print e
                     _value.append(v)
                 value = _value
-            elif isinstance(value, QtCore.QString):
+            elif isinstance(value, unicode):
                 value = str(value)
                 if value == 'true':
                     value = True

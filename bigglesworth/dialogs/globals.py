@@ -2,7 +2,7 @@
 
 from collections import namedtuple
 from bisect import bisect_left
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 from bigglesworth.midiutils import SysExEvent
 from bigglesworth.utils import load_ui
@@ -15,13 +15,13 @@ popup_values = [None, .1, .2, .3, .4, .6, .7, .8, .9, 1.1, 1.2, 1.3, 1.4, 1.5, 1
                 14.1, 14.2, 14.3, 14.4, 14.5, 14.7, 14.8, 14.9, 15, 15.2, 15.3, 15.4, 15.5]
 
 
-class PopupSpin(QtGui.QDoubleSpinBox):
+class PopupSpin(QtWidgets.QDoubleSpinBox):
     indexChanged = QtCore.pyqtSignal(int)
     def __init__(self, parent):
         self.indexMinimum = 1
         self.indexMaximum = len(popup_values) - 1
         self.indexRange = self.indexMinimum, self.indexMaximum
-        QtGui.QDoubleSpinBox.__init__(self, parent)
+        QtWidgets.QDoubleSpinBox.__init__(self, parent)
         self.setRange(.1, 15.5)
         self.setSuffix('s')
         self.setDecimals(1)
@@ -44,16 +44,16 @@ class PopupSpin(QtGui.QDoubleSpinBox):
         self.setValue(popup_values[index])
 
     def validate(self, text, pos):
-        res = QtGui.QDoubleSpinBox.validate(self, text, pos)
+        res = QtWidgets.QDoubleSpinBox.validate(self, text, pos)
         if res in (QtGui.QValidator.Invalid, QtGui.QValidator.Intermediate):
             return res
-        new_value = QtGui.QDoubleSpinBox.valueFromText(self, text)
+        new_value = QtWidgets.QDoubleSpinBox.valueFromText(self, text)
         if not popup_values[self.indexMinimum] <= new_value <= popup_values[self.indexMaximum]:
             return QtGui.QValidator.Invalid, res[1]
         return res
 
     def valueFromText(self, text):
-        new_value = QtGui.QDoubleSpinBox.valueFromText(self, text)
+        new_value = QtWidgets.QDoubleSpinBox.valueFromText(self, text)
         pos = bisect_left(popup_values, new_value)
         if pos == 1:
             self.index = pos
@@ -73,12 +73,12 @@ class PopupSpin(QtGui.QDoubleSpinBox):
         self.indexChanged.emit(before)
         return before
 
-class Globals(QtGui.QDialog):
+class Globals(QtWidgets.QDialog):
     midi_event = QtCore.pyqtSignal(object)
     def __init__(self, main, parent):
         pt = namedtuple('pt', 'index delta')
         pt.__new__.__defaults__ = (0, )
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         load_ui(self, 'dialogs/globals.ui')
         self.setModal(True)
 
@@ -95,11 +95,11 @@ class Globals(QtGui.QDialog):
         self.midi_layout = self.midi_group.layout()
         self.layouts = self.general_layout, self.system_layout, self.midi_layout
 
-        self.resetBtn = self.buttonBox.button(QtGui.QDialogButtonBox.Reset)
+        self.resetBtn = self.buttonBox.button(QtWidgets.QDialogButtonBox.Reset)
         self.resetBtn.setText('Reload from Blofeld')
-        self.applyBtn = self.buttonBox.button(QtGui.QDialogButtonBox.Apply)
+        self.applyBtn = self.buttonBox.button(QtWidgets.QDialogButtonBox.Apply)
         self.applyBtn.clicked.connect(self.send_data)
-        self.okBtn = self.buttonBox.button(QtGui.QDialogButtonBox.Ok)
+        self.okBtn = self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
         self.accepted.connect(self.check_changes)
         self.main.input_conn_state_change.connect(self.conn_check)
         self.main.output_conn_state_change.connect(self.conn_check)
@@ -130,11 +130,11 @@ class Globals(QtGui.QDialog):
                            self.ctrlZ_spin: pt(54), 
                            }
         for w in self.param_dict:
-            if isinstance(w, QtGui.QSpinBox):
+            if isinstance(w, QtWidgets.QSpinBox):
                 w.valueChanged.connect(self.editData)
             elif isinstance(w, PopupSpin):
                 w.indexChanged.connect(self.editData)
-            elif isinstance(w, QtGui.QComboBox):
+            elif isinstance(w, QtWidgets.QComboBox):
                 w.currentIndexChanged.connect(self.editData)
             else:
                 w.toggled.connect(self.editData)
@@ -179,11 +179,11 @@ class Globals(QtGui.QDialog):
 #                if v != data[i]:
 #                    print 'value {} changed from {} to {}'.format(i, v, data[i])
         for w, p in self.param_dict.items():
-            if isinstance(w, QtGui.QSpinBox):
+            if isinstance(w, QtWidgets.QSpinBox):
                 w.setValue(data[p.index] + p.delta)
             elif isinstance(w, PopupSpin):
                 w.setIndex(data[p.index])
-            elif isinstance(w, QtGui.QComboBox):
+            elif isinstance(w, QtWidgets.QComboBox):
                 w.setCurrentIndex(data[p.index])
             else:
                 w.setChecked(data[p.index])

@@ -1,4 +1,4 @@
-from PyQt4 import QtCore
+from PyQt5 import QtCore
 from pyalsa import alsaseq
 
 from midiutils import *

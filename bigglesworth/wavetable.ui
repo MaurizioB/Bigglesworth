@@ -286,7 +286,16 @@
               <item>
                <widget class="QWidget" name="bal_panel" native="true">
                 <layout class="QGridLayout" name="gridLayout_4">
-                 <property name="margin">
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
                   <number>0</number>
                  </property>
                  <item row="1" column="1">
@@ -750,6 +759,33 @@
            </widget>
           </item>
           <item>
+           <widget class="Line" name="line_3">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_10">
+            <property name="text">
+             <string>Volume</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSlider" name="volume_slider">
+            <property name="maximum">
+             <number>100</number>
+            </property>
+            <property name="value">
+             <number>100</number>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
            <spacer name="horizontalSpacer_3">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
@@ -888,7 +924,7 @@
      <x>0</x>
      <y>0</y>
      <width>869</width>
-     <height>17</height>
+     <height>16</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -1004,8 +1040,8 @@
      <y>297</y>
     </hint>
     <hint type="destinationlabel">
-     <x>434</x>
-     <y>343</y>
+     <x>-1</x>
+     <y>-1</y>
     </hint>
    </hints>
   </connection>

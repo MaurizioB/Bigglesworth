@@ -1,6 +1,6 @@
 # *-* coding: utf-8 *-*
 
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 from bigglesworth.const import categories, CatRole, local_path
 
@@ -171,15 +171,15 @@ class RightCursorClass(DirCursorClass):
         DirCursorClass.__init__(self, pixmap, 8, 8)
 
 
-class NameDelegate(QtGui.QStyledItemDelegate):
+class NameDelegate(QtWidgets.QStyledItemDelegate):
     def __init__(self, parent=None):
-        QtGui.QStyledItemDelegate.__init__(self, parent)
+        QtWidgets.QStyledItemDelegate.__init__(self, parent)
         self.commitData.connect(self.set_data)
 
     def createEditor(self, parent, option, index):
         self.proxy = index.model()
         self.index = self.proxy.mapToSource(index)
-        edit = QtGui.QLineEdit(parent)
+        edit = QtWidgets.QLineEdit(parent)
         edit.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp('[\x20-\x7f°]*')))
         edit.setMaxLength(16)
         return edit
@@ -188,15 +188,15 @@ class NameDelegate(QtGui.QStyledItemDelegate):
         self.index.model().sound(self.index).name = str(widget.text().toUtf8())
 
 
-class CategoryDelegate(QtGui.QStyledItemDelegate):
+class CategoryDelegate(QtWidgets.QStyledItemDelegate):
     def __init__(self, parent=None):
-        QtGui.QStyledItemDelegate.__init__(self, parent)
+        QtWidgets.QStyledItemDelegate.__init__(self, parent)
         self.commitData.connect(self.set_data)
 
     def createEditor(self, parent, option, index):
         self.proxy = index.model()
         self.index = self.proxy.mapToSource(index)
-        combo = QtGui.QComboBox(parent)
+        combo = QtWidgets.QComboBox(parent)
         model = QtGui.QStandardItemModel()
         [model.appendRow(QtGui.QStandardItem(cat)) for cat in categories]
         combo.setModel(model)

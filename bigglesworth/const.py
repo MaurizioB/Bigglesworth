@@ -4,7 +4,7 @@
 import pickle
 from os import path
 from collections import namedtuple
-from PyQt4 import QtCore
+from PyQt5 import QtCore
 from bigglesworth import version
 
 def local_path(name):
@@ -313,7 +313,7 @@ note_keys = [
              '+', 
              ]
 
-note_keys = [QtCore.QString().fromUtf8(key) for key in note_keys]
+#note_keys = [QtCore.QString().fromUtf8(key) for key in note_keys]
 
 init_sound_data = [0, 0, 
                    1, 64, 64, 64, 66, 96, 0, 0, 2, 127, 1, 64, 0, 0, 0, 0, 0, 64, 64, 64, 66, 

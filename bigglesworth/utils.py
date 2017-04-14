@@ -1,5 +1,5 @@
 from os import path
-from PyQt4 import QtCore, uic
+from PyQt5 import QtCore, uic
 from bigglesworth.const import status_dict, cursor_list
 
 def get_next_cycle(cycle_obj):

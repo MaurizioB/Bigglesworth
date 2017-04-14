@@ -4,7 +4,7 @@ from os import stat as file_stat
 from os.path import exists as file_exists
 from string import uppercase
 from collections import OrderedDict
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 from bigglesworth.utils import load_ui
 from bigglesworth.classes import Sound
@@ -17,26 +17,26 @@ sources = {
            }
 WidgetRole = QtCore.Qt.UserRole + 1
 
-class GrowingLineEdit(QtGui.QLineEdit):
+class GrowingLineEdit(QtWidgets.QLineEdit):
     def __init__(self, *args, **kwargs):
-        QtGui.QLineEdit.__init__(self, *args, **kwargs)
+        QtWidgets.QLineEdit.__init__(self, *args, **kwargs)
 
     def setText(self, text):
-        QtGui.QLineEdit.setText(self, text)
+        QtWidgets.QLineEdit.setText(self, text)
         self.setMinimumWidth(self.fontMetrics().boundingRect(text).width() + 8)
 
 
-class SummaryWidget(QtGui.QSplitter):
+class SummaryWidget(QtWidgets.QSplitter):
     def __init__(self, *args, **kwargs):
-        QtGui.QSplitter.__init__(self, *args, **kwargs)
+        QtWidgets.QSplitter.__init__(self, *args, **kwargs)
         self.setOrientation(QtCore.Qt.Horizontal)
         self.setChildrenCollapsible(False)
-        self.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.MinimumExpanding)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.MinimumExpanding)
 
-        self.tree = QtGui.QTreeView()
+        self.tree = QtWidgets.QTreeView()
         self.eater = False
         self.addWidget(self.tree)
-        self.tree.setEditTriggers(QtGui.QTreeView.NoEditTriggers)
+        self.tree.setEditTriggers(QtWidgets.QTreeView.NoEditTriggers)
         self.tree.setExpandsOnDoubleClick(False)
         self.tree.setHeaderHidden(True)
         self.tree.setTextElideMode(QtCore.Qt.ElideNone)
@@ -45,10 +45,10 @@ class SummaryWidget(QtGui.QSplitter):
         self.tree.clicked.connect(self.param_select)
         self.tree.currentChanged = self.param_select
 
-        self.param_widget = QtGui.QWidget()
+        self.param_widget = QtWidgets.QWidget()
         self.addWidget(self.param_widget)
         self.build_summary()
-        self.tree.header().setResizeMode(QtGui.QHeaderView.ResizeToContents)
+        self.tree.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         self.tree.expandAll()
         self.tree.setMinimumWidth(self.tree.sizeHintForColumn(0))
         self.tree.collapseAll()
@@ -109,21 +109,21 @@ class SummaryWidget(QtGui.QSplitter):
                     add_param(p.family, p)
             else:
                 add_param('Common', p)
-        stack = QtGui.QStackedLayout()
+        stack = QtWidgets.QStackedLayout()
         self.param_widget.setLayout(stack)
-        self.empty_params = QtGui.QWidget()
+        self.empty_params = QtWidgets.QWidget()
         stack.addWidget(self.empty_params)
 
         def create_view(name, params):
-            widget = QtGui.QGroupBox(name)
+            widget = QtWidgets.QGroupBox(name)
             stack.addWidget(widget)
-            widget.setLayout(QtGui.QVBoxLayout())
-            scroll = QtGui.QScrollArea(widget)
+            widget.setLayout(QtWidgets.QVBoxLayout())
+            scroll = QtWidgets.QScrollArea(widget)
             scroll.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
             widget.layout().addWidget(scroll)
-            scroll_widget = QtGui.QWidget(scroll)
+            scroll_widget = QtWidgets.QWidget(scroll)
             scroll.setWidget(scroll_widget)
-            layout = QtGui.QFormLayout()
+            layout = QtWidgets.QFormLayout()
             layout.setFormAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
             scroll_widget.setLayout(layout)
             for param in params:
@@ -132,7 +132,7 @@ class SummaryWidget(QtGui.QSplitter):
                 edit.setMinimumWidth(64)
                 layout.addRow('{}:'.format(param.name), edit)
                 self.param_objects[Params.index_from_attr(param.attr)] = (param, edit)
-            layout.setSizeConstraint(QtGui.QFormLayout.SetMinAndMaxSize)
+            layout.setSizeConstraint(QtWidgets.QFormLayout.SetMinAndMaxSize)
             return widget, layout.minimumSize().width()
 
         param_width = 0
@@ -164,7 +164,7 @@ class SummaryWidget(QtGui.QSplitter):
         self.tree.scrollTo(index)
         widget = index.data(WidgetRole).toPyObject()
         empty = False
-        if isinstance(widget, QtGui.QGroupBox):
+        if isinstance(widget, QtWidgets.QGroupBox):
             self.param_widget.layout().setCurrentWidget(widget)
         else:
 #            self.param_widget.layout().setCurrentWidget(self.empty_params)
@@ -199,11 +199,12 @@ class SummaryWidget(QtGui.QSplitter):
 
 
 
-class FileLabel(QtGui.QLabel):
-    dots = QtCore.QString.fromUtf8('…')
+class FileLabel(QtWidgets.QLabel):
+#    dots = QtCore.QString.fromUtf8('…')
+    dots = u'…'
 
     def __init__(self, *args, **kwargs):
-        QtGui.QLabel.__init__(self, *args, **kwargs)
+        QtWidgets.QLabel.__init__(self, *args, **kwargs)
         self.font_metrics = QtGui.QFontMetrics(self.font())
 
     def setEllipsisText(self, text):
@@ -224,47 +225,47 @@ class FileLabel(QtGui.QLabel):
         self.setText(text)
 
 
-class SummaryDialog(QtGui.QDialog):
+class SummaryDialog(QtWidgets.QDialog):
     dump_send = QtCore.pyqtSignal(object)
 
     def __init__(self, main, parent):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         load_ui(self, 'dialogs/summary.ui')
         self.main = main
 
-        dump_btn = QtGui.QPushButton('Dump')
+        dump_btn = QtWidgets.QPushButton('Dump')
         dump_btn.clicked.connect(self.sound_dump)
-        dump_btn.setIcon(self.style().standardIcon(QtGui.QStyle.SP_ArrowRight))
-        self.buttonBox.addButton(dump_btn, QtGui.QDialogButtonBox.ActionRole)
+        dump_btn.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_ArrowRight))
+        self.buttonBox.addButton(dump_btn, QtWidgets.QDialogButtonBox.ActionRole)
 
         dial_icon = QtGui.QIcon()
         dial_icon.addFile(local_path('dial_icon.png'))
-        edit_btn = QtGui.QPushButton('Edit')
+        edit_btn = QtWidgets.QPushButton('Edit')
         edit_btn.clicked.connect(self.sound_edit)
         edit_btn.setIcon(dial_icon)
-        self.buttonBox.addButton(edit_btn, QtGui.QDialogButtonBox.AcceptRole)
+        self.buttonBox.addButton(edit_btn, QtWidgets.QDialogButtonBox.AcceptRole)
 
         self.bank_combo.addItems([uppercase[l] for l in range(8)])
         self.import_btn.clicked.connect(self.open)
-        self.buttonBox.button(QtGui.QDialogButtonBox.Discard).clicked.connect(self.reject)
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.Discard).clicked.connect(self.reject)
         self.summary_widget.setFocus()
 
 
     def open(self):
         while True:
-            file = QtGui.QFileDialog.getOpenFileName(self, 'Open SysEx sound file', QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.HomeLocation), 'SysEx files (*.syx);;All files (*)')
+            file = QtWidgets.QFileDialog.getOpenFileName(self, 'Open SysEx sound file', QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.HomeLocation), 'SysEx files (*.syx);;All files (*)')
             if not file: return
             if not file_exists(str(file)):
-                QtGui.QMessageBox.warning(self, 'File does not exists', 'The selected does not exist.\nCheck the file name and path.')
+                QtWidgets.QMessageBox.warning(self, 'File does not exists', 'The selected does not exist.\nCheck the file name and path.')
             elif file_stat(file).st_size != 392:
-                QtGui.QMessageBox.warning(self, 'Wrong file size', 'The selected file does not seem to be a Blofeld Sound file.\nTry with another file.')
+                QtWidgets.QMessageBox.warning(self, 'Wrong file size', 'The selected file does not seem to be a Blofeld Sound file.\nTry with another file.')
             else:
                 try:
                     with open(file, 'rb') as sf:
                         sysex = list(ord(i) for i in sf.read())
                     break
                 except:
-                    QtGui.QMessageBox.warning(self, 'Unexpected error', 'Something is wrong with the selected file...\nTry with another one.')
+                    QtWidgets.QMessageBox.warning(self, 'Unexpected error', 'Something is wrong with the selected file...\nTry with another one.')
         self.show()
         self.setSound(Sound(sysex[5:-2]), source=file)
 
@@ -284,12 +285,12 @@ class SummaryDialog(QtGui.QDialog):
             self.dump_send.emit(self.sound)
             self.accept()
         else:
-            res = QtGui.QMessageBox.warning(
+            res = QtWidgets.QMessageBox.warning(
                                        self, 'Confirm sound dump', 
                                        'You are about to dump a sound to the Blofeld\'s memory at index {}{:03}, overwriting the existing sound.\n\nDo you want to proceed?'.format(uppercase[self.bank_combo.currentIndex()], self.prog_spin.value()), 
-                                       QtGui.QMessageBox.Ok|QtGui.QMessageBox.Cancel
+                                       QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel
                                        )
-            if res == QtGui.QMessageBox.Ok:
+            if res == QtWidgets.QMessageBox.Ok:
                 self.sound.bank = self.bank_combo.currentIndex()
                 self.sound.prog = self.prog_spin.value() - 1
                 self.dump_send.emit(self.sound)

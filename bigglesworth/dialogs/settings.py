@@ -1,10 +1,10 @@
 # *-* coding: utf-8 *-*
 
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtWidgets
 from bigglesworth.utils import load_ui
 from bigglesworth.const import PGMSEND, MIDISEND
 
-class SettingsDialog(QtGui.QDialog):
+class SettingsDialog(QtWidgets.QDialog):
     preset_texts = {
                     '201200': 'Latest official version', 
                     '200802': 'Same as January 2008, with slight modifications (mostly regarding Amp Volume)', 
@@ -12,7 +12,7 @@ class SettingsDialog(QtGui.QDialog):
                     'personal': '', 
                     }
     def __init__(self, main, parent):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         load_ui(self, 'dialogs/settings.ui')
         self.main = main
         self.settings = main.settings
@@ -37,14 +37,14 @@ class SettingsDialog(QtGui.QDialog):
         self.broadcast_chk.toggled.connect(self.set_broadcast)
         self.deviceID_detect_btn.clicked.connect(self.detect)
         self.main.midi_duplex_state_change.connect(self.deviceID_detect_btn.setEnabled)
-        self.detect_msgbox = QtGui.QMessageBox(QtGui.QMessageBox.Information, 'Detecting Device ID', 'Waiting for the Blofeld to reply, please wait...', QtGui.QMessageBox.Abort, self)
+        self.detect_msgbox = QtWidgets.QMessageBox(QtWidgets.QMessageBox.Information, 'Detecting Device ID', 'Waiting for the Blofeld to reply, please wait...', QtWidgets.QMessageBox.Abort, self)
 
         self.detect_timer = QtCore.QTimer()
         self.detect_timer.setInterval(5000)
         self.detect_timer.setSingleShot(True)
         self.detect_timer.timeout.connect(self.no_response)
 
-        self.no_response_msgbox = QtGui.QMessageBox(QtGui.QMessageBox.Warning, 'No response', 'We got no response from the Blofeld.\nPlease check MIDI connections or try to switch it off and on again.', QtGui.QMessageBox.Ok, self)
+        self.no_response_msgbox = QtWidgets.QMessageBox(QtWidgets.QMessageBox.Warning, 'No response', 'We got no response from the Blofeld.\nPlease check MIDI connections or try to switch it off and on again.', QtWidgets.QMessageBox.Ok, self)
 
     def editor_appearance_groups_check(self, btn):
         if all([self.adv_last_radio.isChecked(), self.arp_last_radio.isChecked()]):
@@ -131,7 +131,7 @@ class SettingsDialog(QtGui.QDialog):
         self.remember_connections_chk.setChecked(self.main.remember_connections)
 
         #EXEC
-        res = QtGui.QDialog.exec_(self)
+        res = QtWidgets.QDialog.exec_(self)
         if not res: return
 
         self.main.library_doubleclick = self.library_doubleclick_combo.currentIndex()

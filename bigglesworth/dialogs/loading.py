@@ -1,16 +1,16 @@
 # *-* coding: utf-8 *-*
 
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtWidgets
 
-class LoadingWindow(QtGui.QDialog):
+class LoadingWindow(QtWidgets.QDialog):
     shown = QtCore.pyqtSignal()
     def __init__(self, parent=None):
         self.main = parent
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         self.setWindowTitle('Presets loading...')
         self.setModal(True)
-        grid = QtGui.QGridLayout(self)
-        loading_lbl = QtGui.QLabel('Loading local presets, please wait')
+        grid = QtWidgets.QGridLayout(self)
+        loading_lbl = QtWidgets.QLabel('Loading local presets, please wait')
         grid.addWidget(loading_lbl, 0, 0)
         self.loading = False
 

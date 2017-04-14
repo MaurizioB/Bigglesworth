@@ -1,32 +1,33 @@
 # *-* coding: utf-8 *-*
 
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 from bigglesworth.const import ClientRole, PortRole
 from bigglesworth.utils import setBold
 
-class MidiWidget(QtGui.QWidget):
+class MidiWidget(QtWidgets.QWidget):
     def __init__(self, main):
-        QtGui.QDialog.__init__(self, parent=None)
+        QtWidgets.QDialog.__init__(self, parent=None)
         self.main = main
 
-        layout = QtGui.QGridLayout()
+        layout = QtWidgets.QGridLayout()
         self.setLayout(layout)
-        self.input_lbl = QtGui.QLabel('INPUT')
+        self.input_lbl = QtWidgets.QLabel('INPUT')
         layout.addWidget(self.input_lbl, 0, 0, QtCore.Qt.AlignHCenter)
-        self.input_listview = QtGui.QListView(self)
+        self.input_listview = QtWidgets.QListView(self)
         self.input_listview.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.input_listview.setEditTriggers(QtGui.QListView.NoEditTriggers)
+        self.input_listview.setEditTriggers(QtWidgets.QListView.NoEditTriggers)
         layout.addWidget(self.input_listview, 1, 0)
-        line = QtGui.QFrame()
-        line.setFrameShape(QtGui.QFrame.VLine)
+        line = QtWidgets.QFrame()
+        line.setFrameShadow(QtWidgets.QFrame.Sunken)
+        line.setFrameShape(QtWidgets.QFrame.VLine)
         layout.addWidget(line, 0, 1, 2, 1)
-        self.output_lbl = QtGui.QLabel('OUTPUT')
+        self.output_lbl = QtWidgets.QLabel('OUTPUT')
         layout.addWidget(self.output_lbl, 0, 2, QtCore.Qt.AlignHCenter)
-        self.output_listview = QtGui.QListView(self)
+        self.output_listview = QtWidgets.QListView(self)
         self.output_listview.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.output_listview.setEditTriggers(QtGui.QListView.NoEditTriggers)
+        self.output_listview.setEditTriggers(QtWidgets.QListView.NoEditTriggers)
         layout.addWidget(self.output_listview, 1, 2)
-        self.refresh_btn = QtGui.QPushButton('Refresh')
+        self.refresh_btn = QtWidgets.QPushButton('Refresh')
         layout.addWidget(self.refresh_btn, 2, 0, 1, 3)
 
         self.graph = self.main.graph
@@ -42,7 +43,8 @@ class MidiWidget(QtGui.QWidget):
         self.output_listview.customContextMenuRequested.connect(self.port_menu)
 
     def _get_port_from_item_data(self, model, index):
-        return self.graph.port_id_dict[model.data(index, ClientRole).toInt()[0]][model.data(index, PortRole).toInt()[0]]
+#        return self.graph.port_id_dict[model.data(index, ClientRole).toInt()[0]][model.data(index, PortRole).toInt()[0]]
+        return self.graph.port_id_dict[model.data(index, ClientRole)][model.data(index, PortRole)]
 
     def showEvent(self, event):
         if self.input_model.rowCount():
@@ -61,24 +63,24 @@ class MidiWidget(QtGui.QWidget):
             port = self._get_port_from_item_data(model, index)
             if (sender == self.input_listview and self.input in [conn.dest for conn in port.connections.output]) or\
                 (sender == self.output_listview and self.output in [conn.src for conn in port.connections.input]):
-                disconnect_action = QtGui.QAction('Disconnect', self)
+                disconnect_action = QtWidgets.QAction('Disconnect', self)
                 disconnect_action.triggered.connect(lambda: self.port_connect_toggle(index, sender))
                 actions.append(disconnect_action)
             else:
-                connect_action = QtGui.QAction('Connect', self)
+                connect_action = QtWidgets.QAction('Connect', self)
                 connect_action.triggered.connect(lambda: self.port_connect_toggle(index, sender))
                 actions.append(connect_action)
-            sep = QtGui.QAction(self)
+            sep = QtWidgets.QAction(self)
             sep.setSeparator(True)
             actions.append(sep)
-        disconnect_all_action = QtGui.QAction('Disconnect all', self)
+        disconnect_all_action = QtWidgets.QAction('Disconnect all', self)
         actions.append(disconnect_all_action)
         if sender == self.input_listview:
             disconnect_all_action.triggered.connect(lambda: self.input.disconnect_all())
         elif sender == self.output_listview:
             disconnect_all_action.triggered.connect(lambda: self.output.disconnect_all())
 
-        menu = QtGui.QMenu()
+        menu = QtWidgets.QMenu()
         menu.addActions(actions)
         menu.exec_(sender.mapToGlobal(pos))
 
@@ -173,15 +175,15 @@ class MidiWidget(QtGui.QWidget):
                 cx_txt += ' ({} connections)'.format(n_conn)
             lbl.setText(cx_txt)
 
-class MidiDialog(QtGui.QDialog):
+class MidiDialog(QtWidgets.QDialog):
     def __init__(self, main, parent):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         self.main = main
         self.setModal(True)
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         self.setLayout(layout)
 
     def show(self):
         self.layout().addWidget(self.main.midiwidget)
-        QtGui.QDialog.show(self)
+        QtWidgets.QDialog.show(self)
 
