@@ -22,7 +22,7 @@ def process_args():
     parser.add_argument('-s', '--sysex', help='Print output SysEx messages to the terminal', action='store_true')
     parser.add_argument('-l', '--library-limit', metavar='N', type=int, help='Limit library to N sounds')
     parser.add_argument('-w', '--wavetable', metavar='WTFILE', nargs='?', const=True, help='Open Wavetable editor (with optional WTFILE)')
-    parser.add_argument('-e', '--editor', action='store_true')
+    parser.add_argument('-e', '--editor', help='Open Editor window', action='store_true')
     return parser.parse_args()
 
 class BigglesworthObject(QtCore.QObject):
@@ -34,9 +34,10 @@ class BigglesworthObject(QtCore.QObject):
     input_conn_state_change = QtCore.pyqtSignal(int)
     output_conn_state_change = QtCore.pyqtSignal(int)
     midi_duplex_state_change = QtCore.pyqtSignal(bool)
-    def __init__(self, app, args):
+    def __init__(self, app, msg_handler, args):
         QtCore.QObject.__init__(self)
         self.app = app
+        self.msg_handler = msg_handler
         self.qsettings = QtCore.QSettings()
         self.settings = SettingsObj(self.qsettings)
 
@@ -1094,12 +1095,14 @@ def main():
     args = process_args()
     argv = sys.argv[:]
     argv[0] = 'Bigglesworth'
+    msg_handler = MessageHandler()
+    QtCore.qInstallMessageHandler(msg_handler.Handler)
     app = QtWidgets.QApplication(argv)
     app.setOrganizationName('jidesk')
     app.setApplicationName('Bigglesworth')
 #    app.setQuitOnLastWindowClosed(False)
     cursor_list.extend((QtCore.Qt.SizeAllCursor, UpCursorClass(), DownCursorClass(), LeftCursorClass(), RightCursorClass()))
-    BigglesworthObject(app, args)
+    BigglesworthObject(app, msg_handler, args)
     sys.exit(app.exec_())
     print 'Blofix has been quit!'
 

@@ -2,11 +2,27 @@
 
 import urllib2
 from string import uppercase, ascii_letters
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtGui
 
 import midifile
 from bigglesworth.const import *
 from bigglesworth import version
+
+
+class MessageHandler(QtCore.QObject):
+    pulseAudioWarning = QtCore.pyqtSignal(str)
+
+    def Handler(self, msg_type, context, msg):
+        #ignore warning for "non standard" widgets as QDial
+        #original message: 'QGradient::setColorAt: Color position must be specified in the range 0 to 1'
+        if 'QGradient::setColorAt:' in msg:
+            return
+        elif msg.startswith('PulseAudioService'):
+            print 'PulseAudio warning (ignored)'
+            self.pulseAudioWarning.emit(msg)
+        else:
+            print msg
+
 
 class VersionCheck(QtCore.QObject):
     url = 'https://github.com/MaurizioB/Bigglesworth/raw/master/bigglesworth/version.py'
