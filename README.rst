@@ -5,16 +5,16 @@ Bigglesworth
    :target: https://cloud.githubusercontent.com/assets/523596/23536073/e25f7e08-ffc2-11e6-9af5-dfd48cd2e906.jpg
    :alt: Screenshot
 
-Bigglesworth is a GNU/Linux editor and librarian for the Waldorf Blofeld 
-synthesizer.
+Bigglesworth is an editor and librarian for the Waldorf Blofeld synthesizer.
 
-This is an early version, some of the features are not available yet.
+This is a pre-release version, some of the features are not available yet.
 
 Features
 --------
 
 Features in *italics* are still under development
 
+- Works on Linux and Windows (Windows releases are experimental)
 - Direct sound parameter editing
 - Virtual keyboard (with input from the computer keyboard)
 - Dumping sounds from Blofeld
@@ -24,22 +24,34 @@ Features in *italics* are still under development
 - Import sounds from .syx files
 - Wavetable editor
 
-Requirements
-------------
+Linux requirements
+------------------
 
 -  Python 2.7
 -  PyQt4 >= 4.11.1
 -  pyalsa
 
-Usage
------
+Windows requirements
+--------------------
 
-There is not an installation procedure yet, just run the script in the
+- Windows XP with Visual C++ 2008 SP (usually already installed)
+
+
+Installation
+------------
+
+There is not an installation procedure yet for Linux, just clone the repository
+and run the script in the
 main directory:
 
 ::
 
     $ ./Bigglesworth
+
+For Windows, just visit the Releases_ page.
+
+Usage
+-----
 
 A small window will show, listing the latest version of the presets from
 Waldorf, from here you can edit a sound by right clicking on it.
@@ -89,10 +101,9 @@ Known issues
 Since I'm still in the middle of the development, a lot of (unexpected)
 things still happen... Anyway.
 
+- Windows releases are still buggy
+- widgets in the Editor window are ugly on HiDPI screens
 - some scaled dials don't look very good
-- the base font family might not be installed on your system, I'm still 
-  looking for the best font for the interface, then I'll include in the
-  repository 
 - the whole Editor window layout is temporary and resizing is allowed. This
   means that the controls can look ugly and in unexpected places
 - the Librarian doesn't know the current sound if you don't manually change it 
@@ -101,3 +112,4 @@ things still happen... Anyway.
   If you want to edit a sound coming from the Blofeld, you have to select it by
   changing at least 2 sounds from it (I suppose it's a firmware bug).
 
+.. _Releases: https://github.com/MaurizioB/Bigglesworth/releases 
