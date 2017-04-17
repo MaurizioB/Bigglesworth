@@ -209,7 +209,7 @@ class Label(QtGui.QWidget):
         QtGui.QWidget.__init__(self, parent)
         self.text = text
         self.text_align = text_align
-        self.font = QtGui.QFont('Decorative', 9, QtGui.QFont.Bold)
+        self.font = QtGui.QFont('Droid Sans', 9, QtGui.QFont.Bold)
         self.font_metrics = QtGui.QFontMetrics(self.font)
         text_split = text.split('\n')
         text_height = self.font_metrics.height()*len(text_split)
@@ -655,7 +655,7 @@ class Slider(QtGui.QAbstractSlider):
 
     def __init__(self, parent, orientation=VERTICAL, inverted=True, min_value=0, max_value=127, step=1, value=None, default=None, name='', label_pos=BOTTOM, center=False, show_bar=True, scale=False, gradient=False, size=None, min_size=None, max_size=None):
         QtGui.QAbstractSlider.__init__(self, parent)
-        self.label_font = QtGui.QFont('Decorative', 9, QtGui.QFont.Bold)
+        self.label_font = QtGui.QFont('Droid Sans', 9, QtGui.QFont.Bold)
         self.label_font_metrics = QtGui.QFontMetrics(self.label_font)
         self.setRange(min_value, max_value)
         self.setOrientation(orientation)
@@ -968,7 +968,7 @@ class SquareButton(QtGui.QAbstractButton):
 
     def __init__(self, parent=None, name='', inverted=False, color=color, checkable=False, checked=False, size=None, text_align=None, label_pos=label_pos):
         QtGui.QAbstractButton.__init__(self, parent=parent)
-        self.label_font = QtGui.QFont('Decorative', 9, QtGui.QFont.Bold)
+        self.label_font = QtGui.QFont('Droid Sans', 9, QtGui.QFont.Bold)
         self.label_font_metrics = QtGui.QFontMetrics(self.label_font)
         self.setMinimumSize(self.base_width, self.base_height)
         self.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
@@ -1212,7 +1212,7 @@ class Frame(QtGui.QWidget):
     border_pen = QtGui.QPen(border_grad, 1)
     def __init__(self, parent, title='', padding=1, ratio=1., ani_range=5):
         QtGui.QWidget.__init__(self, parent)
-        self.font = QtGui.QFont('Decorative', 14, QtGui.QFont.Bold)
+        self.font = QtGui.QFont('Droid Sans', 14, QtGui.QFont.Bold)
         self.font_metrics = QtGui.QFontMetrics(self.font)
         self.setFocusPolicy(QtCore.Qt.ClickFocus)
         self.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.Preferred)
@@ -1390,7 +1390,7 @@ class Envelope(QtGui.QWidget):
     fgd_brush = QtGui.QBrush(QtGui.QColor(240, 250, 250))
     label_fgd = QtGui.QColor(QtCore.Qt.darkGray)
     label_bgd = QtGui.QColor(240, 240, 240, 200)
-    label_font = QtGui.QFont('Decorative', 10, QtGui.QFont.Bold)
+    label_font = QtGui.QFont('Droid Sans', 10, QtGui.QFont.Bold)
     attackChanged = QtCore.pyqtSignal(int)
     attackLevelChanged = QtCore.pyqtSignal(int)
     decayChanged = QtCore.pyqtSignal(int)
@@ -1421,7 +1421,7 @@ class Envelope(QtGui.QWidget):
         self.release_end = None
         self.envelope = None
         self.current_cursor = self.current_delta = self.hover_point = None
-        self.font_metrics = QtGui.QFontMetrics(QtGui.QFont('Decorative', 10, QtGui.QFont.Bold))
+        self.font_metrics = QtGui.QFontMetrics(QtGui.QFont('Droid Sans', 10, QtGui.QFont.Bold))
         self.create_cursors()
         self.reset_envelope()
         self.env_rect = QtCore.QRectF(12, 4, self.width()-25, self.height()-9)
@@ -2073,8 +2073,8 @@ class ListView(QtGui.QListView):
 #    combo_rect = QtCore.QRectF(0, 0, 1, 1)
 #    combo_text_rect = QtCore.QRectF(0, 0, 1, 1)
 #    label_rect = None
-#    font = QtGui.QFont('Decorative', 10, QtGui.QFont.Bold)
-#    label_font = QtGui.QFont('Decorative', 9, QtGui.QFont.Bold)
+#    font = QtGui.QFont('Droid Sans', 10, QtGui.QFont.Bold)
+#    label_font = QtGui.QFont('Droid Sans', 9, QtGui.QFont.Bold)
 #    _label_pen_enabled = QtGui.QPen(QtCore.Qt.white)
 #    _label_pen_disabled = QtGui.QPen(QtCore.Qt.darkGray)
 #    _label_pen_colors = _label_pen_disabled, _label_pen_enabled
@@ -2083,8 +2083,8 @@ class ListView(QtGui.QListView):
 #        QtGui.QComboBox.__init__(self, parent)
 #        self.combo_padding = 2
 #        self.spacing = 4
-#        self.label_font_metrics = QtGui.QFontMetrics(QtGui.QFont('Decorative', 9, QtGui.QFont.Bold))
-#        self.font_metrics = QtGui.QFontMetrics(QtGui.QFont('Decorative', 10, QtGui.QFont.Bold))
+#        self.label_font_metrics = QtGui.QFontMetrics(QtGui.QFont('Droid Sans', 9, QtGui.QFont.Bold))
+#        self.font_metrics = QtGui.QFontMetrics(QtGui.QFont('Droid Sans', 10, QtGui.QFont.Bold))
 ##        self.list = ListView(self)
 #        if name:
 #            self.name = name
@@ -2194,8 +2194,8 @@ class Combo(QtGui.QWidget):
     combo_rect = QtCore.QRectF(0, 0, 1, 1)
     combo_text_rect = QtCore.QRectF(0, 0, 1, 1)
     label_rect = None
-    font = QtGui.QFont('Decorative', 10, QtGui.QFont.Bold)
-    label_font = QtGui.QFont('Decorative', 9, QtGui.QFont.Bold)
+    font = QtGui.QFont('Droid Sans', 10, QtGui.QFont.Bold)
+    label_font = QtGui.QFont('Droid Sans', 9, QtGui.QFont.Bold)
     _label_pen_enabled = QtGui.QPen(QtCore.Qt.white)
     _label_pen_disabled = QtGui.QPen(QtCore.Qt.darkGray)
     _label_pen_colors = _label_pen_disabled, _label_pen_enabled
@@ -2205,8 +2205,8 @@ class Combo(QtGui.QWidget):
         QtGui.QWidget.__init__(self, parent)
         self.combo_padding = 2
         self.spacing = 4
-        self.label_font_metrics = QtGui.QFontMetrics(QtGui.QFont('Decorative', 9, QtGui.QFont.Bold))
-        self.font_metrics = QtGui.QFontMetrics(QtGui.QFont('Decorative', 10, QtGui.QFont.Bold))
+        self.label_font_metrics = QtGui.QFontMetrics(QtGui.QFont('Droid Sans', 9, QtGui.QFont.Bold))
+        self.font_metrics = QtGui.QFontMetrics(QtGui.QFont('Droid Sans', 10, QtGui.QFont.Bold))
         self.list = ListView(self)
         self.setFocusPolicy(QtCore.Qt.WheelFocus)
         self.list.indexChanged.connect(self.setCurrentIndex)
@@ -2495,9 +2495,9 @@ class Dial(QtGui.QWidget):
     def __init__(self, parent, full_range=None, min_value=0, max_value=127, step=1, value=None, default=None, name='', center=False, show_bar=True, value_list=None, scale=True, gradient=False, size=None, min_size=None, max_size=None):
         QtGui.QWidget.__init__(self, parent)
         self.setMouseTracking(True)
-        self.value_font = QtGui.QFont('Decorative', 10, QtGui.QFont.Bold)
+        self.value_font = QtGui.QFont('Droid Sans', 10, QtGui.QFont.Bold)
         self.value_font_metrics = QtGui.QFontMetrics(self.value_font)
-        self.label_font = QtGui.QFont('Decorative', 9, QtGui.QFont.Bold)
+        self.label_font = QtGui.QFont('Droid Sans', 9, QtGui.QFont.Bold)
         self.label_font_metrics = QtGui.QFontMetrics(self.label_font)
         self.setMinimumSize(QtGui.QFontMetrics(self.label_font).width(name), 46)
         self.setFocusPolicy(QtCore.Qt.WheelFocus)

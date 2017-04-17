@@ -48,6 +48,7 @@ class BigglesworthObject(QtCore.QObject):
 
         self.font_db = QtGui.QFontDatabase()
         self.font_db.addApplicationFont(local_path('FiraSans-Regular.ttf'))
+        self.font_db.addApplicationFont(local_path('DroidSansFallback.ttf'))
 
         if args.sysex:
             self.debug_sysex = True
