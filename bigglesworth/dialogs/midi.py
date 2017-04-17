@@ -1,7 +1,7 @@
 # *-* coding: utf-8 *-*
 
 from PyQt4 import QtCore, QtGui
-from bigglesworth.const import ClientRole, PortRole
+from bigglesworth.const import ClientRole, PortRole, ALSA
 from bigglesworth.utils import setBold
 
 class MidiWidget(QtGui.QWidget):
@@ -29,6 +29,7 @@ class MidiWidget(QtGui.QWidget):
         self.refresh_btn = QtGui.QPushButton('Refresh')
         layout.addWidget(self.refresh_btn, 2, 0, 1, 3)
 
+        self.backend = self.main.backend
         self.input = self.main.input
         self.output = self.main.output
         self.graph = self.main.graph
@@ -114,10 +115,11 @@ class MidiWidget(QtGui.QWidget):
                 if port.is_input:
                     out_port_list.append(port)
             if len(in_port_list):
-                in_client_item = QtGui.QStandardItem(client.name)
-                in_client_item.setData('<b>Client:</b> {c}<br/><b>Address:</b> {cid}'.format(c=client.name, cid=client.id), QtCore.Qt.ToolTipRole)
-                self.input_model.appendRow(in_client_item)
-                in_client_item.setEnabled(False)
+                if self.backend == ALSA:
+                    in_client_item = QtGui.QStandardItem(client.name)
+                    in_client_item.setData('<b>Client:</b> {c}<br/><b>Address:</b> {cid}'.format(c=client.name, cid=client.id), QtCore.Qt.ToolTipRole)
+                    self.input_model.appendRow(in_client_item)
+                    in_client_item.setEnabled(False)
                 for port in in_port_list:
                     in_item = QtGui.QStandardItem('  {}'.format(port.name))
                     in_item.setData('<b>Client:</b> {c}<br/><b>Port:</b> {p}<br/><b>Address:</b> {cid}:{pid}'.format(
@@ -136,10 +138,11 @@ class MidiWidget(QtGui.QWidget):
                         in_item.setData(QtGui.QBrush(QtCore.Qt.black), QtCore.Qt.ForegroundRole)
                         setBold(in_item, False)
             if len(out_port_list):
-                out_client_item = QtGui.QStandardItem(client.name)
-                out_client_item.setData('<b>Client:</b> {c}<br/><b>Address:</b> {cid}'.format(c=client.name, cid=client.id), QtCore.Qt.ToolTipRole)
-                self.output_model.appendRow(out_client_item)
-                out_client_item.setEnabled(False)
+                if self.backend == ALSA:
+                    out_client_item = QtGui.QStandardItem(client.name)
+                    out_client_item.setData('<b>Client:</b> {c}<br/><b>Address:</b> {cid}'.format(c=client.name, cid=client.id), QtCore.Qt.ToolTipRole)
+                    self.output_model.appendRow(out_client_item)
+                    out_client_item.setEnabled(False)
                 for port in out_port_list:
                     out_item = QtGui.QStandardItem('  {}'.format(port.name))
                     out_item.setData('<b>Client:</b> {c}<br/><b>Port:</b> {p}<br/><b>Address:</b> {cid}:{pid}'.format(

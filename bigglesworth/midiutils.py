@@ -766,25 +766,37 @@ class Port(QtCore.QObject):
         self.exp = '{}:{}'.format(*self.addr)
         self.info_dict = self.seq.get_port_info(self.id, self.client.id)
         self.name = self.info_dict['name']
-        self.caps = get_port_caps(self.info_dict['capability'])
-        self.type = get_port_type(self.info_dict['type'])
-        if not len(self.type) or alsaseq.SEQ_PORT_CAP_NO_EXPORT in self.caps:
-            self.hidden = True
+        if self.graph.backend == ALSA:
+            self.caps = get_port_caps(self.info_dict['capability'])
+            self.type = get_port_type(self.info_dict['type'])
+            if not len(self.type) or alsaseq.SEQ_PORT_CAP_NO_EXPORT in self.caps:
+                self.hidden = True
+            else:
+                self.hidden = False
+            self.is_input = self.is_output = False
+            if alsaseq.SEQ_PORT_CAP_DUPLEX in self.caps:
+                self.is_input = self.is_output = True
+            else:
+                #TODO trova un modo più veloce per trovare il tipo di porta, qui generi ogni volta 2 set
+                if set([int(t) for t in [alsaseq.SEQ_PORT_CAP_READ, alsaseq.SEQ_PORT_CAP_SYNC_READ, alsaseq.SEQ_PORT_CAP_SUBS_READ]]) & set([int(t) for t in self.caps]):
+                    self.is_output = True
+                if set([int(t) for t in [alsaseq.SEQ_PORT_CAP_WRITE, alsaseq.SEQ_PORT_CAP_SUBS_WRITE, alsaseq.SEQ_PORT_CAP_SUBS_WRITE]]) & set([int(t) for t in self.caps]):
+                    self.is_input = True
+            if self.is_input and self.is_output:
+                self.is_duplex = True
+            else:
+                self.is_duplex = False
         else:
+            self.caps = None
+            self.type = None
             self.hidden = False
-        self.is_input = self.is_output = False
-        if alsaseq.SEQ_PORT_CAP_DUPLEX in self.caps:
-            self.is_input = self.is_output = True
-        else:
-            #TODO trova un modo più veloce per trovare il tipo di porta, qui generi ogni volta 2 set
-            if set([int(t) for t in [alsaseq.SEQ_PORT_CAP_READ, alsaseq.SEQ_PORT_CAP_SYNC_READ, alsaseq.SEQ_PORT_CAP_SUBS_READ]]) & set([int(t) for t in self.caps]):
-                self.is_output = True
-            if set([int(t) for t in [alsaseq.SEQ_PORT_CAP_WRITE, alsaseq.SEQ_PORT_CAP_SUBS_WRITE, alsaseq.SEQ_PORT_CAP_SUBS_WRITE]]) & set([int(t) for t in self.caps]):
-                self.is_input = True
-        if self.is_input and self.is_output:
-            self.is_duplex = True
-        else:
             self.is_duplex = False
+            if self.info_dict['capability'] == 66:
+                self.is_input = True
+                self.is_output = False
+            else:
+                self.is_input = False
+                self.is_output = True
         self.connections = ConnList(self)
 
     def connect(self, dest, port=None):
@@ -933,7 +945,7 @@ class Client(QtCore.QObject):
         return 'Client "{}" ({})'.format(self.name, self.id)
 
 
-class RtMidiGraph(QtCore.QObject):
+class Graph(QtCore.QObject):
     graph_changed = QtCore.pyqtSignal()
     client_start = QtCore.pyqtSignal(object, int)
     client_exit = QtCore.pyqtSignal(object)
@@ -944,20 +956,10 @@ class RtMidiGraph(QtCore.QObject):
     def __init__(self, seq):
         QtCore.QObject.__init__(self)
         self.seq = seq
-        self.ports = {INPUT: [self.input_port], OUTPUT: [self.output_port]}
-
-
-class AlsaGraph(QtCore.QObject):
-    graph_changed = QtCore.pyqtSignal()
-    client_start = QtCore.pyqtSignal(object, int)
-    client_exit = QtCore.pyqtSignal(object)
-    port_start = QtCore.pyqtSignal(object, int)
-    port_exit = QtCore.pyqtSignal(object)
-    conn_register = QtCore.pyqtSignal(object, bool)
-
-    def __init__(self, seq):
-        QtCore.QObject.__init__(self)
-        self.seq = seq
+        if seq.__class__.__name__ == 'RtMidiSequencer':
+            self.backend = RTMIDI
+        else:
+            self.backend = ALSA
         self.client_id_dict = {}
         self.port_id_dict = {}
         self.connections = {}

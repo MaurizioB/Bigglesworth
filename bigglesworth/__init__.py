@@ -238,7 +238,7 @@ class BigglesworthObject(QtCore.QObject):
         self.globals.buttonBox.button(QtGui.QDialogButtonBox.Reset).clicked.connect(self.globals_request)
 
         self.librarian.show()
-#        if self.backend == ALSA:
+
         self.midiwidget = MidiWidget(self)
         self.mididialog = MidiDialog(self, self.editor)
         self.editor.show_midi_dialog.connect(self.mididialog.show)
@@ -341,10 +341,10 @@ class BigglesworthObject(QtCore.QObject):
         try:
             return self._autoconnect
         except:
-            if self.backend == RTMIDI:
-                self._autoconnect = self.settings.gMIDI.get_Autoconnect({INPUT: fakeSet(), OUTPUT: fakeSet()}, True)
-            else:
-                self._autoconnect = self.settings.gMIDI.get_Autoconnect({INPUT: set(), OUTPUT: set()}, True)
+#            if self.backend == RTMIDI:
+#                self._autoconnect = self.settings.gMIDI.get_Autoconnect({INPUT: fakeSet(), OUTPUT: fakeSet()}, True)
+#            else:
+            self._autoconnect = self.settings.gMIDI.get_Autoconnect({INPUT: set(), OUTPUT: set()}, True)
             return self._autoconnect
 
     @property

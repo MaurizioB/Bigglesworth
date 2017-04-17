@@ -38,7 +38,7 @@ class MidiDevice(QtCore.QObject):
 #        self.seq.connect_ports((self.seq.client_id, output_id), (130, 0))
 #        self.seq.connect_ports((self.seq.client_id, output_id), (132, 0))
 
-        self.graph = self.main.graph = AlsaGraph(self.seq)
+        self.graph = self.main.graph = Graph(self.seq)
 #        self.graph.client_start.connect(self.client_start)
 #        self.graph.client_exit.connect(self.client_exit)
 #        self.graph.port_start.connect(self.port_start)

@@ -1819,7 +1819,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
 
         self.edited_widget = EditedWidget(panel)
         layout.addItem(self.edited_widget, 0, 2)
-        self.edited_widget.hide()
+#        self.edited_widget.hide()
         self.edit_mode_label = SmallLabelTextWidget('Sound mode Edit buffer', panel)
 #        self.edit_mode_label.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         layout.addItem(self.edit_mode_label, 0, 3)
@@ -2264,10 +2264,7 @@ class Editor(QtGui.QMainWindow):
         self.midi = self.main.midi
         self.input = self.midi.input
         self.output = self.midi.output
-        if self.main.backend == ALSA:
-            self.graph = self.main.graph
-        else:
-            self.graph = None
+        self.graph = self.main.graph
         self.channel = 0
         self.octave = 0
         self.params = Params
@@ -2291,7 +2288,7 @@ class Editor(QtGui.QMainWindow):
         display_layout = QtGui.QGridLayout()
         self.grid.addLayout(display_layout, 0, 1, 1, 2)
         display_layout.addLayout(self.create_display(), 0, 0, 2, 1)
-        self.sound_edited.connect(lambda: [self.display.edited_widget.show(), self.display.edited_widget.setOpacity(1)])
+        self.sound_edited.connect(lambda: self.display.edited_widget.setOpacity(1))
         display_layout.addWidget(HSpacer(max_width=8), 0, 1)
 
         side_layout = QtGui.QGridLayout()
@@ -2765,7 +2762,7 @@ class Editor(QtGui.QMainWindow):
                 print e
         self.reset_advanced_widgets()
         self.notify = True
-        self.display.edited_widget.show()
+#        self.display.edited_widget.show()
         self.display.edited_widget.setOpacity(.4)
         self.edited = False
 
@@ -2788,7 +2785,7 @@ class Editor(QtGui.QMainWindow):
         self.save = old_save
         self.notify = True
         self.display.setSound()
-        self.display.edited_widget.hide()
+        self.display.edited_widget.setOpacity(0)
 
     def setSound(self, bank, prog, pgm_send=False):
         sound = self.blofeld_library[bank, prog]
