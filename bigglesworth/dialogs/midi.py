@@ -29,9 +29,9 @@ class MidiWidget(QtGui.QWidget):
         self.refresh_btn = QtGui.QPushButton('Refresh')
         layout.addWidget(self.refresh_btn, 2, 0, 1, 3)
 
-        self.graph = self.main.graph
         self.input = self.main.input
         self.output = self.main.output
+        self.graph = self.main.graph
         self.graph.graph_changed.connect(self.refresh_all)
         self.refresh_all()
         self.refresh_btn.clicked.connect(self.refresh_all)

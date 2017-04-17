@@ -6,7 +6,11 @@ def get_next_cycle(cycle_obj):
     return cycle_obj.next()
 
 def load_ui(widget, ui_path):
-    return uic.loadUi(path.join(path.dirname(path.abspath(__file__)), ui_path), widget)
+    #fix for cx_freeze
+    current = path.dirname(path.abspath(__file__))
+    if current.endswith('\\library.zip\\bigglesworth') or current.endswith('\\library.zip\\bigglesworth\\dialogs'):
+        current = current.replace('\\library.zip', '')
+    return uic.loadUi(path.join(current, ui_path), widget)
 
 def setBold(item, bold=True):
     font = item.font()
@@ -43,5 +47,20 @@ def getAlignMask(new, default):
         valign = default & QtCore.Qt.AlignVertical_Mask
     return (halign|valign)
 
+class fakeSet(set):
+    #this is a fake set for rtmidi single port support, it will always return a single value
+    def __init__(self, data=None):
+        if data and len(data) > 1:
+            data = (data[0], )
+            super(fakeSet, self).__init__(data)
+        else:
+            super(fakeSet, self).__init__()
+
+    def add(self, data):
+        self.clear()
+        super(fakeSet, self).add(data)
+
+    def __or__(self, data):
+        return data
 
 

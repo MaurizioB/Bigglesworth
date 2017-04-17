@@ -2015,7 +2015,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
         out_clients = False
         in_menu_connections = 0
         out_menu_connections = 0
-        for client in [self.main.alsa.graph.client_id_dict[cid] for cid in sorted(self.main.alsa.graph.client_id_dict.keys())]:
+        for client in [self.main.midi.graph.client_id_dict[cid] for cid in sorted(self.main.midi.graph.client_id_dict.keys())]:
             in_port_list = []
             out_port_list = []
             for port in client.ports:
@@ -2034,7 +2034,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
                     port_item = QtGui.QAction(port.name, in_menu)
                     port_item.setData(port)
                     port_item.setCheckable(True)
-                    if any([True for conn in port.connections.output if conn.dest == self.main.alsa.input]):
+                    if any([True for conn in port.connections.output if conn.dest == self.main.midi.input]):
                         port_item.setChecked(True)
                         setBold(client_menu.menuAction())
                         in_menu_connections += 1
@@ -2056,7 +2056,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
                     port_item = QtGui.QAction(port.name, out_menu)
                     port_item.setData(port)
                     port_item.setCheckable(True)
-                    if any([True for conn in port.connections.input if conn.src == self.main.alsa.output]):
+                    if any([True for conn in port.connections.input if conn.src == self.main.midi.output]):
                         port_item.setChecked(True)
                         setBold(client_menu.menuAction())
                         out_menu_connections += 1
@@ -2261,10 +2261,13 @@ class Editor(QtGui.QMainWindow):
 
         self.main = main
         self.blofeld_library = self.main.blofeld_library
-        self.alsa = self.main.alsa
-        self.input = self.alsa.input
-        self.output = self.alsa.output
-        self.graph = self.main.graph
+        self.midi = self.main.midi
+        self.input = self.midi.input
+        self.output = self.midi.output
+        if self.main.backend == ALSA:
+            self.graph = self.main.graph
+        else:
+            self.graph = None
         self.channel = 0
         self.octave = 0
         self.params = Params

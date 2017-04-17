@@ -6,6 +6,7 @@ from PyQt4 import QtCore, QtGui
 
 from bigglesworth.midiutils import SysExEvent
 from bigglesworth.utils import load_ui
+from bigglesworth.const import *
 
 popup_values = [None, .1, .2, .3, .4, .6, .7, .8, .9, 1.1, 1.2, 1.3, 1.4, 1.5, 1.7, 1.8, 1.9, 2, 2.2, 2.3, 2.4, 2.5, 2.6, 2.8, 2.9,
                 3, 3.1, 3.3, 3.4, 3.5, 3.6, 3.8, 3.9, 4, 4.1, 4.2, 4.4, 4.5, 4.6, 4.7, 4.9, 5, 5.1, 5.2, 5.3, 5.5, 5.6, 5.7, 5.8, 
@@ -83,6 +84,7 @@ class Globals(QtGui.QDialog):
         self.setModal(True)
 
         self.main = main
+#        if self.main.backend == ALSA:
         self.graph = main.graph
         self.input = main.input
         self.output = main.output

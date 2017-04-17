@@ -1,10 +1,11 @@
 from PyQt4 import QtCore
 from pyalsa import alsaseq
 
+from const import ALSA
 from midiutils import *
 
 
-class AlsaMidi(QtCore.QObject):
+class MidiDevice(QtCore.QObject):
     client_start = QtCore.pyqtSignal(object)
     client_exit = QtCore.pyqtSignal(object)
     port_start = QtCore.pyqtSignal(object)
@@ -17,6 +18,7 @@ class AlsaMidi(QtCore.QObject):
     def __init__(self, main):
         QtCore.QObject.__init__(self)
         self.main = main
+        self.type = ALSA
         self.active = False
         self.sysex_buffer = []
         self.seq = alsaseq.Sequencer(clientname='Bigglesworth')
@@ -36,7 +38,7 @@ class AlsaMidi(QtCore.QObject):
 #        self.seq.connect_ports((self.seq.client_id, output_id), (130, 0))
 #        self.seq.connect_ports((self.seq.client_id, output_id), (132, 0))
 
-        self.graph = self.main.graph = Graph(self.seq)
+        self.graph = self.main.graph = AlsaGraph(self.seq)
 #        self.graph.client_start.connect(self.client_start)
 #        self.graph.client_exit.connect(self.client_exit)
 #        self.graph.port_start.connect(self.port_start)

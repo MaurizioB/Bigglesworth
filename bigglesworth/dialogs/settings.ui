@@ -20,7 +20,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="library_tab">
       <attribute name="title">
@@ -542,6 +542,47 @@
          </layout>
         </widget>
        </item>
+       <item row="2" column="0">
+        <widget class="QGroupBox" name="groupBox_6">
+         <property name="title">
+          <string>Misc</string>
+         </property>
+         <layout class="QFormLayout" name="formLayout_8">
+          <property name="fieldGrowthPolicy">
+           <enum>QFormLayout::ExpandingFieldsGrow</enum>
+          </property>
+          <item row="0" column="0">
+           <widget class="QLabel" name="autosaveLabel">
+            <property name="text">
+             <string>Autosave status on startup</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QComboBox" name="editor_autosave_combo">
+            <property name="currentIndex">
+             <number>2</number>
+            </property>
+            <item>
+             <property name="text">
+              <string>always off</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>always on</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>remember last state</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
       </layout>
      </widget>
      <widget class="QWidget" name="midi_tab">
@@ -666,47 +707,6 @@
        </item>
       </layout>
      </widget>
-    </widget>
-   </item>
-   <item>
-    <widget class="QGroupBox" name="groupBox_6">
-     <property name="title">
-      <string>Misc</string>
-     </property>
-     <layout class="QFormLayout" name="formLayout_8">
-      <property name="fieldGrowthPolicy">
-       <enum>QFormLayout::ExpandingFieldsGrow</enum>
-      </property>
-      <item row="0" column="0">
-       <widget class="QLabel" name="autosaveLabel">
-        <property name="text">
-         <string>Autosave status on startup</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QComboBox" name="editor_autosave_combo">
-        <property name="currentIndex">
-         <number>2</number>
-        </property>
-        <item>
-         <property name="text">
-          <string>always off</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>always on</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>remember last state</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-     </layout>
     </widget>
    </item>
    <item>

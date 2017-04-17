@@ -3,15 +3,25 @@
 
 import struct
 from threading import Lock
-from pyalsa import alsaseq
-#import alsaseq
+from const import *
+try:
+    from pyalsa import alsaseq
+    BACKEND = ALSA
+except:
+    import rtmidi
+    BACKEND = RTMIDI
 from time import *
 from PyQt4 import QtCore
 
 
 class Const(object):
-    pass
-INPUT, OUTPUT = [Const() for i in range(2)]
+    def __init__(self, value=None):
+        self.int_value = value
+
+    def __int__(self):
+        return self.int_value
+
+INPUT, OUTPUT = [Const(i) for i in range(2)]
 
 Controllers = {
                 0: 'Bank Select', 
@@ -108,39 +118,40 @@ for c in range(128):
     if not c in Controllers.keys():
         Controllers[c] = 'Undefined'
 
-_PortTypeMaskList = sorted(alsaseq._dporttype.values())
-_PortCapsMaskList = sorted(alsaseq._dportcap.values())[1:]
-_PortTypeStrings = {}
-_PortCapsStrings = {}
-_ClientTypeStrings = {}
+if BACKEND == ALSA:
+    _PortTypeMaskList = sorted(alsaseq._dporttype.values())
+    _PortCapsMaskList = sorted(alsaseq._dportcap.values())[1:]
+    _PortTypeStrings = {}
+    _PortCapsStrings = {}
+    _ClientTypeStrings = {}
 
-for desc, value in alsaseq.__dict__.items():
-    if desc in ['SEQ_USER_CLIENT', 'SEQ_KERNEL_CLIENT']:
-        _ClientTypeStrings[int(value)] = desc[4:].replace('_', ' ').capitalize()
-    elif desc.startswith('SEQ_PORT_CAP_'):
-        _PortCapsStrings[int(value)] = desc[13:].replace('_', ' ').capitalize()
-    elif desc.startswith('SEQ_PORT_TYPE_'):
-        _PortTypeStrings[int(value)] = desc[14:].replace('_', ' ').capitalize()
+    for desc, value in alsaseq.__dict__.items():
+        if desc in ['SEQ_USER_CLIENT', 'SEQ_KERNEL_CLIENT']:
+            _ClientTypeStrings[int(value)] = desc[4:].replace('_', ' ').capitalize()
+        elif desc.startswith('SEQ_PORT_CAP_'):
+            _PortCapsStrings[int(value)] = desc[13:].replace('_', ' ').capitalize()
+        elif desc.startswith('SEQ_PORT_TYPE_'):
+            _PortTypeStrings[int(value)] = desc[14:].replace('_', ' ').capitalize()
 
-def get_port_type(mask):
-    t_list = []
-    for t in _PortTypeMaskList:
-        if t > mask:
-            break
-        if mask & t == t:
-            t_list.append(t)
-    return t_list
+    def get_port_type(mask):
+        t_list = []
+        for t in _PortTypeMaskList:
+            if t > mask:
+                break
+            if mask & t == t:
+                t_list.append(t)
+        return t_list
 
-def get_port_caps(mask):
-    if mask == 0:
-        return [alsaseq.SEQ_PORT_CAP_NONE]
-    c_list = []
-    for c in _PortCapsMaskList:
-        if c > mask:
-            break
-        if mask & c == c:
-            c_list.append(c)
-    return c_list
+    def get_port_caps(mask):
+        if mask == 0:
+            return [alsaseq.SEQ_PORT_CAP_NONE]
+        c_list = []
+        for c in _PortCapsMaskList:
+            if c > mask:
+                break
+            if mask & c == c:
+                c_list.append(c)
+        return c_list
 
 
 class NamedFlag(int):
@@ -219,9 +230,10 @@ for v, (alsa_str, name) in _event_types_raw.items():
     globals()[name] = _type_obj
     _event_type_names[name] = _type_obj
     _event_type_values[v] = _type_obj
-    _alsa_event = getattr(alsaseq, 'SEQ_EVENT_{}'.format(alsa_str))
-    _event_type_alsa[int(_alsa_event)] = _type_obj
-    _event_type_toalsa[_type_obj] = _alsa_event
+    if BACKEND == ALSA:
+        _alsa_event = getattr(alsaseq, 'SEQ_EVENT_{}'.format(alsa_str))
+        _event_type_alsa[int(_alsa_event)] = _type_obj
+        _event_type_toalsa[_type_obj] = _alsa_event
     EventTypes.append(_type_obj)
 
 _bits_to_event = {
@@ -465,6 +477,13 @@ class MidiEvent(object):
                 self._event.dest = self.dest
         return self._event
 
+    def get_binary(self):
+        if self._type in [NOTEON, NOTEOFF, POLY_AFTERTOUCH, CTRL]:
+            return _event_to_bits[self._type] + self.channel, self.data1, self.data2
+        elif self._type == PROGRAM:
+            return _event_to_bits[self._type] + self.channel, self.data2
+        elif self._type == SYSEX:
+            return self.sysex
 
     @classmethod
     def from_jack(cls, port, event):
@@ -477,6 +496,16 @@ class MidiEvent(object):
         elif len(event) == 3:
             return cls(event_type, port, channel, data1=event[1], data2=event[2], backend='jack')
         #TODO: verifica il da farsi con SYSCM&co
+
+    @classmethod
+    def from_binary(cls, event):
+        event_type, channel = _get_jack_event_type(event[0])
+        if event_type == SYSEX:
+            return cls(event_type, sysex=event, backend='rtmidi')
+        elif len(event) == 2:
+            return cls(event_type, channel=channel, data2=event[1], backend='rtmidi')
+        elif len(event) == 3:
+            return cls(event_type, channel=channel, data1=event[1], data2=event[2], backend='rtmidi')
 
     @classmethod
     def jack_event(cls, event_type, port, channel=0, data1=0, data2=0, sysex=None):
@@ -727,7 +756,7 @@ class Connection(QtCore.QObject):
 class Port(QtCore.QObject):
     connection = QtCore.pyqtSignal(object, object)
     disconnection = QtCore.pyqtSignal(object, object)
-    def __init__(self, client, port_id):
+    def __init__(self, client, port_id=0):
         QtCore.QObject.__init__(self)
         self.client = client
         self.graph = client.graph
@@ -849,7 +878,7 @@ class Client(QtCore.QObject):
     port_exit = QtCore.pyqtSignal(object)
     name_changed = QtCore.pyqtSignal(str)
 
-    def __init__(self, graph, client_id):
+    def __init__(self, graph, client_id=0):
         QtCore.QObject.__init__(self)
         self.graph = graph
         self.seq = graph.seq
@@ -903,7 +932,22 @@ class Client(QtCore.QObject):
     def __repr__(self):
         return 'Client "{}" ({})'.format(self.name, self.id)
 
-class Graph(QtCore.QObject):
+
+class RtMidiGraph(QtCore.QObject):
+    graph_changed = QtCore.pyqtSignal()
+    client_start = QtCore.pyqtSignal(object, int)
+    client_exit = QtCore.pyqtSignal(object)
+    port_start = QtCore.pyqtSignal(object, int)
+    port_exit = QtCore.pyqtSignal(object)
+    conn_register = QtCore.pyqtSignal(object, bool)
+
+    def __init__(self, seq):
+        QtCore.QObject.__init__(self)
+        self.seq = seq
+        self.ports = {INPUT: [self.input_port], OUTPUT: [self.output_port]}
+
+
+class AlsaGraph(QtCore.QObject):
     graph_changed = QtCore.pyqtSignal()
     client_start = QtCore.pyqtSignal(object, int)
     client_exit = QtCore.pyqtSignal(object)

@@ -8,13 +8,18 @@ from PyQt4 import QtCore
 from bigglesworth import version
 
 def local_path(name):
-    return path.join(path.dirname(path.abspath(__file__)), name)
+    #fix for cx_freeze
+    current = path.dirname(path.abspath(__file__))
+    if current.endswith('\\library.zip\\bigglesworth'):
+        current = current.replace('\\library.zip', '')
+    return path.join(current, name)
 
 #with open('blofeld_params', 'rb') as _params_file:
 #    sound_params = pickle.load(_params_file)
 
 VERSION = version.VERSION
 
+ALSA, RTMIDI = 0, 1
 
 MIDFILE, SYXFILE = 1, 2
 

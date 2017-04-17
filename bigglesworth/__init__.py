@@ -6,10 +6,9 @@ import pickle
 from string import uppercase
 from PyQt4 import QtCore, QtGui
 
+from midiutils import *
 from const import *
 from utils import *
-from alsa import *
-from midiutils import *
 from classes import *
 from widgets import *
 from dialogs import *
@@ -20,9 +19,16 @@ from wavetable import WaveTableEditor
 def process_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--sysex', help='Print output SysEx messages to the terminal', action='store_true')
+    parser.add_argument('--rtmidi', help='Use rtmidi interface (mandatory for Windows)', action='store_true')
     parser.add_argument('-l', '--library-limit', metavar='N', type=int, help='Limit library to N sounds')
     parser.add_argument('-w', '--wavetable', metavar='WTFILE', nargs='?', const=True, help='Open Wavetable editor (with optional WTFILE)')
     return parser.parse_args()
+
+args = process_args()
+if sys.platform=='win32' or args.rtmidi:
+    from rt import MidiDevice
+else:
+    from alsa import MidiDevice
 
 class BigglesworthObject(QtCore.QObject):
     midi_lock = QtCore.pyqtSignal(bool)
@@ -33,6 +39,7 @@ class BigglesworthObject(QtCore.QObject):
     input_conn_state_change = QtCore.pyqtSignal(int)
     output_conn_state_change = QtCore.pyqtSignal(int)
     midi_duplex_state_change = QtCore.pyqtSignal(bool)
+
     def __init__(self, app, args):
         QtCore.QObject.__init__(self)
         self.app = app
@@ -42,32 +49,6 @@ class BigglesworthObject(QtCore.QObject):
         self.font_db = QtGui.QFontDatabase()
         self.font_db.addApplicationFont(local_path('FiraSans-Regular.ttf'))
 
-        self.alsa_thread = QtCore.QThread()
-        self.alsa = AlsaMidi(self)
-        self.alsa.moveToThread(self.alsa_thread)
-        self.alsa.stopped.connect(self.alsa_thread.quit)
-        self.alsa_thread.started.connect(self.alsa.run)
-
-        self.alsa.midi_event.connect(self.midi_event_received)
-        self.graph.port_start.connect(self.new_alsa_port)
-        self.alsa.conn_register.connect(self.alsa_conn_event)
-        self.alsa_thread.start()
-
-        self.seq = self.alsa.seq
-        self.input = self.alsa.input
-        self.output = self.alsa.output
-        self.connections = [0, 0]
-        self.midi_duplex_state = False
-
-        self.blofeld_current = [None, None]
-        self.blofeld_model = LibraryModel()
-        self.blofeld_library = Library(self.blofeld_model)
-
-#        if len(argv) > 1 and argv[1].isdigit():
-#            limit = int(argv[1])
-#        else:
-#            limit = None
-
         if args.sysex:
             self.debug_sysex = True
         else:
@@ -76,8 +57,33 @@ class BigglesworthObject(QtCore.QObject):
             limit = args.library_limit
         else:
             limit = None
-        if args.wavetable:
-            wavetable_show = args.wavetable
+
+        self.midi = MidiDevice(self)
+        if args.rtmidi or sys.platform == 'win32':
+            self.backend = RTMIDI
+        else:
+            self.backend = ALSA
+        self.midi_thread = QtCore.QThread()
+        self.midi.moveToThread(self.midi_thread)
+        self.midi.stopped.connect(self.midi_thread.quit)
+        self.midi_thread.started.connect(self.midi.run)
+
+        self.graph.port_start.connect(self.new_alsa_port)
+        self.graph.conn_register.connect(self.alsa_conn_event)
+        self.seq = self.midi.seq
+        self.input = self.midi.input
+        self.output = self.midi.output
+        self.connections = [0, 0]
+        self.midi_duplex_state = False
+        self.midi_thread.start()
+
+        self.midi.midi_event.connect(self.midi_event_received)
+
+
+        self.blofeld_current = [None, None]
+        self.blofeld_model = LibraryModel()
+        self.blofeld_library = Library(self.blofeld_model)
+
 
         #LOADING
         self.loader = LoadingThread(self, self.blofeld_library, self.source_library, limit=limit)
@@ -232,6 +238,7 @@ class BigglesworthObject(QtCore.QObject):
         self.globals.buttonBox.button(QtGui.QDialogButtonBox.Reset).clicked.connect(self.globals_request)
 
         self.librarian.show()
+#        if self.backend == ALSA:
         self.midiwidget = MidiWidget(self)
         self.mididialog = MidiDialog(self, self.editor)
         self.editor.show_midi_dialog.connect(self.mididialog.show)
@@ -334,7 +341,10 @@ class BigglesworthObject(QtCore.QObject):
         try:
             return self._autoconnect
         except:
-            self._autoconnect = self.settings.gMIDI.get_Autoconnect({INPUT: set(), OUTPUT: set()}, True)
+            if self.backend == RTMIDI:
+                self._autoconnect = self.settings.gMIDI.get_Autoconnect({INPUT: fakeSet(), OUTPUT: fakeSet()}, True)
+            else:
+                self._autoconnect = self.settings.gMIDI.get_Autoconnect({INPUT: set(), OUTPUT: set()}, True)
             return self._autoconnect
 
     @property
@@ -482,10 +492,29 @@ class BigglesworthObject(QtCore.QObject):
     def midi_connect(self):
         if not (self.blofeld_autoconnect or self.remember_connections): return
         for cid, client in self.graph.client_id_dict.items():
-            if self.blofeld_autoconnect and client.name == 'Blofeld' and len(client.ports) == 1 and client.ports[0].name == 'Blofeld MIDI 1':
-                self.graph.port_id_dict[cid][0].connect(self.seq.client_id, self.input.id)
-                self.graph.port_id_dict[self.seq.client_id][self.output.id].connect(cid, 0)
-                continue
+            if self.blofeld_autoconnect:
+                if self.backend == RTMIDI:
+                    if sys.platform == 'win32':
+                        if client.name.startswith('Waldorf Blofeld '):
+                            blofeld_port = self.graph.port_id_dict[cid][0]
+                            if blofeld_port.is_input:
+                                self.output.connect(blofeld_port)
+                            else:
+                                blofeld_port.connect(self.input)
+                            continue
+                    else:
+                        if client.name.startswith('Blofeld:Blofeld MIDI '):
+                            blofeld_port = self.graph.port_id_dict[cid][0]
+                            if blofeld_port.is_input:
+                                self.output.connect(blofeld_port)
+                            else:
+                                blofeld_port.connect(self.input)
+                            continue
+                elif client.name == 'Blofeld' and len(client.ports) == 1 and client.ports[0].name == 'Blofeld MIDI ':
+                    self.graph.port_id_dict[cid][0].connect(self.seq.client_id, self.input.id)
+#                    self.graph.port_id_dict[self.seq.client_id][self.output.id].connect(cid, 0)
+                    self.output.connect(cid, 0)
+                    continue
             if not self.remember_connections: continue
             for port in client.ports:
                 port_fmt = '{}:{}'.format(client.name, port.name)
@@ -502,10 +531,15 @@ class BigglesworthObject(QtCore.QObject):
     def output_event(self, event):
         if self.debug_sysex and event.type == SYSEX:
             print event.sysex
-        alsa_event = event.get_event()
-        alsa_event.source = self.output.client.id, self.output.id
-        self.seq.output_event(alsa_event)
-        self.seq.drain_output()
+        if self.backend == ALSA:
+            alsa_event = event.get_event()
+            alsa_event.source = self.output.client.id, self.output.id
+            self.seq.output_event(alsa_event)
+            self.seq.drain_output()
+        else:
+            rtmidi_event = event.get_binary()
+            for port in self.seq.ports[OUTPUT]:
+                port.send_message(rtmidi_event)
 
     def midi_event_received(self, event):
         if event.type == SYSEX:
@@ -1090,13 +1124,11 @@ class Librarian(QtGui.QMainWindow):
 
 
 def main():
-    args = process_args()
     argv = sys.argv[:]
     argv[0] = 'Bigglesworth'
     app = QtGui.QApplication(argv)
     app.setOrganizationName('jidesk')
     app.setApplicationName('Bigglesworth')
-#    app.setQuitOnLastWindowClosed(False)
     cursor_list.extend((QtCore.Qt.SizeAllCursor, UpCursorClass(), DownCursorClass(), LeftCursorClass(), RightCursorClass()))
     BigglesworthObject(app, args)
     sys.exit(app.exec_())
