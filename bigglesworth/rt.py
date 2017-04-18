@@ -105,6 +105,7 @@ class RtMidiSequencer(QtCore.QObject):
             self.client_dict[1] = self.clientname + ':output'
             self.out_graph_dict['Bigglesworth:output'] = 1
             delta_id = 2
+        in_id = delta_id
         for in_id, port_name in enumerate(self.listener_in.get_ports(), delta_id):
             self.out_graph_dict[port_name] = in_id
             self.client_dict[in_id] = port_name
