@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.7
 # *-* coding: utf-8 *-*
 
+import sys
 from math import pi, sin, cos, acos, hypot, radians, degrees
 from bisect import bisect_left
 from PyQt4 import QtGui
@@ -1961,7 +1962,10 @@ class ListView(QtGui.QListView):
         self.main = parent
         self.setEditTriggers(QtGui.QListView.NoEditTriggers)
         self.setMouseTracking(True)
-        self.setWindowFlags(QtCore.Qt.FramelessWindowHint|QtCore.Qt.Tool|QtCore.Qt.ToolTip)
+        if sys.platform == 'win32':
+            self.setWindowFlags(QtCore.Qt.FramelessWindowHint|QtCore.Qt.Tool)
+        else:
+            self.setWindowFlags(QtCore.Qt.FramelessWindowHint|QtCore.Qt.Tool|QtCore.Qt.ToolTip)
         self.model = QtGui.QStandardItemModel()
         self.setModel(self.model)
         if item_list:

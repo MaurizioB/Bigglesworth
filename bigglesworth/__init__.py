@@ -3,6 +3,7 @@
 
 import sys, argparse
 import pickle
+from os import path, makedirs
 from string import uppercase
 from PyQt4 import QtCore, QtGui
 
@@ -304,7 +305,14 @@ class BigglesworthObject(QtCore.QObject):
         for bank in self.blofeld_library.data:
             for sound in bank:
                 data.append((sound.bank, sound.prog) + tuple(sound.data))
-        with open(local_path('presets/personal_library'), 'wb') as of:
+        data_dir = str(QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.DataLocation).toUtf8())
+        data_path = path.join(data_dir, 'personal_library')
+        if not path.exists(data_path):
+            try:
+                makedirs(data_dir)
+            except:
+                pass
+        with open(data_path, 'wb') as of:
             pickle.dump(tuple(data), of)
 
     @property
@@ -807,7 +815,7 @@ class BigglesworthObject(QtCore.QObject):
 
     def closeDetect(self, win=None):
         if win:
-            win_list = set((self.librarian, self.editor))
+            win_list = set((self.librarian, self.editor, self.wave_table))
             win_list.discard(win)
             if any(win.isVisible() for win in win_list):
                 return True

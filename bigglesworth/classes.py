@@ -1,6 +1,8 @@
 # *-* coding: utf-8 *-*
 
 import urllib2
+from os import path, makedirs
+from shutil import copy
 from string import uppercase, ascii_letters
 from PyQt4 import QtCore, QtGui
 
@@ -465,7 +467,8 @@ class LoadingThread(QtCore.QObject):
         if self.source == 'personal':
             try:
                 sound_list = self.load_library()
-            except:
+            except Exception as e:
+                print e
 #                print 'personal library not found, reverting to default (factory 200802)'
                 sound_list = self.load_midi(local_path('presets/blofeld_fact_200802.mid'))
         else:
@@ -485,12 +488,25 @@ class LoadingThread(QtCore.QObject):
                 i += 1
                 if i == self.limit:
                     break
-        print 'done: {}'.format(len(sound_list))
+#        print 'done: {}'.format(len(sound_list))
         return sound_list
 
     def load_library(self):
         sound_list = []
-        with open(local_path('presets/personal_library'), 'rb') as of:
+        data_dir = str(QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.DataLocation).toUtf8())
+        data_path = path.join(data_dir, 'personal_library')
+        if not path.exists(data_path):
+            try:
+                makedirs(data_dir)
+            except:
+                pass
+            old_path = local_path('presets/personal_library')
+            if path.exists(old_path):
+                print 'asdnfoijsdfoisdj'
+                copy(old_path, data_path)
+            else:
+                raise
+        with open(data_path, 'rb') as of:
             i = 0
             for data in pickle.load(of):
                 sound_list.append(Sound(list(data)))
