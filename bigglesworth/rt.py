@@ -38,14 +38,13 @@ class RtMidiSequencer(QtCore.QObject):
     def update_graph(self):
         previous_out_clients = self.out_graph_dict.keys()
         previous_in_clients = self.in_graph_dict.keys()
-        if self.alsa_mode:
-            for previous_list in previous_out_clients, previous_in_clients:
-                for port_name in previous_list:
-                    if port_name.startswith('Bigglesworth:'):
-                        previous_list.pop(previous_list.index(port_name))
+        for previous_list in previous_out_clients, previous_in_clients:
+            for port_name in previous_list:
+                if port_name.startswith('Bigglesworth'):
+                    previous_list.pop(previous_list.index(port_name))
         new_out_clients = []
         for port_name in self.listener_in.get_ports():
-            if self.alsa_mode and port_name.startswith('Bigglesworth:'):
+            if port_name.startswith('Bigglesworth'):
                 continue
             if port_name in previous_out_clients:
                 previous_out_clients.pop(previous_out_clients.index(port_name))
@@ -56,23 +55,20 @@ class RtMidiSequencer(QtCore.QObject):
                 self.out_graph_dict.pop(port_name)
                 client_id = self.client_dict.keys()[self.client_dict.values().index(port_name)]
                 self.client_dict.pop(client_id)
-                print 'emit port "{}" removed'.format(port_name)
                 self.port_destroyed.emit({'addr.client': client_id, 'addr.port': 0})
                 self.client_destroyed.emit({'addr.client': client_id})
-        new_index = 0
+        new_index = max(self.client_dict.keys()) + 1
         if new_out_clients:
-            new_index = max(self.client_dict.keys()) + 1
             for port_name in new_out_clients:
                 self.client_dict[new_index] = port_name
                 self.out_graph_dict[port_name] = new_index
-                print 'emit port "{}" added'.format(port_name)
                 self.client_created.emit({'addr.client': new_index})
                 self.port_created.emit({'addr.client': new_index, 'addr.port': 0})
                 new_index += 1
 
         new_in_clients = []
         for port_name in self.listener_out.get_ports():
-            if self.alsa_mode and port_name.startswith('Bigglesworth:'):
+            if port_name.startswith('Bigglesworth'):
                 continue
             if port_name in previous_in_clients:
                 previous_in_clients.pop(previous_in_clients.index(port_name))
@@ -81,32 +77,31 @@ class RtMidiSequencer(QtCore.QObject):
         if previous_in_clients:
             for port_name in previous_in_clients:
                 self.in_graph_dict.pop(port_name)
-                self.client_dict.pop(self.client_dict.values().index(port_name))
-                print 'emit port "{}" removed'.format(port_name)
+                client_id = self.client_dict.keys()[self.client_dict.values().index(port_name)]
+                self.client_dict.pop(client_id)
                 self.port_destroyed.emit({'addr.client': client_id, 'addr.port': 0})
                 self.client_destroyed.emit({'addr.client': client_id})
         if new_in_clients:
             for port_name in new_in_clients:
                 self.client_dict[new_index] = port_name
                 self.in_graph_dict[port_name] = new_index
-                print 'emit port "{}" added'.format(port_name)
                 self.client_created.emit({'addr.client': new_index})
                 self.port_created.emit({'addr.client': new_index, 'addr.port': 0})
                 new_index += 1
 
     def connection_list(self):
-        delta_id = 0
         res_list = []
-        if self.alsa_mode:
-            res_list.append(('Bigglesworth', 0, [('input', 0, ([], []))]))
-            self.client_dict[0] = self.clientname + ':input'
-            self.in_graph_dict['Bigglesworth:input'] = 0
-            res_list.append(('Bigglesworth', 0, [('output', 1, ([], []))]))
-            self.client_dict[1] = self.clientname + ':output'
-            self.out_graph_dict['Bigglesworth:output'] = 1
-            delta_id = 2
-        in_id = delta_id
-        for in_id, port_name in enumerate(self.listener_in.get_ports(), delta_id):
+#        if self.alsa_mode:
+#        res_list.append(('Bigglesworth:input', 0, [('Bigglesworth:input', 0, ([], []))]))
+        input_name = self.clientname + ':input'
+        self.client_dict[0] = input_name
+        self.in_graph_dict[input_name] = 0
+#        res_list.append(('Bigglesworth:output', 0, [('Bigglesworth:output', 1, ([], []))]))
+        output_name = self.clientname + ':output'
+        self.client_dict[1] = output_name
+        self.out_graph_dict[output_name] = 1
+        in_id = 2
+        for in_id, port_name in enumerate(self.listener_in.get_ports(), in_id):
             self.out_graph_dict[port_name] = in_id
             self.client_dict[in_id] = port_name
         for out_id, port_name in enumerate(self.listener_out.get_ports(), in_id + 1):
@@ -205,7 +200,7 @@ class RtMidiSequencer(QtCore.QObject):
                 break
         else:
 #            print 'connection does not exist'
-            raise
+            raise rtmidi.RtMidiError('Connection does not exist')
         return {'exclusive': 0, 'queue': 0, 'time_real': 0, 'time_update': 0}
 
 

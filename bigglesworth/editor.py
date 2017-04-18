@@ -2019,7 +2019,7 @@ class BlofeldDisplay(QtGui.QGraphicsView):
             in_port_list = []
             out_port_list = []
             for port in client.ports:
-                if port.hidden or port.client == self.main.input.client:
+                if port.hidden or port.client in (self.main.input.client, self.main.output.client):
                     continue
                 if port.is_output:
                     in_port_list.append(port)

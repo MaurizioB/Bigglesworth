@@ -6,10 +6,13 @@ from threading import Lock
 from const import *
 try:
     from pyalsa import alsaseq
-    BACKEND = ALSA
+    ALSA = True
 except:
+    ALSA = False
+try:
     import rtmidi
-    BACKEND = RTMIDI
+except:
+    pass
 from time import *
 from PyQt4 import QtCore
 
@@ -118,7 +121,7 @@ for c in range(128):
     if not c in Controllers.keys():
         Controllers[c] = 'Undefined'
 
-if BACKEND == ALSA:
+if ALSA:
     _PortTypeMaskList = sorted(alsaseq._dporttype.values())
     _PortCapsMaskList = sorted(alsaseq._dportcap.values())[1:]
     _PortTypeStrings = {}
@@ -230,7 +233,7 @@ for v, (alsa_str, name) in _event_types_raw.items():
     globals()[name] = _type_obj
     _event_type_names[name] = _type_obj
     _event_type_values[v] = _type_obj
-    if BACKEND == ALSA:
+    if ALSA:
         _alsa_event = getattr(alsaseq, 'SEQ_EVENT_{}'.format(alsa_str))
         _event_type_alsa[int(_alsa_event)] = _type_obj
         _event_type_toalsa[_type_obj] = _alsa_event
@@ -742,10 +745,13 @@ class Connection(QtCore.QObject):
             return 'Conn ({}:{}) > ({}:{})'.format(self.src.client.id, self.src.id, self.dest.client.id, self.dest.id)
 #            return 'Connection {}:{} ({}:{}) > {}:{} ({}:{})'.format(self.src.client.name, self.src.name, self.src.client.id, self.src.id,
 #                                                                     self.dest.client.name, self.dest.name, self.dest.client.id, self.dest.id)
-        except alsaseq.SequencerError:
-            self.lostEvent()
-            self.graph.conn_deleted(self)
-            return '(destroyed) Conn ({}:{}) > ({}:{})'.format(self.src.client.id, self.src.id, self.dest.client.id, self.dest.id)
+        except Exception as err:
+            print err
+            if (self.graph.backend == ALSA and isinstance(err, alsaseq.SequencerError)) or isinstance(err, rtmidi.RtMidiError):
+                self.lostEvent()
+                self.graph.conn_deleted(self)
+                return '(destroyed) Conn ({}:{}) > ({}:{})'.format(self.src.client.id, self.src.id, self.dest.client.id, self.dest.id)
+            print 'Connection error: {}'.format(err)
 
     def delete(self):
         try:
@@ -999,9 +1005,10 @@ class Graph(QtCore.QObject):
                 try:
                     self.seq.get_connect_info(conn.src.addr, conn.dest.addr)
                 except:
-                    self.conn_register.emit(conn, False)
+                    #conn_register.emit was first for ALSA, now is last for rtmidi: be careful.
                     self.connections[conn.src].remove(conn)
                     self.connections[conn.dest].remove(conn)
+                    self.conn_register.emit(conn, False)
                     del conn
             return self.connections[port]
         except KeyError:
