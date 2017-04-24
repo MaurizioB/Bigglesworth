@@ -26,7 +26,7 @@ def process_args():
     return parser.parse_args()
 
 args = process_args()
-if sys.platform=='win32' or args.rtmidi:
+if sys.platform in ('win32', 'darwin') or args.rtmidi:
     from rt import MidiDevice
 else:
     from alsa import MidiDevice
@@ -61,7 +61,7 @@ class BigglesworthObject(QtCore.QObject):
             limit = None
 
         self.midi = MidiDevice(self)
-        if args.rtmidi or sys.platform == 'win32':
+        if args.rtmidi or sys.platform in ('win32', 'darwin'):
             self.backend = RTMIDI
         else:
             self.backend = ALSA
@@ -274,19 +274,36 @@ class BigglesworthObject(QtCore.QObject):
         self.midi_connect()
 #        self.dump_win.show()
 
-        self.startup_version_check()
+        if self.settings.gGeneral.get_ShowUpdates(True):
+            self.startup_version_check()
+#        QtGui.QMessageBox.information(self.librarian, 'Test build', 'This is a test build!!! Have fun!')
+#        self.activate_editor(0, 0)
 
     def startup_version_check(self, active=False):
+        def open_site(url):
+            QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
+            dialog.accept()
         self.version_check = VersionCheck(self)
         self.version_thread = QtCore.QThread()
         self.version_check.moveToThread(self.version_thread)
         self.version_thread.started.connect(self.version_check.run)
         self.version_check.done.connect(self.version_thread.quit)
         self.version_thread.start()
-        self.version_check.update.connect(lambda update: QtGui.QMessageBox.information(
-                                              self.librarian, 'New version', 
-                                              'A new version is available, go to the <a href="https://github.com/MaurizioB/Bigglesworth">website</a> for updates!')
-                                              if update else None)
+        dialog = QtGui.QMessageBox(
+                                   QtGui.QMessageBox.Information, 'New version', 
+                                   'A new version is available, go to the <a href="https://github.com/MaurizioB/Bigglesworth">website</a> for updates!', 
+                                   QtGui.QMessageBox.Ok, 
+                                   self.librarian
+                                   )
+        labels = dialog.findChildren(QtGui.QLabel)
+        label = [l for l in labels if l.text().startsWith('A new version')][0]
+        label.setOpenExternalLinks(False)
+        label.linkActivated.connect(open_site)
+        layout = dialog.layout()
+        never_chk = QtGui.QCheckBox('Never display this message again')
+        never_chk.toggled.connect(lambda state: self.settings.gGeneral.set_ShowUpdates(not state))
+        layout.addWidget(never_chk, layout.rowCount(), 0, 1, layout.columnCount())
+        self.version_check.update.connect(lambda update: dialog.exec_() if update else None)
 
     def show_settings(self):
         self.settings_dialog.exec_()

@@ -967,7 +967,7 @@ class SquareButton(QtGui.QAbstractButton):
     _text_align = QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter
     label_pos = BOTTOM
 
-    def __init__(self, parent=None, name='', inverted=False, color=color, checkable=False, checked=False, size=None, text_align=None, label_pos=label_pos):
+    def __init__(self, parent=None, name='', inverted=False, color=color, checkable=False, checked=False, size=None, min_size=None, text_align=None, label_pos=label_pos):
         QtGui.QAbstractButton.__init__(self, parent=parent)
         self.label_font = QtGui.QFont('Droid Sans', 9, QtGui.QFont.Bold)
         self.label_font_metrics = QtGui.QFontMetrics(self.label_font)
@@ -993,6 +993,8 @@ class SquareButton(QtGui.QAbstractButton):
 #            checked ^= inverted
 #            self.current_pen = self.active_pen if checked else self.unactive_pen
 #            self.current_color = self.active_color if checked else self.unactive_color
+        if min_size and size is None:
+            size = min_size
         if size:
             if isinstance(size, tuple):
                 w, h = size

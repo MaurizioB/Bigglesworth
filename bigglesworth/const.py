@@ -12,6 +12,8 @@ def local_path(name):
     current = path.dirname(path.abspath(__file__))
     if current.endswith('\\library.zip\\bigglesworth'):
         current = current.replace('\\library.zip', '')
+    elif current.endswith('/library.zip/bigglesworth'):
+        current = current.replace('/library.zip', '')
     return path.join(current, name)
 
 #with open('blofeld_params', 'rb') as _params_file:

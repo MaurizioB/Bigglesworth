@@ -10,6 +10,8 @@ def load_ui(widget, ui_path):
     current = path.dirname(path.abspath(__file__))
     if current.endswith('\\library.zip\\bigglesworth') or current.endswith('\\library.zip\\bigglesworth\\dialogs'):
         current = current.replace('\\library.zip', '')
+    elif current.endswith('/library.zip/bigglesworth') or current.endswith('/library.zip/bigglesworth/dialogs'):
+        current = current.replace('/library.zip', '')
     return uic.loadUi(path.join(current, ui_path), widget)
 
 def setBold(item, bold=True):
