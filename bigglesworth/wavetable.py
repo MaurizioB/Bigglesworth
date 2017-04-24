@@ -5,7 +5,12 @@ import struct
 import wave, audioop
 from random import shuffle
 from math import sqrt, pow, sin, pi
-from PyQt4 import QtCore, QtGui, QtMultimedia
+from PyQt4 import QtCore, QtGui
+try:
+    from PyQt4 import QtMultimedia
+    QTMULTIMEDIA = True
+except:
+    QTMULTIMEDIA = False
 
 from bigglesworth.utils import load_ui, setBoldItalic
 from bigglesworth.const import *
@@ -2047,25 +2052,31 @@ class WaveTableEditor(QtGui.QMainWindow):
 
         self.audio_buffer = AudioBuffer(self.waveobj_list)
 
-        format = QtMultimedia.QAudioFormat()
-        format.setChannels(1)
-        format.setFrequency(44100)
-        format.setSampleSize(16)
-        format.setCodec("audio/pcm")
-        format.setByteOrder(QtMultimedia.QAudioFormat.LittleEndian)
-        format.setSampleType(QtMultimedia.QAudioFormat.SignedInt)
-        self.output = QtMultimedia.QAudioOutput(format, self)
-        self.audio_timer = QtCore.QTimer()
-        self.audio_timer.setInterval(8)
-        self.audio_timer.timeout.connect(self.play_pos)
+        self.qtmultimedia = QTMULTIMEDIA
+        if QTMULTIMEDIA:
+            format = QtMultimedia.QAudioFormat()
+            format.setChannels(1)
+            format.setFrequency(44100)
+            format.setSampleSize(16)
+            format.setCodec("audio/pcm")
+            format.setByteOrder(QtMultimedia.QAudioFormat.LittleEndian)
+            format.setSampleType(QtMultimedia.QAudioFormat.SignedInt)
+            self.output = QtMultimedia.QAudioOutput(format, self)
+            self.audio_timer = QtCore.QTimer()
+            self.audio_timer.setInterval(8)
+            self.audio_timer.timeout.connect(self.play_pos)
+        else:
+            self.play_btn.setEnabled(False)
+            self.full_sweep_chk.setEnabled(False)
 
         self.dump_dialog = DumpDialog(self)
 
         self.name_edit.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp('[\x20-\x7f°]*')))
         self.name_edit.editingFinished.connect(lambda: (self.name_edit.setText(self.name_edit.text().leftJustified(14)), self.setFocus(QtCore.Qt.OtherFocusReason)))
 
-        self.addAction(self.wavetablePlayAction)
-        self.wavetablePlayAction.triggered.connect(lambda: self.play_btn.setChecked(not self.play_btn.isChecked()))
+        if QTMULTIMEDIA:
+            self.addAction(self.wavetablePlayAction)
+            self.wavetablePlayAction.triggered.connect(lambda: self.play_btn.setChecked(not self.play_btn.isChecked()))
 
         #wave editing
         self.reverse_btn.clicked.connect(lambda: self.wavetable_view.reverse_wave_values([self.currentWave]))

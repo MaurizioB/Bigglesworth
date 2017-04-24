@@ -2,7 +2,12 @@
 # *-* coding: utf-8 *-*
 
 import wave, audioop
-from PyQt4 import QtGui, QtCore, QtMultimedia
+from PyQt4 import QtGui, QtCore
+try:
+    from PyQt4 import QtMultimedia
+    QTMULTIMEDIA = True
+except:
+    QTMULTIMEDIA = False
 
 from bigglesworth.utils import load_ui
 
@@ -134,6 +139,11 @@ class WavePanel(QtGui.QWidget):
         self.play_btn.clicked.connect(self.play_toggle)
         self.pause_btn.toggled.connect(self.pause_toggle)
 
+        if not QTMULTIMEDIA:
+            self.play_btn.setEnabled(False)
+            self.autoplay_chk.setEnabled(False)
+            self.pause_btn.setEnabled(False)
+
     def clear_labels(self):
         for lbl in (self.channels_lbl, self.framerate_lbl, self.frames_lbl, self.sampwidth_lbl, self.length_lbl):
             lbl.setText('')
@@ -207,10 +217,11 @@ class WavePanel(QtGui.QWidget):
             self.wave_view.setWave(stream)
             self.file = file
             self.stream = stream
-            self.play_btn.setEnabled(True)
-            if self.autoplay_chk.isChecked():
-                self.play_btn.setChecked(True)
-                self.play_toggle(True)
+            if QTMULTIMEDIA:
+                self.play_btn.setEnabled(True)
+                if self.autoplay_chk.isChecked():
+                    self.play_btn.setChecked(True)
+                    self.play_toggle(True)
             self.info_icon.setVisible(False)
             self.isValid.emit(True)
 
