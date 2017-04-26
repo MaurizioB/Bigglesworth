@@ -23,7 +23,8 @@ def process_args():
     parser.add_argument('--rtmidi', help='Use rtmidi interface (mandatory for Windows)', action='store_true')
     parser.add_argument('-l', '--library-limit', metavar='N', type=int, help='Limit library to N sounds')
     parser.add_argument('-w', '--wavetable', metavar='WTFILE', nargs='?', const=True, help='Open Wavetable editor (with optional WTFILE)')
-    return parser.parse_args()
+    res, unknown = parser.parse_known_args()
+    return res
 
 args = process_args()
 if sys.platform in ('win32', 'darwin') or args.rtmidi:
