@@ -2161,7 +2161,7 @@ class ListView(QtGui.QListView):
 #            self.label_rect = QtCore.QRect(0, self.combo_rect.height()+self.spacing, self.width()-1, self.font_metrics.height())
 #        self.combo_text_rect = QtCore.QRect(self.combo_rect.x()+self.combo_padding, 1, self.width()-self.combo_padding-self.arrow_size, self.combo_rect.height())
 
-class Combo(QtGui.QWidget):
+class Combo(QtGui.QComboBox):
     _enabled_border_grad = QtGui.QConicalGradient(QtCore.QPointF(.5, .5), 45)
     _enabled_border_grad.setCoordinateMode(QtGui.QConicalGradient.ObjectBoundingMode)
     _enabled_border_grad.setColorAt(0, QtCore.Qt.darkGray)
@@ -2200,22 +2200,22 @@ class Combo(QtGui.QWidget):
     combo_rect = QtCore.QRectF(0, 0, 1, 1)
     combo_text_rect = QtCore.QRectF(0, 0, 1, 1)
     label_rect = None
-    font = QtGui.QFont('Droid Sans', 10, QtGui.QFont.Bold)
-    label_font = QtGui.QFont('Droid Sans', 9, QtGui.QFont.Bold)
     _label_pen_enabled = QtGui.QPen(QtCore.Qt.white)
     _label_pen_disabled = QtGui.QPen(QtCore.Qt.darkGray)
     _label_pen_colors = _label_pen_disabled, _label_pen_enabled
     label_pen = _label_pen_colors[1]
     indexChanged = QtCore.pyqtSignal(int)
     def __init__(self, parent=None, value_list=None, name='', wheel_dir=True, default=0):
-        QtGui.QWidget.__init__(self, parent)
+        QtGui.QComboBox.__init__(self, parent)
         self.combo_padding = 2
         self.spacing = 4
-        self.label_font_metrics = QtGui.QFontMetrics(QtGui.QFont('Droid Sans', 9, QtGui.QFont.Bold))
+        self.setFont(QtGui.QFont('Droid Sans', 10, QtGui.QFont.Bold))
         self.font_metrics = QtGui.QFontMetrics(QtGui.QFont('Droid Sans', 10, QtGui.QFont.Bold))
-        self.list = ListView(self)
-        self.setFocusPolicy(QtCore.Qt.WheelFocus)
-        self.list.indexChanged.connect(self.setCurrentIndex)
+        self.label_font = QtGui.QFont('Droid Sans', 9, QtGui.QFont.Bold)
+        self.label_font_metrics = QtGui.QFontMetrics(self.label_font)
+#        self.list = ListView(self)
+#        self.setFocusPolicy(QtCore.Qt.WheelFocus)
+#        self.list.indexChanged.connect(self.setCurrentIndex)
         if name:
             self.name = name
             self.setMinimumSize(10, self.font_metrics.height()+self.label_font_metrics.height()+self.spacing+self.combo_padding*2)
@@ -2224,22 +2224,23 @@ class Combo(QtGui.QWidget):
             self.name = None
             self.setMinimumSize(10, self.font_metrics.height()+self.combo_padding*2)
             self.setMaximumHeight(self.font_metrics.height()+self.combo_padding*2)
-        self.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
+#        self.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         self.value_list = []
         self.wheel_dir = 1 if wheel_dir else -1
         if value_list:
             self.add_items(value_list)
-            if not 0 <= default <= len(value_list):
-                default = 0
-            self.currentIndex = default
-            self._setValue(default)
+#            if not 0 <= default <= len(value_list):
+#                default = 0
+            self.setCurrentIndex(default)
+#            self._setValue(default)
         else:
             self.current = 'None'
-            self.currentIndex = -1
+#            self.setCurrentIndex(-1)
+        self.currentIndexChanged.connect(self.indexChanged)
 
     @property
     def value(self):
-        return self.currentIndex
+        return self.currentIndex()
 
     @property
     def count(self):
@@ -2247,11 +2248,12 @@ class Combo(QtGui.QWidget):
 
     @property
     def text_value(self):
-        return self.value_list[self.currentIndex]
+#        return self.value_list[self.currentIndex]
+        return self.currentText()
 
-    def focusOutEvent(self, event):
-        if self.list.isVisible():
-            self.list.hide()
+#    def focusOutEvent(self, event):
+#        if self.list.isVisible():
+#            self.list.hide()
 
     def changeEvent(self, event):
         if not event.type() == QtCore.QEvent.EnabledChange: return
@@ -2260,20 +2262,25 @@ class Combo(QtGui.QWidget):
         self.border_pen = self._border_pens[state]
         self.update()
 
-    def event(self, event):
-        if event.type() == QtCore.QEvent.ToolTip and self.combo_rect.contains(event.pos()):
-            QtGui.QToolTip.showText(event.globalPos(), self.current, self, self.combo_rect)
-        return QtGui.QWidget.event(self, event)
+#    def event(self, event):
+#        if event.type() == QtCore.QEvent.ToolTip and self.combo_rect.contains(event.pos()):
+#            QtGui.QToolTip.showText(event.globalPos(), self.current, self, self.combo_rect)
+#        return QtGui.QWidget.event(self, event)
 
     def _setValue(self, id):
-        self.currentIndex = id
-        self.current = self.value_list[id]
+        self.blockSignals(True)
+        self.setCurrentIndex(id)
+        self.blockSignals(False)
+#        self.currentIndex = id
+#        self.current = self.value_list[id]
         self.update()
 
-    def setCurrentIndex(self, id):
-        self._setValue(id)
-        self.indexChanged.emit(id)
-        self.update()
+#    def setCurrentIndex(self, id):
+#        print 'ofkssd'
+#        self._setValue(id)
+#        self.indexChanged.emit(id)
+#        self.update()
+#        QtGui.QComboBox.setCurrentIndex(self, id)
 
     def paintEvent(self, e):
         qp = QtGui.QPainter()
@@ -2284,10 +2291,10 @@ class Combo(QtGui.QWidget):
 #        qp.drawRoundedRect(0, 0, self.width()-1, self.height()-1, 2, 2)
         qp.drawRoundedRect(self.combo_rect, 2, 2)
 
-        qp.setFont(self.font)
+        qp.setFont(self.font())
         qp.setPen(self.label_pen)
 #        qp.drawText(self.combo_padding, 0, self.width()-self.combo_padding, self.height(), QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter, self.current)
-        qp.drawText(self.combo_text_rect, QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter, self.current)
+        qp.drawText(self.combo_text_rect, QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter, self.currentText())
 
         if self.label_rect:
             qp.setFont(self.label_font)
@@ -2300,50 +2307,52 @@ class Combo(QtGui.QWidget):
 
         qp.end()
 
-    def mousePressEvent(self, event):
-        if not self.combo_rect.contains(event.pos()): return
-        if event.button() == QtCore.Qt.LeftButton:
-            if not self.list.isVisible():
-                self.show_list()
-            else:
-                self.list.hide()
+#    def mousePressEvent(self, event):
+#        if not self.combo_rect.contains(event.pos()): return
+#        if event.button() == QtCore.Qt.LeftButton:
+#            if not self.list.isVisible():
+#                self.show_list()
+#            else:
+#                self.list.hide()
 
-    def wheelEvent(self, event):
-        if self.list.isVisible():
-            self.list.hide()
-        index = self.currentIndex - self.wheel_dir if event.delta() > 1 else self.currentIndex + self.wheel_dir
-        if index < 0:
-            index = 0
-        if index >= len(self.value_list):
-            index = len(self.value_list) - 1
-        self.setCurrentIndex(index)
+#    def wheelEvent(self, event):
+#        if self.list.isVisible():
+#            self.list.hide()
+#        index = self.currentIndex - self.wheel_dir if event.delta() > 1 else self.currentIndex + self.wheel_dir
+#        if index < 0:
+#            index = 0
+#        if index >= len(self.value_list):
+#            index = len(self.value_list) - 1
+#        self.setCurrentIndex(index)
 
-    def show_list(self):
-        if not self.value_list: return
-        pos = self.mapToGlobal(QtCore.QPoint(0, 0))
-        self.list.move(pos.x(), pos.y()+self.combo_rect.height())
-        self.list.show()
-        self.list.setFocus(QtCore.Qt.ActiveWindowFocusReason)
-        self.list.setCurrentIndex(self.list.model.index(self.currentIndex, 0))
+#    def show_list(self):
+#        if not self.value_list: return
+#        pos = self.mapToGlobal(QtCore.QPoint(0, 0))
+#        self.list.move(pos.x(), pos.y()+self.combo_rect.height())
+#        self.list.show()
+#        self.list.setFocus(QtCore.Qt.ActiveWindowFocusReason)
+#        self.list.setCurrentIndex(self.list.model.index(self.currentIndex, 0))
 
-    def keyPressEvent(self, event):
-        if event.key() == QtCore.Qt.Key_Escape:
-            self.list.hide()
-        if self.list.isVisible():
-            self.list.keyPressEvent(event)
+#    def keyPressEvent(self, event):
+#        if event.key() == QtCore.Qt.Key_Escape:
+#            self.list.hide()
+#        if self.list.isVisible():
+#            self.list.keyPressEvent(event)
 
 
     def add_items(self, value_list):
         for item in value_list:
-            self.add_item(item)
+#            self.add_item(item)
+            self.value_list.append(item)
         max_length = max([self.font_metrics.width(txt)+self.combo_padding*2 for txt in self.value_list]+[self.label_font_metrics.width(self.name) if self.name else 0])
         self.setMinimumWidth(max_length+self.arrow_size)
         self.current = value_list[0]
-        self.list.setMinimumWidth(self.minimumWidth())
-        self.list.add_items(value_list)
+        self.addItems(value_list)
+#        self.list.setMinimumWidth(self.minimumWidth())
+#        self.list.add_items(value_list)
 
-    def add_item(self, item):
-        self.value_list.append(item)
+#    def add_item(self, item):
+#        self.value_list.append(item)
 
     def resizeEvent(self, event):
         if not self.name:

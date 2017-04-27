@@ -1,8 +1,10 @@
 #!/usr/bin/env python2.7
 # *-* coding: utf-8 *-*
 
-import sys, argparse
+import sys
+import argparse
 import pickle
+import re
 from os import path, makedirs
 from string import uppercase
 from PyQt4 import QtCore, QtGui
@@ -23,6 +25,7 @@ def process_args():
     parser.add_argument('--rtmidi', help='Use rtmidi interface (mandatory for Windows)', action='store_true')
     parser.add_argument('-l', '--library-limit', metavar='N', type=int, help='Limit library to N sounds')
     parser.add_argument('-w', '--wavetable', metavar='WTFILE', nargs='?', const=True, help='Open Wavetable editor (with optional WTFILE)')
+    parser.add_argument('-e', '--editor', metavar='BXXX', nargs='?', const=True, help='Open Sound editor (with INIT sound or optional sound XXX from bank B, eg. A001)')
     res, unknown = parser.parse_known_args()
     if unknown:
         print 'Unknown parameters ignored:'
@@ -271,18 +274,42 @@ class BigglesworthObject(QtCore.QObject):
         #WAVETABLE
         self.wave_table = WaveTableEditor(self)
         self.librarian.wavetableAction.triggered.connect(lambda: [self.wave_table.show(), self.wave_table.activateWindow()])
-        if args.wavetable:
-            if args.wavetable is True:
-                self.wave_table.show()
         self.wave_table.wavetable_send.connect(self.wavetable_send)
 
         self.midi_connect()
 #        self.dump_win.show()
 
+        if args.wavetable:
+            if args.wavetable is True:
+                self.wave_table.show()
+        if args.editor:
+            self.startup_show_editor(args.editor)
+
         if self.settings.gGeneral.get_ShowUpdates(True):
             self.startup_version_check()
 #        QtGui.QMessageBox.information(self.librarian, 'Test build', 'This is a test build!!! Have fun!')
 #        self.activate_editor(0, 0)
+
+    def startup_show_editor(self, data):
+        def show_editor():
+            self.loader.loaded.disconnect(show_editor)
+            self.activate_editor(*sound)
+        self.loader.loaded.connect(show_editor)
+        if isinstance(data, bool):
+            sound = None, None
+        else:
+            valid = re.compile(r'^([a-zA-Z])([0-9]{1,3})$')
+            res = valid.match(data)
+            if not res:
+                sound = None, None
+            else:
+                bank = uppercase.index(res.groups()[0].upper())
+                prog = int(res.groups()[1]) - 1
+                if prog < 0:
+                    prog = 0
+                elif prog > 127:
+                    prog = 127
+                sound = bank, prog
 
     def startup_version_check(self, active=False):
         def open_site(url):

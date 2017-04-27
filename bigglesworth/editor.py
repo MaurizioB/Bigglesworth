@@ -1916,6 +1916,8 @@ class BlofeldDisplay(QtGui.QGraphicsView):
             self.prog_name.focusOutEvent(event)
 
     def contextMenuEvent(self, event):
+        if self.main.blofeld_library.menu is None:
+            self.main.blofeld_library.create_menu()
         item = self.scene.itemAt(event.pos())
         if item == self.midi_btn:
             self.show_midi_menu(event.pos())
@@ -2531,9 +2533,9 @@ class Editor(QtGui.QMainWindow):
         if state:
             self.sound_edited.emit()
 
-    def showEvent(self, event):
-        if self.blofeld_library.menu is None:
-            self.blofeld_library.create_menu()
+#    def showEvent(self, event):
+#        if self.blofeld_library.menu is None:
+#            self.blofeld_library.create_menu()
 
     def closeEvent(self, event):
         if self.main.closeDetect(self):
@@ -2833,9 +2835,9 @@ class Editor(QtGui.QMainWindow):
         for env in self.envelopes:
             env.compute_envelope()
             env.update()
-        self.set_effect_1_widgets(self.effects_1_type.currentIndex)
-        self.set_effect_2_widgets(self.effects_2_type.currentIndex)
-        self.filter_routing_combo.indexChanged.emit(self.filter_routing_combo.currentIndex)
+        self.set_effect_1_widgets(self.effects_1_type.currentIndex())
+        self.set_effect_2_widgets(self.effects_2_type.currentIndex())
+#        self.filter_routing_combo.indexChanged.emit(self.filter_routing_combo.currentIndex())
 
     def create_display(self):
         layout = QtGui.QGridLayout()

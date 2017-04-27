@@ -388,9 +388,14 @@ class Library(QtCore.QObject):
         cat_item.setData(cat, CatRole)
 
     def __getitem__(self, req):
+        if req is None:
+            return None
         if not isinstance(req, tuple):
             req = divmod(req, 128)
-        return self.data[req[0]][req[1]]
+        try:
+            return self.data[req[0]][req[1]]
+        except:
+            return None
 
 
 class LibraryModel(QtGui.QStandardItemModel):
