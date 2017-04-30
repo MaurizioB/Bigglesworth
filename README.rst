@@ -7,7 +7,10 @@ Bigglesworth
 
 Bigglesworth is an editor and librarian for the Waldorf Blofeld synthesizer.
 
-This is a pre-release version, some of the features are not available yet.
+Official website: http://bigglesworth.it
+
+This is a pre-release version, some of the features are not complete or
+available yet.
 
 Features
 --------
@@ -28,7 +31,7 @@ Linux requirements
 ------------------
 
 -  Python 2.7
--  PyQt4 >= 4.11.1
+-  PyQt4 >= 4.11.1 with QtMultimedia support (not mandatory, required for audio previews in the Wavetable editor)
 -  pyalsa
 
 Windows requirements
