@@ -6,12 +6,9 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>869</width>
+    <width>891</width>
     <height>688</height>
    </rect>
-  </property>
-  <property name="windowTitle">
-   <string>Wavetable editor</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -703,7 +700,7 @@
               </sizepolicy>
              </property>
              <property name="text">
-              <string>MyNewWavetable</string>
+              <string>MyWavetable001</string>
              </property>
              <property name="maxLength">
               <number>14</number>
@@ -719,6 +716,9 @@
            </item>
            <item row="0" column="4">
             <widget class="QSpinBox" name="slot_spin">
+             <property name="keyboardTracking">
+              <bool>false</bool>
+             </property>
              <property name="minimum">
               <number>80</number>
              </property>
@@ -887,7 +887,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>869</width>
+     <width>891</width>
      <height>17</height>
     </rect>
    </property>
@@ -895,6 +895,9 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
+    <addaction name="newWavetableAction"/>
+    <addaction name="saveAction"/>
+    <addaction name="separator"/>
     <addaction name="wavImportAction"/>
     <addaction name="wavetableImportAction"/>
    </widget>
@@ -906,8 +909,16 @@
     <addaction name="redoAction"/>
     <addaction name="undoHistoryAction"/>
    </widget>
+   <widget class="QMenu" name="menuWindows">
+    <property name="title">
+     <string>Windows</string>
+    </property>
+    <addaction name="showLibraryAction"/>
+    <addaction name="separator"/>
+   </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Edit"/>
+   <addaction name="menuWindows"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="wavImportAction">
@@ -947,6 +958,27 @@
   <action name="undoHistoryAction">
    <property name="text">
     <string>Undo history...</string>
+   </property>
+  </action>
+  <action name="newWavetableAction">
+   <property name="text">
+    <string>New wavetable window</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="showLibraryAction">
+   <property name="text">
+    <string>Wavetable library</string>
+   </property>
+  </action>
+  <action name="saveAction">
+   <property name="text">
+    <string>Save to library</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
    </property>
   </action>
  </widget>
@@ -1004,8 +1036,8 @@
      <y>297</y>
     </hint>
     <hint type="destinationlabel">
-     <x>434</x>
-     <y>343</y>
+     <x>-1</x>
+     <y>-1</y>
     </hint>
    </hints>
   </connection>

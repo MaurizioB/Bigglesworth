@@ -43,7 +43,7 @@ pow14 = 2**14
 pow12 = 2**12
 
 DRAW_FREE, DRAW_LINE, DRAW_CURVE = range(3)
-REVERSE_WAVES, REVERSE_VALUES, REVERSE_FULL, INVERT_VALUES, SHUFFLE_WAVES, SINE_WAVES, CLEAR_WAVES, INTERPOLATE_VALUES, MORPH_WAVES, DROP_WAVE, DROP_WAVE_SOURCE, WAVETABLE_IMPORT = (16 + i for i in xrange(12))
+REVERSE_WAVES, REVERSE_VALUES, REVERSE_FULL, INVERT_VALUES, SHUFFLE_WAVES, SINE_WAVES, CLEAR_WAVES, INTERPOLATE_VALUES, MORPH_WAVES, DROP_WAVE, DROP_WAVE_SOURCE, WAVETABLE_IMPORT, SLOT_CHANGE, NAME_CHANGE = (16 + i for i in xrange(14))
 
 sine128 = tuple(sin(2 * pi * r * (0.0078125)) for r in xrange(128))
 
@@ -194,6 +194,57 @@ class MultiWaveUndo(QtGui.QUndoCommand):
             wave_obj.setValues(values[1])
 
 
+class SlotChangeUndo(QtGui.QUndoCommand):
+    def __init__(self, spin, original, new=None):
+        QtGui.QUndoCommand.__init__(self)
+        self.spin = spin
+        self.original = int(original)
+        self.new = new if new is not None else original
+        self.setText('Change slot to {}'.format(new))
+
+    def isChanged(self):
+        if self.original != self.new:
+            return True
+        return False
+
+    def finalize(self, value):
+#        self.new = int(value)
+        self.new = value
+        self.setText('Change slot to {}'.format(value))
+
+    def undo(self):
+        self.spin.blockSignals(True)
+        self.spin.setValue(self.original)
+        self.spin.blockSignals(False)
+
+    def redo(self):
+        self.spin.blockSignals(True)
+        self.spin.setValue(self.new)
+        self.spin.blockSignals(False)
+
+class NameChangeUndo(QtGui.QUndoCommand):
+    def __init__(self, edit, original, new):
+        QtGui.QUndoCommand.__init__(self)
+        self.edit = edit
+        self.original = str(original).rstrip()
+        self.new = str(new).rstrip()
+        self.setText('Change name to "{}"'.format(new))
+
+    def finalize(self, value):
+        if str(value).rstrip() != self.original:
+            self.new = value
+            self.setText('Change slot to {}'.format(value))
+
+    def undo(self):
+        self.edit.blockSignals(True)
+        self.edit.setText(self.original)
+        self.edit.blockSignals(False)
+
+    def redo(self):
+        self.edit.blockSignals(True)
+        self.edit.setText(self.new)
+        self.edit.blockSignals(False)
+
 class DumpDialog(QtGui.QDialog):
     def __init__(self, main):
         QtGui.QDialog.__init__(self, main)
@@ -213,7 +264,7 @@ class DumpDialog(QtGui.QDialog):
         layout.addWidget(QtGui.QLabel('Please wait, and do not touch the Blofeld!'), 1, 1, 1, 1)
 
         self.slot = 80
-        self.name = 'MyNewWavetable'
+        self.name = 'MyWavetable001'
 
     def setData(self, slot, name):
         self.slot = slot
@@ -926,6 +977,22 @@ class WaveObject(QtCore.QObject):
         if not self.selected_state:
             self.preview_path_item.setPen(self.preview_pens[state])
 
+class MimeData(QtCore.QMimeData):
+    def __init__(self):
+        QtCore.QMimeData.__init__(self)
+        self.referenceDataObject = None
+
+    def hasFormat(self, mime):
+        if mime == 'data/reference' and self.referenceDataObject:
+            return True
+        return QtCore.QMimeData.hasFormat(self, mime)
+
+    def setReferenceData(self, obj):
+        self.referenceDataObject = obj
+
+    def referenceData(self):
+        return self.referenceDataObject
+
 
 class WaveTableView(QtGui.QGraphicsView):
     editAction = QtCore.pyqtSignal(int, bool, object)
@@ -944,6 +1011,9 @@ class WaveTableView(QtGui.QGraphicsView):
         self.scene().selectionChanged.connect(self.selection_update)
         self.setDragMode(self.RubberBandDrag)
 
+    def setMain(self, main):
+        self.main = main
+
     def createDragData(self):
         if not self.selection: return
         start = self.selection[0]
@@ -951,8 +1021,9 @@ class WaveTableView(QtGui.QGraphicsView):
         if start == end:
             self.waveobj_list[start].preview_rect.setSelected(True)
         self.drag = QtGui.QDrag(self)
-        data = QtCore.QMimeData()
+        data = MimeData()
         data.setData('audio/waves', QtCore.QByteArray('{}:{}'.format(start, end)))
+        data.setReferenceData(self.main)
         pixmap = QtGui.QPixmap(int(self.viewport().rect().width() / 64. * (end - start + 1)), self.height())
         pixmap.fill(QtGui.QColor(192, 192, 192, 128))
         qp = QtGui.QPainter(pixmap)
@@ -1282,10 +1353,11 @@ class WaveTableView(QtGui.QGraphicsView):
         items = [i for i in self.items(event.pos()) if isinstance(i, WavePlaceHolderItem)]
         if not items: return
         index = items[0].index
-        if event.mimeData().hasFormat('audio/wavesamples'):
-            data = event.mimeData().data('audio/wavesamples')
+        mimedata = event.mimeData()
+        if mimedata.hasFormat('audio/wavesamples'):
+            data = mimedata.data('audio/wavesamples')
             slice_range = len(data) / 256
-            self.dropAction.emit(DROP_WAVE, True, self.waveobj_list[index:index + slice_range], '"{}"'.format(event.mimeData().text()))
+            self.dropAction.emit(DROP_WAVE, True, self.waveobj_list[index:index + slice_range], '"{}"'.format(mimedata.text()))
             for w in xrange(slice_range):
                 values = []
                 for s in xrange(128):
@@ -1295,16 +1367,26 @@ class WaveTableView(QtGui.QGraphicsView):
                 r.preview_rect.setHighlight(False)
             self.dropAction.emit(DROP_WAVE, False, self.waveobj_list[index:index + slice_range], '')
             event.accept()
-        elif event.mimeData().hasFormat('audio/waves'):
-            start, end = map(int, str(event.mimeData().data('audio/waves')).split(':'))
-            data_list = []
+        elif mimedata.hasFormat('audio/waves'):
+            start, end = map(int, str(mimedata.data('audio/waves')).split(':'))
             wave_len = end - start + 1
             if start == end:
                 drop_text = 'wave {}'.format(start)
             else:
-                drop_text = 'wave {} to {}'.format(start, end)
+                drop_text = 'wave {} to {}'.format(start + 1, end + 1)
+
+            if mimedata.hasFormat('data/reference'):
+                ref = mimedata.referenceData()
+                if ref == self.main:
+                    source = self.waveobj_list
+                else:
+                    source = ref.waveobj_list
+                    drop_text = 'from "{}" {}'.format(ref.wavetable_name, drop_text)
+            else:
+                source = self.waveobj_list
+            data_list = []
             self.dropAction.emit(DROP_WAVE, True, self.waveobj_list[index:index + wave_len], drop_text)
-            for wave_obj in self.waveobj_list[start:end + 1]:
+            for wave_obj in source[start:end + 1]:
                 data_list.append(wave_obj.values)
             for i, wave_obj in enumerate(self.waveobj_list[index:index + wave_len]):
                 wave_obj.setValues(data_list[i])
@@ -1930,6 +2012,7 @@ class AudioBuffer(QtCore.QBuffer):
 
 class WaveTableEditor(QtGui.QMainWindow):
     wavetable_send = QtCore.pyqtSignal(object)
+    closed = QtCore.pyqtSignal(object)
 
     def __init__(self, main):
         QtGui.QMainWindow.__init__(self)
@@ -1940,6 +2023,7 @@ class WaveTableEditor(QtGui.QMainWindow):
         self.undo.canUndoChanged.connect(self.undo_btn.setEnabled)
         self.undo.canRedoChanged.connect(self.redo_btn.setEnabled)
         self.undo_dialog = UndoDialog(self)
+        self.currentUndo = None
 
         self.undoAction.triggered.connect(self.undo.undo)
         self.redoAction.triggered.connect(self.undo.redo)
@@ -1957,6 +2041,7 @@ class WaveTableEditor(QtGui.QMainWindow):
         self.wave_source_view.installEventFilter(self)
         self.wave_source_view.statusTip.connect(self.setStatusTip)
         self.wave_layout.insertWidget(0, self.wave_source_view)
+        self.wavetable_view.setMain(self)
         self.wave_source_view.setMain(self)
         self.wave_source_view.sampleSelectionChanged.connect(self.setSampleSelection)
         self.sel_start = 0
@@ -2071,8 +2156,15 @@ class WaveTableEditor(QtGui.QMainWindow):
 
         self.dump_dialog = DumpDialog(self)
 
+        self.wavetable_name = self.name_edit.text()
         self.name_edit.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp('[\x20-\x7f°]*')))
-        self.name_edit.editingFinished.connect(lambda: (self.name_edit.setText(self.name_edit.text().leftJustified(14)), self.setFocus(QtCore.Qt.OtherFocusReason)))
+#        self.name_edit.editingFinished.connect(lambda: (self.name_edit.setText(self.name_edit.text().leftJustified(14)), self.setFocus(QtCore.Qt.OtherFocusReason)))
+        self.name_edit.editingFinished.connect(self.wavetable_name_set)
+        self.name_edit.textEdited.connect(self.wavetable_name_change)
+        self.setWindowTitle()
+        self.slot = self.slot_spin.value()
+        self.slot_spin.valueChanged.connect(self.wavetable_slot_set)
+        self.slot_spin.editingFinished.connect(self.wavetable_slot_set_finish)
 
         if QTMULTIMEDIA:
             self.addAction(self.wavetablePlayAction)
@@ -2083,21 +2175,93 @@ class WaveTableEditor(QtGui.QMainWindow):
         self.invert_btn.clicked.connect(lambda: self.wavetable_view.invert_waves([self.currentWave]))
         self.smooth_btn.clicked.connect(lambda: self.wavetable_view.interpolate_values([self.currentWave]))
 
+        self.menuWindows.aboutToShow.connect(self.populate_wavetable_window_menu)
+        self.wavetable_window_list = self.main.wavetable_list
+        self.wavetable_window_actions = []
+
         self.installEventFilter(self)
 
+    def wavetable_name_change(self, text):
+        self.undo_push(NAME_CHANGE, True, self.wavetable_name, text)
+
+    def setWindowTitle(self, name=None):
+        QtGui.QMainWindow.setWindowTitle(self, 'Wavetable editor - {}'.format(name))
+
+    def wavetable_name_set(self):
+        self.name_edit.setText(self.name_edit.text().leftJustified(14))
+        name = str(self.name_edit.text()).rstrip()
+        self.undo_push(NAME_CHANGE, False, name)
+        self.wavetable_name = name
+        self.setWindowTitle(name)
+        self.setFocus(QtCore.Qt.OtherFocusReason)
+
+    def wavetable_slot_set(self, slot):
+        self.undo_push(SLOT_CHANGE, True, self.slot, slot)
+        self.slot = slot
+
+    def wavetable_slot_set_finish(self):
+        self.undo_push(SLOT_CHANGE, False, self.slot_spin.value())
+
+    def populate_wavetable_window_menu(self):
+        window_list = set([w for w in self.wavetable_window_list if w is not self])
+        window_actions = {action.data().toPyObject():action for action in self.wavetable_window_actions}
+        for window in window_list:
+            if window not in window_actions:
+                action = QtGui.QAction(window.name_edit.text(), self)
+                self.menuWindows.addAction(action)
+                self.wavetable_window_actions.append(action)
+        for window, action in window_actions.items():
+            if window not in window_list:
+                self.menuWindows.removeAction(action)
+
+    def midi_output_state(self, conn):
+        state = True if conn else False
+        self.dump_btn.setEnabled(state)
+
+    def closeEvent(self, event):
+        self.closed.emit(self)
+        self.wavetable_window_list.pop(self.wavetable_window_list.index(self))
+        if not any([self.main.librarian.isVisible(), self.main.editor.isVisible(), len(self.wavetable_window_list)]):
+            self.main.librarian.show()
+        
+
     def undo_push(self, action, state, *data):
+        if isinstance(self.currentUndo, SlotChangeUndo) and action != SLOT_CHANGE:
+            self.currentUndo.finalize(self.slot_spin.value())
+            if self.currentUndo.isChanged():
+                self.undo.push(self.currentUndo)
+            self.currentUndo = None
         if action in (DRAW_FREE, DRAW_CURVE, DRAW_LINE):
             if state:
                 self.currentUndo = SingleWaveUndo(action, self.waveobj_list[self.currentWave])
             else:
                 self.currentUndo.finalize(self.waveobj_list[self.currentWave].values)
                 self.undo.push(self.currentUndo)
+                self.currentUndo = None
+        elif action == NAME_CHANGE:
+            if state:
+                self.currentUndo = NameChangeUndo(self.name_edit, *data)
+            elif self.currentUndo is not None:
+                self.currentUndo.finalize(data[0])
+                self.undo.push(self.currentUndo)
+                self.currentUndo = None
+        elif action == SLOT_CHANGE:
+            if self.currentUndo is None:
+                self.currentUndo = SlotChangeUndo(self.slot_spin, *data)
+            elif state:
+                self.currentUndo.finalize(data[1])
+            else:
+                self.currentUndo.finalize(data[0])
+                if self.currentUndo.isChanged():
+                    self.undo.push(self.currentUndo)
+                self.currentUndo = None
         else:
             if state:
                 self.currentUndo = MultiWaveUndo(action, *data)
             else:
                 self.currentUndo.finalize(data[0])
                 self.undo.push(self.currentUndo)
+                self.currentUndo = None
 
     def setStatusTip(self, text):
         if not text:

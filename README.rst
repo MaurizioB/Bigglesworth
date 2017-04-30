@@ -14,7 +14,7 @@ Features
 
 Features in *italics* are still under development
 
-- Works on Linux and Windows (Windows releases are experimental)
+- Works on Linux, OSX and Windows (OSX/Windows releases are experimental)
 - Direct sound parameter editing
 - Virtual keyboard (with input from the computer keyboard)
 - Dumping sounds from Blofeld
@@ -48,7 +48,7 @@ main directory:
 
     $ ./Bigglesworth
 
-For Windows, just visit the Releases_ page.
+For OSX and Windows, just visit the Releases_ page.
 
 Usage
 -----

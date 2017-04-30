@@ -94,6 +94,7 @@ class MidiImportDialog(QtGui.QDialog):
         self.import_btn.clicked.connect(self.import_sounds)
 
         self.dump_btn = QtGui.QPushButton('Dump all')
+        self.dump_btn.setEnabled(False)
         self.dump_btn.setIcon(self.style().standardIcon(QtGui.QStyle.SP_ArrowRight))
         self.buttonBox.addButton(self.dump_btn, QtGui.QDialogButtonBox.ActionRole)
         self.dump_btn.clicked.connect(self.dump_sounds)
@@ -143,10 +144,7 @@ class MidiImportDialog(QtGui.QDialog):
         self.apply_btn.setEnabled(False)
 
     def midi_output_state(self, conn):
-        if conn:
-            state = True
-        else:
-            state = False
+        state = True if conn else False
         self.dump_btn.setEnabled(state)
         self.single_dump_btn.setEnabled(state)
         self.doubleclick_dump_chk.setEnabled(state)

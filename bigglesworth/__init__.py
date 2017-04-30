@@ -272,23 +272,38 @@ class BigglesworthObject(QtCore.QObject):
         self.wave_import = WaveLoad(self)
 
         #WAVETABLE
-        self.wave_table = WaveTableEditor(self)
-        self.librarian.wavetableAction.triggered.connect(lambda: [self.wave_table.show(), self.wave_table.activateWindow()])
-        self.wave_table.wavetable_send.connect(self.wavetable_send)
+        self.wavetable_list = []
+        self.librarian.wavetableAction.triggered.connect(self.wavetable_show)
 
         self.midi_connect()
-#        self.dump_win.show()
 
         if args.wavetable:
             if args.wavetable is True:
-                self.wave_table.show()
+                self.wavetable_show()
         if args.editor:
             self.startup_show_editor(args.editor)
 
         if self.settings.gGeneral.get_ShowUpdates(True):
             self.startup_version_check()
 #        QtGui.QMessageBox.information(self.librarian, 'Test build', 'This is a test build!!! Have fun!')
-#        self.activate_editor(0, 0)
+
+    def wavetable_show(self):
+        if not self.wavetable_list:
+            self.new_wavetable()
+        else:
+            latest = self.wavetable_list[-1]
+            latest.show()
+            latest.activateWindow()
+
+    def new_wavetable(self):
+        wavetable_window = WaveTableEditor(self)
+        self.wavetable_list.append(wavetable_window)
+        wavetable_window.wavetable_send.connect(self.wavetable_send)
+        self.output_conn_state_change.connect(wavetable_window.midi_output_state)
+        wavetable_window.show()
+        wavetable_window.activateWindow()
+        wavetable_window.newWavetableAction.triggered.connect(self.new_wavetable)
+
 
     def startup_show_editor(self, data):
         def show_editor():
@@ -568,7 +583,7 @@ class BigglesworthObject(QtCore.QObject):
                             else:
                                 blofeld_port.connect(self.input)
                             continue
-                elif client.name == 'Blofeld' and len(client.ports) == 1 and client.ports[0].name == 'Blofeld MIDI ':
+                elif client.name == 'Blofeld' and len(client.ports) == 1 and client.ports[0].name.startswith('Blofeld MIDI 1'):
                     self.graph.port_id_dict[cid][0].connect(self.seq.client_id, self.input.id)
 #                    self.graph.port_id_dict[self.seq.client_id][self.output.id].connect(cid, 0)
                     self.output.connect(cid, 0)
@@ -864,7 +879,7 @@ class BigglesworthObject(QtCore.QObject):
 
     def closeDetect(self, win=None):
         if win:
-            win_list = set((self.librarian, self.editor, self.wave_table))
+            win_list = set((self.librarian, self.editor) + tuple(self.wavetable_list))
             win_list.discard(win)
             if any(win.isVisible() for win in win_list):
                 return True
