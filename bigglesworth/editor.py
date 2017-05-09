@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.7
 # *-* coding: utf-8 *-*
 
+import sys
 import pickle
 from string import uppercase
 from itertools import cycle
@@ -2387,34 +2388,47 @@ class Editor(QtGui.QMainWindow):
         filter_matrix_cycle.next()
         filter_matrix_labels = 'Mod Matrix Editor', 'Filters'
 
-        filter_opacity = QtGui.QGraphicsOpacityEffect()
-        filter_opacity.setOpacity(1)
-        filter_widget.setGraphicsEffect(filter_opacity)
-        filter_widget.raise_()
-        filter_opacity_anim = QtCore.QPropertyAnimation(filter_opacity, 'opacity')
-        filter_opacity_anim.setDuration(200)
+        if sys.platform == 'darwin':
+            filter_matrix_tuple = filter_widget, matrix_widget
+            matrix_widget.hide()
+            def filter_matrix_set():
+                id = filter_matrix_cycle.next()
+                for i, w in enumerate(filter_matrix_tuple):
+                    if i == id:
+                        w.show()
+                    else:
+                        w.hide()
+                self.filter_matrix_toggle_state.emit(id)
+                self.filter_matrix_toggle_btn.setText(filter_matrix_labels[id])
+        else:
+            filter_opacity = QtGui.QGraphicsOpacityEffect()
+            filter_opacity.setOpacity(1)
+            filter_widget.setGraphicsEffect(filter_opacity)
+            filter_widget.raise_()
+            filter_opacity_anim = QtCore.QPropertyAnimation(filter_opacity, 'opacity')
+            filter_opacity_anim.setDuration(200)
 
-        matrix_opacity = QtGui.QGraphicsOpacityEffect()
-        matrix_opacity.setOpacity(0)
-        matrix_widget.setGraphicsEffect(matrix_opacity)
-        matrix_opacity_anim = QtCore.QPropertyAnimation(matrix_opacity, 'opacity')
-        matrix_opacity_anim.setDuration(200)
-        filter_matrix_tuple = (filter_widget, filter_opacity_anim), (matrix_widget, matrix_opacity_anim)
+            matrix_opacity = QtGui.QGraphicsOpacityEffect()
+            matrix_opacity.setOpacity(0)
+            matrix_widget.setGraphicsEffect(matrix_opacity)
+            matrix_opacity_anim = QtCore.QPropertyAnimation(matrix_opacity, 'opacity')
+            matrix_opacity_anim.setDuration(200)
+            filter_matrix_tuple = (filter_widget, filter_opacity_anim), (matrix_widget, matrix_opacity_anim)
 
-        def filter_matrix_set():
-            id = filter_matrix_cycle.next()
-            for i, (w, a) in enumerate(filter_matrix_tuple):
-                if i == id:
-                    a.setStartValue(0)
-                    a.setEndValue(1)
-                    a.start()
-                    w.raise_()
-                else:
-                    a.setStartValue(1)
-                    a.setEndValue(0)
-                    a.start()
-            self.filter_matrix_toggle_state.emit(id)
-            self.filter_matrix_toggle_btn.setText(filter_matrix_labels[id])
+            def filter_matrix_set():
+                id = filter_matrix_cycle.next()
+                for i, (w, a) in enumerate(filter_matrix_tuple):
+                    if i == id:
+                        a.setStartValue(0)
+                        a.setEndValue(1)
+                        a.start()
+                        w.raise_()
+                    else:
+                        a.setStartValue(1)
+                        a.setEndValue(0)
+                        a.start()
+                self.filter_matrix_toggle_state.emit(id)
+                self.filter_matrix_toggle_btn.setText(filter_matrix_labels[id])
 
         self.filter_matrix_toggle_btn.clicked.connect(lambda state: filter_matrix_set())
 
@@ -2450,34 +2464,47 @@ class Editor(QtGui.QMainWindow):
         arp_widget.setContentsMargins(0, 0, 0, 0)
 #        arp_widget.setLayout(self.create_arp_editor())
 
-        adv_opacity = QtGui.QGraphicsOpacityEffect()
-        adv_opacity.setOpacity(1)
-        adv_widget.setGraphicsEffect(adv_opacity)
-        adv_widget.raise_()
-        adv_opacity_anim = QtCore.QPropertyAnimation(adv_opacity, 'opacity')
-        adv_opacity_anim.setDuration(200)
+        if sys.platform == 'darwin':
+            adv_arp_tuple = adv_widget, arp_widget
+            arp_widget.hide()
+            def adv_arp_set():
+                id = adv_arp_cycle.next()
+                for i, w in enumerate(adv_arp_tuple):
+                    if i == id:
+                        w.show()
+                    else:
+                        w.hide()
+                self.efx_arp_toggle_state.emit(id)
+                self.efx_arp_toggle_btn.setText(adv_arp_labels[id])
+        else:
+            adv_opacity = QtGui.QGraphicsOpacityEffect()
+            adv_opacity.setOpacity(1)
+            adv_widget.setGraphicsEffect(adv_opacity)
+            adv_widget.raise_()
+            adv_opacity_anim = QtCore.QPropertyAnimation(adv_opacity, 'opacity')
+            adv_opacity_anim.setDuration(200)
 
-        arp_opacity = QtGui.QGraphicsOpacityEffect()
-        arp_opacity.setOpacity(0)
-        arp_widget.setGraphicsEffect(arp_opacity)
-        arp_opacity_anim = QtCore.QPropertyAnimation(arp_opacity, 'opacity')
-        arp_opacity_anim.setDuration(200)
-        adv_arp_tuple = (adv_widget, adv_opacity_anim), (arp_widget, arp_opacity_anim)
+            arp_opacity = QtGui.QGraphicsOpacityEffect()
+            arp_opacity.setOpacity(0)
+            arp_widget.setGraphicsEffect(arp_opacity)
+            arp_opacity_anim = QtCore.QPropertyAnimation(arp_opacity, 'opacity')
+            arp_opacity_anim.setDuration(200)
+            adv_arp_tuple = (adv_widget, adv_opacity_anim), (arp_widget, arp_opacity_anim)
 
-        def adv_arp_set():
-            id = adv_arp_cycle.next()
-            for i, (w, a) in enumerate(adv_arp_tuple):
-                if i == id:
-                    a.setStartValue(0)
-                    a.setEndValue(1)
-                    a.start()
-                    w.raise_()
-                else:
-                    a.setStartValue(1)
-                    a.setEndValue(0)
-                    a.start()
-            self.efx_arp_toggle_state.emit(id)
-            self.efx_arp_toggle_btn.setText(adv_arp_labels[id])
+            def adv_arp_set():
+                id = adv_arp_cycle.next()
+                for i, (w, a) in enumerate(adv_arp_tuple):
+                    if i == id:
+                        a.setStartValue(0)
+                        a.setEndValue(1)
+                        a.start()
+                        w.raise_()
+                    else:
+                        a.setStartValue(1)
+                        a.setEndValue(0)
+                        a.start()
+                self.efx_arp_toggle_state.emit(id)
+                self.efx_arp_toggle_btn.setText(adv_arp_labels[id])
 
         self.efx_arp_toggle_btn.clicked.connect(lambda state: adv_arp_set())
 
