@@ -92,11 +92,12 @@ class BigglesworthObject(QtCore.QObject):
 
         self.blofeld_current = [None, None]
         self.blofeld_model = LibraryModel()
+        self.wavetable_library = WavetableLibrary(self)
         self.blofeld_library = Library(self.blofeld_model)
 
 
         #LOADING
-        self.loader = LoadingThread(self, self.blofeld_library, self.source_library, limit=limit)
+        self.loader = LoadingThread(self, self.blofeld_library, self.source_library, self.wavetable_library, limit=limit)
         self.loader_thread = QtCore.QThread()
         self.loader.moveToThread(self.loader_thread)
         self.loader_thread.started.connect(self.loader.run)
@@ -272,8 +273,10 @@ class BigglesworthObject(QtCore.QObject):
         self.wave_import = WaveLoad(self)
 
         #WAVETABLE
-        self.wavetable_list = []
-        self.librarian.wavetableAction.triggered.connect(self.wavetable_show)
+        self.wavetable_list_window = WavetableListWindow(self)
+#        self.wavetable_list_window.show()
+        self.wavetable_windows_list = []
+        self.librarian.wavetableAction.triggered.connect(lambda _: self.wavetable_show())
 
         self.midi_connect()
 
@@ -287,22 +290,31 @@ class BigglesworthObject(QtCore.QObject):
             self.startup_version_check()
 #        QtGui.QMessageBox.information(self.librarian, 'Test build', 'This is a test build!!! Have fun!')
 
-    def wavetable_show(self):
-        if not self.wavetable_list:
-            self.new_wavetable()
+    def wavetable_show(self, uid=None):
+        if not self.wavetable_windows_list:
+            self.new_wavetable(uid)
         else:
-            latest = self.wavetable_list[-1]
-            latest.show()
-            latest.activateWindow()
+            if uid is not None:
+                for window in self.wavetable_windows_list:
+                    if window.wavetable_uid == uid:
+                        break
+                else:
+                    self.new_wavetable(uid)
+                    return
+            else:
+                window = self.wavetable_windows_list[-1]
+            window.show()
+            window.activateWindow()
 
-    def new_wavetable(self):
-        wavetable_window = WaveTableEditor(self)
-        self.wavetable_list.append(wavetable_window)
+    def new_wavetable(self, uid=None, wavetable_data=None):
+        wavetable_window = WaveTableEditor(self, uid=uid, wavetable_data=wavetable_data)
+        self.wavetable_windows_list.append(wavetable_window)
         wavetable_window.wavetable_send.connect(self.wavetable_send)
         self.output_conn_state_change.connect(wavetable_window.midi_output_state)
         wavetable_window.show()
         wavetable_window.activateWindow()
-        wavetable_window.newWavetableAction.triggered.connect(self.new_wavetable)
+        wavetable_window.newWavetableAction.triggered.connect(lambda _: self.new_wavetable())
+        return wavetable_window
 
 
     def startup_show_editor(self, data):
@@ -355,12 +367,38 @@ class BigglesworthObject(QtCore.QObject):
     def show_settings(self):
         self.settings_dialog.exec_()
 
-    def file_import(self):
-        dialog = FileOpen()
+    def file_import(self, trigger, mode=ALLFILE):
+        dialog = FileOpen(mode)
         res = dialog.exec_()
         if not res: return
         if isinstance(dialog.res[0], Sound):
             self.summary.setSound(*res)
+        elif isinstance(dialog.res[0], Wavetable):
+            wavetable = dialog.res[0]
+            name = wavetable.name
+            if self.wavetable_library.nameExists(wavetable.name):
+                pos = 1
+                index = 0
+                while True:
+                    last = name[-pos]
+                    if not last.isdigit():
+                        name = name[:-pos] + str(index)
+                        if not self.wavetable_library.nameExists(name):
+                            break
+                        if index == 9:
+                            pos += 1
+                        index += 1
+                    else:
+                        old_index = int(last)
+                        if old_index == 9:
+                            pos += 1
+                        index = old_index + 1
+                        name = name[:-pos] + str(index)
+                        if not self.wavetable_library.nameExists(name):
+                            break
+            uid = str(uuid4())
+            self.wavetable_library[uid] = wavetable.values, wavetable.slot, QtCore.QString(name)
+            self.new_wavetable(uid)
         else:
             self.midi_import.setSource(*res)
 
@@ -879,7 +917,7 @@ class BigglesworthObject(QtCore.QObject):
 
     def closeDetect(self, win=None):
         if win:
-            win_list = set((self.librarian, self.editor) + tuple(self.wavetable_list))
+            win_list = set((self.librarian, self.editor) + tuple(self.wavetable_windows_list))
             win_list.discard(win)
             if any(win.isVisible() for win in win_list):
                 return True
@@ -973,11 +1011,11 @@ class Librarian(QtGui.QMainWindow):
         if not self.loading_complete:
             QtCore.QTimer.singleShot(10, self.shown.emit)
 
-    def closeEvent(self, event):
-        if self.main.closeDetect(self):
-            event.accept()
-        else:
-            event.ignore()
+#    def closeEvent(self, event):
+#        if self.main.closeDetect(self):
+#            event.accept()
+#        else:
+#            event.ignore()
 
     def eventFilter(self, source, event):
         if event.type() == QtCore.QEvent.KeyPress:

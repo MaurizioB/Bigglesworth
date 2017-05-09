@@ -78,10 +78,12 @@ class AdvParam(object):
     def __init__(self, fmt, **kwargs):
         self.fmt = fmt
         self.indexes = {}
+        self.indexes_range = {}
         self.addr = {}
         self.order = []
 #        self.forbidden = 0
         self.allowed = 0
+#        delta_shift = 1
         for i, l in enumerate(reversed(fmt)):
             if l == '0':
 #                self.forbidden |= 1<<i
@@ -89,18 +91,36 @@ class AdvParam(object):
             self.allowed |= 1<<i
             if l in self.indexes:
                 self.indexes[l] |= (self.indexes[l]<<1)
+#                self.indexes_range[l][1] += (1<<delta_shift)
+#                delta_shift += 1
             else:
+#                delta_shift = 1
                 self.indexes[l] = 1 << i
+                self.indexes_range[l] = [i, None]
                 self.addr[l] = i
                 self.order.append(l)
         self.kwargs = {}
+        self.kwargs_dict = {}
         self.named_kwargs = []
         for attr in self.order:
-            setattr(self, kwargs[attr][0], kwargs[attr][1])
-            self.kwargs[attr] = kwargs[attr][1]
+            values = kwargs[attr][1]
+            setattr(self, kwargs[attr][0], values)
+            self.kwargs[attr] = values
+            self.kwargs_dict[attr] = kwargs[attr][0]
             self.named_kwargs.append(kwargs[attr][0])
+            self.indexes_range[attr][1] = len(values) - 1
 #        print self.kwargs, self.named_kwargs
         self.order.reverse()
+        #TODO: reverse named_kwargs!
+
+    def is_valid(self, value):
+        invalid = []
+        for key, (shift, max_value) in self.indexes_range.items():
+            bl = max_value.bit_length()
+            trim_value = (value >> shift) & (2**bl-1)
+            if trim_value > max_value:
+                invalid.append((self.kwargs_dict[key], key, trim_value, self.kwargs[key]))
+        return True if not invalid else invalid
 
     def get_indexes(self, data):
 #        if data&self.forbidden:
@@ -290,6 +310,7 @@ categories = [
               ]
 
 UserRole = QtCore.Qt.UserRole
+ValuesRole = UserRole + 1
 IndexRole = UserRole + 1
 BankRole = IndexRole + 1
 ProgRole = BankRole + 1

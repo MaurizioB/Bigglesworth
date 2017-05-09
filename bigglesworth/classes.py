@@ -1,7 +1,10 @@
 # *-* coding: utf-8 *-*
 
 import urllib2
+import pickle
+from uuid import uuid4
 from os import path, makedirs
+from itertools import chain
 from shutil import copy
 from string import uppercase, ascii_letters
 from PyQt4 import QtCore, QtGui
@@ -9,6 +12,8 @@ from PyQt4 import QtCore, QtGui
 import midifile
 from bigglesworth.const import *
 from bigglesworth import version
+
+pow21 = 2**21
 
 class VersionCheck(QtCore.QObject):
     url = 'https://github.com/MaurizioB/Bigglesworth/raw/master/bigglesworth/version.py'
@@ -58,6 +63,48 @@ class VersionCheck(QtCore.QObject):
             self.update.emit(True)
 
 
+class Wavetable(QtCore.QObject):
+    def __init__(self, data):
+        QtCore.QObject.__init__(self)
+        self.splitted_values = []
+        for w in xrange(64):
+            data_iter = iter(data[w * 410 + 8:w * 410 + 392])
+            values = []
+            for s in xrange(128):
+                value = (data_iter.next() << 14) + (data_iter.next() << 7) + data_iter.next()
+                if value >= 1048576:
+                    value -= 2097152
+                values.append(value)
+            self.splitted_values.append(values)
+        self.slot = data[5]
+        self.name = ''.join([str(unichr(l)) if l!=127 else '°' for l in data[392:406]])
+
+    @property
+    def values(self):
+        return chain.from_iterable(self.splitted_values)
+
+    def setSlot(self, slot):
+        for wt_data in self.splitted_values:
+            wt_data[5] = slot
+
+    def setName(self, name):
+        print 'son qui'
+        print self.splitted_values[0][392:406]
+        if isinstance(name, QtCore.QString):
+            name = unicode(name.toUtf8(), encoding='utf-8')
+        name = name.ljust(14)
+        name_values = []
+        for char in name:
+            if char == u'°':
+                name_values.append(127)
+            else:
+                name_values.append(ord(char))
+        for wt_data in self.splitted_values:
+            wt_data[392:406] = name_values
+        print 'ok'
+        print self.splitted_values[0][392:406]
+
+
 class Sound(QtCore.QObject):
     bankChanged = QtCore.pyqtSignal(int)
     progChanged = QtCore.pyqtSignal(int)
@@ -72,8 +119,12 @@ class Sound(QtCore.QObject):
             self._bank = data[0]
             self._prog = data[1]
             self._data = data[2:]
-            self._name = ''.join([str(unichr(l)) for l in self.data[363:379]])
-            self._cat = self.data[379]
+            self._name = ''.join([str(unichr(l)) if l != 127 else u'°' for l in self.data[363:379]])
+            cat = self.data[379]
+            if cat < len(categories):
+                self._cat = cat
+            else:
+                self._cat = len(categories) - 1
             self.source = source
             self._state = STORED|(source<<1)
         else:
@@ -85,6 +136,22 @@ class Sound(QtCore.QObject):
             self._state = EMPTY
 
         self._done = True
+
+    def checkout(self):
+        invalid = []
+        for i, (param, value) in enumerate(zip(Params, self._data)):
+            if param.range == 'reserved': continue
+            if isinstance(param.values, AdvParam):
+#                if value & param.values.forbidden:
+#                    print 'FORBIDDEN! {}{:03} "{}" {}: {:07b} {:07b}'.format(uppercase[self.bank], self.prog, self.name, param.attr, param.values.forbidden, value)
+                res = param.values.is_valid(value)
+                if res is not True:
+                    invalid.append((i, res))
+                continue
+            p_min, p_max = param.range[:-1]
+            if not p_min <= value <= p_max:
+                invalid.append(i)
+        return invalid if invalid else None
 
     def copy(self):
         return Sound([self.bank, self.prog] + self.data)
@@ -113,7 +180,7 @@ class Sound(QtCore.QObject):
             try:
                 index = Params.index_from_attr(attr)
                 self._data[index] = value
-                if index in range(363, 379):
+                if 363 <= index <= 378:
                     self.name_reload()
                 self._state = self._state|EDITED
                 self.edited.emit(self._state)
@@ -227,6 +294,173 @@ class SortedLibrary(object):
         for letter, sound_list in by_alpha.items():
             self.by_alpha[letter] = sorted(sound_list, key=lambda s: s.name.lower())
 
+
+class WavetableLibrary(QtCore.QObject):
+    def __init__(self, main):
+        QtCore.QObject.__init__(self)
+        self.main = main
+        self.model = QtGui.QStandardItemModel()
+        self.model.setHorizontalHeaderLabels(['Name', 'Slot', 'Last modified'])
+        self.wavetable_data = {}
+
+    def add_local_sysex(self, file_info):
+        if file_info.size() != 26240:
+            raise BaseException('Wavetable file "{}", doesn\'t match size.'.format(file_info.fileName()))
+        try:
+            with open(str(file_info.absoluteFilePath().toUtf8()), 'rb') as sf:
+                data = list(ord(i) for i in sf.read(406))
+            if data[:4] != [IDW, IDE] and data[4] != WTBD and data[7] != 0:
+                raise BaseException('SysEx file "{}" is not a Wavetable'.format(file_info.fileName()))
+        except Exception as e:
+            raise BaseException('An error occurred while loading wavetable file {}:\n{}'.format(file_info.fileName(), e))
+        wt_slot = data[5]
+        wt_name = ''.join([str(unichr(l)) for l in data[392:406]])
+        name_item = QtGui.QStandardItem(wt_name)
+        slot_item = QtGui.QStandardItem(str(wt_slot))
+        date_item = QtGui.QStandardItem(file_info.lastModified().toString(QtCore.Qt.SystemLocaleShortDate))
+        file_item = QtGui.QStandardItem()
+        file_item.setData(file_info)
+        uid = str(uuid4())
+        uid_item = QtGui.QStandardItem(uid)
+        self.model.appendRow([name_item, slot_item, date_item, file_item, uid_item])
+        self.wavetable_data[uid] = None
+
+    def load_list(self, files):
+        for file_info in files:
+            try:
+                self.add_local_sysex(file_info)
+            except Exception as e:
+                print e
+
+    def count(self):
+        return self.model.rowCount()
+
+    def delete(self, uid):
+        uid_item = self.model.findItems(uid, QtCore.Qt.MatchExactly, 4)[0]
+        row = uid_item.row()
+        file_info = self.model.item(row, 3).data().toPyObject()
+        QtCore.QDir().remove(file_info.absoluteFilePath())
+        self.model.takeRow(uid_item.row())
+        self.wavetable_data.pop(str(uid))
+
+    def sanitize(self, file_name):
+        for char in set(file_name) & set('<>:"/\|?* '):
+            file_name = file_name.replace(char, '_')
+        return file_name
+
+    def duplicate(self, uid):
+        uid_item = self.model.findItems(uid, QtCore.Qt.MatchExactly, 4)[0]
+        row = uid_item.row()
+        file_info = self.model.item(row, 3).data().toPyObject()
+        base_name = str(self.model.item(row, 0).text().toUtf8())
+#        base_name = str(file_info.baseName().toUtf8())
+        pos = 1
+        index = 0
+        while True:
+            last = base_name[-pos]
+            if not last.isdigit():
+                base_name = base_name[:-pos] + str(index)
+                new_file_info = QtCore.QFileInfo('{}/{}'.format(file_info.absolutePath(), self.sanitize(base_name) + '.syx'))
+                if not new_file_info.exists():
+                    break
+                if index == 9:
+                    pos += 1
+                index += 1
+            else:
+                old_index = int(last)
+                if old_index == 9:
+                    pos += 1
+                index = old_index + 1
+                base_name = base_name[:-pos] + str(index)
+                new_file_info = QtCore.QFileInfo('{}/{}'.format(file_info.absolutePath(), self.sanitize(base_name) + '.syx'))
+                if not new_file_info.exists():
+                    break
+        new_uid = str(uuid4())
+        current_data, current_slot, _ = self[uid]
+        self[new_uid] = chain.from_iterable(current_data), current_slot, QtCore.QString(base_name)
+
+    def nameExists(self, name):
+        return True if len(self.model.findItems(name)) else False
+
+    def __getitem__(self, uid):
+        wavetable_data = self.wavetable_data.get(uid)
+        if wavetable_data is None:
+            uid_item = self.model.findItems(uid, QtCore.Qt.MatchExactly, 4)[0]
+            wavetable_path = self.model.item(uid_item.row(), 3).data().toPyObject().absoluteFilePath()
+            with open(str(wavetable_path.toUtf8()), 'rb') as sf:
+                sysex_list = list(ord(i) for i in sf.read())
+            wavetable_values = []
+            for w in xrange(64):
+                data = iter(sysex_list[w * 410 + 8:w * 410 + 392])
+                values = []
+                for s in xrange(128):
+                    value = (data.next() << 14) + (data.next() << 7) + data.next()
+                    if value >= 1048576:
+                        value -= 2097152
+                    values.append(value)
+                wavetable_values.append(values)
+            slot = sysex_list[5]
+            name = ''.join([str(unichr(l)) for l in sysex_list[392:406]])
+            self.wavetable_data[uid] = wavetable_values, slot, name
+            wavetable_data = wavetable_values, slot, name
+        return wavetable_data
+
+    def __setitem__(self, uid, (wavetable_values, slot, name)):
+        if uid not in self.wavetable_data:
+#            uid = uuid4()
+            self.wavetable_data[uid] = wavetable_values, slot, name
+            original_name = None
+            name_item = QtGui.QStandardItem(name)
+            slot_item = QtGui.QStandardItem(str(slot))
+            date_item = QtGui.QStandardItem()
+            file_item = QtGui.QStandardItem()
+            file_item.setData(QtCore.QFileInfo(QtCore.QDir(QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.DataLocation) + '/wavetables/'), '_'))
+            uid_item = QtGui.QStandardItem(uid)
+            self.model.appendRow([name_item, slot_item, date_item, file_item, uid_item])
+        else:
+            original_name = str(self.wavetable_data[uid][2])
+            item = self.model.findItems(uid, column=4)[0]
+            _row = item.row()
+            self.model.item(_row, 0).setText(name)
+            self.model.item(_row, 1).setText(str(slot))
+            date_item = self.model.item(_row, 2)
+            file_item = self.model.item(_row, 3)
+
+        name = str(name.toUtf8())
+        name_data = tuple(ord(l) if l != '°' else 127 for l in name.replace('\xc2\xb0', '\x7f').ljust(14, ' '))
+        sysex_data = []
+        values_iter = iter(wavetable_values)
+        wavetable_data_list = []
+        for n in xrange(64):
+            sysex_data.extend([INIT, IDW, IDE, self.main.blofeld_id, WTBD, slot, n, 0])
+            values = []
+            for i in xrange(128):
+                value = values_iter.next()
+                values.append(value)
+                if value < 0:
+                    value = pow21 + value
+                sysex_data.extend((value >> 14, (value >> 7) & 127,  value & 127))
+            wavetable_data_list.append(values)
+            sysex_data.extend(name_data)
+            sysex_data.extend((0, 0, CHK))
+            sysex_data.append(END)
+
+        self.wavetable_data[uid] = wavetable_data_list, slot, name
+
+        file_name = self.sanitize(name)
+#        for char in set(file_name) & set('<>:"/\|?*'):
+#            file_name = file_name.replace(char, '_')
+        old_file = file_item.data().toPyObject()
+        wavetable_filepath = '{}/{}.syx'.format(old_file.absolutePath().toUtf8(), file_name.ljust(14, '_'))
+        with open(wavetable_filepath, 'wb') as sf:
+            sf.write(bytearray(sysex_data))
+        if original_name is not None and original_name != name:
+            QtCore.QDir().remove(old_file.absoluteFilePath())
+        file_info = QtCore.QFileInfo(wavetable_filepath)
+        date_item.setText(file_info.lastModified().toString(QtCore.Qt.SystemLocaleShortDate))
+        file_item.setData(file_info)
+#        file_name = self.model.item(index, 3).data().toPyObject().absoluteFilePath()
+#        print self.model.item(index, 3).data().toPyObject().fileName()
 
 class Library(QtCore.QObject):
     def __init__(self, model, parent=None, banks=26):
@@ -454,10 +688,11 @@ class LibraryProxy(QtGui.QSortFilterProxyModel):
 class LoadingThread(QtCore.QObject):
     loaded = QtCore.pyqtSignal()
 
-    def __init__(self, parent, library, source, limit=None):
+    def __init__(self, parent, library, source, wavetable_library, limit=None):
         self.limit = limit
         QtCore.QObject.__init__(self)
         self.library = library
+        self.wavetable_library = wavetable_library
         source = str(source)
         if source == 'personal':
             #should do pass
@@ -469,6 +704,7 @@ class LoadingThread(QtCore.QObject):
             self.source = source
 
     def run(self):
+        #sound library load
         if self.source == 'personal':
             try:
                 sound_list = self.load_library()
@@ -479,6 +715,16 @@ class LoadingThread(QtCore.QObject):
         else:
             sound_list = self.load_midi(self.source)
         self.library.addSoundBulk(sound_list)
+
+        #wavetable library load
+        path_txt = QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.DataLocation) + '/wavetables/'
+        wt_path = QtCore.QDir(path_txt)
+        if not wt_path.exists():
+            QtCore.QDir().mkpath(path_txt)
+        else:
+            self.wavetable_library.load_list(wt_path.entryInfoList(['*.syx'], sort=QtCore.QDir.Name))
+#        print contents.join('\n')
+
         self.loaded.emit()
 
     def load_midi(self, path):
@@ -507,7 +753,7 @@ class LoadingThread(QtCore.QObject):
                 pass
             old_path = local_path('presets/personal_library')
             if path.exists(old_path):
-                print 'asdnfoijsdfoisdj'
+                print 'moving old library'
                 copy(old_path, data_path)
             else:
                 raise

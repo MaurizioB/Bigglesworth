@@ -3,6 +3,7 @@
 
 import struct
 import wave, audioop
+from uuid import uuid4
 from random import shuffle
 from math import sqrt, pow, sin, pi
 from PyQt4 import QtCore, QtGui
@@ -887,10 +888,10 @@ class WaveObject(QtCore.QObject):
     selected_pen = QtGui.QPen(QtCore.Qt.red)
     preview_pens = normal_pen, hover_pen, selected_pen
 
-    def __init__(self, index):
+    def __init__(self, index, values=None):
         QtCore.QObject.__init__(self)
         self.index = index
-        self.values = self.sine_values[:]
+        self.values = self.sine_values
         #do we really need to create a self.preview_path?
         self.preview_path = QtGui.QPainterPath(self.sine_preview_wavepath)
         self.preview_path_item = QtGui.QGraphicsPathItem(self.preview_path)
@@ -899,6 +900,9 @@ class WaveObject(QtCore.QObject):
         self.path = QtGui.QPainterPath(self.sine_wavepath)
         self.hover.connect(self.preview_highlight)
         self._selected_state = False
+        #this is a *BAD* workaround for setting values (vertical alignment problem) fix it!
+        if values is not None:
+            QtCore.QTimer.singleShot(0, lambda: self.setValues(values))
 
     @property
     def selected_state(self):
@@ -916,8 +920,8 @@ class WaveObject(QtCore.QObject):
         self.values = list(values)
         for index, value in enumerate(values):
             self.preview_path.setElementPositionAt(index, index, 32 - value/32768)
-            self.preview_path_item.setPath(self.preview_path)
             self.path.setElementPositionAt(index, index*16384, pow20 - value)
+        self.preview_path_item.setPath(self.preview_path)
         self.changed.emit(self)
         #dirty. check it!
 #        self.valueChanged.emit(self)
@@ -1369,9 +1373,12 @@ class WaveTableView(QtGui.QGraphicsView):
             event.accept()
         elif mimedata.hasFormat('audio/waves'):
             start, end = map(int, str(mimedata.data('audio/waves')).split(':'))
+            if start == index:
+                event.ignore()
+                return
             wave_len = end - start + 1
             if start == end:
-                drop_text = 'wave {}'.format(start)
+                drop_text = 'wave {}'.format(start + 1)
             else:
                 drop_text = 'wave {} to {}'.format(start + 1, end + 1)
 
@@ -2014,17 +2021,22 @@ class WaveTableEditor(QtGui.QMainWindow):
     wavetable_send = QtCore.pyqtSignal(object)
     closed = QtCore.pyqtSignal(object)
 
-    def __init__(self, main):
+    def __init__(self, main, uid=None, wavetable_data=None):
         QtGui.QMainWindow.__init__(self)
         self.main = main
+        self.wavetable_library = self.main.wavetable_library
         load_ui(self, 'wavetable.ui')
         self.currentStream = None
         self.undo = UndoStack(self)
         self.undo.canUndoChanged.connect(self.undo_btn.setEnabled)
         self.undo.canRedoChanged.connect(self.redo_btn.setEnabled)
+        self.save_state = True
+        self.undo.indexChanged.connect(self.undo_update)
         self.undo_dialog = UndoDialog(self)
         self.currentUndo = None
 
+        self.saveAction.triggered.connect(self.wavetable_save)
+        self.showLibraryAction.triggered.connect(lambda: [self.main.wavetable_list_window.show(), self.main.wavetable_list_window.activateWindow()])
         self.undoAction.triggered.connect(self.undo.undo)
         self.redoAction.triggered.connect(self.undo.redo)
         self.undoHistoryAction.triggered.connect(self.undo_dialog.show)
@@ -2100,8 +2112,23 @@ class WaveTableEditor(QtGui.QMainWindow):
 
         self.currentWave = 0
         self.waveobj_list = []
+        if uid is None:
+            self.wavetable_uid = str(uuid4())
+            if wavetable_data is None:
+                values = [None for w in xrange(64)]
+                self.wavetable_name = self.name_edit.text()
+            else:
+                values, slot, name = wavetable_data
+            self.save_index = -1
+        else:
+            self.wavetable_uid = uid
+            values, slot, name = self.wavetable_library[uid]
+            self.wavetable_name = name
+            self.name_edit.setText(name)
+            self.slot_spin.setValue(slot)
+            self.save_index = 0
         for w in xrange(64):
-            wave_obj = WaveObject(w)
+            wave_obj = WaveObject(w, values[w])
             wave_obj.selected.connect(self.setWave)
             wave_obj.changed.connect(lambda o: self.setWave(o) if o.index == self.currentWave else None)
             self.waveobj_list.append(wave_obj)
@@ -2156,13 +2183,11 @@ class WaveTableEditor(QtGui.QMainWindow):
 
         self.dump_dialog = DumpDialog(self)
 
-        self.wavetable_name = self.name_edit.text()
         self.name_edit.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp('[\x20-\x7f°]*')))
 #        self.name_edit.editingFinished.connect(lambda: (self.name_edit.setText(self.name_edit.text().leftJustified(14)), self.setFocus(QtCore.Qt.OtherFocusReason)))
         self.name_edit.editingFinished.connect(self.wavetable_name_set)
         self.name_edit.textEdited.connect(self.wavetable_name_change)
         self.setWindowTitle()
-        self.slot = self.slot_spin.value()
         self.slot_spin.valueChanged.connect(self.wavetable_slot_set)
         self.slot_spin.editingFinished.connect(self.wavetable_slot_set_finish)
 
@@ -2176,16 +2201,26 @@ class WaveTableEditor(QtGui.QMainWindow):
         self.smooth_btn.clicked.connect(lambda: self.wavetable_view.interpolate_values([self.currentWave]))
 
         self.menuWindows.aboutToShow.connect(self.populate_wavetable_window_menu)
-        self.wavetable_window_list = self.main.wavetable_list
+        win_sep = QtGui.QAction('Open wavetables:', self.menuWindows)
+        win_sep.setSeparator(True)
+        self.menuWindows.addAction(win_sep)
+        self.wavetable_windows_list = self.main.wavetable_windows_list
         self.wavetable_window_actions = []
 
         self.installEventFilter(self)
+
+    def undo_update(self, index):
+        self.save_state = True if index == self.save_index else False
+        self.setWindowTitle()
 
     def wavetable_name_change(self, text):
         self.undo_push(NAME_CHANGE, True, self.wavetable_name, text)
 
     def setWindowTitle(self, name=None):
-        QtGui.QMainWindow.setWindowTitle(self, 'Wavetable editor - {}'.format(name))
+        if name is None:
+            name = self.name_edit.text()
+        saved = '' if self.save_state else ' (edited)'
+        QtGui.QMainWindow.setWindowTitle(self, 'Wavetable editor - {}{}'.format(name, saved))
 
     def wavetable_name_set(self):
         self.name_edit.setText(self.name_edit.text().leftJustified(14))
@@ -2197,13 +2232,32 @@ class WaveTableEditor(QtGui.QMainWindow):
 
     def wavetable_slot_set(self, slot):
         self.undo_push(SLOT_CHANGE, True, self.slot, slot)
-        self.slot = slot
+#        self.slot = slot
+
+    @property
+    def slot(self):
+        return self.slot_spin.value()
 
     def wavetable_slot_set_finish(self):
         self.undo_push(SLOT_CHANGE, False, self.slot_spin.value())
 
+    def wavetable_save(self):
+        for item in self.wavetable_library.model.findItems(self.name_edit.text().leftJustified(14)):
+            if self.wavetable_uid == self.wavetable_library.model.item(item.row(), 4).text():
+                continue
+            else:
+                QtGui.QMessageBox.warning(self, 'Wavetable name conflict', 'The Library already contains a Wavetable named "{}"'.format(self.name_edit.text()))
+                return
+        wavetable_values = []
+        for wave_obj in self.waveobj_list:
+            wavetable_values.extend(wave_obj.values)
+        self.wavetable_library[self.wavetable_uid] = wavetable_values, self.slot, self.name_edit.text()
+        self.save_index = self.undo.index()
+        self.save_state = True
+        self.setWindowTitle()
+
     def populate_wavetable_window_menu(self):
-        window_list = set([w for w in self.wavetable_window_list if w is not self])
+        window_list = set([w for w in self.wavetable_windows_list if w is not self])
         window_actions = {action.data().toPyObject():action for action in self.wavetable_window_actions}
         for window in window_list:
             if window not in window_actions:
@@ -2219,9 +2273,19 @@ class WaveTableEditor(QtGui.QMainWindow):
         self.dump_btn.setEnabled(state)
 
     def closeEvent(self, event):
+        if not self.save_state:
+            res = QtGui.QMessageBox.question(self, 'Wavetable not saved',
+                                       'The wavetable has been modified, how do you want to proceed?', 
+                                       QtGui.QMessageBox.Save|QtGui.QMessageBox.Discard|QtGui.QMessageBox.Cancel
+                                       )
+            if res == QtGui.QMessageBox.Save:
+                self.wavetable_save()
+            elif res == QtGui.QMessageBox.Cancel:
+                event.ignore()
+                return
         self.closed.emit(self)
-        self.wavetable_window_list.pop(self.wavetable_window_list.index(self))
-        if not any([self.main.librarian.isVisible(), self.main.editor.isVisible(), len(self.wavetable_window_list)]):
+        self.wavetable_windows_list.pop(self.wavetable_windows_list.index(self))
+        if not any([self.main.librarian.isVisible(), self.main.editor.isVisible(), len(self.wavetable_windows_list)]):
             self.main.librarian.show()
         
 
@@ -2376,10 +2440,11 @@ class WaveTableEditor(QtGui.QMainWindow):
                 self.waveobj_list[self.sweep_index].preview_rect.setHighlight(False)
                 self.wavetable3d_view.wave_list[self.sweep_index].highlight(False)
 
-#    def showEvent(self, event):
-#        sizes = self.splitter.sizes()
-#        sizes[0] = 0
-#        self.splitter.setSizes(sizes)
+    def showEvent(self, event):
+        sizes = self.splitter.sizes()
+        sizes[0] = 0
+        self.splitter.setSizes(sizes)
+        self.wavesource_toggle.setVisible(True)
 
     def splitterMoved(self, pos, index):
         self.wavesource_toggle.setVisible(not pos)
@@ -2521,7 +2586,7 @@ class WaveTableEditor(QtGui.QMainWindow):
         if self.wavesource_toggle.isVisible():
             self.splitter.moveSplitter(60, 0)
 
-    def load_wavetable(self):
+    def load_wavetable(self, as_new=False):
         path = QtGui.QFileDialog.getOpenFileName(self, 'Import Wavetable', filter = 'Wavetable files (*.mid, *.syx)(*.mid *.syx);;SysEx files (*.syx);;MIDI files (*.mid);;All files (*)')
         if not path: return
         try:
@@ -2564,7 +2629,8 @@ class WaveTableEditor(QtGui.QMainWindow):
         self.slot_spin.setValue(wt_slot)
         self.name_edit.setText(wt_name)
 
-        self.undo_push(WAVETABLE_IMPORT, True, self.waveobj_list, QtCore.QFileInfo(path).fileName())
+        if not as_new:
+            self.undo_push(WAVETABLE_IMPORT, True, self.waveobj_list, QtCore.QFileInfo(path).fileName())
         for w, wave_obj in enumerate(self.waveobj_list):
             values_iter = iter(wt_list[w])
             values = []
@@ -2574,7 +2640,8 @@ class WaveTableEditor(QtGui.QMainWindow):
                     value -= 2097152
                 values.append(value)
             wave_obj.setValues(values)
-        self.undo_push(WAVETABLE_IMPORT, False, self.waveobj_list, '')
+        if not as_new:
+            self.undo_push(WAVETABLE_IMPORT, False, self.waveobj_list, '')
         self.setWave(self.waveobj_list[self.currentWave])
 
     def unload_wave(self):

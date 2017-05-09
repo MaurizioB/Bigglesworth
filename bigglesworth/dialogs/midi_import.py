@@ -4,10 +4,183 @@ from string import uppercase
 from os.path import exists as file_exists
 from PyQt4 import QtCore, QtGui
 
-from bigglesworth.utils import load_ui
-from bigglesworth.const import sound_headers, categories, BANK, NAME, PROG, CATEGORY, STORED
+from bigglesworth.utils import load_ui, setBold
+from bigglesworth.const import sound_headers, categories, Params, BANK, NAME, PROG, CATEGORY, STORED, ValuesRole, EditedRole
 from bigglesworth.classes import Sound
 from bigglesworth import midifile
+
+_UNCHANGED, _MINIMUM, _MAXIMUM = None, 0, -1
+
+class NoEditItem(QtGui.QStandardItem):
+    def __init__(self, *args, **kwargs):
+        QtGui.QStandardItem.__init__(self, *args, **kwargs)
+        self.setFlags(self.flags() ^ QtCore.Qt.ItemIsEditable)
+
+class FixDelegate(QtGui.QStyledItemDelegate):
+    def __init__(self, parent=None):
+        QtGui.QStyledItemDelegate.__init__(self, parent)
+        self.commitData.connect(self.set_data)
+
+    def createEditor(self, parent, option, index):
+        self.index = index
+        combo = QtGui.QComboBox(parent)
+        combo.addItems(['Unchanged'] + index.data(ValuesRole).toPyObject())
+#        model = QtGui.QStandardItemModel()
+#        [model.appendRow(QtGui.QStandardItem(value)) for value in index.data(ValuesRole).toPyObject()]
+#        combo.setModel(model)
+        combo.setCurrentIndex(index.data(EditedRole).toPyObject() + 1)
+        combo.activated.connect(lambda i: parent.setFocus())
+        return combo
+
+    def set_data(self, widget):
+        item = self.index.model().itemFromIndex(self.index)
+        item.setData(widget.currentIndex() - 1, EditedRole)
+#        sound = self.index.model().sound(self.index)
+#        if sound.cat == widget.currentIndex(): return
+#        self.index.model().sound(self.index).cat = widget.currentIndex()
+
+
+class ParamFixDialog(QtGui.QDialog):
+    def __init__(self, sound_list, invalid, parent=None):
+        QtGui.QDialog.__init__(self, parent)
+        self.sound_list = sound_list
+        self.edited = {sound:[] for sound in sound_list}
+        self.invalid = invalid
+        layout = QtGui.QGridLayout()
+        self.setLayout(layout)
+        self.setWindowTitle('Invalid sound parameters detected')
+        icon = self.style().standardIcon(QtGui.QStyle.SP_MessageBoxWarning)
+        icon_label = QtGui.QLabel()
+        icon_label.setSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Preferred)
+        icon_label.setPixmap(QtGui.QPixmap(icon.pixmap(32, 32)))
+        layout.addWidget(icon_label, 0, 0)
+        layout.addWidget(QtGui.QLabel('The following sounds contain invalid data, how do you want to proceed?'), 0, 1, 1, 2)
+        self.table = QtGui.QTreeView()
+        self.table.header().setResizeMode(QtGui.QHeaderView.ResizeToContents)
+        self.model = QtGui.QStandardItemModel()
+        self.model.setHorizontalHeaderLabels(['Sound parameter', 'Value', 'Allowed range', 'Fix value'])
+        self.model.itemChanged.connect(self.highlight)
+        self.table.setModel(self.model)
+        self.table.setItemDelegateForColumn(3, FixDelegate())
+        layout.addWidget(self.table, 1, 0, 1, 3)
+        for inv, param_ids in invalid:
+            sound = sound_list[inv]
+            sound_item = NoEditItem(sound.name)
+            self.model.appendRow([sound_item, NoEditItem(), NoEditItem(), NoEditItem()])
+            for child, param_info in enumerate(param_ids):
+                if isinstance(param_info, int):
+                    param = Params[param_info]
+                    param_item = NoEditItem(param.name)
+                    value_item = NoEditItem(str(getattr(sound, param.attr)))
+                    range_item = NoEditItem('{} - {}'.format(*param.range[:2]))
+                    edited_item = QtGui.QStandardItem('Unchanged')
+                    edited_item.setData(['{} - {}'.format(i, v) for i, v in zip(xrange(param.range[0], param.range[1] + 1), param.values)], ValuesRole)
+                    edited_item.setData(-1, EditedRole)
+                    self.edited[sound].append((param, edited_item))
+                    sound_item.setChild(child, param_item)
+                    sound_item.setChild(child, 1, value_item)
+                    sound_item.setChild(child, 2, range_item)
+                    sound_item.setChild(child, 3, edited_item)
+                else:
+                    param = Params[param_info[0]]
+                    main_item = NoEditItem(param.name)
+                    sound_item.setChild(child, main_item)
+                    for sub_id, (sub_param_name, short, value, values) in enumerate(param_info[1]):
+                        param_item = NoEditItem(sub_param_name)
+                        value_item = NoEditItem(str(value))
+                        range_item = NoEditItem('0 - {}'.format(len(values) - 1))
+                        edited_item = QtGui.QStandardItem('Unchanged')
+                        edited_item.setData(['{} - {}'.format(i, v) for i, v in zip(xrange(len(values)), values)], ValuesRole)
+                        edited_item.setData(-1, EditedRole)
+                        self.edited[sound].append((param, short, edited_item))
+                        main_item.setChild(sub_id, param_item)
+                        main_item.setChild(sub_id, 1, value_item)
+                        main_item.setChild(sub_id, 2, range_item)
+                        main_item.setChild(sub_id, 3, edited_item)
+        self.table.expandAll()
+        unchanged_btn = QtGui.QPushButton('Leave all values unchanged')
+        unchanged_btn.clicked.connect(lambda: self.set_all_values(_UNCHANGED))
+        layout.addWidget(unchanged_btn, 2, 0)
+        min_btn = QtGui.QPushButton('Set all values to minimum')
+        min_btn.clicked.connect(lambda: self.set_all_values(_MINIMUM))
+        layout.addWidget(min_btn, 2, 1)
+        max_btn = QtGui.QPushButton('Set all values to maximum')
+        max_btn.clicked.connect(lambda: self.set_all_values(_MAXIMUM))
+        layout.addWidget(max_btn, 2, 2)
+
+        buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Apply)
+        proceed_btn = buttonBox.button(QtGui.QDialogButtonBox.Apply)
+        proceed_btn.setText('Proceed')
+        proceed_btn.clicked.connect(self.apply)
+        layout.addWidget(buttonBox, 3, 0, 1, 3)
+
+    def set_all_values(self, mode):
+        def _set_data(item):
+            if mode == _UNCHANGED:
+                item.setData(-1, EditedRole)
+                item.setText('Unchanged')
+            elif mode == _MINIMUM:
+                item.setData(0, EditedRole)
+                item.setText(item.data(ValuesRole).toPyObject()[0])
+            else:
+                values = item.data(ValuesRole).toPyObject()
+                item.setData(len(values) - 1, EditedRole)
+                item.setText(values[-1])
+
+        for row in xrange(self.model.rowCount()):
+            parent = self.model.item(row, 0)
+            for child_row in xrange(parent.rowCount()):
+                child = parent.child(child_row, 0)
+                if child.hasChildren():
+                    for sub_row in xrange(child.rowCount()):
+                        _set_data(child.child(sub_row, 3))
+                else:
+                    _set_data(parent.child(child_row, 3))
+
+    def highlight(self, item):
+        setBold(item, True if item.data(EditedRole).toPyObject() >= 0 else False)
+
+    def apply(self):
+        if not self.ignore_confirm():
+            return
+        for sound, edited in self.edited.items():
+            if not edited: continue
+            for data in edited:
+                param = data[0]
+                value = data[-1].data(EditedRole).toPyObject()
+                if value < 0: continue
+                if len(data) == 2:
+                    setattr(sound, param.attr, value)
+                else:
+                    param, short = data[:-1]
+                    shift, max_value = param.values.indexes_range[short]
+                    reset_mask = (2**max_value.bit_length()-1) << shift
+                    current_value = getattr(sound, param.attr)
+                    new_value = (current_value ^ reset_mask) + (value << shift)
+                    setattr(sound, param.attr, new_value)
+        self.accept()
+
+    def ignore_confirm(self):
+        if any(True for params in self.edited.values() for field in params if (field and field[-1].data(EditedRole).toPyObject() < 0)):
+            res = QtGui.QMessageBox.question(
+                                             self, 'Invalid data', 
+                                             'Some invalid data is still present in the library, do you want to proceed?', 
+                                             QtGui.QMessageBox.Yes|QtGui.QMessageBox.No
+                                             )
+            if res != QtGui.QMessageBox.Yes:
+                return False
+        return True
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Escape:
+            self.reject()
+
+    def exec_(self):
+        res = QtGui.QDialog.exec_(self)
+        if not res:
+            return
+        return self.sound_list
+
 
 class GrowingFileLabel(QtGui.QLabel):
     dots = QtCore.QString.fromUtf8('…')
@@ -93,6 +266,9 @@ class MidiImportDialog(QtGui.QDialog):
         self.buttonBox.addButton(self.import_btn, QtGui.QDialogButtonBox.ActionRole)
         self.import_btn.clicked.connect(self.import_sounds)
 
+        self.export_state = False
+        self.midi_state = False
+
         self.dump_btn = QtGui.QPushButton('Dump all')
         self.dump_btn.setEnabled(False)
         self.dump_btn.setIcon(self.style().standardIcon(QtGui.QStyle.SP_ArrowRight))
@@ -115,6 +291,10 @@ class MidiImportDialog(QtGui.QDialog):
         self.bankmap_combo.addItems([uppercase[b] for b in range(8)])
         self.bankmap_btn.setIcon(self.style().standardIcon(QtGui.QStyle.SP_DialogApplyButton))
 
+        self.destination_group.setId(self.sound_buffer_radio, 0)
+        self.destination_group.setId(self.multi_buffer_radio, 1)
+        self.destination_group.setId(self.library_radio, 2)
+
         self.name_edit.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp('[\x20-\x7f°]*')))
         self.cat_combo.addItems(categories)
         self.bank_combo.addItems([uppercase[b] for b in range(8)])
@@ -123,10 +303,12 @@ class MidiImportDialog(QtGui.QDialog):
 
         self.file_open_btn.clicked.connect(self.file_open)
         self.sounds_table.currentChanged = self.currentChanged
+        self.sounds_table.selectionChanged = self.selectionChanged
         self.sounds_table.customContextMenuRequested.connect(self.sound_menu)
         self.sounds_table.cellDoubleClicked.connect(self.dump_temp)
         self.check_btn.clicked.connect(lambda: self.check_selection(True))
         self.uncheck_btn.clicked.connect(lambda: self.check_selection(False))
+        self.single_dump_btn.clicked.connect(self.dump_single)
         self.bankmap_btn.clicked.connect(self.bankmap_update)
 
         self.name_edit.textChanged.connect(lambda t: self.apply_btn.setEnabled(True))
@@ -143,11 +325,21 @@ class MidiImportDialog(QtGui.QDialog):
         self.prog_spin.setValue(sound.prog + 1)
         self.apply_btn.setEnabled(False)
 
+    def selectionChanged(self, selected, deselected):
+        QtGui.QTableWidget.selectionChanged(self.sounds_table, selected, deselected)
+        selection = set([index.row() for index in self.sounds_table.selectionModel().selectedIndexes()])
+        self.sound_groupbox.setEnabled(True if len(selection) == 1 else False)
+
     def midi_output_state(self, conn):
-        state = True if conn else False
+        self.midi_state = True if conn else False
+        self.doubleclick_dump_chk.setEnabled(self.midi_state)
+        self.single_dump_btn.setEnabled(self.midi_state)
+        self.enable_export_btns()
+
+    def enable_export_btns(self):
+        state = True if (self.export_state and self.midi_state) else False
         self.dump_btn.setEnabled(state)
-        self.single_dump_btn.setEnabled(state)
-        self.doubleclick_dump_chk.setEnabled(state)
+        self.import_btn.setEnabled(state)
 
     def import_sounds(self):
         export_len = len([i for i in self.export_list if i])
@@ -190,6 +382,28 @@ class MidiImportDialog(QtGui.QDialog):
         copy.prog = 0
         self.dump_send.emit(copy)
 
+    def dump_single(self):
+        checked = self.destination_group.checkedId()
+        if checked == 0:
+            bank = 0x7f
+            prog = 0
+        elif checked == 1:
+            bank = 0x7f
+            prog = self.multi_spin.value() - 1
+        else:
+            bank = self.bank_combo.currentIndex()
+            prog = self.prog_spin.value() - 1
+            res = QtGui.QMessageBox.question(self, 'Dump selected sound',
+                                             'You are going to send a sound dump to the Blofeld at location "{}{:03}".\nThis action cannot be undone. Do you want to proceed?'.format(uppercase[bank], prog+1), 
+                                             QtGui.QMessageBox.Ok|QtGui.QMessageBox.Cancel
+                                             )
+            if not res == QtGui.QMessageBox.Ok: return
+        row = self.sounds_table.selectedIndexes()[0].row()
+        copy = self.sound_list[row].copy()
+        copy.bank = bank
+        copy.prog = prog
+        self.dump_send.emit(copy)
+
     def bankmap_update(self):
         newbank = self.bankmap_combo.currentIndex()
         for sound in self.sound_list:
@@ -204,8 +418,15 @@ class MidiImportDialog(QtGui.QDialog):
         self.apply_btn.setEnabled(False)
 
     def check_selection(self, state):
-        for row_index in self.sounds_table.selectionModel().selectedRows():
-            self.sounds_table.cellWidget(row_index.row(), 0).setChecked(state)
+        for index in self.sounds_table.selectionModel().selectedRows():
+            row = index.row()
+            check = self.sounds_table.cellWidget(row, 0)
+            check.blockSignals(True)
+            check.setChecked(state)
+            check.blockSignals(False)
+            self.export_list[row] = state
+        self.export_state = any(self.export_list)
+        self.enable_export_btns()
 
     def sound_menu(self, pos):
         state = self.dump_btn.isEnabled()
@@ -238,10 +459,9 @@ class MidiImportDialog(QtGui.QDialog):
 
     def export_set(self, index, state):
         self.export_list[index] = state
-        export = any(self.export_list)
-        self.import_btn.setEnabled(export)
-        self.dump_btn.setEnabled(export)
+        self.export_state = any(self.export_list)
         self.sounds_table.setCurrentCell(index, 0)
+        self.enable_export_btns()
 
     def file_open(self):
         while True:
@@ -265,9 +485,12 @@ class MidiImportDialog(QtGui.QDialog):
         self.setSource(res, path)
 
     def setSource(self, res, path):
-        self.build(res)
+        if not self.build(res):
+            return
         self.source_lbl.setText(path)
         self.show()
+        self.enable_export_btns()
+        self.sounds_table.selectRow(0)
 
     def midi_load(self, path):
         if isinstance(path, QtCore.QString):
@@ -284,8 +507,17 @@ class MidiImportDialog(QtGui.QDialog):
         return sound_list
 
     def build(self, sound_list):
+        invalid = []
+        for sound_id, sound in enumerate(sound_list):
+            res = sound.checkout()
+            if res is not None:
+                invalid.append((sound_id, res))
+        if invalid:
+            sound_list = ParamFixDialog(sound_list, invalid, self).exec_()
+            if not sound_list:
+                return False
         if self.sound_list:
-            self.sounds_table.clearContents()
+            self.sounds_table.setRowCount(0)
         self.sound_list = sound_list
         self.export_list = []
         self.sounds_table.setRowCount(len(self.sound_list))
@@ -296,11 +528,11 @@ class MidiImportDialog(QtGui.QDialog):
             check.toggled.connect(lambda state, index=row: self.export_set(index, state))
             self.export_list.append(True)
             self.sounds_table.setCellWidget(row, 0, check)
-            bank_item = QtGui.QTableWidgetItem(uppercase[sound.bank])
+            bank_item = QtGui.QTableWidgetItem(uppercase[sound.bank] if sound.bank < len(uppercase) else uppercase[-1])
             bank_item.setTextAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
             prog_item = QtGui.QTableWidgetItem('{:03}'.format(sound.prog+1))
-            name_item = QtGui.QTableWidgetItem(sound.name)
-            cat_item = QtGui.QTableWidgetItem(categories[sound.cat])
+            name_item = QtGui.QTableWidgetItem(QtCore.QString.fromUtf8(sound.name))
+            cat_item = QtGui.QTableWidgetItem(categories[sound.cat] if sound.cat < len(categories) else categories[-1])
             self.sounds_table.setItem(row, 1, bank_item)
             self.sounds_table.setItem(row, 2, prog_item)
             self.sounds_table.setItem(row, 3, name_item)
@@ -308,9 +540,14 @@ class MidiImportDialog(QtGui.QDialog):
             sound.nameChanged.connect(name_item.setText)
             sound.bankChanged.connect(lambda bank, item=bank_item: item.setText(uppercase[bank]))
         if len(self.sound_list) <= 128:
-            self.bankmap_btn.setEnabled(True)
-            self.bankmap_combo.setEnabled(True)
-            self.bankmap_lbl.setEnabled(True)
+            allow_remap = True
+        else:
+            allow_remap = False
+        self.bankmap_btn.setEnabled(allow_remap)
+        self.bankmap_combo.setEnabled(allow_remap)
+        self.bankmap_lbl.setEnabled(allow_remap)
+        self.export_state = True
+        return True
 
 
 

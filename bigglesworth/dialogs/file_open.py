@@ -2,8 +2,8 @@
 
 from PyQt4 import QtCore, QtGui
 
-from bigglesworth.classes import Sound
-from bigglesworth.const import MIDFILE, SYXFILE
+from bigglesworth.classes import Sound, Wavetable
+from bigglesworth.const import *
 from bigglesworth import midifile
 
 
@@ -103,6 +103,9 @@ class FileOpen(QtGui.QFileDialog):
                     sysex = list(ord(i) for i in sf.read())
                 if len(sysex) == 392:
                     self.res = Sound(sysex[5:-2]), path
+                    return QtGui.QFileDialog.accept(self)
+                elif len(sysex) == 26240 and (sysex[1:3] == [IDW, IDE] and sysex[4] == WTBD and sysex[7] == 0):
+                    self.res = Wavetable(sysex), 
                     return QtGui.QFileDialog.accept(self)
                 elif self.mode == SYXFILE:
                     nosysex_msgbox(self)

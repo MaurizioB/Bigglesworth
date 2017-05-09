@@ -387,7 +387,7 @@
   </action>
   <action name="importAction">
    <property name="text">
-    <string>Import sound from file...</string>
+    <string>Import...</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>

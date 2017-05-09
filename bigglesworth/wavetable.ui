@@ -914,7 +914,6 @@
      <string>Windows</string>
     </property>
     <addaction name="showLibraryAction"/>
-    <addaction name="separator"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Edit"/>
