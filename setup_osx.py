@@ -36,6 +36,7 @@ files = [
          'bigglesworth/dialogs/summary.ui', 
          'bigglesworth/dialogs/wave_panel.ui', 
          'bigglesworth/dialogs/wavetable_undo.ui', 
+         'bigglesworth/dialogs/wavetable_list.ui', 
 
          ]
 buildOptions = dict(packages = [], excludes = [], includes = ['atexit'], include_files = zip(files, files))
