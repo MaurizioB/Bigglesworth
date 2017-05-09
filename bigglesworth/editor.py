@@ -2276,6 +2276,7 @@ class Editor(QtGui.QMainWindow):
         self.save = False
         self._edited = False
 
+        self.shown = False
         self.create_layout()
         self.setSoundDump()
 
@@ -2389,7 +2390,7 @@ class Editor(QtGui.QMainWindow):
         filter_matrix_labels = 'Mod Matrix Editor', 'Filters'
 
         if sys.platform == 'darwin':
-            filter_matrix_tuple = filter_widget, matrix_widget
+            self.filter_matrix_widgets = filter_matrix_tuple = filter_widget, matrix_widget
             matrix_widget.hide()
             def filter_matrix_set():
                 id = filter_matrix_cycle.next()
@@ -2465,7 +2466,7 @@ class Editor(QtGui.QMainWindow):
 #        arp_widget.setLayout(self.create_arp_editor())
 
         if sys.platform == 'darwin':
-            adv_arp_tuple = adv_widget, arp_widget
+            self.adv_arp_widgets = adv_arp_tuple = adv_widget, arp_widget
             arp_widget.hide()
             def adv_arp_set():
                 id = adv_arp_cycle.next()
@@ -2524,6 +2525,23 @@ class Editor(QtGui.QMainWindow):
 #        self.display.prog_name.editing_finished.connect(lambda: self.sound.name_reload())
         self.editing_mask.setReference(self.display.prog_name)
         self.editing_mask.raise_()
+
+    def showEvent(self, event):
+        if sys.platform != 'darwin': return
+        if not self.shown:
+            self.shown = True
+            widgets_lists = self.filter_matrix_widgets, self.adv_arp_widgets
+            for w_list in widgets_lists:
+                width = height = 0
+                for widget in w_list:
+                    if widget.isVisible():
+                        shown = widget
+                    widget.show()
+                    width = max(width, widget.width())
+                    height = max(height, widget.height())
+                for widget in w_list:
+                    widget.setVisible(True if widget == shown else False)
+                    widget.setFixedSize(width, height)
 
     def __getattr__(self, attr):
         try:
