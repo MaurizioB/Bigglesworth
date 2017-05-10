@@ -36,9 +36,12 @@ files = [
          'bigglesworth/dialogs/summary.ui', 
          'bigglesworth/dialogs/wave_panel.ui', 
          'bigglesworth/dialogs/wavetable_undo.ui', 
+         'bigglesworth/dialogs/wavetable_list.ui', 
 
          ]
 buildOptions = dict(packages = [], excludes = [], includes = ['atexit'], include_files = zip(files, files))
+macbuildOptions = {'iconfile': 'icons/bigglesworth_icon.icns', 'bundle_name': 'Bigglesworth'}
+dmgOptions = {'applications_shortcut': True}
 
 import sys
 base = 'Win32GUI' if sys.platform=='win32' else None
@@ -49,5 +52,5 @@ executables = [
 setup(name='Bigglesworth',
       version = read_version(),
       description = 'Editor/librarian for Blofeld',
-      options = dict(build_exe = buildOptions),
+      options = dict(build_exe = buildOptions, bdist_mac = macbuildOptions),
       executables = executables)

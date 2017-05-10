@@ -131,6 +131,7 @@ class BlofeldCombo(Combo):
             full_range, values, name, short_name, family, attr, id = param_tuple
         else:
             full_range, values, name, short_name, family, attr = param_tuple
+            id = None
         if 'name' in kwargs:
             short_name = kwargs.pop('name')
         if 'values' in kwargs:
@@ -144,6 +145,12 @@ class BlofeldCombo(Combo):
         self.attr = attr
         self.main = parent
         self.indexChanged.connect(lambda id: setattr(self.main, self.attr, id if sub_par is None else (id, sub_par)))
+        if id and id in (8, 24):
+            for item_id in xrange(73, 86):
+                item = self.model().item(item_id)
+                setBold(item, False)
+                setItalic(item, True)
+                item.setData(QtGui.QColor('darkGray'), QtCore.Qt.ForegroundRole)
 
     def _setValue(self, id):
         Combo._setValue(self, id)
