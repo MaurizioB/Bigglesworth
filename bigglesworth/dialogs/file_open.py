@@ -4,7 +4,7 @@ from PyQt4 import QtCore, QtGui
 
 from bigglesworth.classes import Sound, Wavetable
 from bigglesworth.const import *
-from bigglesworth import midifile
+from bigglesworth.libs import midifile
 
 
 ALLFILE = MIDFILE|SYXFILE

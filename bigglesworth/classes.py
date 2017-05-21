@@ -1,7 +1,10 @@
 # *-* coding: utf-8 *-*
 
 import urllib2
+import re
 import pickle
+import simplejson
+
 from uuid import uuid4
 from os import path, makedirs
 from itertools import chain
@@ -9,58 +12,133 @@ from shutil import copy
 from string import uppercase, ascii_letters
 from PyQt4 import QtCore, QtGui
 
-import midifile
+from bigglesworth.libs import midifile
+from bigglesworth.libs import markdown2
 from bigglesworth.const import *
-from bigglesworth import version
+from bigglesworth.version import *
 
 pow21 = 2**21
 
-class VersionCheck(QtCore.QObject):
-    url = 'https://github.com/MaurizioB/Bigglesworth/raw/master/bigglesworth/version.py'
-    v_maj = version.MAJ_VERSION
-    v_min = version.MIN_VERSION
-    v_rev = version.REV_VERSION
+class VersionRequest(QtCore.QObject):
+    release_url = 'https://api.github.com/repos/MaurizioB/Bigglesworth/releases'
     res = QtCore.pyqtSignal(object)
     error = QtCore.pyqtSignal()
     done = QtCore.pyqtSignal()
-    update = QtCore.pyqtSignal(bool)
+    updated = QtCore.pyqtSignal(bool, object)
 
     def __init__(self, main):
         QtCore.QObject.__init__(self)
         self.main = main
+        self.silent = True
         self.timer = QtCore.QTimer()
         self.timer.setInterval(30000)
         self.timer.timeout.connect(self.error.emit)
 
     def run(self):
+        self.ignore = False
         self.timer.start()
         try:
             try:
-                res = urllib2.urlopen(self.url)
+                res = urllib2.urlopen(self.release_url)
                 self.timer.stop()
-                exec(res.read())
-                self.check(MAJ_VERSION, MIN_VERSION, REV_VERSION)
+                self.check(simplejson.loads(res.read()))
             except:
                 self.timer.stop()
                 self.error.emit()
         except:
             self.timer.stop()
             self.error.emit()
-        self.done.emit()
+        if not self.ignore:
+            self.done.emit()
 
-    def check(self, v_maj, v_min, v_rev):
-#        print 'Current: {}.{}.{}'.format(self.v_maj, self.v_min, self.v_rev)
-#        print '{}.{}.{}'.format(v_maj, v_min, v_rev)
-#        print type(self.v_maj), type(v_maj)
-        if (self.v_maj, self.v_min, self.v_rev) == (v_maj, v_min, v_rev):
-            self.update.emit(False)
-            return
-        current = (self.v_maj << 32) + (self.v_min << 16) + self.v_rev
-        remote = (v_maj << 32) + (v_min << 16) + v_rev
-        if current > remote:
-            self.update.emit(False)
+    def stop(self):
+        self.ignore = True
+
+    def check(self, contents):
+        def newer_check(check_txt):
+            check_maj, check_min, check_rev = map(int, check_txt.split('.'))
+            if check_maj > MAJ_VERSION:
+                return True
+            if check_min > MIN_VERSION:
+                return True
+            if check_rev > REV_VERSION:
+                return True
+            return False
+
+        html = ''
+        previous = []
+        older = []
+        latest = contents[0]['tag_name']
+        is_newer = False
+
+        if not newer_check(latest):
+            if self.silent:
+                self.updated.emit(False, None)
+                return
+            html += '<div="summary"><h1>You are running the latest version!</h1>'
         else:
-            self.update.emit(True)
+            is_newer = True
+            html += '<div="summary"><h1>A new version is available!</h1>'
+            html += '<a href="#{tag}">Read more about version {tag}</a>'.format(tag=latest)
+        for release in contents[1:]:
+            tag = release['tag_name']
+            if newer_check(tag):
+                previous.append(tag)
+            else:
+                older.append(tag)
+        if previous:
+            html += '<h3>Previous versions (yet newer than the current:)</h3><ul>'
+            for tag in previous:
+                html += '<li><a href="#{tag}">{tag}</a></li>'.format(tag=tag)
+            html += '</ul>'
+        if older:
+            html += '<h3>Older versions:</h3><ul>'
+            for tag in older:
+                html += '<li><a href="#{tag}">{tag}</a></li>'.format(tag=tag)
+            html += '</ul>'
+        html += '</div><hr />'
+
+        older_tag = False
+        for i, release in enumerate(contents):
+            tag = release['tag_name']
+#            if tag != latest and not newer_check(tag) and not older_tag:
+            if tag != latest and not older_tag:
+                html += '<font color="gray">'
+                html += '<h2>Older versions:</h2>'
+                older_tag = True
+            name = release['name']
+            if name.startswith(tag):
+                name = name[len(tag):].lstrip(' - ')
+            html += '<a name={tag}></a><div class="version">{tag}<span style="font-weight: normal;"> - {name}</span></div>'.format(tag=tag, name=name)
+            date = QtCore.QDateTime.fromString(release['published_at'], 'yyyy-MM-ddTHH:mm:ssZ').toString('dd/MM/yyyy')
+            html += u'<div class="release">Release date: {date}<br />'.format(date=unicode(date.toUtf8(), encoding='utf-8'))
+            html += 'Availability: <ul>'
+            html += '<li>Linux (source): <a href="{tar}">tar</a>, <a href="{zip}">zip</a></li>'
+            for asset in release['assets']:
+                file_name = asset['name'].lower()
+                if file_name.endswith('.exe') or file_name.endswith('.msi'):
+                    os = 'Windows'
+                elif file_name.endswith('.dmg'):
+                    os = 'OSX'
+                html += u'<li>{os}: <a href="{url}">Direct link</a></li>'.format(os=os, url=asset['browser_download_url'])
+            html += '</ul>'
+            html += '</div>'
+            md = markdown2.Markdown(extras=['cuddled-lists'])
+            body = md.convert(re.sub(r'(?<=[a-zA-Z0-9\.\;])\r?\n(?<![a-zA-Z0-9])', '    \n', release['body']))
+            html += u'<div class="content">{body}</div>'.format(body=body)
+            if i < len(contents) - 1:
+                html += '<hr />'
+            else:
+                html += '<br />'
+        if older_tag:
+            html += '</font>'
+        self.updated.emit(is_newer, html)
+
+    def setSilent(self, silent):
+        self.silent = silent
+
+    def release_check(self, res):
+        pass
 
 
 class Wavetable(QtCore.QObject):

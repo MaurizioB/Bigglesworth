@@ -17,7 +17,7 @@ from bigglesworth.utils import load_ui, setBoldItalic
 from bigglesworth.const import *
 from bigglesworth.dialogs import WaveLoad
 from bigglesworth.widgets import MagnifyingCursor, LineCursor, CurveCursor, FreeDrawIcon, LineDrawIcon, CurveDrawIcon
-from bigglesworth import midifile
+from bigglesworth.libs import midifile
 
 sqrt_center = 4*(sqrt(2)-1)/3
 _x0 = _y3 = 0

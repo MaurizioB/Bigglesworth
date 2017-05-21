@@ -301,6 +301,7 @@
      <string>&amp;?</string>
     </property>
     <addaction name="aboutAction"/>
+    <addaction name="updateCheckAction"/>
     <addaction name="separator"/>
     <addaction name="aboutQtAction"/>
    </widget>
@@ -396,6 +397,11 @@
   <action name="wavetableAction">
    <property name="text">
     <string>Wavetables</string>
+   </property>
+  </action>
+  <action name="updateCheckAction">
+   <property name="text">
+    <string>Check for updates...</string>
    </property>
   </action>
  </widget>

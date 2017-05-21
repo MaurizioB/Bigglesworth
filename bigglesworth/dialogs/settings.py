@@ -130,6 +130,9 @@ class SettingsDialog(QtGui.QDialog):
         self.blofeld_autoconnect_chk.setChecked(self.main.blofeld_autoconnect)
         self.remember_connections_chk.setChecked(self.main.remember_connections)
 
+        #General
+        self.startup_version_chk.setChecked(self.main.startup_version_check)
+
         #EXEC
         res = QtGui.QDialog.exec_(self)
         if not res: return
@@ -167,3 +170,6 @@ class SettingsDialog(QtGui.QDialog):
         self.main.blofeld_id = self.deviceID_spin.value()
         self.main.blofeld_autoconnect = self.blofeld_autoconnect_chk.isChecked()
         self.main.remember_connections = self.remember_connections_chk.isChecked()
+
+        self.main.startup_version_check = self.startup_version_chk.isChecked()
+

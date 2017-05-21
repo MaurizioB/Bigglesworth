@@ -22,8 +22,8 @@ from wavetable import WaveTableEditor
 def process_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--sysex', help='Print output SysEx messages to the terminal', action='store_true')
-    parser.add_argument('--rtmidi', help='Use rtmidi interface (mandatory for Windows)', action='store_true')
-    parser.add_argument('-l', '--library-limit', metavar='N', type=int, help='Limit library to N sounds')
+    parser.add_argument('--rtmidi', help='Use rtmidi interface (mandatory for OSX/Windows, not recommended for Linux)', action='store_true')
+    parser.add_argument('-l', '--library-limit', metavar='N', type=int, help=argparse.SUPPRESS)
     parser.add_argument('-w', '--wavetable', metavar='WTFILE', nargs='?', const=True, help='Open Wavetable editor (with optional WTFILE)')
     parser.add_argument('-e', '--editor', metavar='BXXX', nargs='?', const=True, help='Open Sound editor (with INIT sound or optional sound XXX from bank B, eg. A001)')
     res, unknown = parser.parse_known_args()
@@ -130,6 +130,8 @@ class BigglesworthObject(QtCore.QObject):
         self.deviceAction.triggered.connect(self.device_request)
         self.globalsAction = self.librarian.globalsAction
         self.globalsAction.triggered.connect(self.globals_request)
+        self.updateCheckAction = self.librarian.updateCheckAction
+        self.updateCheckAction.triggered.connect(lambda: self.update_check(silent=False))
 
         self.midi_duplex_state_change.connect(self.globalsAction.setEnabled)
 
@@ -286,8 +288,12 @@ class BigglesworthObject(QtCore.QObject):
         if args.editor:
             self.startup_show_editor(args.editor)
 
-        if self.settings.gGeneral.get_ShowUpdates(True):
-            self.startup_version_check()
+        self.version_request_dialog = VersionRequestDialog(self.librarian)
+        self.updated_dialog = UpdatedDialog(self, self.librarian)
+        self.updated_dialog.never_chk.toggled.connect(lambda state: self.settings.gGeneral.set_StartupUpdateCheck(not state))
+        self.create_version_request()
+        if self.startup_version_check:
+            self.update_check(silent=True)
 #        QtGui.QMessageBox.information(self.librarian, 'Test build', 'This is a test build!!! Have fun!')
 
     def wavetable_show(self, uid=None):
@@ -316,7 +322,6 @@ class BigglesworthObject(QtCore.QObject):
         wavetable_window.newWavetableAction.triggered.connect(lambda _: self.new_wavetable())
         return wavetable_window
 
-
     def startup_show_editor(self, data):
         def show_editor():
             self.loader.loaded.disconnect(show_editor)
@@ -338,31 +343,32 @@ class BigglesworthObject(QtCore.QObject):
                     prog = 127
                 sound = bank, prog
 
-    def startup_version_check(self, active=False):
-        def open_site(url):
-            QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
-            dialog.accept()
-        self.version_check = VersionCheck(self)
+    def create_version_request(self, silent=True):
+        self.version_request = VersionRequest(self)
         self.version_thread = QtCore.QThread()
-        self.version_check.moveToThread(self.version_thread)
-        self.version_thread.started.connect(self.version_check.run)
-        self.version_check.done.connect(self.version_thread.quit)
-        self.version_thread.start()
-        dialog = QtGui.QMessageBox(
-                                   QtGui.QMessageBox.Information, 'New version', 
-                                   'A new version is available, go to the <a href="https://github.com/MaurizioB/Bigglesworth">website</a> for updates!', 
-                                   QtGui.QMessageBox.Ok, 
-                                   self.librarian
-                                   )
-        labels = dialog.findChildren(QtGui.QLabel)
-        label = [l for l in labels if l.text().startsWith('A new version')][0]
-        label.setOpenExternalLinks(False)
-        label.linkActivated.connect(open_site)
-        layout = dialog.layout()
-        never_chk = QtGui.QCheckBox('Never display this message again')
-        never_chk.toggled.connect(lambda state: self.settings.gGeneral.set_ShowUpdates(not state))
-        layout.addWidget(never_chk, layout.rowCount(), 0, 1, layout.columnCount())
-        self.version_check.update.connect(lambda update: dialog.exec_() if update else None)
+        self.version_request.moveToThread(self.version_thread)
+        self.version_thread.started.connect(self.version_request.run)
+        self.version_request.done.connect(self.version_thread.quit)
+        self.version_request.done.connect(self.version_request_dialog.hide)
+        self.version_request.error.connect(self.version_request_dialog.hide)
+        self.version_request_dialog.rejected.connect(self.version_request.stop)
+
+    def update_check(self, silent=False):
+        if not self.version_thread.isRunning():
+            if self.version_thread.isFinished():
+                self.create_version_request(silent)
+            self.version_thread.start()
+        try:
+            self.version_request.updated.disconnect()
+        except:
+            pass
+        if not silent:
+            self.version_request_dialog.show()
+            self.version_request.setSilent(False)
+            self.version_request.updated.connect(lambda updated, content: self.updated_dialog.exec_(content))
+            self.updated_dialog.never_chk.setVisible(False)
+        else:
+            self.version_request.updated.connect(lambda updated, content: self.updated_dialog.exec_(content) if updated else None)
 
     def show_settings(self):
         self.settings_dialog.exec_()
@@ -433,6 +439,19 @@ class BigglesworthObject(QtCore.QObject):
     @property
     def source_library(self):
         return self.settings.gGeneral.get_Source_Library('personal')
+
+    @property
+    def startup_version_check(self):
+        try:
+            return self._startup_version_check
+        except:
+            self._startup_version_check = self.settings.gGeneral.get_StartupUpdateCheck(True)
+            return self._startup_version_check
+
+    @startup_version_check.setter
+    def startup_version_check(self, value):
+        self.settings.gGeneral.set_StartupUpdateCheck(value)
+        self._startup_version_check = value
 
     @property
     def library_doubleclick(self):
@@ -1135,7 +1154,6 @@ class Librarian(QtGui.QMainWindow):
         def rename(sound_range):
             first = min(sound_range)
             last = max(sound_range)
-#            print first, last
             for row in range(first, last+1):
                 bank, prog = divmod(row, 128)
                 self.blofeld_model.item(row, BANK).setText(uppercase[bank])

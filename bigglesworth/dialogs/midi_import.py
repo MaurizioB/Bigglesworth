@@ -7,7 +7,7 @@ from PyQt4 import QtCore, QtGui
 from bigglesworth.utils import load_ui, setBold
 from bigglesworth.const import sound_headers, categories, Params, BANK, NAME, PROG, CATEGORY, STORED, ValuesRole, EditedRole
 from bigglesworth.classes import Sound
-from bigglesworth import midifile
+from bigglesworth.libs import midifile
 
 _UNCHANGED, _MINIMUM, _MAXIMUM = None, 0, -1
 

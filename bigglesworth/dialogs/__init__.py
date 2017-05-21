@@ -13,3 +13,4 @@ from bigglesworth.dialogs.midi_import import *
 from bigglesworth.dialogs.file_open import *
 from bigglesworth.dialogs.wave_import import *
 from bigglesworth.dialogs.wavetable_list import *
+from bigglesworth.dialogs.update import *
