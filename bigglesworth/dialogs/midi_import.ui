@@ -43,7 +43,7 @@
           <string>Library properties</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_3">
-          <item row="4" column="0">
+          <item row="5" column="0">
            <layout class="QHBoxLayout" name="horizontalLayout_5">
             <item>
              <widget class="QLabel" name="bankmap_lbl">
@@ -85,6 +85,22 @@
              </widget>
             </item>
            </layout>
+          </item>
+          <item row="3" column="0">
+           <widget class="QTableWidget" name="sounds_table">
+            <property name="contextMenuPolicy">
+             <enum>Qt::CustomContextMenu</enum>
+            </property>
+            <property name="editTriggers">
+             <set>QAbstractItemView::NoEditTriggers</set>
+            </property>
+            <property name="dragDropOverwriteMode">
+             <bool>false</bool>
+            </property>
+            <property name="selectionBehavior">
+             <enum>QAbstractItemView::SelectRows</enum>
+            </property>
+           </widget>
           </item>
           <item row="0" column="0">
            <layout class="QHBoxLayout" name="horizontalLayout">
@@ -132,23 +148,7 @@
             </item>
            </layout>
           </item>
-          <item row="2" column="0">
-           <widget class="QTableWidget" name="sounds_table">
-            <property name="contextMenuPolicy">
-             <enum>Qt::CustomContextMenu</enum>
-            </property>
-            <property name="editTriggers">
-             <set>QAbstractItemView::NoEditTriggers</set>
-            </property>
-            <property name="dragDropOverwriteMode">
-             <bool>false</bool>
-            </property>
-            <property name="selectionBehavior">
-             <enum>QAbstractItemView::SelectRows</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
+          <item row="4" column="0">
            <layout class="QHBoxLayout" name="horizontalLayout_3">
             <property name="spacing">
              <number>8</number>
@@ -208,14 +208,31 @@
            </layout>
           </item>
           <item row="1" column="0">
-           <widget class="QCheckBox" name="doubleclick_dump_chk">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>Dump to Sound Mode Edit Buffer on double click</string>
-            </property>
-           </widget>
+           <layout class="QHBoxLayout" name="horizontalLayout_4">
+            <item>
+             <widget class="QCheckBox" name="doubleclick_dump_chk">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string>Dump to Sound Mode Edit Buffer on double click</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="editor_activate_chk">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string>open in Sound editor</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
          </layout>
         </widget>
@@ -578,6 +595,22 @@
     <hint type="destinationlabel">
      <x>633</x>
      <y>181</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>doubleclick_dump_chk</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>editor_activate_chk</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>145</x>
+     <y>68</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>355</x>
+     <y>68</y>
     </hint>
    </hints>
   </connection>

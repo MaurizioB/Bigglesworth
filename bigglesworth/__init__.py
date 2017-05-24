@@ -733,7 +733,7 @@ class BigglesworthObject(QtCore.QObject):
                 sound._bank, sound._prog = library
                 self.blofeld_library.addSound(sound)
                 if editor:
-                    self.activate_editor(library)
+                    self.activate_editor(*library)
             return
         bank = sound.bank
         prog = sound.prog

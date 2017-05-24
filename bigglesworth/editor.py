@@ -2851,12 +2851,12 @@ class Editor(QtGui.QMainWindow):
             self.display.midi_btn.midi_out()
             self.program_change_request.emit(sound.bank, sound.prog)
 
-    def setSoundDump(self, sound=None):
+    def setSoundDump(self, sound=None, imported=False):
         if sound is None:
             sound = Sound(init_sound_data)
         else:
             self.sound_changed.emit(sound.bank, sound.prog)
-            self.display.statusUpdate('Received sound dump from Blofeld')
+            self.display.statusUpdate('Received sound dump from Blofeld' if not imported else 'Sound imported from file')
         self.sound = sound
         self._setSound()
 

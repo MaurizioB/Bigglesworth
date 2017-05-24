@@ -333,6 +333,7 @@ class MidiImportDialog(QtGui.QDialog):
     def midi_output_state(self, conn):
         self.midi_state = True if conn else False
         self.doubleclick_dump_chk.setEnabled(self.midi_state)
+        self.editor_activate_chk.setEnabled(self.midi_state & self.doubleclick_dump_chk.isChecked())
         self.single_dump_btn.setEnabled(self.midi_state)
         self.enable_export_btns()
 
@@ -376,11 +377,15 @@ class MidiImportDialog(QtGui.QDialog):
         self.hide()
 
     def dump_temp(self, row, column):
-        if not self.doubleclick_dump_chk.isChecked(): return
+        if not (self.doubleclick_dump_chk.isEnabled() and self.doubleclick_dump_chk.isChecked()): return
         copy = self.sound_list[row].copy()
         copy.bank = 0x7f
         copy.prog = 0
         self.dump_send.emit(copy)
+        if self.editor_activate_chk.isChecked():
+            self.main.editor.setSoundDump(copy, imported=True)
+            self.main.editor.show()
+            self.main.editor.activateWindow()
 
     def dump_single(self):
         checked = self.destination_group.checkedId()
