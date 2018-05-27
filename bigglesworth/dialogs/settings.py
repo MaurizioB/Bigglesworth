@@ -1,175 +1,183 @@
-# *-* coding: utf-8 *-*
+from Qt import QtCore, QtGui, QtWidgets
 
-from PyQt4 import QtCore, QtGui
-from bigglesworth.utils import load_ui
-from bigglesworth.const import PGMSEND, MIDISEND
+from dial import Dial
+from combo import Combo
+from slider import Slider
+from frame import Frame
 
-class SettingsDialog(QtGui.QDialog):
-    preset_texts = {
-                    '201200': 'Latest official version', 
-                    '200802': 'Same as January 2008, with slight modifications (mostly regarding Amp Volume)', 
-                    '200801': 'Original sound set', 
-                    'personal': '', 
-                    }
+from bigglesworth.utils import loadUi
+from bigglesworth.themes import ThemeCollection
+from bigglesworth.midiutils import SysExEvent, SYSEX, GLBD, INIT, IDW, IDE, GLBR, END
+from bigglesworth.dialogs import ThemeEditor, GlobalsWaiter
+
+class SettingsDialog(QtWidgets.QDialog):
+    midiEvent = QtCore.pyqtSignal(object)
+    themeChanged = QtCore.pyqtSignal(object)
+
     def __init__(self, main, parent):
-        QtGui.QDialog.__init__(self, parent)
-        load_ui(self, 'dialogs/settings.ui')
+        QtWidgets.QDialog.__init__(self, parent)
+        loadUi('ui/settings.ui', self)
         self.main = main
         self.settings = main.settings
-        self.setModal(True)
+        self.themes = main.themes
+#        self.themeSettings = QtCore.QSettings()
+        self.themeTab.layout().addWidget(QtWidgets.QWidget(), *self.themeTab.layout().getItemPosition(self.themeTab.layout().indexOf(self.previewWidget)))
+        self.themeCombo.currentIndexChanged.connect(self.applyThemeId)
+        self.pressedBtn.widget.setDown(True)
+        self.pressedBtnDisabled.widget.setDown(True)
+        self.themeEditorBtn.clicked.connect(self.showThemeEditor)
+        self.detectBtn.clicked.connect(self.midiDetect)
+        self.waiter = GlobalsWaiter(self)
+        self.broadcastChk.clicked.connect(lambda: self.deviceIdSpin.setValue(127))
+        self.deviceIdSpin.valueChanged.connect(lambda value: self.deviceIdLbl.setText('({:02X}h)'.format(value)))
 
-        self.preset_group.buttonClicked.connect(self.set_preset_labels)
+    def midiEventReceived(self, event):
+        if event.type == SYSEX:
+            sysex_type = event.sysex[4]
+            if sysex_type == GLBD:
+                self.waiter.accept()
+                self.globalsResponse(event.sysex)
 
-        self.editor_appearance_filter_matrix_group.setId(self.adv_filter_radio, 0)
-        self.editor_appearance_filter_matrix_group.setId(self.adv_matrix_radio, 1)
-        self.editor_appearance_filter_matrix_group.setId(self.adv_last_radio, 2)
-        self.editor_appearance_efx_arp_group.setId(self.arp_efx_radio, 0)
-        self.editor_appearance_efx_arp_group.setId(self.arp_arp_radio, 1)
-        self.editor_appearance_efx_arp_group.setId(self.arp_last_radio, 2)
-        self.editor_appearance_efx_arp_group.buttonClicked.connect(self.editor_appearance_groups_check)
-        self.editor_appearance_filter_matrix_group.buttonClicked.connect(self.editor_appearance_groups_check)
-        self.editor_appearance_remember_last_chk.toggled.connect(self.editor_appearance_groups_check)
-        self.editor_appearance_efx_arp_latest = self.editor_appearance_filter_matrix_latest = 0
+    def globalsResponse(self, sysex):
+        data = sysex[5:-2]
+        channel, deviceId = data[36:38]
+        self.inputChannelWidget.setChannels(channel)
+        self.outputChannelWidget.setChannels(channel)
+        self.deviceIdSpin.setValue(deviceId)
 
-        self.previous_id = 0
-        self.deviceID_spin.valueChanged.connect(lambda value: self.deviceID_hex_lbl.setText('({:02X}h)'.format(value)))
-        self.deviceID_spin.valueChanged.connect(self.check_broadcast)
-        self.broadcast_chk.toggled.connect(self.set_broadcast)
-        self.deviceID_detect_btn.clicked.connect(self.detect)
-        self.main.midi_duplex_state_change.connect(self.deviceID_detect_btn.setEnabled)
-        self.detect_msgbox = QtGui.QMessageBox(QtGui.QMessageBox.Information, 'Detecting Device ID', 'Waiting for the Blofeld to reply, please wait...', QtGui.QMessageBox.Abort, self)
+    def midiDetect(self):
+        QtCore.QTimer.singleShot(200, lambda: self.midiEvent.emit(SysExEvent(1, [INIT, IDW, IDE, self.main.blofeldId, GLBR, END])))
+        res = self.waiter.exec_()
+        if (not res or not self.waiter.result()) and not self.waiter.cancelled:
+            QtWidgets.QMessageBox.warning(
+                self, 
+                'Device timeout', 
+                'The request has timed out.\nEnsure that the Blofeld is correctly connected to both MIDI input and output ports', 
+                QtWidgets.QMessageBox.Ok)
 
-        self.detect_timer = QtCore.QTimer()
-        self.detect_timer.setInterval(5000)
-        self.detect_timer.setSingleShot(True)
-        self.detect_timer.timeout.connect(self.no_response)
+    def showThemeEditor(self):
+        oldCurrentTheme = self.themes.current
+        oldSelectedTheme = self.themeCombo.itemData(self.themeCombo.currentIndex())
+        themeEditor = ThemeEditor(self)
+        themeEditor.exec_(self.themeCombo.itemData(self.themeCombo.currentIndex()))
+        if themeEditor.changed:
+            self.main.themes = self.themes = ThemeCollection(self.main)
 
-        self.no_response_msgbox = QtGui.QMessageBox(QtGui.QMessageBox.Warning, 'No response', 'We got no response from the Blofeld.\nPlease check MIDI connections or try to switch it off and on again.', QtGui.QMessageBox.Ok, self)
+            selectedName = oldSelectedTheme.name
+            if oldSelectedTheme.name not in ('Dark', 'Light', 'System'):
+                if not oldSelectedTheme.name in self.themes.themeList:
+                    for themeName in self.themes.themeList:
+                        theme = self.themes[themeName]
+                        if oldSelectedTheme.uuid == theme.uuid:
+                            selectedName = theme.name
+                            break
+                    else:
+                        selectedName = 'Dark'
 
-    def editor_appearance_groups_check(self, btn):
-        if all([self.adv_last_radio.isChecked(), self.arp_last_radio.isChecked()]):
-            self.editor_appearance_remember_last_chk.setChecked(True)
-        else:
-            self.editor_appearance_remember_last_chk.setChecked(False)
+            emitChanged = False
+            if oldSelectedTheme != oldCurrentTheme and oldCurrentTheme.name not in ('Dark', 'Light', 'System'):
+                if not oldCurrentTheme.name in self.themes.themeList:
+                    for themeName in self.themes.themeList:
+                        theme = self.themes[themeName]
+                        if oldCurrentTheme.uuid == theme.uuid:
+                            self.settings.setValue('theme', theme.name)
+                            break
+                    else:
+                        self.settings.remove('theme')
+                    emitChanged = True
+                elif oldCurrentTheme != self.themes[oldCurrentTheme.name]:
+                    emitChanged = True
+            if emitChanged or oldCurrentTheme != self.themes.current:
+                self.themeChanged.emit(self.themes.current)
 
-    def set_preset_labels(self, btn):
-        self.preset_desc_lbl.setText(self.preset_texts[str(btn.objectName())[7:-6]])
+            self.themeCombo.blockSignals(True)
+            self.themeCombo.clear()
+            self.themeCombo.addItems(self.themes.themeList)
+            currentTheme = self.themes[selectedName]
+            currentIndex = self.themes.themeList.index(currentTheme.name)
+            self.themeCombo.setCurrentIndex(currentIndex)
+            self.themeCombo.setItemData(currentIndex, currentTheme)
+            self.applyTheme(currentTheme)
+            self.themeCombo.blockSignals(False)
 
-    def detect(self):
-        self.main.midi_lock.emit(True)
-        self.main.globals_event.connect(self.detect_response)
-        self.main.globals_request()
-        self.detect_timer.start()
-        self.detect_msgbox.exec_()
-        self.detect_timer.stop()
-        self.main.midi_lock.emit(False)
-        self.main.globals_event.disconnect(self.detect_response)
+    def applyThemeId(self, themeId):
+        theme = self.themeCombo.itemData(themeId)
+        if not theme:
+            theme = self.themes[self.themeCombo.itemText(themeId)]
+            self.themeCombo.setItemData(themeId, theme)
+        self.applyTheme(theme)
 
-    def detect_response(self, data):
-        self.detect_timer.stop()
-        self.detect_msgbox.accept()
-        self.no_response_msgbox.accept()
-        id = data[42]
-        self.previous_id = id
-        if id == 127:
-            self.broadcast_chk.setChecked(True)
-            self.broadcast_chk.toggled.emit(True)
-        else:
-            self.deviceID_spin.setValue(id)
+    def applyTheme(self, theme):
+        palette = QtGui.QPalette(theme.palette)
+        if palette.color(palette.Window) == self.palette().color(palette.Window):
+            palette.setColor(palette.Window, QtCore.Qt.transparent)
 
-    def no_response(self):
-        self.detect_msgbox.reject()
-        self.no_response_msgbox.exec_()
-
-    def set_broadcast(self, state):
-        if state:
-            self.previous_id = self.deviceID_spin.value()
-            self.deviceID_spin.blockSignals(True)
-            self.deviceID_spin.setValue(127)
-            self.deviceID_hex_lbl.setText('({:02X}h)'.format(127))
-            self.deviceID_spin.blockSignals(False)
-        else:
-            self.deviceID_spin.setValue(self.previous_id)
-
-    def check_broadcast(self, value):
-        if value == 127:
-            self.broadcast_chk.blockSignals(True)
-            self.broadcast_chk.setChecked(True)
-            self.broadcast_chk.setEnabled(False)
-            self.broadcast_chk.blockSignals(False)
-        else:
-            self.broadcast_chk.setChecked(False)
-            self.broadcast_chk.setEnabled(True)
+        self.previewWidget.setPalette(palette)
+#        self.previewWidget.setPalette(theme.palette)
+        self.previewWidget.setFont(theme.font)
+        dialStart, dialZero, dialEnd, dialGradient, dialBgd, dialScale, dialNotches, dialIndicator = theme.dialData
+        for child in self.previewWidget.findChildren(Dial):
+            child.rangeColorStart = dialStart
+            child.rangeColorZero = dialZero
+            child.rangeColorEnd = dialEnd
+            child.gradientScale = dialGradient
+            child.rangePenColor = dialScale
+            child.scalePenColor = dialNotches
+            child.pointerColor = dialIndicator
+        sliderStart, sliderEnd, sliderBgd = theme.sliderData
+        for child in self.previewWidget.findChildren(Slider):
+            child.rangeColorStart = sliderStart
+            child.rangeColorEnd = sliderEnd
+            child.background = sliderBgd
+        for child in self.previewWidget.findChildren(Combo):
+            child.setPalette(theme.palette)
+            child.opaque = theme.comboStyle
+        for child in self.previewWidget.findChildren(Frame):
+            child.borderColor = theme.frameBorderColor
+            child.labelColor = theme.frameLabelColor
 
     def exec_(self):
-        #Library
-        self.library_doubleclick_combo.setCurrentIndex(self.main.library_doubleclick)
-        preset_btn = getattr(self, 'preset_{}_radio'.format(self.settings.gGeneral.get_Source_Library('personal')))
-        preset_btn.setChecked(True)
+        self.backupPathEdit.setText(self.main.database.path)
+        backupInterval = self.settings.value('backupInterval', 5, int)
+        self.backupChk.setChecked(backupInterval)
+        self.backupIntervalSpin.setValue(backupInterval if backupInterval else 5)
+        self.startupSessionCombo.setCurrentIndex(self.settings.value('startupSessionMode', 0, int))
 
-        #Editor
-        self.editor_appearance_filter_matrix_group.button(min(2, self.main.editor_appearance_filter_matrix)).click()
-        self.editor_appearance_efx_arp_group.button(min(2, self.main.editor_appearance_efx_arp)).click()
-        self.editor_pgm_send_combo.setCurrentIndex(self.main.editor_remember_states[PGMSEND])
-        self.editor_midi_send_combo.setCurrentIndex(self.main.editor_remember_states[MIDISEND])
-        self.editor_remember_chk.setChecked(self.main.editor_remember)
+        self.settings.beginGroup('MIDI')
+        self.deviceIdSpin.setValue(self.main.blofeldId)
+        self.autoconnectUsbChk.setChecked(self.settings.value('blofeldDetect', True, bool))
+        self.autoconnectRememberChk.setChecked(self.settings.value('tryAutoConnect', True, bool))
+        self.settings.endGroup()
+        self.inputChannelWidget.setChannels(self.main.chanReceive)
+        self.outputChannelWidget.setChannels(self.main.chanSend)
 
-        #MIDI
-        self.midi_groupbox.layout().addWidget(self.main.midiwidget)
+        self.themeCombo.blockSignals(True)
+        self.themeCombo.clear()
+        self.themeCombo.addItems(self.themes.themeList)
+        currentTheme = self.themes.current
+        currentIndex = self.themes.themeList.index(currentTheme.name)
+        self.themeCombo.setCurrentIndex(currentIndex)
+        self.themeCombo.setItemData(currentIndex, currentTheme)
+        self.applyTheme(currentTheme)
+        self.themeCombo.blockSignals(False)
 
-        id = self.main.blofeld_id
-        if id == 127:
-            self.broadcast_chk.setChecked(True)
-            self.broadcast_chk.toggled.emit(True)
-        else:
-            self.previous_id = id
-            self.deviceID_spin.setValue(id)
-            self.broadcast_chk.setChecked(False)
-            self.broadcast_chk.toggled.emit(False)
+        res = QtWidgets.QDialog.exec_(self)
+        if res:
+            self.settings.setValue('startupSessionMode', self.startupSessionCombo.currentIndex())
+            self.settings.setValue('theme', self.themes.current.name)
+            backupInterval = self.backupIntervalSpin.value() if self.backupChk.isChecked() else 0
+            self.settings.setValue('backupInterval', backupInterval)
+            self.main.database.setBackupInterval(backupInterval)
 
-        self.blofeld_autoconnect_chk.setChecked(self.main.blofeld_autoconnect)
-        self.remember_connections_chk.setChecked(self.main.remember_connections)
+            self.settings.beginGroup('MIDI')
+            self.settings.setValue('blofeldId', self.deviceIdSpin.value())
+            self.settings.setValue('blofeldDetect', self.autoconnectUsbChk.isChecked())
+            self.settings.setValue('tryAutoConnect', self.autoconnectRememberChk.isChecked())
+            self.settings.setValue('chanSend', self.outputChannelWidget.items)
+            self.main._chanSend = set(self.outputChannelWidget.items)
+            self.settings.setValue('chanReceive', self.inputChannelWidget.items)
+            self.main._chanReceive = set(self.inputChannelWidget.items)
+            self.settings.endGroup()
+            self.settings.sync()
 
-        #General
-        self.startup_version_chk.setChecked(self.main.startup_version_check)
-
-        #EXEC
-        res = QtGui.QDialog.exec_(self)
-        if not res: return
-
-        self.main.library_doubleclick = self.library_doubleclick_combo.currentIndex()
-        self.settings.gGeneral.set_Source_Library(str(self.preset_group.checkedButton().objectName())[7:-6])
-
-
-        if self.editor_appearance_filter_matrix_group.checkedId() > 1:
-            if not self.main.editor_appearance_filter_matrix & 2:
-                self.main.editor_appearance_filter_matrix = self.editor_appearance_filter_matrix_latest+2
-        else:
-            self.main.editor_appearance_filter_matrix = self.editor_appearance_filter_matrix_group.checkedId()
-        if self.editor_appearance_efx_arp_group.checkedId() > 1:
-            if not self.main.editor_appearance_efx_arp & 2:
-                self.main.editor_appearance_efx_arp = self.editor_appearance_efx_arp_latest+2
-        else:
-            self.main.editor_appearance_efx_arp = self.editor_appearance_efx_arp_group.checkedId()
-        self.main.editor_remember = self.editor_remember_chk.isChecked()
-        if self.editor_remember_chk.isChecked():
-            self.main.editor_remember_states = [
-                                                self.main.editor.pgm_receive_btn.isChecked(), 
-                                                self.main.editor.midi_receive_btn.isChecked(), 
-                                                self.main.editor.pgm_send_btn.isChecked(), 
-                                                self.main.editor.midi_send_btn.isChecked(), 
-                                                ]
-        else:
-            self.main.editor_remember_states = [
-                                                bool(self.editor_pgm_receive_combo.currentIndex()), 
-                                                bool(self.editor_midi_receive_combo.currentIndex()), 
-                                                bool(self.editor_pgm_send_combo.currentIndex()), 
-                                                bool(self.editor_midi_send_combo.currentIndex()), 
-                                                ]
-
-        self.main.blofeld_id = self.deviceID_spin.value()
-        self.main.blofeld_autoconnect = self.blofeld_autoconnect_chk.isChecked()
-        self.main.remember_connections = self.remember_connections_chk.isChecked()
-
-        self.main.startup_version_check = self.startup_version_chk.isChecked()
-
+        return res

@@ -1,0 +1,992 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>713</width>
+    <height>454</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Blofeld Global Parameters</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_5">
+   <item row="2" column="0">
+    <widget class="QGroupBox" name="systemGroup">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="title">
+      <string>System</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_3" columnstretch="25,23,4,25,23">
+      <item row="1" column="3">
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>Pop&amp;up Time</string>
+        </property>
+        <property name="buddy">
+         <cstring>popupSpin</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_9">
+        <property name="text">
+         <string>Velocity cur&amp;ve</string>
+        </property>
+        <property name="buddy">
+         <cstring>velocityCombo</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QComboBox" name="velocityCombo">
+        <item>
+         <property name="text">
+          <string>Linear</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Square</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Cubic</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Exponential</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Root</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Fix 32</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Fix 64</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Fix 100</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Fix 127</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>&amp;Contrast</string>
+        </property>
+        <property name="buddy">
+         <cstring>contrastSpin</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1" alignment="Qt::AlignRight">
+       <widget class="QSpinBox" name="contrastSpin">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximum">
+         <number>127</number>
+        </property>
+        <property name="value">
+         <number>64</number>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="3">
+       <widget class="QLabel" name="label_16">
+        <property name="text">
+         <string>Pe&amp;dal</string>
+        </property>
+        <property name="buddy">
+         <cstring>pedalCombo</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2" rowspan="3">
+       <widget class="Line" name="line_2">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="3">
+       <widget class="QLabel" name="autoEditLabel">
+        <property name="text">
+         <string>Auto &amp;Edit</string>
+        </property>
+        <property name="buddy">
+         <cstring>autoEditChk</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="4">
+       <widget class="QCheckBox" name="autoEditChk">
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="4">
+       <widget class="QComboBox" name="pedalCombo">
+        <item>
+         <property name="text">
+          <string>normal</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>inverse</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="1" column="4">
+       <widget class="DevicePopupSpin" name="popupSpin">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="inputMethodHints">
+         <set>Qt::ImhDigitsOnly|Qt::ImhFormattedNumbersOnly</set>
+        </property>
+        <property name="suffix">
+         <string>s</string>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="minimum">
+         <double>1.000000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>127.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0" colspan="2">
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <property name="spacing">
+         <number>2</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="label_21">
+          <property name="text">
+           <string>Device &amp;ID</string>
+          </property>
+          <property name="buddy">
+           <cstring>deviceIdSpin</cstring>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="deviceIdLbl">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>(00h)</string>
+          </property>
+         </widget>
+        </item>
+        <item alignment="Qt::AlignRight">
+         <widget class="DeviceIdSpin" name="deviceIdSpin">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximum">
+           <number>127</number>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="1" column="1" rowspan="2">
+    <widget class="QGroupBox" name="midiGroup">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="title">
+      <string>MIDI settings</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2" columnstretch="2,0,0,2,0">
+      <item row="2" column="1">
+       <widget class="QComboBox" name="ctrlSendCombo">
+        <property name="currentIndex">
+         <number>3</number>
+        </property>
+        <item>
+         <property name="text">
+          <string>off</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Ctrl</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>SysEx</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Ctrl+SysEx</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_7">
+        <property name="text">
+         <string>Ctrl &amp;send</string>
+        </property>
+        <property name="buddy">
+         <cstring>ctrlSendCombo</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="3">
+       <widget class="QLabel" name="label_13">
+        <property name="text">
+         <string>Control &amp;X</string>
+        </property>
+        <property name="buddy">
+         <cstring>ctrlXSpin</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="3">
+       <widget class="QLabel" name="label_15">
+        <property name="text">
+         <string>Control &amp;Z</string>
+        </property>
+        <property name="buddy">
+         <cstring>ctrlZSpin</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="label_14">
+        <property name="text">
+         <string>Control &amp;Y</string>
+        </property>
+        <property name="buddy">
+         <cstring>ctrlYSpin</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QSpinBox" name="ctrlYSpin">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximum">
+         <number>120</number>
+        </property>
+        <property name="value">
+         <number>11</number>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_12">
+        <property name="text">
+         <string>Control &amp;W</string>
+        </property>
+        <property name="buddy">
+         <cstring>ctrlWSpin</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="4">
+       <widget class="QSpinBox" name="ctrlXSpin">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximum">
+         <number>120</number>
+        </property>
+        <property name="value">
+         <number>4</number>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="4">
+       <widget class="QCheckBox" name="ctrlReceiveChk">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2" rowspan="5">
+       <widget class="Line" name="line">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="4">
+       <widget class="QSpinBox" name="ctrlZSpin">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximum">
+         <number>120</number>
+        </property>
+        <property name="value">
+         <number>12</number>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="4">
+       <widget class="QComboBox" name="clockCombo">
+        <item>
+         <property name="text">
+          <string>Auto</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Internal</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QSpinBox" name="channelSpin">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="specialValueText">
+         <string>omni</string>
+        </property>
+        <property name="maximum">
+         <number>16</number>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>&amp;MIDI channel</string>
+        </property>
+        <property name="buddy">
+         <cstring>channelSpin</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="3">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Ctrl &amp;receive</string>
+        </property>
+        <property name="buddy">
+         <cstring>ctrlReceiveChk</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QSpinBox" name="ctrlWSpin">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximum">
+         <number>120</number>
+        </property>
+        <property name="value">
+         <number>2</number>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="3">
+       <widget class="QLabel" name="label_8">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>Cloc&amp;k</string>
+        </property>
+        <property name="buddy">
+         <cstring>clockCombo</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_17">
+        <property name="text">
+         <string>&amp;Program send</string>
+        </property>
+        <property name="buddy">
+         <cstring>progSendChk</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="3">
+       <widget class="QLabel" name="label_18">
+        <property name="text">
+         <string>&amp;Local control</string>
+        </property>
+        <property name="buddy">
+         <cstring>localCtrlChk</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QCheckBox" name="progSendChk">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="4">
+       <widget class="QCheckBox" name="localCtrlChk">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="0" column="0" colspan="2">
+    <layout class="QGridLayout" name="gridLayout_6">
+     <item row="0" column="6" rowspan="2">
+      <widget class="QFrame" name="deviceFrame">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Raised</enum>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QLabel" name="label_20">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Device information:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="deviceLbl">
+          <property name="text">
+           <string>Manufacturer:
+Model:
+Type:
+Firmware version:</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_23">
+       <property name="text">
+        <string>&amp;Device ID</string>
+       </property>
+       <property name="buddy">
+        <cstring>queryDeviceIdSpin</cstring>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="5">
+      <widget class="QPushButton" name="queryBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Device in&amp;quiry</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0" colspan="6">
+      <widget class="QLabel" name="label_22">
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Raised</enum>
+       </property>
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Press &amp;quot;Device inquiry&amp;quot; to query any connected Blofeld Synthesizer.&lt;/p&gt;&lt;p&gt;Use the Device ID to query a specific device (leave it to &amp;quot;Broadcast&amp;quot; if you don't know what this means, see page 82 of the Blofeld manual)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLabel" name="queryHexLbl">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>(00h)</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="2">
+      <widget class="DeviceIdSpin" name="queryDeviceIdSpin">
+       <property name="maximum">
+        <number>127</number>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="4">
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="1" column="3">
+      <widget class="QPushButton" name="broadcastBtn">
+       <property name="text">
+        <string>&amp;Broadcast</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="4" column="0" colspan="2">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Apply|QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QGroupBox" name="generalGroup">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="title">
+      <string>General</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout" columnstretch="25,23,4,25,23">
+      <item row="0" column="4">
+       <widget class="QComboBox" name="catCombo">
+        <item>
+         <property name="text">
+          <string>Off</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Init</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Arp</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Atmo</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Bass</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Drum</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>FX</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Keys</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Lead</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Mono</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Pad</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Perc</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Poly</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Seq</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="0" column="3">
+       <widget class="QLabel" name="label_11">
+        <property name="text">
+         <string>&amp;Cat. filter</string>
+        </property>
+        <property name="buddy">
+         <cstring>catCombo</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_10">
+        <property name="text">
+         <string>&amp;Volume</string>
+        </property>
+        <property name="buddy">
+         <cstring>volumeSpin</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1" alignment="Qt::AlignRight">
+       <widget class="QSpinBox" name="volumeSpin">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximum">
+         <number>127</number>
+        </property>
+        <property name="value">
+         <number>64</number>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1" alignment="Qt::AlignRight">
+       <widget class="DeltaSpin" name="tuneSpin">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimum">
+         <number>54</number>
+        </property>
+        <property name="maximum">
+         <number>74</number>
+        </property>
+        <property name="value">
+         <number>64</number>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="4" alignment="Qt::AlignRight">
+       <widget class="DeltaSpin" name="transposeSpin">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="prefix">
+         <string>+</string>
+        </property>
+        <property name="minimum">
+         <number>52</number>
+        </property>
+        <property name="maximum">
+         <number>76</number>
+        </property>
+        <property name="value">
+         <number>64</number>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_5">
+        <property name="text">
+         <string>Master t&amp;une</string>
+        </property>
+        <property name="buddy">
+         <cstring>tuneSpin</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="3">
+       <widget class="QLabel" name="label_6">
+        <property name="text">
+         <string>&amp;Transpose</string>
+        </property>
+        <property name="buddy">
+         <cstring>transposeSpin</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2" rowspan="2">
+       <widget class="Line" name="line_3">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_19">
+        <property name="text">
+         <string>&amp;Free button</string>
+        </property>
+        <property name="buddy">
+         <cstring>freeBtnCombo</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1" colspan="3">
+       <widget class="QComboBox" name="freeBtnCombo">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <item>
+         <property name="text">
+          <string>off</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Sustain</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Sust. Toggle</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Control W</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Control X</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Control Y</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Control Z</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Ctl.W toggle</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Ctl.X toggle</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Ctl.Y toggle</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Ctl.Z toggle</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>mute</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>DevicePopupSpin</class>
+   <extends>QDoubleSpinBox</extends>
+   <header>bigglesworth.widgets</header>
+  </customwidget>
+  <customwidget>
+   <class>DeltaSpin</class>
+   <extends>QSpinBox</extends>
+   <header>bigglesworth.widgets</header>
+  </customwidget>
+  <customwidget>
+   <class>DeviceIdSpin</class>
+   <extends>QSpinBox</extends>
+   <header>bigglesworth.widgets</header>
+  </customwidget>
+ </customwidgets>
+ <tabstops>
+  <tabstop>queryDeviceIdSpin</tabstop>
+  <tabstop>broadcastBtn</tabstop>
+  <tabstop>queryBtn</tabstop>
+  <tabstop>volumeSpin</tabstop>
+  <tabstop>catCombo</tabstop>
+  <tabstop>tuneSpin</tabstop>
+  <tabstop>transposeSpin</tabstop>
+  <tabstop>freeBtnCombo</tabstop>
+  <tabstop>deviceIdSpin</tabstop>
+  <tabstop>autoEditChk</tabstop>
+  <tabstop>contrastSpin</tabstop>
+  <tabstop>popupSpin</tabstop>
+  <tabstop>velocityCombo</tabstop>
+  <tabstop>pedalCombo</tabstop>
+  <tabstop>channelSpin</tabstop>
+  <tabstop>clockCombo</tabstop>
+  <tabstop>progSendChk</tabstop>
+  <tabstop>localCtrlChk</tabstop>
+  <tabstop>ctrlSendCombo</tabstop>
+  <tabstop>ctrlReceiveChk</tabstop>
+  <tabstop>ctrlWSpin</tabstop>
+  <tabstop>ctrlXSpin</tabstop>
+  <tabstop>ctrlYSpin</tabstop>
+  <tabstop>ctrlZSpin</tabstop>
+  <tabstop>buttonBox</tabstop>
+ </tabstops>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>Dialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>254</x>
+     <y>447</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>Dialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>322</x>
+     <y>447</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

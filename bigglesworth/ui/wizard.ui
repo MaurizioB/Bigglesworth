@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Wizard</class>
+ <widget class="QWizard" name="Wizard">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>546</width>
+    <height>358</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Bigglesworth first run! Yay!</string>
+  </property>
+  <property name="wizardStyle">
+   <enum>QWizard::ModernStyle</enum>
+  </property>
+  <property name="options">
+   <set>QWizard::CancelButtonOnLeft|QWizard::NoBackButtonOnLastPage|QWizard::NoBackButtonOnStartPage</set>
+  </property>
+  <widget class="QWizardPage" name="startPage">
+   <property name="title">
+    <string>Welcome!</string>
+   </property>
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="1" column="0">
+     <widget class="QTextBrowser" name="startTextBrowser">
+      <property name="html">
+       <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Hello!&lt;br /&gt;It looks like this is the first time that you run Bigglesworth.&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;While its usage is usually straightforward, it is still a complex program, as our wonderful Blofeld is.&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Hence, you might like some advice, and I'd like to help a little with it.&lt;br /&gt;&lt;br /&gt;If you think you're too good for that, you can ignore this wizard by pressing &amp;quot;Cancel&amp;quot;. And if you regret this, you can still run this. But I will not tell you how. ;-)&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;span style=&quot; font-size:10pt; font-weight:600;&quot;&gt;IMPORTANT&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Before proceeding, ensure that your Blofeld is powered on and connected to this computer. I strongly suggest both MIDI input and output connections, so if you own the Desktop version please use the USB cable. Using MIDI cables only will be fine for the Keyboard, though.&lt;br /&gt;Press &amp;quot;Next&amp;quot; whenever you are ready!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="0">
+     <widget class="QLabel" name="logoLbl">
+      <property name="text">
+       <string>TextLabel</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="AutoconnectPage" name="autoconnectPage">
+   <property name="title">
+    <string>Blofeld detection</string>
+   </property>
+   <property name="subTitle">
+    <string>Let's find your synthesizer!</string>
+   </property>
+   <layout class="QGridLayout" name="gridLayout_2">
+    <item row="3" column="1">
+     <spacer name="verticalSpacer_2">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <property name="sizeType">
+       <enum>QSizePolicy::Fixed</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>20</width>
+        <height>10</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+    <item row="2" column="1" colspan="2">
+     <widget class="QLabel" name="label">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="text">
+       <string>Please wait or press &quot;Stop&quot; to cancel and create the connections manually on the next page.</string>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="5" column="2">
+     <widget class="QPushButton" name="stopBtn">
+      <property name="text">
+       <string>Stop</string>
+      </property>
+      <property name="icon">
+       <iconset theme="process-stop">
+        <normaloff/>
+       </iconset>
+      </property>
+     </widget>
+    </item>
+    <item row="5" column="1">
+     <widget class="QPushButton" name="restartBtn">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
+      <property name="text">
+       <string>Restart</string>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="1" colspan="2">
+     <widget class="QTextEdit" name="logger">
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <widget class="QWidget" name="waiterSpacer" native="true"/>
+    </item>
+    <item row="3" column="0" rowspan="2" alignment="Qt::AlignVCenter">
+     <widget class="Waiter" name="waiter" native="true"/>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWizardPage" name="midiPage">
+   <property name="title">
+    <string>Bigglesworth</string>
+   </property>
+   <property name="subTitle">
+    <string>MIDI Connection</string>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QTextBrowser" name="midiTextBrowser">
+      <property name="html">
+       <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;While using MIDI output only works fine, I strongly suggest to connect the input port too.&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;If you own a Blofeld Desktop, you will need the USB connection. If you have got a Blofeld Keyboard instead, two MIDI cables will be fine.&lt;br /&gt;Once your Blofeld is connected and powered on, I will automatically try to detect it when using the USB cable, while standard MIDI cable connection needs to be done manually; you can use the panel below to see the current available MIDI devices and connect to them by double-clicking the desired ports.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="MidiConnectionsWidget" name="midiConnectionsWidget" native="true"/>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWizardPage" name="finalPage">
+   <property name="title">
+    <string>All set!</string>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout_3">
+    <item>
+     <widget class="QTextBrowser" name="finalTextBrowser">
+      <property name="html">
+       <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Before we begin, please take a minute and read this carefully.&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;Bigglesworth uses an internal database to store &lt;span style=&quot; font-style:italic;&quot;&gt;all&lt;/span&gt; your sounds. It h&lt;span style=&quot; font-style:italic;&quot;&gt;a&lt;/span&gt;s a&lt;span style=&quot; font-style:italic;&quot;&gt; &lt;/span&gt;&lt;span style=&quot; text-decoration: underline;&quot;&gt;Main library&lt;/span&gt; which contains all your sounds, including the 3 standard factory presets from Waldorf's website, and everything is organized with &lt;span style=&quot; text-decoration: underline;&quot;&gt;Collections&lt;/span&gt;.&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Each collection contains up to 1024 sounds organized into 8 banks, exacly like the Blofeld does.&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;The factory presets are read only, and can be used to restore sounds to your Blofeld or as a basis to create new sounds. The &lt;span style=&quot; font-weight:600;&quot;&gt;Blofeld&lt;/span&gt; collection is used to &amp;quot;mirror&amp;quot; the actual contents of your synthesizer, and it should be kept synchronized with it.&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Custom collections&lt;/span&gt; can be used to better organize your sounds, you can create as many as you wish, and can contain as many sounds as you want, just one, ten or 1024. Imagine them as an expansion to the Blofeld's Multi system. Of course you can move, copy or delete everything, and add sounds from a collection to another with a simple drag and drop. When you add a sound from a custom collection to another, it will be &lt;span style=&quot; font-style:italic;&quot;&gt;shared&lt;/span&gt; amongst them; this means that any modification done to it will reflect on the same sound in any collection it is present. Anyway, you can make a sound &amp;quot;Unique&amp;quot; by using the context menu in the library. This is done automatically when adding a sound from a factory preset, since their sounds are read only.&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;On top of that, &lt;span style=&quot; font-weight:600;&quot;&gt;tags&lt;/span&gt; can be used to categorize your sounds in a better way than Blofeld's categories do.&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;Now let's take a look around to Bigglesworth... I will show you the main windows and explain how they work. Press &amp;quot;Finish&amp;quot; to proceed!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>Waiter</class>
+   <extends>QWidget</extends>
+   <header>bigglesworth.widgets</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>MidiConnectionsWidget</class>
+   <extends>QWidget</extends>
+   <header>bigglesworth.widgets</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>AutoconnectPage</class>
+   <extends>QWizardPage</extends>
+   <header>bigglesworth.dialogs</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

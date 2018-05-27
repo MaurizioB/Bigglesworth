@@ -1,0 +1,3423 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1129</width>
+    <height>704</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Bigglesworth Sound Editor</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout_26">
+    <property name="margin">
+     <number>1</number>
+    </property>
+    <item row="1" column="1" colspan="3">
+     <layout class="QGridLayout" name="gridLayout_27">
+      <item row="0" column="1">
+       <widget class="Frame" name="lfo1Frame">
+        <property name="contextMenuPolicy">
+         <enum>Qt::CustomContextMenu</enum>
+        </property>
+        <property name="label" stdset="0">
+         <string>LFO 1</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_29">
+         <item row="3" column="0">
+          <widget class="Dial" name="LFO1Keytrack">
+           <property name="label" stdset="0">
+            <string>Keytrack</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="Dial" name="LFO1Fade">
+           <property name="label" stdset="0">
+            <string>Fade</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0" rowspan="2">
+          <widget class="Combo" name="LFO1Shape">
+           <property name="label" stdset="0">
+            <string>Shape</string>
+           </property>
+           <property name="valueList" stdset="0">
+            <stringlist/>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="Dial" name="LFO1Speed">
+           <property name="label" stdset="0">
+            <string>Speed</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="3">
+          <widget class="SquareButton" name="LFO1Clocked">
+           <property name="label" stdset="0">
+            <string>Clock</string>
+           </property>
+           <property name="maximumWidgetSize" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="switchable" stdset="0">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="Dial" name="LFO1StartPhase">
+           <property name="label" stdset="0">
+            <string>Start Phase</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="3">
+          <widget class="SquareButton" name="LFO1Sync">
+           <property name="label" stdset="0">
+            <string>Sync</string>
+           </property>
+           <property name="maximumWidgetSize" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="switchable" stdset="0">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="2">
+          <widget class="Dial" name="LFO1Delay">
+           <property name="label" stdset="0">
+            <string>Delay</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="Frame" name="lfo3Frame">
+        <property name="contextMenuPolicy">
+         <enum>Qt::CustomContextMenu</enum>
+        </property>
+        <property name="label" stdset="0">
+         <string>LFO 3</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_28">
+         <item row="1" column="1">
+          <widget class="Dial" name="LFO3Speed">
+           <property name="label" stdset="0">
+            <string>Speed</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="Dial" name="LFO3Fade">
+           <property name="label" stdset="0">
+            <string>Fade</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0" rowspan="2">
+          <widget class="Combo" name="LFO3Shape">
+           <property name="label" stdset="0">
+            <string>Shape</string>
+           </property>
+           <property name="valueList" stdset="0">
+            <stringlist/>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="Dial" name="LFO3Keytrack">
+           <property name="label" stdset="0">
+            <string>Keytrack</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="2">
+          <widget class="Dial" name="LFO3Delay">
+           <property name="label" stdset="0">
+            <string>Delay</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="3">
+          <widget class="SquareButton" name="LFO3Clocked">
+           <property name="label" stdset="0">
+            <string>Clock</string>
+           </property>
+           <property name="maximumWidgetSize" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="switchable" stdset="0">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="Dial" name="LFO3StartPhase">
+           <property name="label" stdset="0">
+            <string>Start Phase</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="3">
+          <widget class="SquareButton" name="LFO3Sync">
+           <property name="label" stdset="0">
+            <string>Sync</string>
+           </property>
+           <property name="maximumWidgetSize" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="switchable" stdset="0">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="Frame" name="lfo2Frame">
+        <property name="contextMenuPolicy">
+         <enum>Qt::CustomContextMenu</enum>
+        </property>
+        <property name="label" stdset="0">
+         <string>LFO 2</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_32">
+         <item row="1" column="1">
+          <widget class="Dial" name="LFO2Speed">
+           <property name="label" stdset="0">
+            <string>Speed</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="Dial" name="LFO2Fade">
+           <property name="label" stdset="0">
+            <string>Fade</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0" rowspan="2">
+          <widget class="Combo" name="LFO2Shape">
+           <property name="label" stdset="0">
+            <string>Shape</string>
+           </property>
+           <property name="valueList" stdset="0">
+            <stringlist/>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="Dial" name="LFO2Keytrack">
+           <property name="label" stdset="0">
+            <string>Keytrack</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="2">
+          <widget class="Dial" name="LFO2Delay">
+           <property name="label" stdset="0">
+            <string>Delay</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="3">
+          <widget class="SquareButton" name="LFO2Clocked">
+           <property name="label" stdset="0">
+            <string>Clock</string>
+           </property>
+           <property name="maximumWidgetSize" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="switchable" stdset="0">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="Dial" name="LFO2StartPhase">
+           <property name="label" stdset="0">
+            <string>Start Phase</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="3">
+          <widget class="SquareButton" name="LFO2Sync">
+           <property name="label" stdset="0">
+            <string>Sync</string>
+           </property>
+           <property name="maximumWidgetSize" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="switchable" stdset="0">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="Frame" name="osc3Frame">
+        <property name="contextMenuPolicy">
+         <enum>Qt::CustomContextMenu</enum>
+        </property>
+        <property name="sections" stdset="0">
+         <stringlist>
+          <string>0 4 3 2</string>
+          <string>0 6 3 1</string>
+         </stringlist>
+        </property>
+        <property name="label" stdset="0">
+         <string>OSC 3</string>
+        </property>
+        <property name="marginOverride" stdset="0">
+         <bool>true</bool>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_33">
+         <item row="1" column="6">
+          <widget class="Combo" name="osc3FMSource">
+           <property name="label" stdset="0">
+            <string>Source</string>
+           </property>
+           <property name="valueList" stdset="0">
+            <stringlist/>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="6">
+          <widget class="QLabel" name="label_11">
+           <property name="text">
+            <string>FM</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="4">
+          <widget class="Dial" name="osc3Pulsewidth">
+           <property name="label" stdset="0">
+            <string>Width</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="3">
+          <widget class="Dial" name="osc3Keytrack">
+           <property name="label" stdset="0">
+            <string>Keytrack</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="4" colspan="2">
+          <widget class="QLabel" name="label_12">
+           <property name="text">
+            <string>PWM</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="4" colspan="2">
+          <widget class="Combo" name="osc3PWMSource">
+           <property name="label" stdset="0">
+            <string>Source</string>
+           </property>
+           <property name="valueList" stdset="0">
+            <stringlist/>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="Dial" name="osc3Octave">
+           <property name="label" stdset="0">
+            <string>Octave</string>
+           </property>
+           <property name="rangeZeroAngle" stdset="0">
+            <number>150</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="2">
+          <widget class="Dial" name="osc3Detune">
+           <property name="label" stdset="0">
+            <string>Detune</string>
+           </property>
+           <property name="rangeZeroAngle" stdset="0">
+            <number>150</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="3">
+          <widget class="Dial" name="osc3BendRange">
+           <property name="label" stdset="0">
+            <string>Bend Range</string>
+           </property>
+           <property name="rangeZeroAngle" stdset="0">
+            <number>150</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="5">
+          <widget class="Dial" name="osc3PWMAmount">
+           <property name="label" stdset="0">
+            <string>Amount</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="6">
+          <widget class="Dial" name="osc3FMAmount">
+           <property name="label" stdset="0">
+            <string>Amount</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0" colspan="2">
+          <widget class="Combo" name="osc3Shape">
+           <property name="label" stdset="0">
+            <string>Shape</string>
+           </property>
+           <property name="valueList" stdset="0">
+            <stringlist/>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="Dial" name="osc3Semitone">
+           <property name="label" stdset="0">
+            <string>Semitone</string>
+           </property>
+           <property name="rangeZeroAngle" stdset="0">
+            <number>150</number>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="Dial" name="osc3Brilliance">
+           <property name="label" stdset="0">
+            <string>Brilliance</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="7" rowspan="3">
+          <widget class="SquareButton" name="osc2SyncToO3">
+           <property name="label" stdset="0">
+            <string>OSC2\nsync</string>
+           </property>
+           <property name="labelTextAlign" stdset="0">
+            <set>Qt::AlignCenter|Qt::AlignHCenter|Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+           </property>
+           <property name="maximumWidgetSize" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="switchable" stdset="0">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="Frame" name="osc2Frame">
+        <property name="contextMenuPolicy">
+         <enum>Qt::CustomContextMenu</enum>
+        </property>
+        <property name="sections" stdset="0">
+         <stringlist>
+          <string>0 4 3 2</string>
+          <string>0 6 3 1</string>
+         </stringlist>
+        </property>
+        <property name="label" stdset="0">
+         <string>OSC 2</string>
+        </property>
+        <property name="marginOverride" stdset="0">
+         <bool>true</bool>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_30">
+         <item row="1" column="6">
+          <widget class="Combo" name="osc2FMSource">
+           <property name="label" stdset="0">
+            <string>Source</string>
+           </property>
+           <property name="valueList" stdset="0">
+            <stringlist/>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="5">
+          <widget class="Dial" name="osc2PWMAmount">
+           <property name="label" stdset="0">
+            <string>Amount</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="4" colspan="2">
+          <widget class="Combo" name="osc2PWMSource">
+           <property name="label" stdset="0">
+            <string>Source</string>
+           </property>
+           <property name="valueList" stdset="0">
+            <stringlist/>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="6">
+          <widget class="Dial" name="osc2FMAmount">
+           <property name="label" stdset="0">
+            <string>Amount</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="Dial" name="osc2Brilliance">
+           <property name="label" stdset="0">
+            <string>Brilliance</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="Dial" name="osc2Semitone">
+           <property name="label" stdset="0">
+            <string>Semitone</string>
+           </property>
+           <property name="rangeZeroAngle" stdset="0">
+            <number>150</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="3">
+          <widget class="Dial" name="osc2BendRange">
+           <property name="label" stdset="0">
+            <string>Bend Range</string>
+           </property>
+           <property name="rangeZeroAngle" stdset="0">
+            <number>150</number>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="4" colspan="2">
+          <widget class="QLabel" name="label_7">
+           <property name="text">
+            <string>PWM</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="2">
+          <widget class="Dial" name="osc2Detune">
+           <property name="label" stdset="0">
+            <string>Detune</string>
+           </property>
+           <property name="rangeZeroAngle" stdset="0">
+            <number>150</number>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0" colspan="2">
+          <widget class="Combo" name="osc2Shape">
+           <property name="label" stdset="0">
+            <string>Shape</string>
+           </property>
+           <property name="valueList" stdset="0">
+            <stringlist/>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="Dial" name="osc2Octave">
+           <property name="label" stdset="0">
+            <string>Octave</string>
+           </property>
+           <property name="rangeZeroAngle" stdset="0">
+            <number>150</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="4">
+          <widget class="Dial" name="osc2Pulsewidth">
+           <property name="label" stdset="0">
+            <string>Width</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="3">
+          <widget class="Dial" name="osc2Keytrack">
+           <property name="label" stdset="0">
+            <string>Keytrack</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="6">
+          <widget class="QLabel" name="label_8">
+           <property name="text">
+            <string>FM</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="7" rowspan="3">
+          <widget class="SquareButton" name="osc2LimitWT">
+           <property name="label" stdset="0">
+            <string>Limit\nWT</string>
+           </property>
+           <property name="labelTextAlign" stdset="0">
+            <set>Qt::AlignCenter|Qt::AlignHCenter|Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+           </property>
+           <property name="maximumWidgetSize" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="switchable" stdset="0">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="Frame" name="osc1Frame">
+        <property name="contextMenuPolicy">
+         <enum>Qt::CustomContextMenu</enum>
+        </property>
+        <property name="sections" stdset="0">
+         <stringlist>
+          <string>0 4 3 2</string>
+          <string>0 6 3 1</string>
+         </stringlist>
+        </property>
+        <property name="label" stdset="0">
+         <string>OSC 1</string>
+        </property>
+        <property name="marginOverride" stdset="0">
+         <bool>true</bool>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_31">
+         <item row="0" column="6">
+          <widget class="QLabel" name="label_9">
+           <property name="text">
+            <string>FM</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="2">
+          <widget class="Dial" name="osc1Detune">
+           <property name="label" stdset="0">
+            <string>Detune</string>
+           </property>
+           <property name="rangeZeroAngle" stdset="0">
+            <number>150</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="Dial" name="osc1Octave">
+           <property name="label" stdset="0">
+            <string>Octave</string>
+           </property>
+           <property name="rangeZeroAngle" stdset="0">
+            <number>150</number>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="6">
+          <widget class="Combo" name="osc1FMSource">
+           <property name="label" stdset="0">
+            <string>Source</string>
+           </property>
+           <property name="valueList" stdset="0">
+            <stringlist/>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="4" colspan="2">
+          <widget class="Combo" name="osc1PWMSource">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="label" stdset="0">
+            <string>Source</string>
+           </property>
+           <property name="valueList" stdset="0">
+            <stringlist/>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="4" colspan="2">
+          <widget class="QLabel" name="label_10">
+           <property name="text">
+            <string>PWM</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="4">
+          <widget class="Dial" name="osc1Pulsewidth">
+           <property name="label" stdset="0">
+            <string>Width</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="Dial" name="osc1Semitone">
+           <property name="label" stdset="0">
+            <string>Semitone</string>
+           </property>
+           <property name="rangeZeroAngle" stdset="0">
+            <number>150</number>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="Dial" name="osc1Brilliance">
+           <property name="label" stdset="0">
+            <string>Brilliance</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="3">
+          <widget class="Dial" name="osc1BendRange">
+           <property name="label" stdset="0">
+            <string>Bend Range</string>
+           </property>
+           <property name="rangeZeroAngle" stdset="0">
+            <number>150</number>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="3">
+          <widget class="Dial" name="osc1Keytrack">
+           <property name="label" stdset="0">
+            <string>Keytrack</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="5">
+          <widget class="Dial" name="osc1PWMAmount">
+           <property name="label" stdset="0">
+            <string>Amount</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="6">
+          <widget class="Dial" name="osc1FMAmount">
+           <property name="label" stdset="0">
+            <string>Amount</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0" colspan="2">
+          <widget class="Combo" name="osc1Shape">
+           <property name="label" stdset="0">
+            <string>Shape</string>
+           </property>
+           <property name="valueList" stdset="0">
+            <stringlist/>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="7" rowspan="3">
+          <widget class="SquareButton" name="osc1LimitWT">
+           <property name="label" stdset="0">
+            <string>Limit\nWT</string>
+           </property>
+           <property name="labelTextAlign" stdset="0">
+            <set>Qt::AlignCenter|Qt::AlignHCenter|Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+           </property>
+           <property name="maximumWidgetSize" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="switchable" stdset="0">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="0" column="1" colspan="3">
+     <layout class="QGridLayout" name="gridLayout_7" columnstretch="10,0,0">
+      <item row="0" column="1">
+       <widget class="QWidget" name="widget" native="true">
+        <layout class="QGridLayout" name="gridLayout_5">
+         <property name="margin">
+          <number>0</number>
+         </property>
+         <item row="0" column="0">
+          <widget class="Section" name="midiSection">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_6">
+            <property name="margin">
+             <number>2</number>
+            </property>
+            <item row="0" column="0" rowspan="2">
+             <widget class="VerticalLabel" name="label_3">
+              <property name="text">
+               <string>MIDI</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="MidiInWidget" name="midiInWidget" native="true"/>
+            </item>
+            <item row="1" column="1">
+             <widget class="MidiOutWidget" name="midiOutWidget" native="true"/>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <property name="spacing">
+         <number>4</number>
+        </property>
+        <item>
+         <widget class="Section" name="saveFrame">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_5">
+           <property name="spacing">
+            <number>2</number>
+           </property>
+           <property name="margin">
+            <number>2</number>
+           </property>
+           <item>
+            <widget class="SquareButton" name="saveBtn">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="label" stdset="0">
+              <string/>
+             </property>
+             <property name="insideText" stdset="0">
+              <string>▾</string>
+             </property>
+             <property name="popup" stdset="0">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="SquareButton" name="autosaveBtn">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="label" stdset="0">
+              <string/>
+             </property>
+             <property name="switchable" stdset="0">
+              <bool>true</bool>
+             </property>
+             <property name="insideText" stdset="0">
+              <string>Auto</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="SquareButton" name="modMatrixBtn">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="label" stdset="0">
+           <string/>
+          </property>
+          <property name="minimumWidgetSize" stdset="0">
+           <size>
+            <width>64</width>
+            <height>8</height>
+           </size>
+          </property>
+          <property name="insideText" stdset="0">
+           <string>Mod Matrix</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="0" column="0" rowspan="2">
+       <widget class="BlofeldDisplay" name="display">
+        <property name="frameShape">
+         <enum>QFrame::NoFrame</enum>
+        </property>
+        <property name="verticalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="horizontalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1" colspan="2">
+       <widget class="QLabel" name="blofeldLogo">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>20</width>
+          <height>32</height>
+         </size>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignBottom|Qt::AlignRight|Qt::AlignTrailing</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="0" column="4" rowspan="2">
+     <widget class="Frame" name="filtersFrame">
+      <property name="contextMenuPolicy">
+       <enum>Qt::CustomContextMenu</enum>
+      </property>
+      <property name="label" stdset="0">
+       <string>Filters</string>
+      </property>
+      <property name="marginOverride" stdset="0">
+       <bool>true</bool>
+      </property>
+      <property name="padding" stdset="0">
+       <number>0</number>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_35">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item row="1" column="1">
+        <widget class="Frame" name="filter2Frame">
+         <property name="contextMenuPolicy">
+          <enum>Qt::CustomContextMenu</enum>
+         </property>
+         <property name="label" stdset="0">
+          <string>2</string>
+         </property>
+         <property name="marginOverride" stdset="0">
+          <bool>true</bool>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_36">
+          <item row="5" column="1">
+           <widget class="Dial" name="filter2FMAmount">
+            <property name="label" stdset="0">
+             <string>Amount</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="Dial" name="filter2ModAmount">
+            <property name="label" stdset="0">
+             <string>Amount</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="Combo" name="filter2FMSource">
+            <property name="label" stdset="0">
+             <string>FM</string>
+            </property>
+            <property name="labelPos" stdset="0">
+             <enum>Qt::TopDockWidgetArea</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="0">
+           <widget class="Dial" name="filter2Keytrack">
+            <property name="label" stdset="0">
+             <string>Keytrack</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="Combo" name="filter2ModSource">
+            <property name="label" stdset="0">
+             <string>MOD</string>
+            </property>
+            <property name="labelPos" stdset="0">
+             <enum>Qt::TopDockWidgetArea</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="Dial" name="filter2EnvVelocity">
+            <property name="label" stdset="0">
+             <string>Env\nVelocity</string>
+            </property>
+            <property name="labelTextAlign" stdset="0">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="Combo" name="filter2DriveCurve">
+            <property name="label" stdset="0">
+             <string>Drive Curve</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="Dial" name="filter2Resonance">
+            <property name="label" stdset="0">
+             <string>Res.</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="Dial" name="filter2EnvAmount">
+            <property name="label" stdset="0">
+             <string>Env\nAmount</string>
+            </property>
+            <property name="labelTextAlign" stdset="0">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="Dial" name="filter2Cutoff">
+            <property name="label" stdset="0">
+             <string>Cutoff</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="Dial" name="filter2Drive">
+            <property name="label" stdset="0">
+             <string>Drive</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="1">
+           <widget class="Dial" name="filter2Pan">
+            <property name="label" stdset="0">
+             <string>Pan</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="0">
+           <widget class="Combo" name="filter2PanSource">
+            <property name="label" stdset="0">
+             <string>PAN</string>
+            </property>
+            <property name="labelPos" stdset="0">
+             <enum>Qt::TopDockWidgetArea</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="1">
+           <widget class="Dial" name="filter2PanAmount">
+            <property name="label" stdset="0">
+             <string>Amount</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0" colspan="2">
+           <layout class="QHBoxLayout" name="horizontalLayout_4">
+            <item>
+             <spacer name="horizontalSpacer_4">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::MinimumExpanding</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>10</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="Combo" name="filter2Type">
+              <property name="label" stdset="0">
+               <string>Type</string>
+              </property>
+              <property name="labelPos" stdset="0">
+               <enum>Qt::LeftDockWidgetArea</enum>
+              </property>
+              <property name="valueList" stdset="0">
+               <stringlist/>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="0" column="0" colspan="2">
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <spacer name="horizontalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::MinimumExpanding</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="Combo" name="filterRouting">
+           <property name="label" stdset="0">
+            <string>Routing</string>
+           </property>
+           <property name="labelPos" stdset="0">
+            <enum>Qt::LeftDockWidgetArea</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item row="1" column="0">
+        <widget class="Frame" name="filter1Frame">
+         <property name="contextMenuPolicy">
+          <enum>Qt::CustomContextMenu</enum>
+         </property>
+         <property name="label" stdset="0">
+          <string>1</string>
+         </property>
+         <property name="marginOverride" stdset="0">
+          <bool>true</bool>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_34">
+          <item row="6" column="1">
+           <widget class="Dial" name="filter1FMAmount">
+            <property name="label" stdset="0">
+             <string>Amount</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="Dial" name="filter1Resonance">
+            <property name="label" stdset="0">
+             <string>Res.</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="0">
+           <widget class="Dial" name="filter1Keytrack">
+            <property name="label" stdset="0">
+             <string>Keytrack</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="1">
+           <widget class="Dial" name="filter1PanAmount">
+            <property name="label" stdset="0">
+             <string>Amount</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="0">
+           <widget class="Combo" name="filter1FMSource">
+            <property name="label" stdset="0">
+             <string>FM</string>
+            </property>
+            <property name="labelPos" stdset="0">
+             <enum>Qt::TopDockWidgetArea</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="Combo" name="filter1ModSource">
+            <property name="label" stdset="0">
+             <string>MOD</string>
+            </property>
+            <property name="labelPos" stdset="0">
+             <enum>Qt::TopDockWidgetArea</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="Dial" name="filter1Cutoff">
+            <property name="label" stdset="0">
+             <string>Cutoff</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="Dial" name="filter1EnvAmount">
+            <property name="label" stdset="0">
+             <string>Env\nAmount</string>
+            </property>
+            <property name="labelTextAlign" stdset="0">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <widget class="Dial" name="filter1ModAmount">
+            <property name="label" stdset="0">
+             <string>Amount</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="Combo" name="filter1DriveCurve">
+            <property name="label" stdset="0">
+             <string>Drive Curve</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="Dial" name="filter1Drive">
+            <property name="label" stdset="0">
+             <string>Drive</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="1">
+           <widget class="Dial" name="filter1Pan">
+            <property name="label" stdset="0">
+             <string>Pan</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="0">
+           <widget class="Combo" name="filter1PanSource">
+            <property name="label" stdset="0">
+             <string>PAN</string>
+            </property>
+            <property name="labelPos" stdset="0">
+             <enum>Qt::TopDockWidgetArea</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="Dial" name="filter1EnvVelocity">
+            <property name="label" stdset="0">
+             <string>Env\nVelocity</string>
+            </property>
+            <property name="labelTextAlign" stdset="0">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0" colspan="2">
+           <layout class="QHBoxLayout" name="horizontalLayout_3">
+            <item>
+             <spacer name="horizontalSpacer_3">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::MinimumExpanding</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>10</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="Combo" name="filter1Type">
+              <property name="label" stdset="0">
+               <string>Type</string>
+              </property>
+              <property name="labelPos" stdset="0">
+               <enum>Qt::LeftDockWidgetArea</enum>
+              </property>
+              <property name="valueList" stdset="0">
+               <stringlist/>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="0" column="0" rowspan="2">
+     <layout class="QVBoxLayout" name="leftLayout">
+      <item>
+       <widget class="Frame" name="mixerFrame_2">
+        <property name="label" stdset="0">
+         <string>Mixer</string>
+        </property>
+        <property name="orientation" stdset="0">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="marginOverride" stdset="0">
+         <bool>true</bool>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_18">
+         <item row="1" column="0">
+          <widget class="Slider" name="mixerOsc1Level">
+           <property name="label" stdset="0">
+            <string>OSC 1</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="Dial" name="mixerOsc1Balance">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="label" stdset="0">
+            <string>Bal</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="Dial" name="mixerOsc2Balance">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="label" stdset="0">
+            <string>Bal</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="Slider" name="mixerOsc2Level">
+           <property name="label" stdset="0">
+            <string>OSC 2</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="3">
+          <widget class="Slider" name="mixerRingModLevel">
+           <property name="label" stdset="0">
+            <string>RingMod</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="Slider" name="mixerOsc3Level">
+           <property name="label" stdset="0">
+            <string>OSC 3</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="2">
+          <widget class="Dial" name="mixerOsc3Balance">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="label" stdset="0">
+            <string>Bal</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="3">
+          <widget class="Dial" name="mixerRingModBalance">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="label" stdset="0">
+            <string>Bal</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="5">
+          <widget class="Dial" name="mixerNoiseBalance">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="label" stdset="0">
+            <string>Bal</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="5" rowspan="2">
+          <layout class="QVBoxLayout" name="verticalLayout_6">
+           <item>
+            <widget class="Dial" name="mixerNoiseColour">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="label" stdset="0">
+              <string>Colour</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="Slider" name="mixerNoiseLevel">
+             <property name="label" stdset="0">
+              <string>Noise</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="0" column="1">
+          <spacer name="verticalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::Maximum</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>10</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="Frame" name="frame_19">
+        <property name="label" stdset="0">
+         <string>Amplifier</string>
+        </property>
+        <property name="orientation" stdset="0">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_23">
+         <item row="1" column="0">
+          <widget class="Dial" name="amplifierVolume">
+           <property name="label" stdset="0">
+            <string>Volume</string>
+           </property>
+           <property name="maximumWidgetSize" stdset="0">
+            <size>
+             <width>57</width>
+             <height>57</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="Dial" name="amplifierVelocity">
+           <property name="label" stdset="0">
+            <string>Velocity</string>
+           </property>
+           <property name="maximumWidgetSize" stdset="0">
+            <size>
+             <width>57</width>
+             <height>57</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <layout class="QVBoxLayout" name="verticalLayout_7">
+           <item>
+            <widget class="Combo" name="amplifierModSource">
+             <property name="label" stdset="0">
+              <string>Source</string>
+             </property>
+             <property name="valueList" stdset="0">
+              <stringlist/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="Dial" name="amplifierModAmount">
+             <property name="label" stdset="0">
+              <string>Amount</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="Frame" name="frame_22">
+        <property name="label" stdset="0">
+         <string>Glide</string>
+        </property>
+        <property name="orientation" stdset="0">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_24">
+         <item row="0" column="0">
+          <widget class="SquareButton" name="glide">
+           <property name="label" stdset="0">
+            <string/>
+           </property>
+           <property name="maximumWidgetSize" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="switchable" stdset="0">
+            <bool>true</bool>
+           </property>
+           <property name="switched" stdset="0">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="Dial" name="glideRate">
+           <property name="label" stdset="0">
+            <string>Amount</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="2">
+          <widget class="Combo" name="glideMode">
+           <property name="label" stdset="0">
+            <string>Mode</string>
+           </property>
+           <property name="valueList" stdset="0">
+            <stringlist/>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="Frame" name="frame_23">
+        <property name="sections" stdset="0">
+         <stringlist/>
+        </property>
+        <property name="label" stdset="0">
+         <string>Common</string>
+        </property>
+        <property name="orientation" stdset="0">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_25">
+         <item row="1" column="2">
+          <widget class="Dial" name="unisonoUniDetune">
+           <property name="label" stdset="0">
+            <string>Detune</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="Combo" name="oscPitchSource">
+           <property name="label" stdset="0">
+            <string>Pitch\nSource</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="Dial" name="oscPitchAmount">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="label" stdset="0">
+            <string>Pitch\nAmount</string>
+           </property>
+           <property name="labelTextAlign" stdset="0">
+            <set>Qt::AlignCenter</set>
+           </property>
+           <property name="labelPos" stdset="0">
+            <enum>Qt::LeftDockWidgetArea</enum>
+           </property>
+           <property name="labelAlign" stdset="0">
+            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="Combo" name="unisono">
+           <property name="label" stdset="0">
+            <string>Unisono</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1" colspan="2">
+          <widget class="Combo" name="allocationMode">
+           <property name="label" stdset="0">
+            <string>Allocation</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="2" column="0" colspan="5">
+     <layout class="QHBoxLayout" name="horizontalLayout_6">
+      <item>
+       <layout class="QGridLayout" name="gridLayout_37">
+        <item row="0" column="0">
+         <widget class="Frame" name="filterEnvelopeFrame">
+          <property name="contextMenuPolicy">
+           <enum>Qt::CustomContextMenu</enum>
+          </property>
+          <property name="label" stdset="0">
+           <string>Filter Env.</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_38">
+           <item row="0" column="0">
+            <widget class="Combo" name="filterEnvelopeMode">
+             <property name="label" stdset="0">
+              <string>Mode</string>
+             </property>
+             <property name="valueList" stdset="0">
+              <stringlist/>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="Dial" name="filterEnvelopeAttack">
+             <property name="label" stdset="0">
+              <string>Attack</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="Dial" name="filterEnvelopeDecay">
+             <property name="label" stdset="0">
+              <string>Decay</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="Combo" name="filterEnvelopeTrigger">
+             <property name="label" stdset="0">
+              <string>Trigger</string>
+             </property>
+             <property name="valueList" stdset="0">
+              <stringlist/>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="Dial" name="filterEnvelopeAttackLevel">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="label" stdset="0">
+              <string>A. Level</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="Dial" name="filterEnvelopeDecay2">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="label" stdset="0">
+              <string>Dec. 2</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="3">
+            <widget class="Dial" name="filterEnvelopeSustain2">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="label" stdset="0">
+              <string>Sus. 2</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="Dial" name="filterEnvelopeSustain">
+             <property name="label" stdset="0">
+              <string>Sustain</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="4">
+            <widget class="Dial" name="filterEnvelopeRelease">
+             <property name="label" stdset="0">
+              <string>Release</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="4" alignment="Qt::AlignVCenter">
+            <widget class="EnvelopePreviewWidget" name="filterEnvelopePreview" native="true"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="Frame" name="amplifierEnvelopeFrame">
+          <property name="contextMenuPolicy">
+           <enum>Qt::CustomContextMenu</enum>
+          </property>
+          <property name="label" stdset="0">
+           <string>Amp Env.</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_39">
+           <item row="0" column="2">
+            <widget class="Dial" name="amplifierEnvelopeDecay">
+             <property name="label" stdset="0">
+              <string>Decay</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="Dial" name="amplifierEnvelopeSustain">
+             <property name="label" stdset="0">
+              <string>Sustain</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="Combo" name="amplifierEnvelopeTrigger">
+             <property name="label" stdset="0">
+              <string>Trigger</string>
+             </property>
+             <property name="valueList" stdset="0">
+              <stringlist/>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="Dial" name="amplifierEnvelopeAttackLevel">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="label" stdset="0">
+              <string>A. Level</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="Dial" name="amplifierEnvelopeDecay2">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="label" stdset="0">
+              <string>Dec. 2</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="3">
+            <widget class="Dial" name="amplifierEnvelopeSustain2">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="label" stdset="0">
+              <string>Sus. 2</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="Dial" name="amplifierEnvelopeAttack">
+             <property name="label" stdset="0">
+              <string>Attack</string>
+             </property>
+             <property name="leftMargin" stdset="0">
+              <number>24</number>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="Combo" name="amplifierEnvelopeMode">
+             <property name="label" stdset="0">
+              <string>Mode</string>
+             </property>
+             <property name="valueList" stdset="0">
+              <stringlist/>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="4">
+            <widget class="Dial" name="amplifierEnvelopeRelease">
+             <property name="label" stdset="0">
+              <string>Release</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="4" alignment="Qt::AlignVCenter">
+            <widget class="EnvelopePreviewWidget" name="amplifierEnvelopePreview" native="true"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="Frame" name="envelope3Frame">
+          <property name="contextMenuPolicy">
+           <enum>Qt::CustomContextMenu</enum>
+          </property>
+          <property name="label" stdset="0">
+           <string>Envelope 3</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_40">
+           <item row="1" column="1">
+            <widget class="Dial" name="envelope3AttackLevel">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="label" stdset="0">
+              <string>A. Level</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="Combo" name="envelope3Mode">
+             <property name="label" stdset="0">
+              <string>Mode</string>
+             </property>
+             <property name="valueList" stdset="0">
+              <stringlist/>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="Dial" name="envelope3Attack">
+             <property name="label" stdset="0">
+              <string>Attack</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="Dial" name="envelope3Decay">
+             <property name="label" stdset="0">
+              <string>Decay</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="Combo" name="envelope3Trigger">
+             <property name="label" stdset="0">
+              <string>Trigger</string>
+             </property>
+             <property name="valueList" stdset="0">
+              <stringlist/>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="Dial" name="envelope3Decay2">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="label" stdset="0">
+              <string>Dec. 2</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="3">
+            <widget class="Dial" name="envelope3Sustain2">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="label" stdset="0">
+              <string>Sus. 2</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="4">
+            <widget class="Dial" name="envelope3Release">
+             <property name="label" stdset="0">
+              <string>Release</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="Dial" name="envelope3Sustain">
+             <property name="label" stdset="0">
+              <string>Sustain</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="4" alignment="Qt::AlignVCenter">
+            <widget class="EnvelopePreviewWidget" name="envelope3Preview" native="true"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="Frame" name="envelope4Frame">
+          <property name="contextMenuPolicy">
+           <enum>Qt::CustomContextMenu</enum>
+          </property>
+          <property name="label" stdset="0">
+           <string>Envelope 4</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_41">
+           <item row="0" column="0">
+            <widget class="Combo" name="envelope4Mode">
+             <property name="label" stdset="0">
+              <string>Mode</string>
+             </property>
+             <property name="valueList" stdset="0">
+              <stringlist/>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="Dial" name="envelope4Attack">
+             <property name="label" stdset="0">
+              <string>Attack</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="Dial" name="envelope4Decay">
+             <property name="label" stdset="0">
+              <string>Decay</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="Combo" name="envelope4Trigger">
+             <property name="label" stdset="0">
+              <string>Trigger</string>
+             </property>
+             <property name="valueList" stdset="0">
+              <stringlist/>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="Dial" name="envelope4AttackLevel">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="label" stdset="0">
+              <string>A. Level</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="Dial" name="envelope4Decay2">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="label" stdset="0">
+              <string>Dec. 2</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="3">
+            <widget class="Dial" name="envelope4Sustain2">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="label" stdset="0">
+              <string>Sus. 2</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="4">
+            <widget class="Dial" name="envelope4Release">
+             <property name="label" stdset="0">
+              <string>Release</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="Dial" name="envelope4Sustain">
+             <property name="label" stdset="0">
+              <string>Sustain</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="4" alignment="Qt::AlignVCenter">
+            <widget class="EnvelopePreviewWidget" name="envelope4Preview" native="true"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QGridLayout" name="gridLayout_19">
+        <item row="1" column="0" alignment="Qt::AlignVCenter">
+         <widget class="PianoKeyboard" name="pianoKeyboard"/>
+        </item>
+        <item row="0" column="0" colspan="2">
+         <widget class="StackedWidget" name="arpEfxStackedWidget">
+          <property name="currentIndex" stdset="0">
+           <number>1</number>
+          </property>
+          <widget class="QWidget" name="arpEditorPage">
+           <layout class="QHBoxLayout" name="horizontalLayout">
+            <property name="margin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="ArpeggiatorDisplay" name="arpeggiatorDisplay">
+              <property name="frameShape">
+               <enum>QFrame::NoFrame</enum>
+              </property>
+              <property name="verticalScrollBarPolicy">
+               <enum>Qt::ScrollBarAlwaysOff</enum>
+              </property>
+              <property name="horizontalScrollBarPolicy">
+               <enum>Qt::ScrollBarAlwaysOff</enum>
+              </property>
+              <property name="renderHints">
+               <set>QPainter::Antialiasing|QPainter::TextAntialiasing</set>
+              </property>
+              <property name="dragMode">
+               <enum>QGraphicsView::RubberBandDrag</enum>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="efxArpPage">
+           <layout class="QVBoxLayout" name="verticalLayout_3">
+            <property name="spacing">
+             <number>2</number>
+            </property>
+            <property name="margin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="Frame" name="efx1Frame">
+              <property name="contextMenuPolicy">
+               <enum>Qt::CustomContextMenu</enum>
+              </property>
+              <property name="sections" stdset="0">
+               <stringlist>
+                <string>0 3 1 1</string>
+               </stringlist>
+              </property>
+              <property name="label" stdset="0">
+               <string>Efx1</string>
+              </property>
+              <property name="orientation" stdset="0">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="marginOverride" stdset="0">
+               <bool>true</bool>
+              </property>
+              <layout class="QGridLayout" name="gridLayout_2">
+               <property name="margin">
+                <number>0</number>
+               </property>
+               <item row="0" column="0">
+                <spacer name="horizontalSpacer">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeType">
+                  <enum>QSizePolicy::Fixed</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>16</width>
+                   <height>13</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item row="0" column="1">
+                <widget class="Combo" name="effect1Type">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="label" stdset="0">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="2">
+                <widget class="Dial" name="effect1Mix">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="label" stdset="0">
+                  <string>Mix</string>
+                 </property>
+                 <property name="labelPos" stdset="0">
+                  <enum>Qt::RightDockWidgetArea</enum>
+                 </property>
+                 <property name="maximumWidgetSize" stdset="0">
+                  <size>
+                   <width>24</width>
+                   <height>24</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="3">
+                <widget class="StackedWidget" name="efx1Widget">
+                 <property name="fadeEffect" stdset="0">
+                  <bool>false</bool>
+                 </property>
+                 <property name="currentIndex" stdset="0">
+                  <number>5</number>
+                 </property>
+                 <widget class="QWidget" name="efx1Page0">
+                  <layout class="QHBoxLayout" name="horizontalLayout_7">
+                   <item>
+                    <widget class="QLabel" name="label">
+                     <property name="enabled">
+                      <bool>false</bool>
+                     </property>
+                     <property name="text">
+                      <string>&lt;i&gt;Effect 1 bypass&lt;/i&gt;</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignCenter</set>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                 <widget class="QWidget" name="efx1Page1">
+                  <layout class="QHBoxLayout" name="horizontalLayout_9" stretch="10,10,60">
+                   <property name="margin">
+                    <number>2</number>
+                   </property>
+                   <item>
+                    <widget class="Dial" name="effect1ChorusSpeed">
+                     <property name="label" stdset="0">
+                      <string>Speed</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect1ChorusDepth">
+                     <property name="label" stdset="0">
+                      <string>Depth</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_6">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeType">
+                      <enum>QSizePolicy::Expanding</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </widget>
+                 <widget class="QWidget" name="efx1Page2">
+                  <layout class="QHBoxLayout" name="horizontalLayout_10" stretch="10,10,10,20,30">
+                   <property name="margin">
+                    <number>2</number>
+                   </property>
+                   <item>
+                    <widget class="Dial" name="effect1FlangerSpeed">
+                     <property name="label" stdset="0">
+                      <string>Speed</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect1FlangerDepth">
+                     <property name="label" stdset="0">
+                      <string>Depth</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect1FlangerFeedback">
+                     <property name="label" stdset="0">
+                      <string>Feedback</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Combo" name="effect1FlangerPolarity">
+                     <property name="label" stdset="0">
+                      <string>Polarity</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_8">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </widget>
+                 <widget class="QWidget" name="efx1Page3">
+                  <layout class="QHBoxLayout" name="horizontalLayout_11" stretch="10,10,10,10,10,20,10">
+                   <property name="margin">
+                    <number>2</number>
+                   </property>
+                   <item>
+                    <widget class="Dial" name="effect1PhaserSpeed">
+                     <property name="label" stdset="0">
+                      <string>Speed</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect1PhaserDepth">
+                     <property name="label" stdset="0">
+                      <string>Depth</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect1PhaserFeedback">
+                     <property name="label" stdset="0">
+                      <string>Feedback</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect1PhaserCenter">
+                     <property name="label" stdset="0">
+                      <string>Center</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect1PhaserSpacing">
+                     <property name="label" stdset="0">
+                      <string>Spacing</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Combo" name="effect1PhaserPolarity">
+                     <property name="label" stdset="0">
+                      <string>Polarity</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_9">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </widget>
+                 <widget class="QWidget" name="efx1Page4">
+                  <layout class="QHBoxLayout" name="horizontalLayout_12" stretch="10,10,10,20,30">
+                   <property name="margin">
+                    <number>2</number>
+                   </property>
+                   <item>
+                    <widget class="Dial" name="effect1OverdriveDrive">
+                     <property name="label" stdset="0">
+                      <string>Drive</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect1OverdrivePostGain">
+                     <property name="label" stdset="0">
+                      <string>Post Gain</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect1OverdriveCutoff">
+                     <property name="label" stdset="0">
+                      <string>Cutoff</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Combo" name="effect1OverdriveCurve">
+                     <property name="label" stdset="0">
+                      <string>Curve</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_10">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </widget>
+                 <widget class="QWidget" name="efx1Page5">
+                  <layout class="QHBoxLayout" name="horizontalLayout_13" stretch="10,10,10,10,10,30">
+                   <property name="margin">
+                    <number>2</number>
+                   </property>
+                   <item>
+                    <widget class="Dial" name="effect1TripleSpeed">
+                     <property name="label" stdset="0">
+                      <string>Speed</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect1TripleDepth">
+                     <property name="label" stdset="0">
+                      <string>Depth</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect1TripleChorusMix">
+                     <property name="label" stdset="0">
+                      <string>Chorus Mix</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect1TripleSampleHold">
+                     <property name="label" stdset="0">
+                      <string>Sample&amp;Hold</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect1TripleOverdrive">
+                     <property name="label" stdset="0">
+                      <string>Overdrive</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_11">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </widget>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="Frame" name="efx2Frame">
+              <property name="contextMenuPolicy">
+               <enum>Qt::CustomContextMenu</enum>
+              </property>
+              <property name="sections" stdset="0">
+               <stringlist>
+                <string>0 3 1 1</string>
+               </stringlist>
+              </property>
+              <property name="label" stdset="0">
+               <string>Efx2</string>
+              </property>
+              <property name="orientation" stdset="0">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="marginOverride" stdset="0">
+               <bool>true</bool>
+              </property>
+              <layout class="QGridLayout" name="gridLayout_3">
+               <property name="margin">
+                <number>0</number>
+               </property>
+               <item row="0" column="0">
+                <spacer name="horizontalSpacer_5">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeType">
+                  <enum>QSizePolicy::Fixed</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>16</width>
+                   <height>13</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item row="0" column="1">
+                <widget class="Combo" name="effect2Type">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="label" stdset="0">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="2">
+                <widget class="Dial" name="effect2Mix">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="label" stdset="0">
+                  <string>Mix</string>
+                 </property>
+                 <property name="labelPos" stdset="0">
+                  <enum>Qt::RightDockWidgetArea</enum>
+                 </property>
+                 <property name="maximumWidgetSize" stdset="0">
+                  <size>
+                   <width>24</width>
+                   <height>24</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="3">
+                <widget class="StackedWidget" name="efx2Widget">
+                 <property name="fadeEffect" stdset="0">
+                  <bool>false</bool>
+                 </property>
+                 <property name="currentIndex" stdset="0">
+                  <number>8</number>
+                 </property>
+                 <widget class="QWidget" name="efx2Page0">
+                  <layout class="QHBoxLayout" name="horizontalLayout_8">
+                   <item>
+                    <widget class="QLabel" name="label_2">
+                     <property name="enabled">
+                      <bool>false</bool>
+                     </property>
+                     <property name="text">
+                      <string>&lt;i&gt;Effect 2 bypass&lt;/i&gt;</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignCenter</set>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                 <widget class="QWidget" name="efx2Page1">
+                  <layout class="QHBoxLayout" name="horizontalLayout_14" stretch="10,10,60">
+                   <property name="margin">
+                    <number>2</number>
+                   </property>
+                   <item>
+                    <widget class="Dial" name="effect2ChorusSpeed">
+                     <property name="label" stdset="0">
+                      <string>Speed</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2ChorusDepth">
+                     <property name="label" stdset="0">
+                      <string>Depth</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_7">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </widget>
+                 <widget class="QWidget" name="efx2Page2">
+                  <layout class="QHBoxLayout" name="horizontalLayout_15" stretch="10,10,10,20,30">
+                   <property name="margin">
+                    <number>2</number>
+                   </property>
+                   <item>
+                    <widget class="Dial" name="effect2FlangerSpeed">
+                     <property name="label" stdset="0">
+                      <string>Speed</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2FlangerDepth">
+                     <property name="label" stdset="0">
+                      <string>Depth</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2FlangerFeedback">
+                     <property name="label" stdset="0">
+                      <string>Feedback</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Combo" name="effect2FlangerPolarity">
+                     <property name="label" stdset="0">
+                      <string>Polarity</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_12">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </widget>
+                 <widget class="QWidget" name="efx2Page3">
+                  <layout class="QHBoxLayout" name="horizontalLayout_16" stretch="10,10,10,10,10,20,10">
+                   <property name="margin">
+                    <number>2</number>
+                   </property>
+                   <item>
+                    <widget class="Dial" name="effect2PhaserSpeed">
+                     <property name="label" stdset="0">
+                      <string>Speed</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2PhaserDepth">
+                     <property name="label" stdset="0">
+                      <string>Depth</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2PhaserFeedback">
+                     <property name="label" stdset="0">
+                      <string>Feedback</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2PhaserCenter">
+                     <property name="label" stdset="0">
+                      <string>Center</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2PhaserSpacing">
+                     <property name="label" stdset="0">
+                      <string>Spacing</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Combo" name="effect2PhaserPolarity">
+                     <property name="label" stdset="0">
+                      <string>Polarity</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_13">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </widget>
+                 <widget class="QWidget" name="efx2Page4">
+                  <layout class="QHBoxLayout" name="horizontalLayout_17" stretch="10,10,10,20,30">
+                   <property name="margin">
+                    <number>2</number>
+                   </property>
+                   <item>
+                    <widget class="Dial" name="effect2OverdriveDrive">
+                     <property name="label" stdset="0">
+                      <string>Drive</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2OverdrivePostGain">
+                     <property name="label" stdset="0">
+                      <string>Post Gain</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2OverdriveCutoff">
+                     <property name="label" stdset="0">
+                      <string>Cutoff</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Combo" name="effect2OverdriveCurve">
+                     <property name="label" stdset="0">
+                      <string>Curve</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_14">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </widget>
+                 <widget class="QWidget" name="efx2Page5">
+                  <layout class="QHBoxLayout" name="horizontalLayout_18" stretch="10,10,10,10,10,30">
+                   <property name="margin">
+                    <number>2</number>
+                   </property>
+                   <item>
+                    <widget class="Dial" name="effect2TripleSpeed">
+                     <property name="label" stdset="0">
+                      <string>Speed</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2TripleDepth">
+                     <property name="label" stdset="0">
+                      <string>Depth</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2TripleChorusMix">
+                     <property name="label" stdset="0">
+                      <string>Chorus Mix</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2TripleSampleHold">
+                     <property name="label" stdset="0">
+                      <string>Sample&amp;Hold</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2TripleOverdrive">
+                     <property name="label" stdset="0">
+                      <string>Overdrive</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_15">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </widget>
+                 <widget class="QWidget" name="efx2Page6">
+                  <layout class="QHBoxLayout" name="horizontalLayout_19" stretch="15,15,10,10,10,20">
+                   <property name="margin">
+                    <number>2</number>
+                   </property>
+                   <item>
+                    <widget class="Combo" name="effect2DelayLength">
+                     <property name="label" stdset="0">
+                      <string>Length</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Combo" name="effect2DelayPolarity">
+                     <property name="label" stdset="0">
+                      <string>Polarity</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2DelayFeedback">
+                     <property name="label" stdset="0">
+                      <string>Feedback</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2DelayCutoff">
+                     <property name="label" stdset="0">
+                      <string>Cutoff</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2DelaySpread">
+                     <property name="label" stdset="0">
+                      <string>Spread</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_16">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </widget>
+                 <widget class="QWidget" name="efx2Page7">
+                  <layout class="QHBoxLayout" name="horizontalLayout_20" stretch="15,10,10,10,15,20">
+                   <property name="margin">
+                    <number>2</number>
+                   </property>
+                   <item>
+                    <widget class="Combo" name="effect2ClkDelayPolarity">
+                     <property name="label" stdset="0">
+                      <string>Polarity</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2ClkDelayFeedback">
+                     <property name="label" stdset="0">
+                      <string>Feedback</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2ClkDelayCutoff">
+                     <property name="label" stdset="0">
+                      <string>Cutoff</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2ClkDelaySpread">
+                     <property name="label" stdset="0">
+                      <string>Spread</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Combo" name="effect2ClkDelayLength">
+                     <property name="label" stdset="0">
+                      <string>Length</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_17">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </widget>
+                 <widget class="QWidget" name="efx2Page8">
+                  <layout class="QHBoxLayout" name="horizontalLayout_21" stretch="0,0,0,0,0,0,0,0">
+                   <property name="margin">
+                    <number>2</number>
+                   </property>
+                   <item>
+                    <widget class="Dial" name="effect2ReverbSize">
+                     <property name="label" stdset="0">
+                      <string>Size</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2ReverbShape">
+                     <property name="label" stdset="0">
+                      <string>Shape</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2ReverbDecay">
+                     <property name="label" stdset="0">
+                      <string>Decay</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2ReverbLP">
+                     <property name="label" stdset="0">
+                      <string>LP</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2ReverbHP">
+                     <property name="label" stdset="0">
+                      <string>HP</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2ReverbDiffusion">
+                     <property name="label" stdset="0">
+                      <string>Diff.</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Dial" name="effect2ReverbDamping">
+                     <property name="label" stdset="0">
+                      <string>Damp</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_18">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </widget>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="Frame" name="arpeggiatorFrame">
+              <property name="contextMenuPolicy">
+               <enum>Qt::CustomContextMenu</enum>
+              </property>
+              <property name="sections" stdset="0">
+               <stringlist/>
+              </property>
+              <property name="label" stdset="0">
+               <string>Arpeggiator</string>
+              </property>
+              <property name="orientation" stdset="0">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <layout class="QGridLayout" name="gridLayout" columnstretch="10,40,10,15,15,15">
+               <property name="leftMargin">
+                <number>6</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <property name="horizontalSpacing">
+                <number>4</number>
+               </property>
+               <property name="verticalSpacing">
+                <number>0</number>
+               </property>
+               <item row="0" column="5">
+                <widget class="Combo" name="arpeggiatorTimingFactor">
+                 <property name="label" stdset="0">
+                  <string>Timing</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="0" rowspan="2">
+                <widget class="Combo" name="arpeggiatorMode">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="label" stdset="0">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="3">
+                <widget class="Combo" name="arpeggiatorLength">
+                 <property name="label" stdset="0">
+                  <string>Note Len.</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="2">
+                <widget class="SquareButton" name="arpPatternEditBtn">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="label" stdset="0">
+                  <string>Edit</string>
+                 </property>
+                 <property name="labelPos" stdset="0">
+                  <enum>Qt::RightDockWidgetArea</enum>
+                 </property>
+                 <property name="maximumWidgetSize" stdset="0">
+                  <size>
+                   <width>24</width>
+                   <height>16</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="4">
+                <widget class="Combo" name="arpeggiatorVelocity">
+                 <property name="label" stdset="0">
+                  <string>Velocity</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="3">
+                <widget class="Combo" name="arpeggiatorOctave">
+                 <property name="label" stdset="0">
+                  <string>Octave</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="4">
+                <widget class="Combo" name="arpeggiatorDirection">
+                 <property name="label" stdset="0">
+                  <string>Direction</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="5">
+                <widget class="Combo" name="arpeggiatorSortOrder">
+                 <property name="label" stdset="0">
+                  <string>Sort Order</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="Combo" name="arpeggiatorPattern">
+                 <property name="label" stdset="0">
+                  <string>Pattern</string>
+                 </property>
+                 <property name="labelPos" stdset="0">
+                  <enum>Qt::LeftDockWidgetArea</enum>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <layout class="QHBoxLayout" name="horizontalLayout_23">
+                 <property name="spacing">
+                  <number>2</number>
+                 </property>
+                 <item>
+                  <widget class="Dial" name="arpeggiatorTempo">
+                   <property name="label" stdset="0">
+                    <string>Tempo</string>
+                   </property>
+                   <property name="labelPos" stdset="0">
+                    <enum>Qt::LeftDockWidgetArea</enum>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="Combo" name="arpeggiatorClock">
+                   <property name="label" stdset="0">
+                    <string>Clock</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="Combo" name="arpeggiatorPtnLength">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="label" stdset="0">
+                    <string>Length</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+               <item row="1" column="2">
+                <widget class="SquareButton" name="arpeggiatorPtnReset">
+                 <property name="label" stdset="0">
+                  <string>Reset</string>
+                 </property>
+                 <property name="labelPos" stdset="0">
+                  <enum>Qt::RightDockWidgetArea</enum>
+                 </property>
+                 <property name="maximumWidgetSize" stdset="0">
+                  <size>
+                   <width>16</width>
+                   <height>16</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="Frame" name="frame_4">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Ignored">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="sections" stdset="0">
+           <stringlist>
+            <string>1 1 2 2</string>
+           </stringlist>
+          </property>
+          <property name="sunken" stdset="0">
+           <bool>false</bool>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_4">
+           <property name="margin">
+            <number>0</number>
+           </property>
+           <item row="0" column="0" rowspan="3">
+            <widget class="Slider" name="modSlider">
+             <property name="label" stdset="0">
+              <string>MOD</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="Combo" name="keyChanCombo">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="label" stdset="0">
+              <string>Ch.</string>
+             </property>
+             <property name="labelPos" stdset="0">
+              <enum>Qt::LeftDockWidgetArea</enum>
+             </property>
+             <property name="opaque" stdset="0">
+              <bool>false</bool>
+             </property>
+             <property name="valueList" stdset="0">
+              <stringlist>
+               <string>1</string>
+               <string>2</string>
+               <string>3</string>
+               <string>4</string>
+               <string>5</string>
+               <string>6</string>
+               <string>7</string>
+               <string>8</string>
+               <string>9</string>
+               <string>10</string>
+               <string>11</string>
+               <string>12</string>
+               <string>13</string>
+               <string>14</string>
+               <string>15</string>
+               <string>16</string>
+              </stringlist>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="Combo" name="keyOctaveCombo">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="label" stdset="0">
+              <string>Oct</string>
+             </property>
+             <property name="labelPos" stdset="0">
+              <enum>Qt::LeftDockWidgetArea</enum>
+             </property>
+             <property name="valueList" stdset="0">
+              <stringlist>
+               <string>-2</string>
+               <string>-1</string>
+               <string>0</string>
+               <string>+1</string>
+               <string>+2</string>
+              </stringlist>
+             </property>
+             <property name="currentIndex" stdset="0">
+              <number>2</number>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1" colspan="2" alignment="Qt::AlignLeft">
+            <widget class="SquareButton" name="keyNoteOffBtn">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="label" stdset="0">
+              <string>All notes OFF</string>
+             </property>
+             <property name="labelPos" stdset="0">
+              <enum>Qt::RightDockWidgetArea</enum>
+             </property>
+             <property name="labelMargin" stdset="0">
+              <number>8</number>
+             </property>
+             <property name="maximumWidgetSize" stdset="0">
+              <size>
+               <width>20</width>
+               <height>12</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1" colspan="2" alignment="Qt::AlignLeft">
+            <widget class="SquareButton" name="keySoundsOffBtn">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="label" stdset="0">
+              <string>All sounds OFF</string>
+             </property>
+             <property name="labelPos" stdset="0">
+              <enum>Qt::RightDockWidgetArea</enum>
+             </property>
+             <property name="labelMargin" stdset="0">
+              <number>8</number>
+             </property>
+             <property name="maximumWidgetSize" stdset="0">
+              <size>
+               <width>20</width>
+               <height>12</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1129</width>
+     <height>24</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>Combo</class>
+   <extends>QWidget</extends>
+   <header>combo</header>
+  </customwidget>
+  <customwidget>
+   <class>Dial</class>
+   <extends>QWidget</extends>
+   <header>dial</header>
+  </customwidget>
+  <customwidget>
+   <class>Frame</class>
+   <extends>QFrame</extends>
+   <header>frame</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>Section</class>
+   <extends>QWidget</extends>
+   <header>frame</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>PianoKeyboard</class>
+   <extends>QGraphicsView</extends>
+   <header>pianokeyboard</header>
+  </customwidget>
+  <customwidget>
+   <class>Slider</class>
+   <extends>QWidget</extends>
+   <header>slider</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>SquareButton</class>
+   <extends>QWidget</extends>
+   <header>squarebutton</header>
+  </customwidget>
+  <customwidget>
+   <class>StackedWidget</class>
+   <extends>QWidget</extends>
+   <header>stackedwidget</header>
+   <addpagemethod>addWidget</addpagemethod>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>BlofeldDisplay</class>
+   <extends>QGraphicsView</extends>
+   <header>bigglesworth.widgets</header>
+  </customwidget>
+  <customwidget>
+   <class>ArpeggiatorDisplay</class>
+   <extends>QGraphicsView</extends>
+   <header>bigglesworth.widgets</header>
+  </customwidget>
+  <customwidget>
+   <class>EnvelopePreviewWidget</class>
+   <extends>QWidget</extends>
+   <header>bigglesworth.widgets</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>MidiInWidget</class>
+   <extends>QWidget</extends>
+   <header>bigglesworth.widgets</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>MidiOutWidget</class>
+   <extends>QWidget</extends>
+   <header>bigglesworth.widgets</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>VerticalLabel</class>
+   <extends>QLabel</extends>
+   <header>bigglesworth.widgets</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>effect2Type</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>efx2Widget</receiver>
+   <slot>setCurrentIndex(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>616</x>
+     <y>541</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>681</x>
+     <y>547</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>effect1Type</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>efx1Widget</receiver>
+   <slot>setCurrentIndex(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>616</x>
+     <y>489</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>877</x>
+     <y>484</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

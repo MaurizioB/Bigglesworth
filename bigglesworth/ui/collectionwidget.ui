@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>359</width>
+    <height>403</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <property name="margin">
+    <number>2</number>
+   </property>
+   <item row="1" column="0">
+    <widget class="CollectionTableView" name="collectionView">
+     <property name="editTriggers">
+      <set>QAbstractItemView::NoEditTriggers</set>
+     </property>
+     <property name="horizontalScrollMode">
+      <enum>QAbstractItemView::ScrollPerPixel</enum>
+     </property>
+     <attribute name="horizontalHeaderHighlightSections">
+      <bool>false</bool>
+     </attribute>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QGroupBox" name="filterGroupBox">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>50</height>
+      </size>
+     </property>
+     <property name="title">
+      <string>Filters</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <property name="spacing">
+         <number>4</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>&amp;Bank</string>
+          </property>
+          <property name="buddy">
+           <cstring>bankCombo</cstring>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="bankCombo">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <item>
+           <property name="text">
+            <string>All</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>A</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>B</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>C</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>D</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>E</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>F</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>G</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>H</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_4">
+          <property name="text">
+           <string>&amp;Cat.</string>
+          </property>
+          <property name="buddy">
+           <cstring>catCombo</cstring>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="catCombo">
+          <item>
+           <property name="text">
+            <string>All</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Init</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Arp</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Atmo</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Bass</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Drum</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>FX</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Keys</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Lead</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Mono</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Pad</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Perc</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Poly</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Seq</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item>
+         <widget class="Line" name="line_2">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="emptySlotsChk">
+          <property name="text">
+           <string>Empty &amp;slots</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <property name="spacing">
+         <number>4</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>&amp;Name</string>
+          </property>
+          <property name="buddy">
+           <cstring>filterNameEdit</cstring>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="FilterNameEdit" name="filterNameEdit"/>
+        </item>
+        <item>
+         <widget class="Line" name="line">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>&amp;Tags</string>
+          </property>
+          <property name="buddy">
+           <cstring>filterTagsEdit</cstring>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="FilterTagsEdit" name="filterTagsEdit"/>
+        </item>
+        <item>
+         <widget class="QPushButton" name="editModeBtn">
+          <property name="toolTip">
+           <string>Toggle to enable/disable name and category editing</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset theme="edit-rename">
+            <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+     <zorder></zorder>
+     <zorder></zorder>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>FilterNameEdit</class>
+   <extends>QLineEdit</extends>
+   <header>bigglesworth.widgets</header>
+  </customwidget>
+  <customwidget>
+   <class>FilterTagsEdit</class>
+   <extends>QLineEdit</extends>
+   <header>bigglesworth.widgets</header>
+  </customwidget>
+  <customwidget>
+   <class>CollectionTableView</class>
+   <extends>QTableView</extends>
+   <header>bigglesworth.widgets</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

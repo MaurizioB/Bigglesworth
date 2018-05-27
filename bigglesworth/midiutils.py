@@ -425,7 +425,7 @@ class MidiEvent(object):
 
     velocity  = _make_property(NOTE, 'data2', 'velocity')
 
-    ctrl = _make_property(CTRL, 'data1', 'ctrl')
+    param = ctrl = _make_property(CTRL, 'data1', 'ctrl')
 
     value = _make_property(CTRL | PITCHBEND | AFTERTOUCH | POLY_AFTERTOUCH, 'data2', 'value')
 

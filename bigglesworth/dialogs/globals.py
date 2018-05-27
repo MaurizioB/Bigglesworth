@@ -1,206 +1,286 @@
-# *-* coding: utf-8 *-*
+from Qt import QtCore, QtGui, QtWidgets
 
-from collections import namedtuple
-from bisect import bisect_left
-from PyQt4 import QtCore, QtGui
-
-from bigglesworth.midiutils import SysExEvent
-from bigglesworth.utils import load_ui
-from bigglesworth.const import *
-
-popup_values = [None, .1, .2, .3, .4, .6, .7, .8, .9, 1.1, 1.2, 1.3, 1.4, 1.5, 1.7, 1.8, 1.9, 2, 2.2, 2.3, 2.4, 2.5, 2.6, 2.8, 2.9,
-                3, 3.1, 3.3, 3.4, 3.5, 3.6, 3.8, 3.9, 4, 4.1, 4.2, 4.4, 4.5, 4.6, 4.7, 4.9, 5, 5.1, 5.2, 5.3, 5.5, 5.6, 5.7, 5.8, 
-                6, 6.1, 6.2, 6.3, 6.5, 6.6, 6.7, 6.8, 6.9, 7.1, 7.2, 7.3, 7.4, 7.6, 7.7, 7.8, 7.9, 8, 8.2, 8.3, 8.4, 8.5, 8.7, 8.8, 8.9, 
-                9, 9.1, 9.3, 9.4, 9.5, 9.6, 9.8, 9.9, 10, 10.1, 10.3, 10.4, 10.5, 10.6, 10.7, 10.9, 11, 11.1, 11.2, 11.4, 11.5, 11.6, 11.7, 11.8, 
-                12, 12.1, 12.2, 12.3, 12.5, 12.6, 12.7, 12.8, 13, 13.1, 13.2, 13.3, 13.4, 13.6, 13.7, 13.8, 13.9, 
-                14.1, 14.2, 14.3, 14.4, 14.5, 14.7, 14.8, 14.9, 15, 15.2, 15.3, 15.4, 15.5]
+from bigglesworth.utils import loadUi, localPath
+from bigglesworth.const import ord2chr, INIT, IDE, IDW, GLBD, GLBR, END
+from bigglesworth.midiutils import SysExEvent, SYSEX
+#from bigglesworth.widgets import DeltaSpin, DeviceIdSpin
 
 
-class PopupSpin(QtGui.QDoubleSpinBox):
-    indexChanged = QtCore.pyqtSignal(int)
-    def __init__(self, parent):
-        self.indexMinimum = 1
-        self.indexMaximum = len(popup_values) - 1
-        self.indexRange = self.indexMinimum, self.indexMaximum
-        QtGui.QDoubleSpinBox.__init__(self, parent)
-        self.setRange(.1, 15.5)
-        self.setSuffix('s')
-        self.setDecimals(1)
-        self.setSingleStep(.1)
-        self.index = 0
-        self.setIndex(1)
+class TimerWidget(QtWidgets.QWidget):
+    def __init__(self):
+        QtWidgets.QWidget.__init__(self)
+        self.time = 0
+        self.timerRect = QtCore.QRect(0, 0, 31, 31)
+        self.setMinimumSize(32, 32)
+        self.color = self.palette().color(QtGui.QPalette.WindowText)
+        self.pen = QtGui.QPen(self.color, 2, cap=QtCore.Qt.FlatCap)
+        self.timerFont = self.font()
 
-    def stepBy(self, steps):
-        new_index = self.index + steps
-        if new_index > self.indexMaximum:
-            new_index = self.indexMaximum
-        elif new_index < self.indexMinimum:
-            new_index = self.indexMinimum
-        self.setIndex(new_index)
+    def setTime(self, time):
+        self.time = time
+        self.update()
 
-    def setIndex(self, index):
-        if not self.indexMinimum <= index <= self.indexMaximum: return
-        self.index = index
-        self.indexChanged.emit(index)
-        self.setValue(popup_values[index])
+    def sizeHint(self):
+        return QtCore.QSize(32, 32)
 
-    def validate(self, text, pos):
-        res = QtGui.QDoubleSpinBox.validate(self, text, pos)
-        if res in (QtGui.QValidator.Invalid, QtGui.QValidator.Intermediate):
-            return res
-        new_value = QtGui.QDoubleSpinBox.valueFromText(self, text)
-        if not popup_values[self.indexMinimum] <= new_value <= popup_values[self.indexMaximum]:
-            return QtGui.QValidator.Invalid, res[1]
-        return res
+    def paintEvent(self, event):
+        qp = QtGui.QPainter(self)
+        qp.translate(.5, .5)
+        qp.setRenderHints(qp.Antialiasing)
+        qp.drawEllipse(self.timerRect)
+        qp.setPen(self.pen)
+        adjustSize = self.timerRect.width() * .05
+        secs, rest = divmod(self.time, 1)
+        if not rest:
+            qp.drawEllipse(self.timerRect.adjusted(adjustSize, adjustSize, -adjustSize, -adjustSize))
+        else:
+            qp.drawArc(self.timerRect.adjusted(adjustSize, adjustSize, -adjustSize, -adjustSize), 1440, -rest * 5760)
+        qp.setFont(self.timerFont)
+#        qp.drawText(self.timerRect.adjusted(0, -adjustSize, 0, 0), QtCore.Qt.AlignCenter, str(10 - int(secs)))
+        qp.drawText(self.timerRect, QtCore.Qt.AlignCenter, str(10 - int(secs)))
 
-    def valueFromText(self, text):
-        new_value = QtGui.QDoubleSpinBox.valueFromText(self, text)
-        pos = bisect_left(popup_values, new_value)
-        if pos == 1:
-            self.index = pos
-            self.indexChanged.emit(pos)
-            return popup_values[0]
-        if pos == len(popup_values):
-            self.index = pos
-            self.indexChanged.emit(pos)
-            return popup_values[-1]
-        before = popup_values[pos-1]
-        after = popup_values[pos]
-        if after-new_value < new_value-before:
-            self.index = after
-            self.indexChanged.emit(after)
-            return after
-        self.index = before
-        self.indexChanged.emit(before)
-        return before
+    def resizeEvent(self, event):
+        size = min(self.width(), self.height()) - 1
+        self.timerRect = QtCore.QRect(0, 0, size, size)
+        self.pen.setWidth(size * .1)
+        self.timerFont.setPointSize(size * .5)
 
-class Globals(QtGui.QDialog):
-    midi_event = QtCore.pyqtSignal(object)
-    def __init__(self, main, parent):
-        pt = namedtuple('pt', 'index delta')
-        pt.__new__.__defaults__ = (0, )
-        QtGui.QDialog.__init__(self, parent)
-        load_ui(self, 'dialogs/globals.ui')
+
+class GlobalsWaiter(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        QtWidgets.QDialog.__init__(self, parent)
         self.setModal(True)
+        layout = QtWidgets.QGridLayout()
+        self.setLayout(layout)
 
+        self.timerWidget = TimerWidget()
+        layout.addWidget(self.timerWidget, 0, 0, 2, 1)
+
+        self.defaultMessage = 'Waiting for a response from Blofeld'
+        self.label = QtWidgets.QLabel(self.defaultMessage)
+        layout.addWidget(self.label, 0, 1)
+        self.cancelBtn = QtWidgets.QPushButton('Cancel')
+        self.cancelBtn.clicked.connect(self.reject)
+        layout.addWidget(self.cancelBtn, 1, 1)
+        self.timer = QtCore.QTimer(self)
+        self.timer.setInterval(5)
+        self.timer.timeout.connect(self.updateTimer)
+        self.elapsed = QtCore.QElapsedTimer()
+        self.rejected.connect(self.timer.stop)
+        self.accepted.connect(self.timer.stop)
+
+    def reject(self):
+        self.timer.stop()
+        self.cancelled = True
+        QtWidgets.QDialog.reject(self)
+
+    def closeEvent(self, event):
+        self.timer.stop()
+        self.cancelled = True
+
+    def updateTimer(self):
+        elapsed = self.elapsed.elapsed() * .001
+        if elapsed >= 10:
+            self.timer.stop()
+            QtWidgets.QDialog.reject(self)
+            return
+        self.timerWidget.setTime(elapsed)
+
+    def exec_(self, apply=False):
+        if apply:
+            self.label.setText('Sending data to Blofeld and awaiting confirmation')
+        else:
+            self.label.setText(self.defaultMessage)
+        self.cancelled = False
+        self.timer.start()
+        self.elapsed.start()
+        return QtWidgets.QDialog.exec_(self)
+
+
+class GlobalsDialog(QtWidgets.QDialog):
+    midiEvent = QtCore.pyqtSignal(object)
+
+    def __init__(self, main, parent=None):
+        QtWidgets.QDialog.__init__(self, parent)
+        loadUi(localPath('ui/globals.ui'), self)
         self.main = main
-#        if self.main.backend == ALSA:
-        self.graph = main.graph
-        self.input = main.input
-        self.output = main.output
-        self.sysex = []
-        self.data = []
-        self.original_data = []
-        self.receiving = False
-        self.general_layout = self.general_group.layout()
-        self.system_layout = self.system_group.layout()
-        self.midi_layout = self.midi_group.layout()
-        self.layouts = self.general_layout, self.system_layout, self.midi_layout
+        self.waiter = GlobalsWaiter(self)
+        self.waiter.rejected.connect(self.invalid)
+        self.tuneSpin.delta = 376
+        self.transposeSpin.delta = -64
+        self.transposeSpin.valueChanged.connect(self.setTransposePrefix)
+        self.queryDeviceIdSpin.valueChanged.connect(lambda value: self.queryHexLbl.setText('({:02X}h)'.format(value)))
+        self.queryDeviceIdSpin.valueChanged.connect(lambda value: self.broadcastBtn.setEnabled(True if value != 127 else False))
+        self.broadcastBtn.clicked.connect(lambda: self.queryDeviceIdSpin.setValue(127))
+        self.deviceIdSpin.valueChanged.connect(lambda value: self.deviceIdLbl.setText('({:02X}h)'.format(value)))
 
-        self.resetBtn = self.buttonBox.button(QtGui.QDialogButtonBox.Reset)
-        self.resetBtn.setText('Reload from Blofeld')
-        self.applyBtn = self.buttonBox.button(QtGui.QDialogButtonBox.Apply)
-        self.applyBtn.clicked.connect(self.send_data)
-        self.okBtn = self.buttonBox.button(QtGui.QDialogButtonBox.Ok)
-        self.accepted.connect(self.check_changes)
-        self.main.input_conn_state_change.connect(self.conn_check)
-        self.main.output_conn_state_change.connect(self.conn_check)
+        self.queryHexLbl.setMinimumWidth(self.fontMetrics().width('(000h)'))
 
-        self.transp_spin.valueChanged.connect(lambda value: self.transp_spin.setPrefix('+' if value >= 0 else ''))
-        self.transp_spin.valueChanged.emit(self.transp_spin.value())
-        self.param_dict = {
-                           self.volume_spin: pt(55), 
-                           self.cat_combo: pt(56), 
-                           self.tune_spin: pt(40, 376), 
-                           self.transp_spin: pt(41, -64), 
-                           self.freeBtn_combo: pt(59), 
-                           self.devId_spin: pt(37), 
-                           self.autoEdit_chk: pt(35), 
-                           self.contrast_spin: pt(39), 
-                           self.popup_spin: pt(38), 
-                           self.velocity_combo: pt(50), 
-                           self.pedal_combo: pt(60), 
-                           self.channel_spin: pt(36), 
-                           self.clock_combo: pt(48), 
-                           self.pgmSend_chk: pt(46), 
-                           self.localCtrl_chk: pt(57), 
-                           self.ctrlSend_combo: pt(44), 
-                           self.ctrlReceive_chk: pt(45), 
-                           self.ctrlW_spin: pt(51), 
-                           self.ctrlX_spin: pt(52), 
-                           self.ctrlY_spin: pt(53), 
-                           self.ctrlZ_spin: pt(54), 
-                           }
-        for w in self.param_dict:
-            if isinstance(w, QtGui.QSpinBox):
-                w.valueChanged.connect(self.editData)
-            elif isinstance(w, PopupSpin):
-                w.indexChanged.connect(self.editData)
-            elif isinstance(w, QtGui.QComboBox):
-                w.currentIndexChanged.connect(self.editData)
-            else:
-                w.toggled.connect(self.editData)
+        self.queryBtn.clicked.connect(self.startQuery)
 
-    def editData(self, value):
-        if self.receiving: return
-        value = int(value)
-        self.data[self.param_dict[self.sender()].index] = value
+        self.paramDict = {
+            self.volumeSpin: 55, 
+            self.catCombo: 56, 
+            self.tuneSpin: 40, 
+            self.transposeSpin: 41, 
+            self.freeBtnCombo: 59, 
+            self.deviceIdSpin: 37, 
+            self.autoEditChk: 35, 
+            self.contrastSpin: 39, 
+            self.popupSpin: 38, 
+            self.velocityCombo: 50, 
+            self.pedalCombo: 60, 
+            self.channelSpin: 36, 
+            self.clockCombo: 48, 
+            self.progSendChk: 46, 
+            self.localCtrlChk: 57, 
+            self.ctrlSendCombo: 44, 
+            self.ctrlReceiveChk: 45, 
+            self.ctrlWSpin: 51, 
+            self.ctrlXSpin: 52, 
+            self.ctrlYSpin: 53, 
+            self.ctrlZSpin: 54, 
+            }
+        for combo in (self.catCombo, self.freeBtnCombo, self.velocityCombo, self.pedalCombo, self.clockCombo, self.ctrlSendCombo):
+            combo.setValue = combo.setCurrentIndex
+            combo.currentIndexChanged.connect(self.editData)
+        for chk in (self.autoEditChk, self.progSendChk, self.localCtrlChk, self.ctrlReceiveChk):
+            chk.setValue = chk.setChecked
+            chk.toggled.connect(self.editData)
+        for spin in (self.volumeSpin, self.tuneSpin, self.transposeSpin, self.deviceIdSpin, self.contrastSpin, self.popupSpin, 
+            self.channelSpin, self.ctrlWSpin, self.ctrlXSpin, self.ctrlYSpin, self.ctrlZSpin):
+            spin.valueChanged.connect(self.editData)
 
-    def get_column_size_request(self, column):
-        width = 0
-        for layout in self.layouts:
-            for row in range(layout.rowCount()):
-                item = layout.itemAtPosition(row, column)
-                if not item: continue
-                width = max(item.sizeHint().width(), width)
-        return width
+        self.okBtn = self.buttonBox.button(self.buttonBox.Ok)
+        self.applyBtn = self.buttonBox.button(self.buttonBox.Apply)
+        self.applyBtn.clicked.connect(self.apply)
+        self.data = None
+        self.originalData = []
 
-    def showEvent(self, event):
-        widget_width = max(self.get_column_size_request(1), self.get_column_size_request(4))
-        label_width = max(self.get_column_size_request(0), self.get_column_size_request(3))
-        for layout in self.layouts:
-            layout.setColumnMinimumWidth(1, widget_width)
-            layout.setColumnMinimumWidth(4, widget_width)
-            layout.setColumnMinimumWidth(0, label_width)
-            layout.setColumnMinimumWidth(3, label_width)
-        self.conn_check()
+    def accept(self):
+        if self.apply():
+            QtWidgets.QDialog.accept(self)
 
-    def conn_check(self, *args):
-        input = any((True for conn in self.input.connections if not conn.hidden))
-        output = any((True for conn in self.output.connections if not conn.hidden))
-        self.resetBtn.setEnabled(True if all((input, output)) else False)
-        self.applyBtn.setEnabled(True if output else False)
-        self.okBtn.setEnabled(True if output else False)
+    def apply(self):
+        if self.data == self.originalData:
+            return True
+        savedData = self.data[:]
+        originalData = self.originalData[:]
+        self.waiter.show()
 
-    def setData(self, sysex):
-        self.sysex = sysex
-        data = sysex[5:-2]
-        self.receiving = True
-#        if self.data:
-#            for i, v in enumerate(self.data):
-#                if v != data[i]:
-#                    print 'value {} changed from {} to {}'.format(i, v, data[i])
-        for w, p in self.param_dict.items():
-            if isinstance(w, QtGui.QSpinBox):
-                w.setValue(data[p.index] + p.delta)
-            elif isinstance(w, PopupSpin):
-                w.setIndex(data[p.index])
-            elif isinstance(w, QtGui.QComboBox):
-                w.setCurrentIndex(data[p.index])
-            else:
-                w.setChecked(data[p.index])
-
-        self.data = data
-        self.original_data = data[:]
-        self.receiving = False
-        self.show()
-
-    def check_changes(self):
-        if self.data != self.original_data:
-            self.send_data()
-
-    def send_data(self):
         self.sysex[5:-2] = self.data
         self.sysex[-2] = 0x7f
-        self.midi_event.emit(SysExEvent(1, self.sysex))
+        self.midiEvent.emit(SysExEvent(1, self.sysex))
+
+        QtCore.QTimer.singleShot(100, self.startQuery)
+        res = self.waiter.exec_(True)
+        if not res or not self.waiter.result():
+            return False
+        if self.originalData != savedData:
+            for i, (s, d) in enumerate(zip(savedData, self.originalData)):
+                if s != d:
+                    print(i, s, d)
+            QtWidgets.QMessageBox.warning(
+                self, 
+                'Data mismatch', 
+                'The returned settings do not match the data set.', 
+                QtWidgets.QMessageBox.Ok
+                )
+            self.setData(savedData)
+            self.originalData = originalData[:]
+            return False
+        return True
+
+    def editData(self, value):
+        if self.waiter.isVisible():
+            return
+        value = int(value)
+        self.data[self.paramDict[self.sender()]] = value
+        self.applyBtn.setEnabled(True if self.data != self.originalData else False)
+
+    def invalid(self):
+        if not self.waiter.cancelled:
+            QtWidgets.QMessageBox.warning(
+                self, 
+                'Device timeout', 
+                'The request has timed out.\nEnsure that the Blofeld is correctly connected to both MIDI input and output ports', 
+                QtWidgets.QMessageBox.Ok)
+
+    def startQuery(self, deviceId=False):
+        if not self.waiter.isVisible():
+            QtCore.QTimer.singleShot(0, self.waiter.exec_)
+        self.enableWidgets(False)
+
+        if isinstance(deviceId, bool):
+            deviceId = self.queryDeviceIdSpin.value()
+        self.deviceIdQuery = deviceId
+        self.midiEvent.emit(SysExEvent(1, [INIT, 0x7e, 0x7f, 0x6, 0x1, END]))
+
+    def globalsQuery(self):
+        self.midiEvent.emit(SysExEvent(1, [INIT, IDW, IDE, self.deviceIdQuery, GLBR, END]))
+
+    def setTransposePrefix(self, value):
+        self.transposeSpin.setPrefix('+' if value >= 64 else '')
+
+    def enableWidgets(self, state):
+        self.deviceFrame.setEnabled(state)
+        self.generalGroup.setEnabled(state)
+        self.systemGroup.setEnabled(state)
+        self.midiGroup.setEnabled(state)
+        self.okBtn.setEnabled(state)
+        self.applyBtn.setEnabled(state if state and self.data != self.originalData else False)
+
+    def alsaConnEvent(self, *args):
+        enabled = True if all(self.main.connections) else False
+        self.queryBtn.setEnabled(enabled)
+        self.enableWidgets(True if enabled and self.wasEnabled else False)
+
+    def globalsResponse(self, sysex):
+        self.wasEnabled = True
+        self.sysex = sysex
+        self.setData(sysex[5:-2])
+        self.enableWidgets(True)
+
+    def setData(self, data):
+        for widget, index in self.paramDict.items():
+            widget.setValue(data[index])
+        self.data = data
+        self.originalData = data[:]
+        self.waiter.accept()
+
+    def deviceResponse(self, sysex):
+        if sysex[5] == 0x3e:
+            dev_man = 'Waldorf Music'
+        else:
+            dev_man = 'Unknown'
+        if sysex[6:8] == [0x13, 0x0]:
+            dev_model = 'Blofeld'
+        else:
+            dev_model = 'Unknown'
+        if sysex[8:10] == [0, 0]:
+            dev_type = 'Blofeld Desktop'
+        else:
+            dev_type = 'Blofeld Keyboard'
+        dev_version = ''.join([ord2chr[l] for l in sysex[10:14]]).strip()
+        
+        self.deviceLbl.setText('Device info:\n\nManufacturer: {}\nModel: {}\nType: {}\nFirmware version: {}'.format(
+            dev_man, dev_model, dev_type, dev_version))
+        QtCore.QTimer.singleShot(200, self.globalsQuery)
+
+    def midiEventReceived(self, event):
+        if event.type == SYSEX:
+            sysex_type = event.sysex[4]
+            if sysex_type == GLBD:
+                self.globalsResponse(event.sysex)
+            elif len(event.sysex) == 15 and event.sysex[3:5] == [6, 2]:
+                self.deviceResponse(event.sysex)
+
+    def exec_(self):
+        self.queryDeviceIdSpin.setValue(self.main.blofeldId)
+        self.wasEnabled = False
+#        self.midiEvent.emit(SysExEvent(1, [INIT, 0x7e, 0x7f, 0x6, 0x1, END]))
+#        self.midiEvent.emit(SysExEvent(1, [INIT, IDW, IDE, self.main.blofeldId, GLBR, END]))
+        QtCore.QTimer.singleShot(20, self.waiter.exec_)
+        QtCore.QTimer.singleShot(30, lambda: self.startQuery(self.main.blofeldId))
+        QtWidgets.QDialog.exec_(self)
 

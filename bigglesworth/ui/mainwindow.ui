@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>797</width>
+    <height>475</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Bigglesworth Library</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <widget class="LeftTabBar" name="leftTabBar" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="CustomSplitter" name="splitter">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="childrenCollapsible">
+       <bool>false</bool>
+      </property>
+      <widget class="LeftTabWidget" name="leftTabWidget">
+       <property name="currentIndex">
+        <number>-1</number>
+       </property>
+       <property name="tabsClosable">
+        <bool>true</bool>
+       </property>
+      </widget>
+      <widget class="RightTabWidget" name="rightTabWidget">
+       <property name="tabsClosable">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </widget>
+    </item>
+    <item>
+     <widget class="RightTabBar" name="rightTabBar" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>797</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="fileMenu">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <addaction name="quitAction"/>
+   </widget>
+   <widget class="QMenu" name="libraryMenu">
+    <property name="title">
+     <string>&amp;Library</string>
+    </property>
+    <widget class="QMenu" name="openCollectionMenu">
+     <property name="title">
+      <string>Open collection</string>
+     </property>
+    </widget>
+    <addaction name="createCollectionAction"/>
+    <addaction name="openCollectionMenu"/>
+    <addaction name="separator"/>
+    <addaction name="manageCollectionsAction"/>
+    <addaction name="separator"/>
+    <addaction name="editTagsAction"/>
+   </widget>
+   <widget class="QMenu" name="aboutMenu">
+    <property name="title">
+     <string>&amp;?</string>
+    </property>
+    <addaction name="aboutAction"/>
+   </widget>
+   <widget class="QMenu" name="menuWindows">
+    <property name="title">
+     <string>&amp;Windows</string>
+    </property>
+    <addaction name="showEditorAction"/>
+    <addaction name="showWavetableAction"/>
+    <addaction name="separator"/>
+    <addaction name="showSettingsAction"/>
+    <addaction name="showGlobalsAction"/>
+   </widget>
+   <addaction name="fileMenu"/>
+   <addaction name="libraryMenu"/>
+   <addaction name="menuWindows"/>
+   <addaction name="aboutMenu"/>
+  </widget>
+  <widget class="StatusBar" name="statusbar"/>
+  <action name="createCollectionAction">
+   <property name="icon">
+    <iconset theme="document-new">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Create &amp;new collection...</string>
+   </property>
+  </action>
+  <action name="openCollectionAction">
+   <property name="text">
+    <string>&amp;Open collection...</string>
+   </property>
+  </action>
+  <action name="manageCollectionsAction">
+   <property name="text">
+    <string>Manage &amp;collections...</string>
+   </property>
+  </action>
+  <action name="editTagsAction">
+   <property name="text">
+    <string>Edit &amp;tags...</string>
+   </property>
+  </action>
+  <action name="quitAction">
+   <property name="icon">
+    <iconset theme="application-exit">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Quit Bigglesworth :-(</string>
+   </property>
+   <property name="toolTip">
+    <string>Quit Bigglesworth :-(</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="aboutAction">
+   <property name="text">
+    <string>About Bigglesworth...</string>
+   </property>
+  </action>
+  <action name="showEditorAction">
+   <property name="text">
+    <string>Sound &amp;editor</string>
+   </property>
+  </action>
+  <action name="showWavetableAction">
+   <property name="text">
+    <string>&amp;Wavetable editor</string>
+   </property>
+  </action>
+  <action name="showSettingsAction">
+   <property name="icon">
+    <iconset theme="preferences-other">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Settings</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+P</string>
+   </property>
+  </action>
+  <action name="showGlobalsAction">
+   <property name="text">
+    <string>Blofeld &amp;device</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>CustomSplitter</class>
+   <extends>QSplitter</extends>
+   <header>bigglesworth.widgets</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>RightTabBar</class>
+   <extends>QWidget</extends>
+   <header>bigglesworth.widgets</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>LeftTabWidget</class>
+   <extends>QTabWidget</extends>
+   <header>bigglesworth.widgets</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>LeftTabBar</class>
+   <extends>QWidget</extends>
+   <header>bigglesworth.widgets</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>RightTabWidget</class>
+   <extends>QTabWidget</extends>
+   <header>bigglesworth.widgets</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>StatusBar</class>
+   <extends>QStatusBar</extends>
+   <header>bigglesworth.widgets</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

@@ -1,0 +1,1205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>834</width>
+    <height>451</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Theme editor</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0" colspan="3">
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Theme:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="themeCombo">
+       <property name="sizeAdjustPolicy">
+        <enum>QComboBox::AdjustToContents</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="renameBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Rename</string>
+       </property>
+       <property name="icon">
+        <iconset theme="edit-rename">
+         <normaloff/>
+        </iconset>
+       </property>
+       <property name="toolButtonStyle">
+        <enum>Qt::ToolButtonTextBesideIcon</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="copyBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Copy</string>
+       </property>
+       <property name="icon">
+        <iconset theme="edit-copy">
+         <normaloff/>
+        </iconset>
+       </property>
+       <property name="toolButtonStyle">
+        <enum>Qt::ToolButtonTextBesideIcon</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="Line" name="line_3">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="restoreBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Restore</string>
+       </property>
+       <property name="icon">
+        <iconset theme="edit-undo">
+         <normaloff/>
+        </iconset>
+       </property>
+       <property name="toolButtonStyle">
+        <enum>Qt::ToolButtonTextBesideIcon</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="saveBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Save</string>
+       </property>
+       <property name="icon">
+        <iconset theme="document-save">
+         <normaloff/>
+        </iconset>
+       </property>
+       <property name="toolButtonStyle">
+        <enum>Qt::ToolButtonTextBesideIcon</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="Line" name="line_4">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="deleteBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Delete</string>
+       </property>
+       <property name="icon">
+        <iconset theme="edit-delete">
+         <normaloff/>
+        </iconset>
+       </property>
+       <property name="toolButtonStyle">
+        <enum>Qt::ToolButtonTextBesideIcon</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item row="1" column="0" colspan="3">
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0" rowspan="2">
+    <widget class="QTabWidget" name="themeTabWidget">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="generalTab">
+      <attribute name="title">
+       <string>General controls</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout_4">
+       <item row="5" column="2">
+        <widget class="QLabel" name="label_21">
+         <property name="text">
+          <string>Frame label</string>
+         </property>
+         <property name="buddy">
+          <cstring>frameLabelColorBtn</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="0">
+        <widget class="QLabel" name="label_14">
+         <property name="text">
+          <string>Combobox background</string>
+         </property>
+         <property name="buddy">
+          <cstring>comboStyleCombo</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="10" column="2">
+        <widget class="QLabel" name="label_18">
+         <property name="text">
+          <string>Background</string>
+         </property>
+         <property name="buddy">
+          <cstring>highlightBgdColorBtn</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="0" colspan="4">
+        <widget class="QLabel" name="label_13">
+         <property name="font">
+          <font>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>List and combobox items</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="0">
+        <widget class="QLabel" name="label_15">
+         <property name="text">
+          <string>Item text</string>
+         </property>
+         <property name="buddy">
+          <cstring>itemColorBtn</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="0" colspan="4">
+        <widget class="Line" name="line_6">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="10" column="1">
+        <widget class="ColorSelectButton" name="highlightColorBtn"/>
+       </item>
+       <item row="10" column="3">
+        <widget class="ColorSelectButton" name="highlightBgdColorBtn"/>
+       </item>
+       <item row="5" column="3">
+        <widget class="ColorSelectButton" name="frameLabelColorBtn"/>
+       </item>
+       <item row="0" column="1">
+        <widget class="ColorSelectButton" name="windowBgdColorBtn"/>
+       </item>
+       <item row="9" column="3">
+        <widget class="ColorSelectButton" name="itemBgdColorBtn"/>
+       </item>
+       <item row="9" column="2">
+        <widget class="QLabel" name="label_16">
+         <property name="text">
+          <string>Background</string>
+         </property>
+         <property name="buddy">
+          <cstring>itemBgdColorBtn</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="label_20">
+         <property name="text">
+          <string>Frame border</string>
+         </property>
+         <property name="buddy">
+          <cstring>frameBorderColorBtn</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="10" column="0">
+        <widget class="QLabel" name="label_17">
+         <property name="text">
+          <string>Selected text</string>
+         </property>
+         <property name="buddy">
+          <cstring>highlightColorBtn</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
+        <widget class="ColorSelectButton" name="lightBorderColorBtn"/>
+       </item>
+       <item row="5" column="1">
+        <widget class="ColorSelectButton" name="frameBorderColorBtn"/>
+       </item>
+       <item row="4" column="3">
+        <widget class="ColorSelectButton" name="darkBorderColorBtn"/>
+       </item>
+       <item row="4" column="2">
+        <widget class="QLabel" name="label_6">
+         <property name="text">
+          <string>&amp;Bottom/right borders</string>
+         </property>
+         <property name="buddy">
+          <cstring>darkBorderColorBtn</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="1">
+        <widget class="ColorSelectButton" name="itemColorBtn"/>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="windowBackgroundLabel">
+         <property name="text">
+          <string comment="asdf" extracomment="qwerty">&amp;Window background</string>
+         </property>
+         <property name="buddy">
+          <cstring>windowBgdColorBtn</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2">
+        <widget class="QLabel" name="fontColorLabel">
+         <property name="text">
+          <string>Text colo&amp;r</string>
+         </property>
+         <property name="buddy">
+          <cstring>fontColorBtn</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0" colspan="4">
+        <widget class="Line" name="line_5">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="3">
+        <widget class="ColorSelectButton" name="fontColorBtn"/>
+       </item>
+       <item row="1" column="0" colspan="4">
+        <layout class="QHBoxLayout" name="horizontalLayout_5">
+         <item>
+          <widget class="QLabel" name="fontLabel">
+           <property name="text">
+            <string>&amp;Font</string>
+           </property>
+           <property name="buddy">
+            <cstring>fontCombo</cstring>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QFontComboBox" name="fontCombo"/>
+         </item>
+         <item>
+          <widget class="QLabel" name="fontSizeLabel">
+           <property name="text">
+            <string>&amp;Size</string>
+           </property>
+           <property name="buddy">
+            <cstring>fontSizeSpin</cstring>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QDoubleSpinBox" name="fontSizeSpin">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimum">
+            <double>5.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>32.000000000000000</double>
+           </property>
+           <property name="value">
+            <double>9.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="fontBoldChk">
+           <property name="text">
+            <string>&amp;Bold</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="fontItalicChk">
+           <property name="text">
+            <string>&amp;Italic</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+       <item row="8" column="1">
+        <widget class="QComboBox" name="comboStyleCombo">
+         <item>
+          <property name="text">
+           <string>Transparent</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Opaque</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="3" column="0" colspan="4">
+        <widget class="QLabel" name="label_2">
+         <property name="font">
+          <font>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Borders and frames</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="label_5">
+         <property name="text">
+          <string>&amp;Top/Left borders</string>
+         </property>
+         <property name="buddy">
+          <cstring>lightBorderColorBtn</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="11" column="0">
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="widgetsTab">
+      <attribute name="title">
+       <string>Widgets</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout_5">
+       <item row="0" column="0" colspan="4">
+        <widget class="QLabel" name="label_4">
+         <property name="font">
+          <font>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Buttons</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="normalButtonColorLabel">
+         <property name="text">
+          <string>&amp;Normal button</string>
+         </property>
+         <property name="buddy">
+          <cstring>normalButtonColorBtn</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="ColorSelectButton" name="normalButtonColorBtn"/>
+       </item>
+       <item row="1" column="2">
+        <widget class="QLabel" name="activeButtonColorLabel">
+         <property name="text">
+          <string>&amp;Active button</string>
+         </property>
+         <property name="buddy">
+          <cstring>activeButtonColorBtn</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="3">
+        <widget class="ColorSelectButton" name="activeButtonColorBtn"/>
+       </item>
+       <item row="2" column="0" colspan="4">
+        <widget class="Line" name="line_7">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0" colspan="4">
+        <widget class="QLabel" name="label_7">
+         <property name="font">
+          <font>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Dials</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="dialZeroLabel">
+         <property name="text">
+          <string>Dial &amp;start</string>
+         </property>
+         <property name="buddy">
+          <cstring>dialZeroBtn</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
+        <widget class="ColorSelectButton" name="dialZeroBtn"/>
+       </item>
+       <item row="4" column="2">
+        <widget class="QLabel" name="dialEndLabel">
+         <property name="text">
+          <string>Dial &amp;end</string>
+         </property>
+         <property name="buddy">
+          <cstring>dialEndBtn</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="3">
+        <widget class="ColorSelectButton" name="dialEndBtn"/>
+       </item>
+       <item row="5" column="0">
+        <widget class="QCheckBox" name="linkDialColorsChk">
+         <property name="text">
+          <string>Dial pre-zero</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="1">
+        <widget class="ColorSelectButton" name="dialStartBtn">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="2">
+        <widget class="QLabel" name="dialBgdLabel">
+         <property name="text">
+          <string>Dial &amp;color</string>
+         </property>
+         <property name="buddy">
+          <cstring>dialBgdBtn</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="3">
+        <widget class="ColorSelectButton" name="dialBgdBtn"/>
+       </item>
+       <item row="6" column="0">
+        <widget class="QLabel" name="label_9">
+         <property name="text">
+          <string>Value color mode</string>
+         </property>
+         <property name="buddy">
+          <cstring>dialGradientCombo</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="1">
+        <widget class="QComboBox" name="dialGradientCombo">
+         <item>
+          <property name="text">
+           <string>Full</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Gradient</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="6" column="2">
+        <widget class="QLabel" name="label_12">
+         <property name="text">
+          <string>Indicator</string>
+         </property>
+         <property name="buddy">
+          <cstring>dialIndicatorColorBtn</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="3">
+        <widget class="ColorSelectButton" name="dialIndicatorColorBtn"/>
+       </item>
+       <item row="7" column="0">
+        <widget class="QLabel" name="label_10">
+         <property name="text">
+          <string>Full scale</string>
+         </property>
+         <property name="buddy">
+          <cstring>dialScaleColorBtn</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="1">
+        <widget class="ColorSelectButton" name="dialScaleColorBtn"/>
+       </item>
+       <item row="7" column="2">
+        <widget class="QLabel" name="label_11">
+         <property name="text">
+          <string>Notches</string>
+         </property>
+         <property name="buddy">
+          <cstring>dialNotchesColorBtn</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="3">
+        <widget class="ColorSelectButton" name="dialNotchesColorBtn"/>
+       </item>
+       <item row="8" column="0" colspan="4">
+        <widget class="Line" name="line_8">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="0" colspan="4">
+        <widget class="QLabel" name="label_8">
+         <property name="font">
+          <font>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Sliders</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="10" column="0" colspan="2">
+        <widget class="QCheckBox" name="linkSlidersToDialsChk">
+         <property name="text">
+          <string>Use dial range colors for slider</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="10" column="2">
+        <widget class="QLabel" name="sliderBgdLabel">
+         <property name="text">
+          <string>Background</string>
+         </property>
+         <property name="buddy">
+          <cstring>sliderBgdColorBtn</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="10" column="3">
+        <widget class="ColorSelectButton" name="sliderBgdColorBtn"/>
+       </item>
+       <item row="11" column="0">
+        <widget class="QLabel" name="sliderStartLabel">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Slider &amp;start</string>
+         </property>
+         <property name="buddy">
+          <cstring>sliderStartColorBtn</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="11" column="1">
+        <widget class="ColorSelectButton" name="sliderStartColorBtn">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="11" column="2">
+        <widget class="QLabel" name="sliderEndLabel">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Slider &amp;end</string>
+         </property>
+         <property name="buddy">
+          <cstring>sliderEndColorBtn</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="11" column="3">
+        <widget class="ColorSelectButton" name="sliderEndColorBtn">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="12" column="0">
+        <spacer name="verticalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>109</width>
+           <height>3</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+   <item row="2" column="1" rowspan="2">
+    <widget class="Line" name="line_2">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="2">
+    <widget class="QPushButton" name="animateBtn">
+     <property name="text">
+      <string>Animate widgets</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="2">
+    <widget class="QWidget" name="previewWidget" native="true">
+     <property name="autoFillBackground">
+      <bool>true</bool>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <property name="margin">
+       <number>6</number>
+      </property>
+      <item>
+       <widget class="Frame" name="frame">
+        <property name="label" stdset="0">
+         <string>Frame</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_3">
+         <item row="1" column="0" colspan="2">
+          <widget class="Dial" name="dial2Normal">
+           <property name="label" stdset="0">
+            <string>Full dial</string>
+           </property>
+           <property name="minimumWidgetSize" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="SquareButton" name="button_2">
+           <property name="label" stdset="0">
+            <string>Button</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0" colspan="2">
+          <widget class="Dial" name="dial1Normal">
+           <property name="label" stdset="0">
+            <string>Dial (step 8)</string>
+           </property>
+           <property name="minimumWidgetSize" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+           <property name="maximum" stdset="0">
+            <number>128</number>
+           </property>
+           <property name="step" stdset="0">
+            <number>8</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0" colspan="2">
+          <widget class="Dial" name="dial3Normal">
+           <property name="label" stdset="0">
+            <string>Center dial</string>
+           </property>
+           <property name="minimumWidgetSize" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+           <property name="rangeZeroAngle" stdset="0">
+            <number>150</number>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0">
+          <widget class="SquareButton" name="switchableBtnEnabled">
+           <property name="label" stdset="0">
+            <string>Switchable</string>
+           </property>
+           <property name="switchable" stdset="0">
+            <bool>true</bool>
+           </property>
+           <property name="switched" stdset="0">
+            <bool>true</bool>
+           </property>
+           <property name="insideText" stdset="0">
+            <string>On</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="SquareButton" name="pressedBtnEnabled">
+           <property name="label" stdset="0">
+            <string>Pressed button</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <widget class="Combo" name="combo">
+           <property name="label" stdset="0">
+            <string/>
+           </property>
+           <property name="valueList" stdset="0">
+            <stringlist>
+             <string>Combo box</string>
+             <string>Item 1</string>
+             <string>Item 2</string>
+             <string>Disabled item</string>
+            </stringlist>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1" rowspan="4">
+          <widget class="Slider" name="sliderEnabled">
+           <property name="minimumWidgetSize" stdset="0">
+            <size>
+             <width>16</width>
+             <height>96</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="Frame" name="frame_2">
+        <property name="label" stdset="0">
+         <string>Disabled frame</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_2">
+         <item row="5" column="0">
+          <widget class="SquareButton" name="switchableBtnDisabled">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="label" stdset="0">
+            <string>Switchable</string>
+           </property>
+           <property name="switchable" stdset="0">
+            <bool>true</bool>
+           </property>
+           <property name="switched" stdset="0">
+            <bool>true</bool>
+           </property>
+           <property name="insideText" stdset="0">
+            <string>On</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="SquareButton" name="button_4">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="label" stdset="0">
+            <string>Button</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0" colspan="2">
+          <widget class="Dial" name="dial3Disabled">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="label" stdset="0">
+            <string>Center dial</string>
+           </property>
+           <property name="minimumWidgetSize" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+           <property name="rangeZeroAngle" stdset="0">
+            <number>150</number>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0" colspan="2">
+          <widget class="Dial" name="dial2Disabled">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="label" stdset="0">
+            <string>Full dial</string>
+           </property>
+           <property name="minimumWidgetSize" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0" colspan="2">
+          <widget class="Dial" name="dial1Disabled">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="label" stdset="0">
+            <string>Dial (step 8)</string>
+           </property>
+           <property name="minimumWidgetSize" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+           <property name="maximum" stdset="0">
+            <number>128</number>
+           </property>
+           <property name="step" stdset="0">
+            <number>8</number>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="SquareButton" name="pressedBtnDisabled">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="label" stdset="0">
+            <string>Pressed button</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <widget class="Combo" name="combo_2">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="label" stdset="0">
+            <string/>
+           </property>
+           <property name="valueList" stdset="0">
+            <stringlist>
+             <string>Some item</string>
+            </stringlist>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1" rowspan="4">
+          <widget class="Slider" name="sliderDisabled">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="minimumWidgetSize" stdset="0">
+            <size>
+             <width>16</width>
+             <height>96</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ColorSelectButton</class>
+   <extends>QPushButton</extends>
+   <header>colorselectbutton</header>
+  </customwidget>
+  <customwidget>
+   <class>Combo</class>
+   <extends>QWidget</extends>
+   <header>combo</header>
+  </customwidget>
+  <customwidget>
+   <class>Dial</class>
+   <extends>QWidget</extends>
+   <header>dial</header>
+  </customwidget>
+  <customwidget>
+   <class>Frame</class>
+   <extends>QFrame</extends>
+   <header>frame</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>Slider</class>
+   <extends>QWidget</extends>
+   <header>slider</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>SquareButton</class>
+   <extends>QWidget</extends>
+   <header>squarebutton</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>linkDialColorsChk</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>dialStartBtn</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>95</x>
+     <y>225</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>168</x>
+     <y>224</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>linkSlidersToDialsChk</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>sliderStartColorBtn</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>166</x>
+     <y>370</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>170</x>
+     <y>404</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>linkSlidersToDialsChk</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>sliderEndColorBtn</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>244</x>
+     <y>370</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>445</x>
+     <y>406</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>dial1Normal</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>dial1Disabled</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>610</x>
+     <y>138</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>731</x>
+     <y>138</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>dial2Normal</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>dial2Disabled</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>631</x>
+     <y>204</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>710</x>
+     <y>204</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>dial3Normal</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>dial3Disabled</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>610</x>
+     <y>259</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>726</x>
+     <y>262</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>sliderEnabled</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>sliderDisabled</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>658</x>
+     <y>377</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>786</x>
+     <y>377</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>switchableBtnEnabled</sender>
+   <signal>switchToggled(bool)</signal>
+   <receiver>switchableBtnDisabled</receiver>
+   <slot>setSwitched(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>605</x>
+     <y>387</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>738</x>
+     <y>390</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

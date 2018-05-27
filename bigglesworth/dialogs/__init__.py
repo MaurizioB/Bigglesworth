@@ -1,16 +1,15 @@
-# -*- coding: utf-8 -*-
-
-from bigglesworth.dialogs.printer import *
-from bigglesworth.dialogs.midi import *
-from bigglesworth.dialogs.dumpwin import *
-from bigglesworth.dialogs.globals import *
-from bigglesworth.dialogs.settings import *
-from bigglesworth.dialogs.about import *
-from bigglesworth.dialogs.sounddump import *
-from bigglesworth.dialogs.loading import *
-from bigglesworth.dialogs.summary import *
-from bigglesworth.dialogs.midi_import import *
-from bigglesworth.dialogs.file_open import *
-from bigglesworth.dialogs.wave_import import *
-from bigglesworth.dialogs.wavetable_list import *
-from bigglesworth.dialogs.update import *
+from bigglesworth.dialogs.wizard import FirstRunWizard, AutoconnectPage
+from bigglesworth.dialogs.themeeditor import ThemeEditor
+from bigglesworth.dialogs.templatemanager import TemplateManager
+from bigglesworth.dialogs.soundtagsedit import SoundTagsEditDialog, MultiSoundTagsEditDialog
+from bigglesworth.dialogs.newcollection import NewCollectionDialog
+from bigglesworth.dialogs.managecollections import ManageCollectionsDialog
+from bigglesworth.dialogs.tags import TagsDialog, TagsTableView
+from bigglesworth.dialogs.messageboxes import (DeleteSoundsMessageBox, DropDuplicatesMessageBox, 
+    DatabaseCorruptionMessageBox, WarningMessageBox, InputMessageBox, LocationRequestDialog)
+from bigglesworth.dialogs.about import AboutDialog
+from bigglesworth.dialogs.random import RandomDialog
+from bigglesworth.dialogs.globals import GlobalsWaiter, GlobalsDialog
+from bigglesworth.dialogs.settings import SettingsDialog
+from bigglesworth.dialogs.dump import DumpReceiveDialog, DumpSendDialog, SmallDumper
+from bigglesworth.dialogs.savesoundas import SaveSoundAs
