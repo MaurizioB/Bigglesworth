@@ -1,4 +1,4 @@
-import os
+import os, sys
 from time import sleep
 
 from Qt import QtCore
@@ -7,7 +7,7 @@ from bigglesworth.utils import Enum
 from bigglesworth.midiutils import Graph, MidiEvent
 
 Alsa, RtMidi = Enum(2)
-if os.environ.has_key('MIDI_BACKEND') and os.environ['MIDI_BACKEND'] == 'RTMIDI':
+if not 'linux' in sys.platform or (os.environ.has_key('MIDI_BACKEND') and os.environ['MIDI_BACKEND'] == 'RTMIDI'):
     import rtmidi
     midiBackend = RtMidi
 else:
@@ -222,7 +222,7 @@ class MidiDevice(QtCore.QObject):
     stopped = QtCore.pyqtSignal()
     midi_event = QtCore.pyqtSignal(object)
 
-    def __init__(self, main, mode=Alsa):
+    def __init__(self, main, mode=midiBackend):
         QtCore.QObject.__init__(self)
         self.main = main
         self.mode = mode

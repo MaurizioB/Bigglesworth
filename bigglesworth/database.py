@@ -44,6 +44,8 @@ class BlofeldDB(QtCore.QObject):
 
     def __init__(self, main):
         QtCore.QObject.__init__(self)
+#        self.sql = QtSql.QSqlDatabase.addDatabase('QSQLITE')
+        print('Available SQL drivers for PyQt4:', QtSql.QSqlDatabase.drivers())
         self.sql = QtSql.QSqlDatabase.addDatabase('QSQLITE')
 #        self.lock = Lock()
         self.main = main
@@ -271,6 +273,7 @@ class BlofeldDB(QtCore.QObject):
             soundsPost += ':{}, '.format(p)
         soundsPrepare = soundsPre + 'uid) ' + soundsPost + ':uid)'
         for preset in factoryPresets:
+            print('preparing preset "{}"'.format(preset))
             _pattern = midifile.read_midifile(localPath('presets/{}.mid'.format(preset)))
             _track = _pattern[0]
             for i, event in enumerate(_track):

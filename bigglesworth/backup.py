@@ -1,4 +1,4 @@
-import sys, ctypes
+import os, sys, ctypes
 from Queue import Queue
 from ctypes.util import find_library
 
@@ -14,7 +14,19 @@ SQLITE_OPEN_READONLY = 1
 SQLITE_OPEN_READWRITE = 2
 SQLITE_OPEN_CREATE = 4
 
-sqlite = ctypes.CDLL(find_library('sqlite3'))
+if sys.platform == 'win32':
+#    print(sys.path)
+    for p in sys.path:
+        try:
+            sqlite = ctypes.WinDLL(os.path.join(p, 'sqlite3.dll'))
+            break
+        except:
+            pass
+    else:
+        raise('sqlite not found?!')
+else:
+    sqlite = ctypes.CDLL(find_library('sqlite3'))
+
 sqlite.sqlite3_backup_init.restype = ctypes.c_void_p
 
 srcDbPointer = ctypes.c_void_p(None)

@@ -950,6 +950,7 @@ class Client(QtCore.QObject):
     def __repr__(self):
         return 'Client "{}" ({})'.format(self.name, self.id)
 
+RTMIDI = 1
 
 class Graph(QtCore.QObject):
     graph_changed = QtCore.pyqtSignal()

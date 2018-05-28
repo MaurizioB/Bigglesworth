@@ -3,6 +3,7 @@
 from __future__ import print_function
 import os, sys
 from string import uppercase
+sys.path.append(os.path.join(os.path.dirname(__file__), 'bigglesworth/editorWidgets'))
 os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
 
 from Qt import QtCore, QtGui, QtWidgets
@@ -553,14 +554,11 @@ class Bigglesworth(QtWidgets.QApplication):
             if res:
                 pass
 #                self.settings.setValue('FirstRunShown', True)
-            self.mainWindow.show()
-            from bigglesworth.firstrun import FirstRunObject
-            self.firstRunObject = FirstRunObject(self)
-            self.firstRunObject.completed.connect(lambda completed: self.settings.setValue('FirstRunShown', completed))
-#            self.mainWindow.installEventFilter(self.firstRunObject)
-#            self.mainWindow.leftTabWidget.installEventFilter(self.firstRunObject)
-#            self.mainWindow.leftTabWidget.tabBar().installEventFilter(self.firstRunObject)
-            return
+                self.mainWindow.show()
+                from bigglesworth.firstrun import FirstRunObject
+                self.firstRunObject = FirstRunObject(self)
+                self.firstRunObject.completed.connect(lambda completed: self.settings.setValue('FirstRunShown', completed))
+                return
         if self.argparse.editor is not None:
             if self.argparse.librarian:
                 self.mainWindow.show()
