@@ -3,6 +3,8 @@
 
 import sys, os
 #sys.path.append(os.path.join(os.path.dirname(__file__), 'bigglesworth/editorWidgets'))
+sys.path.append('./bigglesworth/editorWidgets')
+#print(sys.path)
 
 import argparse
 

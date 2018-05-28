@@ -95,7 +95,10 @@
     <property name="title">
      <string>&amp;?</string>
     </property>
+    <addaction name="updatesAction"/>
+    <addaction name="separator"/>
     <addaction name="aboutAction"/>
+    <addaction name="aboutQtAction"/>
    </widget>
    <widget class="QMenu" name="menuWindows">
     <property name="title">
@@ -156,7 +159,7 @@
   </action>
   <action name="aboutAction">
    <property name="text">
-    <string>About Bigglesworth...</string>
+    <string>About &amp;Bigglesworth...</string>
    </property>
   </action>
   <action name="showEditorAction">
@@ -185,6 +188,19 @@
   <action name="showGlobalsAction">
    <property name="text">
     <string>Blofeld &amp;device</string>
+   </property>
+  </action>
+  <action name="aboutQtAction">
+   <property name="text">
+    <string>About &amp;Qt...</string>
+   </property>
+  </action>
+  <action name="updatesAction">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Check for updates...</string>
    </property>
   </action>
  </widget>

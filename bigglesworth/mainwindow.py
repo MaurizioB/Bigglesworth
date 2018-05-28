@@ -90,6 +90,7 @@ class MainWindow(QtWidgets.QMainWindow):
 #        self.openCollectionAction.triggered.connect(self.openCollection)
 
         self.aboutAction.triggered.connect(AboutDialog(self).exec_)
+        self.aboutQtAction.triggered.connect(lambda: QtWidgets.QMessageBox.aboutQt(self, 'About Qt...'))
 
     def createOpenCollectionActions(self):
         self.openCollectionMenu.clear()

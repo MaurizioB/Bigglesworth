@@ -237,6 +237,9 @@ class FirstRunWizard(QtWidgets.QWizard):
         self.midiPage.isComplete = lambda: True if self.main.connections[0] else False
         self.shown = False
         self.found = False
+        self.button(self.CancelButton).clicked.disconnect()
+        self.button(self.CancelButton).clicked.connect(self.cancelRequest)
+
 #        self.autoconnectPage.midiEvent.connect(self.midiEvent)
 
     def autoDetectRestart(self):
@@ -314,6 +317,27 @@ class FirstRunWizard(QtWidgets.QWizard):
 #                self.accept()
 #                return False
         return True
+
+    def cancelRequest(self):
+        res = QtWidgets.QMessageBox.question(self, 'Close first-run wizard', 
+            'Do you want to show this wizard on the next startup?', 
+            QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No|QtWidgets.QMessageBox.Cancel)
+        if res == QtWidgets.QMessageBox.Cancel:
+            return
+        elif res == QtWidgets.QMessageBox.No:
+            self.main.settings.setValue('FirstRunShown', True)
+        self.reject()
+
+    def closeEvent(self, event):
+        res = QtWidgets.QMessageBox.question(self, 'Close first-run wizard', 
+            'Do you want to show this wizard on the next startup?', 
+            QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No|QtWidgets.QMessageBox.Cancel)
+        if res == QtWidgets.QMessageBox.Cancel:
+            event.ignore()
+            return
+        elif res == QtWidgets.QMessageBox.No:
+            self.main.settings.setValue('FirstRunShown', True)
+        event.accept()
 
     def exec_(self):
         return QtWidgets.QWizard.exec_(self)
