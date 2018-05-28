@@ -1,6 +1,9 @@
 #!/usr/bin/env python2.7
 # -*- coding: utf-8 -*-
 
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), 'bigglesworth/editorWidgets'))
+
 import argparse
 
 def process_args():
