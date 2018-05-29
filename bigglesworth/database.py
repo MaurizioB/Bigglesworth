@@ -276,7 +276,7 @@ class BlofeldDB(QtCore.QObject):
             fake = 'INSERT INTO fake_reference (id) VALUES'
             for f in range(1024):
                 fake += '({}),'.format(f)
-            if not self.query.exec_(fake[:-1] + ';'):
+            if not self.query.exec_(fake[:-1]):
                 self.dbErrorLog('unknown error for fake_reference')
 
         if createBit:
