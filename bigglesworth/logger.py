@@ -14,10 +14,6 @@ class Logger(QtCore.QObject):
 
     def append(self, logLevel, message, extMessage=''):
         elapsed = self.timer.elapsed()
-        if extMessage is None:
-            extMessage = ''
-        elif isinstance(extMessage, (tuple, list)):
-            extMessage = ', '.join(str(m) for m in extMessage)
         self.log.append((elapsed, logLevel, message, extMessage))
         self.updated.emit(elapsed, logLevel, message, extMessage)
 

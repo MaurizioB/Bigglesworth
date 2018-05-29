@@ -128,6 +128,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.themes = ThemeCollection(self)
 
         self.mainWindow = MainWindow(self)
+        self.mainWindow.closed.connect(self.checkClose)
         self.mainWindow.quitAction.triggered.connect(self.quit)
         self.mainWindow.showSettingsAction.triggered.connect(self.showSettings)
         self.mainWindow.showGlobalsAction.triggered.connect(self.showGlobals)
@@ -140,6 +141,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.mainWindow.dumpFromRequested.connect(self.dumpFrom)
 
         self.editorWindow = EditorWindow(self)
+        self.editorWindow.closed.connect(self.checkClose)
         self.editorWindow.openLibrarianRequested.connect(lambda: [self.mainWindow.show(), self.mainWindow.activateWindow()])
         self.editorWindow.midiEvent.connect(self.sendMidiEvent)
         self.editorWindow.midiConnect.connect(self.midiConnect)
@@ -611,6 +613,11 @@ class Bigglesworth(QtWidgets.QApplication):
 
     def quit(self):
         QtWidgets.QApplication.quit()
+
+    def checkClose(self):
+        if not (self.mainWindow.isVisible() and self.editorWindow.isVisible()) and \
+            self.loggerWindow.isVisible():
+                self.loggerWindow.close()
 
     def exec_(self):
         #TODO: fix, maybe with some polished signal from the splash?

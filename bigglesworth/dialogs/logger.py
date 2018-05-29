@@ -75,6 +75,8 @@ class LogWindow(QtWidgets.QDialog):
         self.relativeChk.toggled.connect(self.setRelative)
         self.reloadBtn.clicked.connect(self.loadFull)
         self.clearBtn.clicked.connect(self.clear)
+        self.saveBtn.clicked.connect(self.save)
+
         self.logView.horizontalHeader().setResizeMode(0, QtWidgets.QHeaderView.Fixed)
         self.logView.horizontalHeader().setResizeMode(1, QtWidgets.QHeaderView.Fixed)
         self.logView.horizontalHeader().setResizeMode(2, QtWidgets.QHeaderView.Interactive)
@@ -105,7 +107,11 @@ class LogWindow(QtWidgets.QDialog):
         logLevelItem.setData(logLevel, QtCore.Qt.DisplayRole)
         logLevelItem.setData(logIcons[logLevel], QtCore.Qt.DecorationRole)
         logLevelItem.setData(logLevels[logLevel], QtCore.Qt.ToolTipRole)
-#        logLevelItem.setData(QtCore.Qt.AlignCenter, QtCore.Qt.TextAlignmentRole)
+        if extMessage is None:
+            extMessage = ''
+        elif isinstance(extMessage, (tuple, list)):
+            extMessage = ', '.join(str(m) for m in extMessage)
+
         self.model.appendRow([timeItem, logLevelItem, QtGui.QStandardItem(message), QtGui.QStandardItem(extMessage)])
 
     def append(self, *data):
@@ -117,6 +123,7 @@ class LogWindow(QtWidgets.QDialog):
 #        self.model.appendRow([timeItem, logLevelItem, QtGui.QStandardItem(message), QtGui.QStandardItem(extMessage)])
         self.logView.resizeRowsToContents()
         self.logView.resizeColumnsToContents()
+        QtWidgets.QApplication.processEvents()
 
     def clear(self):
         self.model.clear()
@@ -128,6 +135,20 @@ class LogWindow(QtWidgets.QDialog):
             self.appendRow(*data)
         self.logView.resizeRowsToContents()
         self.logView.resizeColumnsToContents()
+
+    def save(self):
+        res = QtWidgets.QFileDialog.getSaveFileName(self, 'Export log', 
+            QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.DocumentsLocation),
+            'Log files (*.log)')
+        if res:
+            with open(res, 'w') as logFile:
+                for timestamp, logLevel, message, extMessage in self.logger.log:
+                    logFile.write('{t} [{l}]: {m}{e}\n'.format(
+                        t=int(timestamp), 
+                        l=logLevels[logLevel].upper(), 
+                        m=message, 
+                        e=' ({})'.format(extMessage) if extMessage else ''
+                        ))
 
     def closeEvent(self, event):
         self.logger.updated.disconnect(self.append)

@@ -1,5 +1,6 @@
 # *-* encoding: utf-8 *-*
 
+import sys
 import string
 import uuid
 import json
@@ -232,7 +233,7 @@ class BlofeldDB(QtCore.QObject):
             while self.query.next():
                 columns.append(self.query.value(1).lower())
             if columns[:len(referenceColumns)] != referenceColumns:
-                self.logger.append(LogCritical, 'Reference table column mismatch')
+                self.logger.append(LogCritical, 'Reference table column mismatch', extMessage=columns)
                 self.lastError = self.TableFormatError
                 return False
 
@@ -273,11 +274,21 @@ class BlofeldDB(QtCore.QObject):
         if not self.query.next():
             self.logger.append(LogDebug, 'Creating empty-reference table')
             self.query.exec_('CREATE TABLE fake_reference (id int primary key)')
-            fake = 'INSERT INTO fake_reference (id) VALUES'
-            for f in range(1024):
-                fake += '({}),'.format(f)
-            if not self.query.exec_(fake[:-1]):
-                self.dbErrorLog('unknown error for fake_reference')
+            if 'linux' in sys.platform:
+                fake = 'INSERT INTO fake_reference (id) VALUES'
+                for f in range(1024):
+                    fake += '({}),'.format(f)
+                if not self.query.exec_(fake[:-1] + ';'):
+                    self.dbErrorLog('unknown error for fake_reference')
+            else:
+                self.sql.transaction()
+                for f in range(1024):
+                    if not self.query.exec_('INSERT INTO fake_reference (id) VALUES ({})'.format(f)):
+                        self.dbErrorLog('unknown error for fake_reference')
+                        self.sql.rollback()
+                        break
+                else:
+                    self.sql.commit()
 
         if createBit:
             self.logger.append(LogCritical, 'Unknown error creating reference', 'createBit: {}'.format(createBit))

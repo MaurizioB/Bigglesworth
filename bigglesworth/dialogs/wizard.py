@@ -24,6 +24,7 @@ class AutoconnectPage(QtWidgets.QWizardPage):
         self.timer.timeout.connect(self.testNext)
         self.bloTesting = False
         self.shown = False
+        self.querying = False
         self.found.connect(self.checkFound)
 
     def showEvent(self, event):
@@ -83,6 +84,7 @@ class AutoconnectPage(QtWidgets.QWizardPage):
 #        self.waiter.hide()
 
     def startDetection(self, already=True):
+        self.querying = True
         self.log('Starting detection', True, True)
         inConn, outConn = self.main.connections
         if already and all((inConn, outConn)):
@@ -131,6 +133,7 @@ class AutoconnectPage(QtWidgets.QWizardPage):
         QtCore.QTimer.singleShot(500, self.query)
 
     def checkFound(self, found, src, dest):
+        self.querying = False
         self.waiter.active = False
         self.waiter.hide()
         self.foundLbl.show()
@@ -180,7 +183,7 @@ class AutoconnectPage(QtWidgets.QWizardPage):
         self.startDetection(already=False)
 
     def testNext(self):
-        if not self.timer.isActive():
+        if not self.querying:
             return
         self.log('&nbsp;No response', True)
         if self.bloTesting:
@@ -220,6 +223,7 @@ class FirstRunWizard(QtWidgets.QWizard):
     def __init__(self, main):
         QtWidgets.QWizard.__init__(self)
         loadUi(localPath('ui/wizard.ui'), self)
+        self.setModal(False)
         self.main = main
         self.midiConnectionsWidget.setMain(main)
         self.autoconnectPage.main = main
@@ -327,6 +331,12 @@ class FirstRunWizard(QtWidgets.QWizard):
         elif res == QtWidgets.QMessageBox.No:
             self.main.settings.setValue('FirstRunShown', True)
         self.reject()
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Escape:
+            self.cancelRequest()
+        else:
+            QtWidgets.QWizard.keyPressEvent(self, event)
 
     def closeEvent(self, event):
         res = QtWidgets.QMessageBox.question(self, 'Close first-run wizard', 

@@ -10,6 +10,7 @@ from bigglesworth.widgets import LibraryWidget, CollectionWidget
 from bigglesworth.dialogs import NewCollectionDialog, ManageCollectionsDialog, TagsDialog, AboutDialog
 
 class MainWindow(QtWidgets.QMainWindow):
+    closed = QtCore.pyqtSignal()
     soundEditRequested = QtCore.pyqtSignal(str, str)
     #blofeld index/buffer, collection, index, multi
     dumpFromRequested = QtCore.pyqtSignal(object, object, int, bool)
@@ -226,4 +227,5 @@ class MainWindow(QtWidgets.QMainWindow):
         self.main.settings.setValue('sessionLayoutLeft', self.leftTabWidget.collections)
         self.main.settings.setValue('sessionLayoutRight', self.rightTabWidget.collections)
         QtWidgets.QMainWindow.closeEvent(self, event)
+        self.closed.emit()
 

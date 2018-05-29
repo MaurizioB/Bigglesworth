@@ -398,6 +398,7 @@ class NameEditMask(QtWidgets.QGraphicsView):
 class EditorWindow(QtWidgets.QMainWindow):
     Clean, Saved, Modified = Enum(3)
 
+    closed = QtCore.pyqtSignal()
     openLibrarianRequested = QtCore.pyqtSignal()
     midiEvent = QtCore.pyqtSignal(object)
     midiConnect = QtCore.pyqtSignal(object, int, bool)
@@ -1264,6 +1265,10 @@ class EditorWindow(QtWidgets.QMainWindow):
                     setattr(self.parameters, child.attr, randrange(child.range.minimum, child.range.maximum + 1, child.range.step))
             else:
                 setattr(self.parameters, param.attr, randrange(param.range.minimum, param.range.maximum + 1, param.range.step))
+
+    def closeEvent(self, event):
+        QtWidgets.QMainWindow.closeEvent(self, event)
+        self.closed.emit()
 
     def changeEvent(self, event):
         if event.type() == QtCore.QEvent.PaletteChange:
