@@ -13,13 +13,14 @@ QtCore.pyqtProperty = QtCore.Property
 from PyQt4.QtGui import QIdentityProxyModel as _QIdentityProxyModel
 QtCore.QIdentityProxyModel = _QIdentityProxyModel
 
+from bigglesworth.logger import Logger
 from bigglesworth.editor import EditorWindow
 from bigglesworth.database import BlofeldDB
 from bigglesworth.widgets import SplashScreen
 from bigglesworth.mainwindow import MainWindow
 from bigglesworth.themes import ThemeCollection
 from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, GlobalsDialog, 
-    DumpReceiveDialog, DumpSendDialog, WarningMessageBox, SmallDumper, FirstRunWizard)
+    DumpReceiveDialog, DumpSendDialog, WarningMessageBox, SmallDumper, FirstRunWizard, LogWindow)
 from bigglesworth.utils import localPath
 from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR
 from bigglesworth.midiutils import SYSEX, CTRL, SysExEvent
@@ -59,6 +60,10 @@ class Bigglesworth(QtWidgets.QApplication):
         self.splash.start()
 
     def startUp(self):
+        self.logger = Logger(self)
+        self.loggerWindow = LogWindow(self)
+        if self.argparse.log:
+            self.loggerWindow.show()
         self.splash.showMessage('Loading database engine', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .2)
 
         self.database = BlofeldDB(self)

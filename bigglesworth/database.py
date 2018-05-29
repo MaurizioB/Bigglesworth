@@ -12,7 +12,7 @@ QtCore.pyqtSignal = QtCore.Signal
 from bigglesworth.utils import Enum, localPath, getName, getSizeStr, elapsedFrom
 from bigglesworth.parameters import Parameters
 from bigglesworth.libs import midifile
-from bigglesworth.const import factoryPresets, NameColumn, chr2ord
+from bigglesworth.const import factoryPresets, NameColumn, chr2ord, LogInfo, LogWarning, LogCritical, LogFatal, LogDebug
 from bigglesworth.library import CollectionModel, LibraryModel
 from bigglesworth.backup import BackUp
 
@@ -45,10 +45,12 @@ class BlofeldDB(QtCore.QObject):
     def __init__(self, main):
         QtCore.QObject.__init__(self)
 #        self.sql = QtSql.QSqlDatabase.addDatabase('QSQLITE')
+        self.main = main
+        self.logger = main.logger
+        self.logger.append(LogInfo, 'Starting database engine')
         print('Available SQL drivers for PyQt4:', QtSql.QSqlDatabase.drivers())
         self.sql = QtSql.QSqlDatabase.addDatabase('QSQLITE')
 #        self.lock = Lock()
-        self.main = main
         self.lastError = None
         self.collections = {}
         self.backup = BackUp(self)
@@ -132,20 +134,40 @@ class BlofeldDB(QtCore.QObject):
             self._libraryModel = self.openCollection()
             return self._libraryModel
 
+    def dbErrorLog(self, message, logLevel=LogCritical, extMessage='', query=None):
+        print('Db error:', message)
+        if not query:
+            query = self.query
+        dbText = query.lastError().databaseText()
+        driverText = query.lastError().driverText()
+        print(dbText)
+        print(driverText)
+        text = '{}\n{}'.format(dbText, driverText)
+        if extMessage:
+            text = '{}\n{}'.format(extMessage, text)
+        self.logger.append(logLevel, message, text)
+
     def initialize(self, path):
+        self.logger.append(LogInfo, 'Loading database', path)
         self.path = path
         self.backup.setPath(path)
         if not QtCore.QFile.exists(path):
+            self.logger.append(LogDebug, 'Database does not exists, trying to create')
             fileInfo = QtCore.QFileInfo(path)
             if not QtCore.QFile.exists(fileInfo.absolutePath()) and not QtCore.QDir().mkdir(fileInfo.absolutePath()):
+                self.logger.append(LogFatal, 'Write error!!!', 'Cannot create db directory')
                 self.lastError = self.WriteError
                 return False
         elif not QtCore.QFileInfo(path).isWritable():
+            self.logger.append(LogCritical, 'Read only database')
             self.lastError = self.WriteError
             return False
 
         self.sql.setDatabaseName(self.path)
-        self.sql.open()
+        if self.sql.open():
+            self.logger.append(LogDebug, 'Database successfully opened')
+        else:
+            self.logger.append(LogFatal, 'Cannot open database!')
         self.sql.exec_('PRAGMA synchronous="NORMAL"')
         self.query = QtSql.QSqlQuery(self.sql)
 
@@ -168,6 +190,7 @@ class BlofeldDB(QtCore.QObject):
         return valid
 
     def checkTables(self, deepCheck=False):
+        self.logger.append(LogInfo, 'Checking tables')
         self.query.exec_('DROP TABLE IF EXISTS _oldreference')
         self.query.exec_('SELECT name FROM sqlite_master WHERE type="table"')
         tables = set()
@@ -175,13 +198,16 @@ class BlofeldDB(QtCore.QObject):
             tables.add(self.query.value(0))
         defaultSet = set(('sounds', 'reference', 'ascii', 'tags', 'fake_reference', 'templates'))
         if tables and (tables | defaultSet) ^ defaultSet:
+            self.logger.append(LogCritical, 'Database table mismatch', 'Missing tables or unknown tables found')
             self.lastError = self.DatabaseFormatError
             if not deepCheck:
                 return False
 
+        self.logger.append(LogDebug, 'Checking sounds table')
         self.query.exec_('PRAGMA table_info(sounds)')
         createBit = 0
         if not self.query.next():
+            self.logger.append(LogDebug, 'Creating sounds table')
             self.query.exec_('CREATE TABLE sounds ' + soundsDef)
             createBit |= self.SoundsEmpty
         else:
@@ -190,11 +216,14 @@ class BlofeldDB(QtCore.QObject):
             while self.query.next():
                 columns.append(self.query.value(1))
             if columns != soundsColumns:
+                self.logger.append(LogCritical, 'Sounds table column mismatch')
                 self.lastError = self.TableFormatError
                 return False
 
+        self.logger.append(LogDebug, 'Checking reference table')
         self.query.exec_('PRAGMA table_info(reference)')
         if not self.query.next():
+            self.logger.append(LogDebug, 'Creating reference table')
             self.query.exec_('CREATE TABLE reference ' + referenceDef)
             createBit |= self.ReferenceEmpty
         else:
@@ -203,15 +232,20 @@ class BlofeldDB(QtCore.QObject):
             while self.query.next():
                 columns.append(self.query.value(1).lower())
             if columns[:len(referenceColumns)] != referenceColumns:
+                self.logger.append(LogCritical, 'Reference table column mismatch')
                 self.lastError = self.TableFormatError
                 return False
 
+        self.logger.append(LogDebug, 'Checking templates table')
         self.query.exec_('PRAGMA table_info(templates)')
         if not self.query.next():
+            self.logger.append(LogDebug, 'Creating templates table')
             self.query.exec_('CREATE TABLE templates ' + templateDef)
 
+        self.logger.append(LogDebug, 'Checking ascii conversion table')
         self.query.exec_('PRAGMA table_info(ascii)')
         if not self.query.next() or not all((self.query.exec_('SELECT Count(rowid) from ascii'), self.query.first(), self.query.value(0))):
+            self.logger.append(LogDebug, 'Creating ascii conversion table')
             self.query.exec_('CREATE TABLE ascii (id int primary key, char varchar(1))')
             self.query.exec_('PRAGMA journal_mode=OFF')
             prepareStr = 'INSERT INTO ascii(id, char) VALUES(:id, :char)'
@@ -228,21 +262,25 @@ class BlofeldDB(QtCore.QObject):
             self.query.exec_(u'INSERT INTO ascii(id, char) VALUES(127, "°")')
             self.query.exec_('PRAGMA journal_mode=DELETE')
 
+        self.logger.append(LogDebug, 'Checking tags table')
         self.query.exec_('PRAGMA table_info(tags)')
         if not self.query.next():
+            self.logger.append(LogDebug, 'Creating tags table')
             self.query.exec_('CREATE TABLE tags (tag varchar primary key, bgColor int, fgColor int)')
 
+        self.logger.append(LogDebug, 'Checking empty-reference table')
         self.query.exec_('PRAGMA table_info(fake_reference)')
         if not self.query.next():
+            self.logger.append(LogDebug, 'Creating empty-reference table')
             self.query.exec_('CREATE TABLE fake_reference (id int primary key)')
             fake = 'INSERT INTO fake_reference (id) VALUES'
             for f in range(1024):
                 fake += '({}),'.format(f)
-            res = self.query.exec_(fake[:-1] + ';')
-            if not res:
-                print(self.query.lastError().databaseText())
+            if not self.query.exec_(fake[:-1] + ';'):
+                self.dbErrorLog('unknown error for fake_reference')
 
         if createBit:
+            self.logger.append(LogCritical, 'Unknown error creating reference', 'createBit: {}'.format(createBit))
             self.lastError = createBit
             return False
         else:
@@ -255,11 +293,14 @@ class BlofeldDB(QtCore.QObject):
             if self.query.value(0) < 1:
                 createBit |= self.ReferenceEmpty
             if createBit:
+                self.logger.append(LogCritical, 'Unknown error creating reference', 'createBit: {}'.format(createBit))
                 self.lastError = createBit
                 return False
+        self.logger.append(LogDebug, 'Reference/sounds completed')
         return True
 
     def initializeFactory(self, createBit):
+        self.logger.append(LogInfo, 'Filling factory presets')
         soundCreate = createBit & self.SoundsEmpty
         refCreate = createBit & self.ReferenceEmpty
         if soundCreate and not refCreate:
@@ -273,6 +314,7 @@ class BlofeldDB(QtCore.QObject):
             soundsPost += ':{}, '.format(p)
         soundsPrepare = soundsPre + 'uid) ' + soundsPost + ':uid)'
         for preset in factoryPresets:
+            self.logger.append(LogDebug, 'Preparing preset {}'.format(preset))
             print('preparing preset "{}"'.format(preset))
             _pattern = midifile.read_midifile(localPath('presets/{}.mid'.format(preset)))
             _track = _pattern[0]
@@ -284,25 +326,21 @@ class BlofeldDB(QtCore.QObject):
                         self.query.bindValue(':' + p.attr, p.range.sanitize(d))
                     uid = str(uuid.uuid4())
                     self.query.bindValue(':uid', uid)
-                    res = self.query.exec_()
-                    if not res:
-                        print(self.query.lastError().driverText())
-                        print(self.query.lastError().databaseText())
-                        print('break at', i)
+                    if not self.query.exec_():
+                        self.dbErrorLog('Sound cannot be added.', extMessage='break at {}'.format(i))
                         break
                     self.query.prepare('INSERT INTO reference(uid, tags, {}) VALUES(:uid, :tags, :location)'.format(preset))
                     self.query.bindValue(':uid', uid)
                     self.query.bindValue(':tags', json.dumps([]))
                     self.query.bindValue(':location', (data[0] << 7) + data[1])
-                    res = self.query.exec_()
-                    if not res:
-                        print(self.query.lastError().driverText())
-                        print(self.query.lastError().databaseText())
-                        print('break at', i)
+                    if not self.query.exec_():
+                        self.dbErrorLog('Sound cannot be referenced', extMessage='break at {}'.format(i))
                         break
 
                     if data[1] == 0:
-                        print('starting bank {}'.format(string.ascii_uppercase[data[0]]))
+                        bank = string.ascii_uppercase[data[0]]
+                        self.logger.append(LogDebug, 'starting bank ' + bank)
+                        print('starting bank ' + bank)
         self.query.exec_('PRAGMA journal_mode=DELETE')
 
     def getTemplatesByName(self, name=None):
@@ -311,7 +349,7 @@ class BlofeldDB(QtCore.QObject):
         if name:
             queryStr += ' WHERE name="{}"'.format(name)
         if not self.query.exec_(queryStr):
-            print(self.query.lastError().databaseText())
+            self.dbErrorLog('Error getting template', name)
             return templates
         while self.query.next():
             values = [self.query.value(v) for v in range(383)]
@@ -321,7 +359,7 @@ class BlofeldDB(QtCore.QObject):
     def getTemplatesByGroups(self, groups):
         templates = {}
         if not self.query.exec_('SELECT * FROM templates WHERE groups IS NOT NULL'):
-            print(self.query.lastError().databaseText())
+            self.dbErrorLog('Error getting template groups', groups)
             return templates
         while self.query.next():
             templateGroups = json.loads(self.query.value(384))
@@ -343,6 +381,7 @@ class BlofeldDB(QtCore.QObject):
 
     def getTemplateNames(self):
         if not self.query.exec_('SELECT name FROM templates'):
+            self.dbErrorLog('Error getting template names')
             print(self.query.lastError().databaseText())
             return []
         names = []
@@ -362,16 +401,13 @@ class BlofeldDB(QtCore.QObject):
         self.query.bindValue(':name', name)
         self.query.bindValue(':groups', json.dumps(groups))
         if not self.query.exec_():
-            print(self.query.lastError().driverText())
-            print(self.query.lastError().databaseText())
+            self.dbErrorLog('Error creating template', name)
             return False
         return True
 
     def updateTemplates(self, templates, deleted=None):
         if deleted and not self.query.exec_('DELETE FROM templates WHERE ' + ' OR '.join(['name="{}"'.format(d) for d in deleted])):
-            print('error deleting templates')
-            print(self.query.lastError().driverText())
-            print(self.query.lastError().databaseText())
+            self.dbErrorLog('Error deleting templates')
             return False
         tempPre = 'INSERT INTO templates('
         tempPost = 'VALUES('
@@ -395,9 +431,7 @@ class BlofeldDB(QtCore.QObject):
             self.query.bindValue(':name', name)
             self.query.bindValue(':groups', json.dumps(groups))
             if not self.query.exec_():
-                print('error deleting templates')
-                print(self.query.lastError().driverText())
-                print(self.query.lastError().databaseText())
+                self.dbErrorLog('Error deleting templates')
                 self.sql.rollback()
                 return False
         self.sql.commit()
@@ -424,9 +458,7 @@ class BlofeldDB(QtCore.QObject):
             uid = str(uuid.uuid4())
             self.query.bindValue(':uid', uid)
             if not self.query.exec_():
-                print('error importing sound to library')
-                print(self.query.lastError().driverText())
-                print(self.query.lastError().databaseText())
+                self.dbErrorLog('Error importing sound to library')
                 break
             self.query.prepare(refPrepare)
             if collection:
@@ -434,9 +466,7 @@ class BlofeldDB(QtCore.QObject):
             self.query.bindValue(':uid', uid)
             self.query.bindValue(':tags', noTags)
             if not self.query.exec_():
-                print('error adding imported sound to library/collection')
-                print(self.query.lastError().driverText())
-                print(self.query.lastError().databaseText())
+                self.dbErrorLog('Error adding imported sound to library/collection')
                 break
         else:
             self.sql.commit()
@@ -472,11 +502,8 @@ class BlofeldDB(QtCore.QObject):
         for p, d in zip(Parameters.parameterData, data):
             self.query.bindValue(':' + p.attr, p.range.sanitize(int(d)))
         self.query.bindValue(':uid', uid)
-        res = self.query.exec_()
-        if not res:
-            print('error importing sound to library')
-            print(self.query.lastError().driverText())
-            print(self.query.lastError().databaseText())
+        if not self.query.exec_():
+            self.dbErrorLog('Error importing sound to library', (collection, index, targetUid))
             return False
         print('targetUid', targetUid)
         if not isinstance(targetUid, (str, unicode)):
@@ -488,11 +515,8 @@ class BlofeldDB(QtCore.QObject):
                 self.query.prepare('INSERT INTO reference(uid, tags) VALUES(:uid, :tags)')
             self.query.bindValue(':uid', uid)
             self.query.bindValue(':tags', json.dumps([]))
-            res = self.query.exec_()
-            if not res:
-                print('error adding imported sound to collection')
-                print(self.query.lastError().driverText())
-                print(self.query.lastError().databaseText())
+            if not self.query.exec_():
+                self.dbErrorLog('Error adding imported sound to collection')
                 return False
             self.collections[collection].query().exec_()
             self.collections[collection].updated.emit()
@@ -508,7 +532,7 @@ class BlofeldDB(QtCore.QObject):
     def getSoundDataFromUid(self, uid):
 #        print(uid)
         if not self.query.exec_('SELECT {} FROM sounds WHERE uid = "{}"'.format(','.join(Parameters.parameterList), uid)):
-            print(self.query.lastError().databaseText())
+            self.dbErrorLog('Error getting sound data from uid', uid)
             return False
         self.query.first()
         if not isinstance(self.query.value(0), (int, long)):
@@ -517,7 +541,7 @@ class BlofeldDB(QtCore.QObject):
 
     def getIndexesForCollection(self, collection):
         if not self.query.exec_('SELECT "{}" FROM reference'.format(collection)):
-            print(self.query.lastError().databaseText())
+            self.dbErrorLog('Error getting indexes for collection', collection)
             return False
         indexes = []
         while self.query.next():
@@ -531,7 +555,7 @@ class BlofeldDB(QtCore.QObject):
     def getUidFromCollection(self, bank, prog, collection):
         index = (bank << 7) + prog
         if not self.query.exec_('SELECT uid FROM reference WHERE "{}" = {}'.format(collection, index)):
-            print(self.query.lastError().databaseText())
+            self.dbErrorLog('Error getting uid from collection', (bank, prog, collection))
             return False
         self.query.first()
         return self.query.value(0)
@@ -550,8 +574,8 @@ class BlofeldDB(QtCore.QObject):
             'JOIN ascii AS c14 ON sounds.nameChar14 = c14.id JOIN ascii AS c15 ON sounds.nameChar15 = c15.id ' \
             'WHERE sounds.uid = reference.uid AND reference.uid = "{}"'.format(uid))
         if not res:
-            print(self.query.lastError().databaseText())
-            return
+            self.dbErrorLog('Error getting name from uid', uid)
+            return ''
         self.query.next()
         return self.query.value(0)
 
@@ -618,9 +642,8 @@ class BlofeldDB(QtCore.QObject):
 #        return uidNameDict
 
     def getCollectionsFromUid(self, uid, ignorePresets=True):
-        res = self.query.exec_('SELECT * FROM reference WHERE uid == "{}"'.format(uid))
-        if not res:
-            print(self.query.lastError().databaseText())
+        if not self.query.exec_('SELECT * FROM reference WHERE uid == "{}"'.format(uid)):
+            self.dbErrorLog('Error getting collections for uid', (uid, ignorePresets))
             return False
         self.query.first()
         collections = []
@@ -647,7 +670,7 @@ class BlofeldDB(QtCore.QObject):
             ' JOIN ascii AS c15 ON sounds.nameChar15 = c15.id WHERE (sounds.uid = reference.uid) AND (' + \
             ' OR '.join('(reference.uid == "{}")'.format(uid) for uid in uidList) + ')')
         if not res:
-            print(self.query.lastError().databaseText())
+            self.dbErrorLog('Error getting names from list of uid', uidList)
             return
         nameList = []
         while self.query.next():
@@ -659,7 +682,7 @@ class BlofeldDB(QtCore.QObject):
             attr=Parameters.parameterData[paramId].attr, 
             value=int(value), 
             uid=uid)):
-                print(self.query.lastError().databaseText())
+                self.dbErrorLog('Error updating value for sound', (uid, paramId, value))
                 return False
         return True
 
@@ -669,7 +692,7 @@ class BlofeldDB(QtCore.QObject):
         for p, value in zip(_parameterList, parameters):
             self.query.bindValue(':{}'.format(p), int(value))
         if not self.query.exec_():
-            print(self.query.lastError().databaseText())
+            self.dbErrorLog('Error updating sound values', uid)
             return False
         return True
 
@@ -677,7 +700,7 @@ class BlofeldDB(QtCore.QObject):
         where = ' OR '.join('reference.uid = "{}"'.format(uid) for uid in uidList)
         res = self.query.exec_('SELECT reference.uid FROM reference WHERE reference.{} IS NOT NULL AND ({})'.format(collection, where))
         if not res:
-            print(self.query.lastError().databaseText())
+            self.dbErrorLog('Error checking for duplicates in collection', (uidList, collection))
         else:
             duplicates = []
             while self.query.next():
@@ -685,12 +708,12 @@ class BlofeldDB(QtCore.QObject):
             return duplicates
 
     def createCollection(self, name, source=None):
-        res = self.query.exec_(u'ALTER TABLE reference ADD COLUMN "{}" int'.format(name))
-        if not res:
+        if not self.query.exec_(u'ALTER TABLE reference ADD COLUMN "{}" int'.format(name)):
+            self.dbErrorLog('Error creating collection', (name))
             return False
         if source:
-            res = self.query.exec_(u'UPDATE reference SET "{}" = "{}"'.format(name, source))
-            if not res:
+            if not self.query.exec_(u'UPDATE reference SET "{}" = "{}"'.format(name, source)):
+                self.dbErrorLog('Error creating collection from source', name, source)
                 return False
         return True
 
@@ -729,9 +752,8 @@ class BlofeldDB(QtCore.QObject):
         self.query.prepare('SELECT {}, reference.tags FROM sounds,reference WHERE sounds.uid=:uid AND reference.uid=:uid2'.format(', '.join('sounds.' + p for p in _parameterList)))
         self.query.bindValue(':uid', uid)
         self.query.bindValue(':uid2', uid)
-        res = self.query.exec_()
-        if not res:
-            print(self.query.lastError().databaseText())
+        if not self.query.exec_():
+            self.dbErrorLog('Error duplicating sound', (uid, collection, target, rename))
             return False
         self.query.first()
         values = [self.query.value(i) for i in range(383)]
@@ -745,26 +767,23 @@ class BlofeldDB(QtCore.QObject):
             self.query.bindValue(p, value)
         newUid = str(uuid.uuid4())
         self.query.bindValue(':uid', newUid)
-        res = self.query.exec_()
-        if not res:
-            print(self.query.lastError().databaseText())
+        if not self.query.exec_():
+            self.dbErrorLog('Error inserting values for duplicate sound', (uid, collection, target, rename))
             return False
         if collection:
             self.query.prepare('INSERT INTO reference(uid, tags, "{}") VALUES(:uid, :tags, :target)'.format(collection))
             self.query.bindValue(':uid', newUid)
             self.query.bindValue(':tags', tags)
             self.query.bindValue(':target', target)
-            res = self.query.exec_()
-            if not res:
-                print(self.query.lastError().databaseText())
+            if not self.query.exec_():
+                self.dbErrorLog('Error adding reference to collection for duplicate sound', (uid, collection, target, rename))
                 return False
         else:
             self.query.prepare('INSERT INTO reference(uid, tags) VALUES(:uid, :tags)')
             self.query.bindValue(':uid', newUid)
             self.query.bindValue(':tags', tags)
-            res = self.query.exec_()
-            if not res:
-                print(self.query.lastError().databaseText())
+            if not self.query.exec_():
+                self.dbErrorLog('Error adding reference for duplicate sound', (uid, newUid))
                 return False
         self.libraryModel.setQuery()
         while self.libraryModel.canFetchMore():
@@ -780,9 +799,9 @@ class BlofeldDB(QtCore.QObject):
         for uid, target in uidMap:
             #preset sounds have to be duplicated before adding to collection
             if not self.query.exec_('SELECT blofeld_fact_200801,blofeld_fact_200802,blofeld_fact_201200 FROM reference WHERE uid = "{}"'.format(uid)):
-                    print(self.query.lastError().databaseText())
-                    self.sql.rollback()
-                    return False
+                self.dbErrorLog('Error adding sounds to collection', (uidMap, collection))
+                self.sql.rollback()
+                return False
             self.query.first()
             if isinstance(self.query.value(0), (int, long)) or \
                 isinstance(self.query.value(1), (int, long)) or \
@@ -793,7 +812,7 @@ class BlofeldDB(QtCore.QObject):
                 target, 
                 uid
                 )):
-                    print(self.query.lastError().databaseText())
+                    self.dbErrorLog('Error updating reference while adding sounds to collection', (uidMap, collection))
                     self.sql.rollback()
                     return False
         self.sql.commit()
@@ -803,9 +822,8 @@ class BlofeldDB(QtCore.QObject):
 
     def removeSounds(self, uidList, collection):
         where = ' OR '.join('uid = "{}"'.format(uid) for uid in uidList)
-        res = self.query.exec_('UPDATE reference SET "{}" = NULL WHERE {}'.format(collection, where))
-        if not res:
-            print(self.query.lastError().databaseText())
+        if not self.query.exec_('UPDATE reference SET "{}" = NULL WHERE {}'.format(collection, where)):
+            self.dbErrorLog('Error removing sound from collection', (uidList, collection))
             return False
         self.collections[collection].query().exec_()
         self.collections[collection].updated.emit()
@@ -815,9 +833,8 @@ class BlofeldDB(QtCore.QObject):
         where = ' OR '.join('uid = "{}"'.format(uid) for uid in uidList)
         collections = self.referenceModel.collections
         reference = set()
-        res = self.query.exec_('SELECT {} FROM reference WHERE {}'.format(', '.join('"{}"'.format(c) for c in collections), where))
-        if not res:
-            print(self.query.lastError().databaseText())
+        if not self.query.exec_('SELECT {} FROM reference WHERE {}'.format(', '.join('"{}"'.format(c) for c in collections), where)):
+            self.dbErrorLog('Error deleting sounds from main library', uidList)
             return False
         while self.query.next():
             for colId, collection in enumerate(collections):
@@ -826,12 +843,10 @@ class BlofeldDB(QtCore.QObject):
                     reference.add(collection)
                 except:
                     pass
-        res = self.query.exec_('DELETE FROM reference WHERE {}'.format(where))
-        if not res:
-            print(self.query.lastError().databaseText())
-        res = self.query.exec_('DELETE FROM sounds WHERE {}'.format(where))
-        if not res:
-            print(self.query.lastError().databaseText())
+        if not self.query.exec_('DELETE FROM reference WHERE {}'.format(where)):
+            self.dbErrorLog('Error deleting reference while deleting sound', uidList)
+        if not self.query.exec_('DELETE FROM sounds WHERE {}'.format(where)):
+            self.dbErrorLog('Error deleting sound data while deleting sound', uidList)
         for collection in reference:
             self.collections[collection].updated.emit()
         self.libraryModel.setQuery()
@@ -1045,6 +1060,8 @@ class BlofeldDB(QtCore.QObject):
             collection = LibraryModel(self)
         else:
             collection = CollectionModel(name)
+        if self.main.argparse.log:
+            collection.logger = self.logger
 #        collection.dataChanged.connect(self.collectionChanged)
         while collection.canFetchMore():
             collection.fetchMore()

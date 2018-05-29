@@ -4,6 +4,8 @@ from Qt import QtCore
 
 #from bigglesworth.version import __version__
 
+LogInfo, LogDebug, LogWarning, LogCritical, LogFatal = range(5)
+
 #library roles
 CatRole = QtCore.Qt.UserRole + 1
 LocationRole = CatRole + 1

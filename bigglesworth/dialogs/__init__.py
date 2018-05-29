@@ -1,3 +1,4 @@
+from bigglesworth.dialogs.logger import LogWindow
 from bigglesworth.dialogs.wizard import FirstRunWizard, AutoconnectPage
 from bigglesworth.dialogs.themeeditor import ThemeEditor
 from bigglesworth.dialogs.templatemanager import TemplateManager

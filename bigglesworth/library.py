@@ -6,7 +6,7 @@ from Qt import QtCore, QtWidgets, QtSql
 
 #from bigglesworth.widgets.librarytableview import LibraryTableView
 from bigglesworth.const import chr2ord, CatRole, HoverRole, TagsRole, \
-    UidColumn, LocationColumn, NameColumn, CatColumn, TagsColumn, headerLabels, factoryPresetsNames
+    UidColumn, LocationColumn, NameColumn, CatColumn, TagsColumn, headerLabels, factoryPresetsNames, LogCritical
 
 
 class BaseLibraryModel(QtSql.QSqlQueryModel):
@@ -25,6 +25,21 @@ class BaseLibraryModel(QtSql.QSqlQueryModel):
         self.updateQuery = QtSql.QSqlQuery()
         self.hoverDict = {}
         self.scheduledQueryUpdate = False
+        self.logger = None
+
+    def dbErrorLog(self, message, logLevel=LogCritical, extMessage='', query=None):
+        print('Db error:', message)
+        if not query:
+            query = self.query()
+        dbText = query.lastError().databaseText()
+        driverText = query.lastError().driverText()
+        print(dbText)
+        print(driverText)
+        if self.logger:
+            text = '{}\n{}'.format(dbText, driverText)
+            if extMessage:
+                text = '{}\n{}'.format(extMessage, text)
+            self.logger.append(logLevel, message, text)
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if role == HoverRole:
@@ -34,8 +49,10 @@ class BaseLibraryModel(QtSql.QSqlQueryModel):
     def setData(self, index, value, role):
         if role == CatRole:
             uid = index.sibling(index.row(), 0).data()
-            self.updateQuery.exec_('UPDATE sounds SET category = {} WHERE uid="{}"'.format(value, uid))
-            self.query().exec_()
+            if not self.updateQuery.exec_('UPDATE sounds SET category = {} WHERE uid="{}"'.format(value, uid)):
+                self.dbErrorLog('Error updating tags', (uid, value))
+            if not self.query().exec_():
+                self.dbErrorLog('Error setting category', (uid, value))
             self.updated.emit()
         elif role == HoverRole:
             self.hoverDict[index] = value
@@ -49,16 +66,20 @@ class BaseLibraryModel(QtSql.QSqlQueryModel):
             for i, l in enumerate(letters[1:], 1):
                 updateStr += ', nameChar{:02} = {}'.format(i, l)
             updateStr += ' WHERE uid = "{}"'.format(uid)
-            self.updateQuery.exec_(updateStr)
-            self.query().exec_()
+            if not self.updateQuery.exec_(updateStr):
+                self.dbErrorLog('Error updating tags', (uid, value))
+            if not self.query().exec_():
+                self.dbErrorLog('Error refreshing model', uid)
             self.updated.emit()
         elif role == TagsRole:
             uid = index.sibling(index.row(), 0).data()
             self.updateQuery.prepare('UPDATE reference SET tags = :tags WHERE uid = :uid')
             self.updateQuery.bindValue(':tags', value)
             self.updateQuery.bindValue(':uid', uid)
-            self.updateQuery.exec_()
-            self.query().exec_()
+            if not self.updateQuery.exec_():
+                self.dbErrorLog('Error updating tags', (uid, value))
+            if not self.query().exec_():
+                self.dbErrorLog('Error refreshing model', uid, value)
             self.updated.emit()
         return True
 
