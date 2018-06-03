@@ -77,9 +77,7 @@ class SoundsMenu(FactoryMenu):
 #            self.openLibrarianAction.setShortcut(QtGui.QKeySequence('Ctrl+Alt+L'))
             self.openLibrarianAction.triggered.connect(self.parent().window().openLibrarianRequested)
             self.insertAction(self.locationsMenu.menuAction(), self.openLibrarianAction)
-            sep = QtWidgets.QAction(self)
-            sep.setSeparator(True)
-            self.insertAction(self.locationsMenu.menuAction(), sep)
+            self.insertSeparator(self.locationsMenu.menuAction())
         if not self.done or self.lastShownTimer.hasExpired(10000):
             self.populate()
         self.done = True

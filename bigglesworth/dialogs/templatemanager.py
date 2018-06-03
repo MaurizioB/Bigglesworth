@@ -49,6 +49,7 @@ class TemplateValidator(QtGui.QValidator):
         self.name = name
 
     def validate(self, text, pos):
+        #TODO: check for case!!!
         if not text:
             return self.Intermediate, text, pos
         res, text, pos = self.baseValidator.validate(text, pos)

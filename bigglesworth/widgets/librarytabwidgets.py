@@ -8,8 +8,16 @@ Left, Right = 0, 1
 class BaseCornerBtn(QtWidgets.QToolButton):
     def __init__(self, *args, **kwargs):
         QtWidgets.QToolButton.__init__(self, *args, **kwargs)
-        self.setMaximumWidth(self.fontMetrics().height())
-        self.setMaximumHeight(self.maximumWidth())
+        size = self.fontMetrics().height()
+        self.setFixedSize(size, size)
+
+    def enterEvent(self, event):
+        self.update()
+        QtWidgets.QToolButton.enterEvent(self, event)
+
+    def leaveEvent(self, event):
+        self.update()
+        QtWidgets.QToolButton.leaveEvent(self, event)
 
     def paintBase(self, qp):
         qp.setRenderHints(qp.Antialiasing)
@@ -98,9 +106,17 @@ class TabCornerWidget(QtWidgets.QWidget):
         self.setLayout(layout)
         self.addBtn = QtWidgets.QToolButton()
         self.addBtn.setText('+')
+        size = max(self.fontMetrics().width('+'), self.fontMetrics().height())
+        self.addBtn.setMinimumHeight(size)
         layout.addWidget(self.addBtn, alignment=QtCore.Qt.AlignLeft)
         self.minimizeBtn = LeftCornerBtn() if direction == Left else RightCornerBtn()
         layout.addWidget(self.minimizeBtn)
+
+#    def minimumSizeHint(self):
+#        base = QtWidgets.QWidget.sizeHint(self)
+#        height = self.fontMetrics().width('+')
+#        base.setHeight(max(base.height(), 50))
+#        return base
 
 
 class LibraryTabBar(QtWidgets.QTabBar):
@@ -119,6 +135,7 @@ class BaseTabWidget(QtWidgets.QTabWidget):
     openCollection = QtCore.pyqtSignal(str)
     manageCollections = QtCore.pyqtSignal()
     tabMoveRequested = QtCore.pyqtSignal(int, object)
+    tabSwapRequested = QtCore.pyqtSignal()
     fullDumpCollectionToBlofeldRequested = QtCore.pyqtSignal(str, bool)
     fullDumpBlofeldToCollectionRequested = QtCore.pyqtSignal(str, bool)
 
@@ -154,7 +171,8 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         self.sideTabBar.removeTab(index)
         widget = self.widget(index)
         QtWidgets.QTabWidget.removeTab(self, index)
-        self.tabBar().tabButton(0, self.tabBar().RightSide).setVisible(False if self.count() == 1 else True)
+        if self.count():
+            self.tabBar().tabButton(0, self.tabBar().RightSide).setVisible(False if self.count() == 1 else True)
         if self.count() <= 1:
             self.setMovable(False)
         return widget
@@ -165,6 +183,8 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         closeAction = self.menu.addAction(QtGui.QIcon.fromTheme('window-close'), 'Close collection')
         closeAction.triggered.connect(lambda: self.tabCloseRequested.emit(index))
         side = 'right' if self.side == Left else 'left'
+        tabSwapAction = self.menu.addAction(QtGui.QIcon.fromTheme('document-swap'), 'Swap views')
+        tabSwapAction.triggered.connect(self.tabSwapRequested)
         moveTabAction = self.menu.addAction(QtGui.QIcon.fromTheme('arrow-{}'.format(side)), 'Move to {} panel'.format(side))
         moveTabAction.triggered.connect(lambda: self.tabMoveRequested.emit(index, self.siblingTabWidget))
         if self.count() <= 1:

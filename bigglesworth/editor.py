@@ -1,5 +1,6 @@
 # *-* coding: utf-8 *-*
 
+import sys
 from random import randrange
 from collections import namedtuple
 
@@ -609,8 +610,9 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.parameters.parameters('effect2Type').valueChanged.connect(self.efx2Widget.setCurrentIndex)
 
         self.keyOctaveCombo.currentIndexChanged.connect(self.setOctave)
-        logo = QtGui.QIcon(localPath('../resources/BlofeldLogo.svg')).pixmap(QtCore.QSize(140, 140))
-        self.blofeldLogo.setPixmap(logo)
+#        logo = QtGui.QIcon(':/images/bigglesworth_textonly_gray.svg').pixmap(QtCore.QSize(140, 140))
+        self.blofeldPixmap = QtGui.QPixmap(':/images/bigglesworth_textonly_gray.svg')
+        self.blofeldLogo.setPixmap(self.blofeldPixmap.scaledToWidth(140, QtCore.Qt.SmoothTransformation))
 
         self.midiInWidget.clicked.connect(self.showMidiMenu)
         self.midiInWidget.setProgState(self.main.progReceiveState)
@@ -665,6 +667,15 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.addActions(saveMenu.actions())
         self.saveBtn.setMenu(saveMenu)
 
+        #fix for faulty QStackedLayout on Windows (mac?)
+        if not 'linux' in sys.platform:
+            for stackedWidget in (self.arpEfxStackedWidget, self.efx1Widget, self.efx2Widget):
+                if not stackedWidget.layout().count():
+                    for child in stackedWidget.children():
+                        if isinstance(child, QtWidgets.QWidget):
+                            stackedWidget.addWidget(child)
+
+
 
 #    def keyPressEvent(self, event):
 #        print(QtWidgets.QApplication.focusWidget())
@@ -708,9 +719,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         direction = MidiOut if self.sender() == self.midiOutWidget else MidiIn
         menu = QtWidgets.QMenu()
         menu.setSeparatorsCollapsible(False)
-        sep = QtWidgets.QAction('MIDI out' if direction == MidiOut else 'MIDI in', menu)
-        sep.setSeparator(True)
-        menu.addAction(sep)
+        menu.addSeparator().setText('MIDI out' if direction == MidiOut else 'MIDI in')
 
         if direction == MidiOut:
             ctrlAction = menu.addAction('Send MIDI events')
@@ -882,7 +891,16 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.currentTheme = theme
 #        self.currentTheme.changed.connect(self.setTheme)
 
-        self.setPalette(theme.palette)
+        if not 'linux' in sys.platform:
+            #fix for menus on windows (mac?)
+            self.setPalette(theme.palette)
+            palette = QtGui.QPalette(theme.palette)
+            for role in (QtGui.QPalette.Inactive, QtGui.QPalette.Active):
+                palette.setColor(role, QtGui.QPalette.Button, palette.color(role, QtGui.QPalette.Window))
+                palette.setColor(role, QtGui.QPalette.ButtonText, palette.color(role, QtGui.QPalette.WindowText))
+            self.editorMenuBar.setPalette(palette)
+        else:
+            self.setPalette(theme.palette)
         self.setFont(theme.font)
         dialStart, dialZero, dialEnd, dialGradient, dialBgd, dialScale, dialNotches, dialIndicator = theme.dialData
         for child in self.findChildren(Dial):
@@ -1025,8 +1043,11 @@ class EditorWindow(QtWidgets.QMainWindow):
             self.undoStack.setClean()
 #        self.display.editStatusWidget.setStatus(2)
 
+    
     def save(self):
         if self.currentUid:
+            if not self.database.isUidWritable(self.currentUid):
+                return self.saveAs(True)
             if self._editStatus == self.Modified:
                 saved = self.database.updateSound(self.currentUid, self.parameters)
                 if saved:
@@ -1037,9 +1058,9 @@ class EditorWindow(QtWidgets.QMainWindow):
         else:
             return self.saveAs()
 
-    def saveAs(self):
+    def saveAs(self, readOnly=False):
         name = self.display.nameEdit.text()
-        res = SaveSoundAs(self).exec_(name, self.currentCollection)
+        res = SaveSoundAs(self).exec_(name, self.currentCollection if not readOnly else None, readOnly)
         if not res:
             return
         newName, collection, index, uid = res
@@ -1276,6 +1297,8 @@ class EditorWindow(QtWidgets.QMainWindow):
 
     def resizeEvent(self, event):
         self.nameEditMask.setGeometry(self.geometry().adjusted(-10, -10, 20, 20))
+        width = self.midiSection.width() + self.saveFrame.width() + self.displayLayout.horizontalSpacing()
+        self.blofeldLogo.setPixmap(self.blofeldPixmap.scaledToWidth(width, QtCore.Qt.SmoothTransformation))
 #        print(self.osc1Shape.mapTo(self.centralWidget(), self.osc1Shape.rect().topLeft()))
 
 

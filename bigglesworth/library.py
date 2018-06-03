@@ -97,7 +97,7 @@ class BaseLibraryModel(QtSql.QSqlQueryModel):
             self.scheduledQueryUpdate = False
 
     def headerData(self, section, orientation, role):
-        if orientation == QtCore.Qt.Vertical and role == QtCore.Qt.DisplayRole:
+        if orientation == QtCore.Qt.Vertical and role == QtCore.Qt.DisplayRole and isinstance(self, CollectionModel):
             bank = section >> 7
             prog = (section & 127) + 1
             return '{}{:03}'.format(string.ascii_uppercase[bank], prog)

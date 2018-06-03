@@ -56,8 +56,11 @@ class SelectorWidget(QtWidgets.QFrame):
             self.rebuild()
         return QtWidgets.QFrame.changeEvent(self, event)
 
+    def minimumSizeHint(self):
+        return QtCore.QSize(126, 28)
+
     def sizeHint(self):
-        return QtCore.QSize(150, 30)
+        return QtCore.QSize(150, 40)
 
     def resizeEvent(self, event):
 #        width = self.width()
@@ -159,7 +162,7 @@ class SelectorWidget(QtWidgets.QFrame):
                 qp.setBrush(brush)
                 qp.drawRect(rect)
                 qp.setPen(pen)
-                qp.drawText(rect, QtCore.Qt.AlignCenter, self.names[c])
+                qp.drawText(rect.adjusted(-1, 0, 0, 0), QtCore.Qt.AlignCenter, self.names[c])
         else:
             qp.drawText(self.allRect, QtCore.Qt.AlignCenter, self.allText)
             for c, rect in enumerate(self.itemRects):
@@ -168,7 +171,7 @@ class SelectorWidget(QtWidgets.QFrame):
                 qp.setBrush(brush)
                 qp.drawRect(rect)
                 qp.setPen(pen)
-                qp.drawText(rect, QtCore.Qt.AlignCenter, self.names[c])
+                qp.drawText(rect.adjusted(-1, 0, 0, 0), QtCore.Qt.AlignCenter, self.names[c])
 
         qp.setPen(basePen)
         qp.drawLine(self.left, self.halfHeight, self.width(), self.halfHeight)

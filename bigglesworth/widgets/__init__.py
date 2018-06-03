@@ -1,6 +1,6 @@
 from bigglesworth.widgets.midiconnections import MidiConnectionsWidget
 from bigglesworth.widgets.contextmenu import ContextMenu
-from bigglesworth.widgets.splashscreen import SplashScreen, SplashPixmap
+from bigglesworth.widgets.splashscreen import SplashScreen
 from bigglesworth.widgets.statusbar import StatusBar
 from bigglesworth.widgets.selectorwidget import MidiChannelWidget, BanksSelectionWidget
 from bigglesworth.widgets.customsplitter import CustomSplitter

@@ -1,17 +1,51 @@
 from glob import glob
 from cx_Freeze import setup, Executable
 
-import sys, os
-#sys.path.append(os.path.join(os.path.dirname(__file__), 'bigglesworth/editorWidgets'))
-#from bigglesworth.version import __version__
+import sys
+MAJ_VERSION, MIN_VERSION, REV_VERSION = 0, 0, 0
 
-#def read_version():
-#    with open('bigglesworth/version.py', 'rb') as version_file:
-#        exec(version_file.read())
-#    return VERSION
+def read_version():
+    with open('bigglesworth/version.py', 'rb') as version_file:
+        exec(version_file.read())
+    return MAJ_VERSION, MIN_VERSION, REV_VERSION
+v = read_version()
 
-# Dependencies are automatically detected, but it might need
-# fine tuning.
+versionDot = '{}.{}.{}'.format(*v)
+versionComma = '{},{},{},0'.format(*v)
+description = 'Editor/librarian for Blofeld'
+
+resData = '''
+
+1 VERSIONINFO
+FILEVERSION {versionComma}
+PRODUCTVERSION {versionComma}
+FILEOS 0x40004
+FILETYPE 0x1
+{{
+BLOCK "StringFileInfo"
+{{
+	BLOCK "040904E4"
+	{{
+		VALUE "LegalCopyright", ""
+		VALUE "InternalName", "Bigglesworth.exe"
+		VALUE "FileVersion", "{versionDot}"
+		VALUE "CompanyName", ""
+		VALUE "OriginalFilename", "Bigglesworth.exe"
+		VALUE "ProductVersion", "{versionDot}"
+		VALUE "FileDescription", "{description}"
+		VALUE "LegalTrademarks", ""
+		VALUE "Comments", ""
+		VALUE "ProductName", "Bigglesworth"
+	}}
+}}
+
+BLOCK "VarFileInfo"
+{{
+	VALUE "Translation", 0x0409 0x04E4  
+}}
+}}
+'''.format(versionComma=versionComma, versionDot=versionDot, description=description)
+
 
 files = [
 #         'bigglesworth/FiraSans-Regular.ttf', 
@@ -59,11 +93,17 @@ base = 'Win32GUI' if sys.platform=='win32' else None
 
 executables = [
 #    Executable('Bigglesworth.py', base=base, icon='resources/bigglesworth_icon.ico')
-    Executable('Bigglesworth.py', base=base)
+    Executable('Bigglesworth.py', base=base), 
+    Executable('Bigglesworth.py', targetName='BigglesworthDebug.exe', base='Console')
 #    Executable('simple.py', base=base)
 ]
 setup(name='Bigglesworth',
-      version = '0.9.10',
-      description = 'Editor/librarian for Blofeld',
+      version = versionDot,
+      description = description,
       options = dict(build_exe = buildOptions, bdist_mac = macbuildOptions),
       executables = executables)
+
+with open('build/winResource.rc', 'w') as winFile:
+    winFile.write(resData)
+    
+

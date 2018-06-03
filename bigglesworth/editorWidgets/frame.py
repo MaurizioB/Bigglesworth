@@ -307,7 +307,7 @@ class Frame(QtWidgets.QFrame):
         self.update()
 
     def _setLabelRect(self):
-        self._labelRect = rect = QtCore.QRectF(0, 0, self.fontMetrics().width(self._label) + 8, self.fontMetrics().height() + 4)
+        self._labelRect = rect = QtCore.QRectF(0, 0, self.fontMetrics().width(self._label) + 4, self.fontMetrics().height() + 2)
         self._labelBackgroundPath = QtGui.QPainterPath()
         self._labelBackgroundPath.moveTo(rect.x() + rect.width() + rect.height() * 2, rect.y())
         self._labelBackgroundPath.arcTo(rect.x(), rect.y(), 4, 4, 90, 90)
@@ -402,6 +402,12 @@ class Frame(QtWidgets.QFrame):
             if colSpan > 1:
                 rect.setRight(layout.cellRect(row + rowSpan - 1, col + colSpan - 1).right())
             qp.drawRoundedRect(rect, 2, 2)
+
+    def resizeEvent(self, event):
+        self._setLabelRect()
+        self._computeMargins()
+        QtWidgets.QFrame.resizeEvent(self, event)
+
 
 if __name__ == '__main__':
     import sys

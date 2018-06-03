@@ -1,7 +1,7 @@
 from Qt import QtCore, QtGui, QtWidgets
 
 from bigglesworth.utils import sanitize
-from bigglesworth.widgets.arpeggiator import CloseBtn
+from bigglesworth.widgets import CloseBtn
 
 def makeEnvProperty(name):
     vName = '_{}'.format(name)

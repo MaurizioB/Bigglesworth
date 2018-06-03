@@ -23,7 +23,7 @@
       </sizepolicy>
      </property>
      <property name="text">
-      <string>Destination collection</string>
+      <string>Destination collection:</string>
      </property>
     </widget>
    </item>

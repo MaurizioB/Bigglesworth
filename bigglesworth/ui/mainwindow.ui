@@ -83,6 +83,11 @@
      <property name="title">
       <string>Open collection</string>
      </property>
+     <property name="icon">
+      <iconset theme="document-open">
+       <normaloff/>
+      </iconset>
+     </property>
     </widget>
     <addaction name="createCollectionAction"/>
     <addaction name="openCollectionMenu"/>
@@ -96,6 +101,7 @@
      <string>&amp;?</string>
     </property>
     <addaction name="updatesAction"/>
+    <addaction name="showLogAction"/>
     <addaction name="separator"/>
     <addaction name="aboutAction"/>
     <addaction name="aboutQtAction"/>
@@ -137,15 +143,18 @@
    </property>
   </action>
   <action name="editTagsAction">
+   <property name="icon">
+    <iconset theme="tag">
+     <normaloff/>
+    </iconset>
+   </property>
    <property name="text">
     <string>Edit &amp;tags...</string>
    </property>
   </action>
   <action name="quitAction">
    <property name="icon">
-    <iconset theme="application-exit">
-     <normaloff/>
-    </iconset>
+    <iconset theme="application-exit"/>
    </property>
    <property name="text">
     <string>&amp;Quit Bigglesworth :-(</string>
@@ -201,6 +210,11 @@
    </property>
    <property name="text">
     <string>Check for updates...</string>
+   </property>
+  </action>
+  <action name="showLogAction">
+   <property name="text">
+    <string>Show log</string>
    </property>
   </action>
  </widget>

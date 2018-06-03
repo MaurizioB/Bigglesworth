@@ -94,7 +94,7 @@ class _Button(QtWidgets.QPushButton):
                 backgroundNormalLight=_getCssQColorStr(backgroundNormalLight), 
                 backgroundPressed=_getCssQColorStr(backgroundPressed), 
                 backgroundPressedLight=_getCssQColorStr(backgroundPressedLight), 
-                font=_getCssQFontStr(self.font()), 
+#                font=_getCssQFontStr(self.font()), 
                 )
             )
 

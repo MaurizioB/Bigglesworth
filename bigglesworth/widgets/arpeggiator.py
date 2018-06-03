@@ -922,6 +922,7 @@ class ArpScene(QtWidgets.QGraphicsScene):
         self.stepRect = QtCore.QRectF(0, 0, 1, 1)
 
         self.closeBtn = CloseBtn()
+        self.closeBtn.setToolTip('Close pattern editor')
         self.closeBtnProxy = QtWidgets.QGraphicsProxyWidget()
         self.closeBtnProxy.setWidget(self.closeBtn)
         self.addItem(self.closeBtnProxy)

@@ -270,7 +270,8 @@ class DumpDialog(QtWidgets.QDialog):
                 if soundFlags & QtCore.Qt.ItemIsEnabled:
                     soundsDict[row] = sourceModel.index(row, UidColumn).data(QtCore.Qt.DisplayRole), nameItem, checkItem
                 else:
-                    checkItem.setEditable(False)
+                    if isinstance(self, DumpSendDialog):
+                        checkItem.setEditable(False)
                     nameItem.setData(disabled, QtCore.Qt.ForegroundRole)
                 nameItem.setFlags(soundFlags | activeFlags)
                 catItem = QtGui.QStandardItem()
@@ -437,9 +438,10 @@ class DumpDialog(QtWidgets.QDialog):
         if isinstance(sounds, bool):
             if sounds:
                 #TODO: cambia questi if ed usa un attributo generico
-                if self.overwriteChk:
-                    self.fastChk.setChecked(True)
                 self.banksWidget.setAll()
+                if self.overwriteChk:
+                    self.overwriteChk.toggled.emit(True)
+                    self.fastChk.setChecked(True)
             else:
                 self.banksWidget.setItems()
         else:
@@ -675,7 +677,7 @@ class DumpReceiveDialog(DumpDialog):
             if self.tableModel.item(row, 0).data(QtCore.Qt.CheckStateRole):
                 sounds[row] = data
         self.sourceModel = self.tableModel = self.selectedCollection = None
-        return sounds
+        return sounds, self.overwriteChk.isChecked()
 
 
 class DumpSendDialog(DumpDialog):

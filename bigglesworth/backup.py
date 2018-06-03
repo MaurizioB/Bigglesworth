@@ -19,7 +19,7 @@ if sys.platform == 'win32':
 #    print(sys.path)
     for p in sys.path:
         try:
-            sqlite = ctypes.WinDLL(os.path.join(p, 'sqlite3.dll'))
+            sqlite = ctypes.CDLL(os.path.join(p, 'sqlite3.dll'))
             break
         except:
             pass
@@ -45,6 +45,7 @@ class BackUp(QtCore.QObject):
         self.main = parent
         self.basePath = self.bkpPath = None
         self.queue = Queue()
+        self.success = True
 
     def setPath(self, path):
         self.basePath = path
@@ -65,16 +66,18 @@ class BackUp(QtCore.QObject):
                 break
 
     def doBackup(self):
-        self.main.logger.append(LogDebug, 'Starting debug')
+        self.main.logger.append(LogDebug, 'Starting backup')
 #        print('lancio backup')
         res = sqlite.sqlite3_open_v2(self.basePath, ctypes.byref(srcDbPointer), SQLITE_OPEN_READONLY, nullPointer)
         if res != SQLITE_OK or srcDbPointer.value is None:
             self.main.logger.append(LogCritical, 'Error opening database for backup')
+            self.success = False
             self.backupError.emit('Error opening the database for backup')
             return
         res = sqlite.sqlite3_open_v2(self.bkpPath, ctypes.byref(destDbPointer), SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, nullPointer)
         if res != SQLITE_OK or destDbPointer.value is None:
             self.main.logger.append(LogCritical, 'Error opening or creating backup database')
+            self.success = False
             self.backupError.emit('Error opening or creating the backup database')
             return
 
@@ -84,6 +87,7 @@ class BackUp(QtCore.QObject):
         print('backup handler: {0:#08x}'.format(backupPointer))
         if backupPointer is None:
             self.main.logger.append(LogCritical, 'Error obtaining pointer for backup')
+            self.success = False
             self.backupError.emit('Error obtaining pointer to database backup')
         self.backupStatusChanged.emit(0)
 
@@ -98,6 +102,7 @@ class BackUp(QtCore.QObject):
             if res in (SQLITE_OK, SQLITE_BUSY, SQLITE_LOCKED):
                 sqlite.sqlite3_sleep(100)
 
+        self.success = True
         self.backupFinished.emit()
         self.main.logger.append(LogDebug, 'Backup completed')
         sqlite.sqlite3_backup_finish(backupPointer)

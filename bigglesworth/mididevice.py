@@ -6,13 +6,15 @@ from Qt import QtCore
 from bigglesworth.utils import Enum
 from bigglesworth.midiutils import Graph, MidiEvent
 
-Alsa, RtMidi = Enum(2)
-if not 'linux' in sys.platform or (os.environ.has_key('MIDI_BACKEND') and os.environ['MIDI_BACKEND'] == 'RTMIDI'):
-    import rtmidi
-    midiBackend = RtMidi
-else:
+#if not 'linux' in sys.platform or (os.environ.has_key('MIDI_BACKEND') and os.environ['MIDI_BACKEND'] == 'RTMIDI'):
+#    import rtmidi
+#else:
+#    from pyalsa import alsaseq
+import rtmidi
+try:
     from pyalsa import alsaseq
-    midiBackend = Alsa
+except:
+    pass
 INPUT, OUTPUT = xrange(2)
 
 
@@ -153,6 +155,7 @@ class RtMidiSequencer(QtCore.QObject):
                 break
             else:
                 port = rtmidi.MidiOut(self.api, 'Bigglesworth')
+                port.set_error_callback(self.error_callback, (port, source))
                 self.ports[OUTPUT].append(port)
             dest_name = self.client_dict[dest]
             port.open_port(port.get_ports().index(dest_name), 'output')
@@ -168,12 +171,20 @@ class RtMidiSequencer(QtCore.QObject):
                 port.ignore_types(sysex=False)
                 self.ports[INPUT].append(port)
             source_name = self.client_dict[source]
-            port.open_port(port.get_ports().index(source_name), 'input')
-            port.set_callback(self.midi_event.emit)
-            self.connections[port] = source_name
-            self.conn_created.emit({'connect.sender.client': source, 'connect.sender.port': 0, 'connect.dest.client': 0, 'connect.dest.port': 0})
+            try:
+                port.open_port(port.get_ports().index(source_name), 'input')
+                port.set_callback(self.midi_event.emit, source)
+                port.set_error_callback(self.error_callback, (port, source))
+                self.connections[port] = source_name
+                self.conn_created.emit({'connect.sender.client': source, 'connect.sender.port': 0, 'connect.dest.client': 0, 'connect.dest.port': 0})
+            except:
+                print('connection not created')
+
+    def error_callback(self, errType, errMsg, data):
+        print('ERROR!!!', errType, errMsg, data)
 
     def disconnect_ports(self, source, dest):
+        print('rtmidi disconnect method', source, dest)
         source = source[0]
         dest = dest[0]
         if source == 1:
@@ -182,13 +193,22 @@ class RtMidiSequencer(QtCore.QObject):
             target_name = self.client_dict[source]
         for port, dest in self.connections.items():
             if target_name == dest:
-                port.close_port()
-                self.connections[port] = None
+                print('rtmidi closing port "{}" target "{}"'.format(port, target_name))
+                print('port is open?', port.is_port_open())
+                try:
+                    #TODO: let's understand better what's going on here and why sometimes this hangs...
+                    port.close_port()
+                    print('rtmidi port closed!')
+                    self.connections[port] = None
+                except Exception as e:
+                    print('rtmidi port not closed. mmmh...', e)
                 break
         else:
 #            raise rtmidi.RtMidiError('Error disconnecting ports')
 #            print 'connection already removed?'
+            print('rtmidi something strange happening?')
             return
+        print('rtmidi emitting destroyed signal')
         if source == 1:
             self.conn_destroyed.emit({'connect.sender.client': 1, 'connect.sender.port': 0, 'connect.dest.client': dest, 'connect.dest.port': 0})
         else:
@@ -221,16 +241,17 @@ class MidiDevice(QtCore.QObject):
     graph_changed = QtCore.pyqtSignal()
     stopped = QtCore.pyqtSignal()
     midi_event = QtCore.pyqtSignal(object)
+    Alsa, RtMidi = Enum(2)
 
-    def __init__(self, main, mode=midiBackend):
+    def __init__(self, main, mode):
         QtCore.QObject.__init__(self)
         self.main = main
         self.mode = mode
         self.active = False
         self.keep_going = True
         self.sysex_buffer = []
-        if mode == Alsa:
-            pass
+        if mode == self.Alsa:
+            self.backend = self.Alsa
             self.seq = alsaseq.Sequencer(clientname='Bigglesworth')
             input_id = self.seq.create_simple_port(
                 name='input', 
@@ -251,6 +272,7 @@ class MidiDevice(QtCore.QObject):
             self.output = self.graph.port_id_dict[self.id][output_id]
             self.run = self.runAlsa
         else:
+            self.backend = self.RtMidi
             self.seq = RtMidiSequencer(clientname='Bigglesworth')
             self.graph = Graph(self.seq)
             self.seq.client_created.connect(self.graph.client_created)
@@ -305,8 +327,10 @@ class MidiDevice(QtCore.QObject):
         del self.seq
         self.stopped.emit()
 
-    def create_midi_event(self, (data, time), *args):
+    def create_midi_event(self, dataTuple, sourceId):
+        data, time = dataTuple
         newev = MidiEvent.from_binary(data)
+        newev.source = (sourceId, 0)
         self.midi_event.emit(newev)
 
     def runRtMidi(self):

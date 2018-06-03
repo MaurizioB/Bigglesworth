@@ -78,7 +78,7 @@ def makeQtFlag(flagType, name, actions=None, flags=None, zero=None, *args, **kwa
 
 def _getCssQFontStr(font):
 #    print(font.pointSize(), font.family())
-    return('{bold}{size}px {family}'.format(
+    return('{bold}{size}pt {family}'.format(
         bold='bold ' if font.weight() > font.Normal else '', 
         size=font.pointSize(), 
         family=font.family(), 

@@ -815,12 +815,18 @@ class Port(QtCore.QObject):
         if (self.is_duplex and dest.is_duplex) or self.is_output:
             try:
                 self.seq.connect_ports(self.addr, dest.addr)
+            except Exception as e:
+                print('Connection error (output):', e)
+                return False
             except alsaseq.SequencerError:
                 return False
             return True
         try:
             self.seq.connect_ports(dest.addr, self.addr)
             return True
+        except Exception as e:
+            print('Connection error (input):', e)
+            return False
         except alsaseq.SequencerError:
             return False
 

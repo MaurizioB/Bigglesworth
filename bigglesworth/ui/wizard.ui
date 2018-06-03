@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>546</width>
-    <height>358</height>
+    <height>351</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <enum>QWizard::ModernStyle</enum>
   </property>
   <property name="options">
-   <set>QWizard::CancelButtonOnLeft|QWizard::NoBackButtonOnLastPage|QWizard::NoBackButtonOnStartPage</set>
+   <set>QWizard::CancelButtonOnLeft|QWizard::NoBackButtonOnStartPage</set>
   </property>
   <widget class="QWizardPage" name="startPage">
    <property name="title">
@@ -151,9 +151,86 @@ p, li { white-space: pre-wrap; }
     </item>
    </layout>
   </widget>
+  <widget class="ImportOldPage" name="importOldPage">
+   <property name="title">
+    <string>Previous version detected</string>
+   </property>
+   <property name="subTitle">
+    <string>Import data from older version</string>
+   </property>
+   <layout class="QGridLayout" name="gridLayout_4" columnstretch="1,1">
+    <item row="1" column="0">
+     <widget class="QGroupBox" name="importFrame">
+      <property name="title">
+       <string>Import to the database</string>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_3">
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_3">
+         <property name="text">
+          <string>Name</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLineEdit" name="oldLibraryNameLbl">
+         <property name="text">
+          <string>Old library</string>
+         </property>
+         <property name="maxLength">
+          <number>32</number>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0" colspan="2">
+        <widget class="QPushButton" name="oldLibraryImportBtn">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Import</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="0" column="1" rowspan="2">
+     <widget class="QTableView" name="oldLibraryView">
+      <property name="editTriggers">
+       <set>QAbstractItemView::NoEditTriggers</set>
+      </property>
+      <attribute name="horizontalHeaderHighlightSections">
+       <bool>false</bool>
+      </attribute>
+      <attribute name="verticalHeaderHighlightSections">
+       <bool>false</bool>
+      </attribute>
+     </widget>
+    </item>
+    <item row="0" column="0">
+     <widget class="QLabel" name="label_2">
+      <property name="text">
+       <string>It appears that a previous version of Bigglesworth was installed, and a library has benn found.
+
+You can see its contents on the right.</string>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
   <widget class="QWizardPage" name="finalPage">
    <property name="title">
     <string>All set!</string>
+   </property>
+   <property name="subTitle">
+    <string>We are almost ready...</string>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_3">
     <item>
@@ -192,6 +269,12 @@ p, li { white-space: pre-wrap; }
   </customwidget>
   <customwidget>
    <class>AutoconnectPage</class>
+   <extends>QWizardPage</extends>
+   <header>bigglesworth.dialogs</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ImportOldPage</class>
    <extends>QWizardPage</extends>
    <header>bigglesworth.dialogs</header>
    <container>1</container>

@@ -11,7 +11,10 @@ import argparse
 def process_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('-s', '--sysex', help='Print output SysEx messages to the terminal', action='store_true')
-    parser.add_argument('--rtmidi', help='Use rtmidi interface (mandatory and implicit for OSX/Windows, not recommended for Linux)', action='store_true')
+    if 'linux' in sys.platform:
+        parser.add_argument('--rtmidi', help='(not recommended)', action='store_true')
+    else:
+        parser.add_argument('--rtmidi', help=argparse.SUPPRESS, default=True)
 #    parser.add_argument('-l', '--library-limit', metavar='N', type=int, help=argparse.SUPPRESS)
 #    parser.add_argument('-w', '--wavetable', metavar='WTFILE', nargs='?', const=True, help='Open Wavetable editor (with optional WTFILE)')
     parser.add_argument('--log', help='Show log dialog on startup', action='store_true')
@@ -27,11 +30,16 @@ def process_args():
             print(p)
     return res
 
-#args = process_args()
+parser = process_args()
+if parser.rtmidi:
+    os.environ['MIDI_BACKEND'] = 'RTMIDI'
+    if 'linux' in sys.platform:
+        print('Requested RtMidi on command line. RtMidi on Linux is not recommended!')
+else:
+    os.environ['MIDI_BACKEND'] = 'ALSA'
 
-import sys
 import bigglesworth
 
 if __name__ == '__main__':
-    app = bigglesworth.Bigglesworth(process_args(), sys.argv)
+    app = bigglesworth.Bigglesworth(parser, sys.argv)
     sys.exit(app.exec_())

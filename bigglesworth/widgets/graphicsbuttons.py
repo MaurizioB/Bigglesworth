@@ -41,8 +41,8 @@ class CloseBtn(GraphicsButton):
         GraphicsButton.__init__(self, parent)
         self.setStyleSheet(self.styleSheet() + '''
             CloseBtn {
-                color: rgba(220, 220, 200, 255);
-                background: rgba(220, 220, 220, 40);
+                color: rgba(180, 180, 160, 255);
+                background: rgba(200, 200, 200, 120);
                 min-height: 16px;
                 min-height: 16px;
             }
@@ -50,7 +50,6 @@ class CloseBtn(GraphicsButton):
                 background: rgba(220, 220, 220, 190);
             }
             ''')
-        self.setToolTip('Close pattern editor')
 
     def sizeHint(self):
         return QtCore.QSize(20, 20)

@@ -112,9 +112,7 @@ class ThemeEditor(QtWidgets.QDialog):
             systemRestoreAction.triggered.connect(self.systemColorRestore)
             themeRestoreAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('edit-undo'), 'Restore saved color', colorButton)
             themeRestoreAction.triggered.connect(self.themeColorRestore)
-            sep = QtWidgets.QAction(self)
-            sep.setSeparator(True)
-            colorButton.colorMenu.insertAction(colorButton.colorMenu.actions()[0], sep)
+            colorButton.colorMenu.insertSeparator(colorButton.colorMenu.actions()[0])
             colorButton.colorMenu.insertAction(colorButton.colorMenu.actions()[0], systemRestoreAction)
             colorButton.colorMenu.insertAction(colorButton.colorMenu.actions()[0], themeRestoreAction)
 

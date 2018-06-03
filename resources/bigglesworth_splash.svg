@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="480mm"
+   height="320mm"
+   viewBox="0 0 1700.7875 1133.8583"
+   id="svg4193"
+   version="1.1"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="bigglesworth_splash.svg">
+  <defs
+     id="defs4195" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.3959798"
+     inkscape:cx="878.61811"
+     inkscape:cy="638.23359"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer3"
+     showgrid="false"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     inkscape:window-width="1440"
+     inkscape:window-height="852"
+     inkscape:window-x="1280"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata4198">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:groupmode="layer"
+     id="layer3"
+     inkscape:label="sfondo">
+    <rect
+       style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:8;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect5292"
+       width="1820.8"
+       height="1209.6577"
+       x="-37.880726"
+       y="-30.342531"
+       ry="0" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer1"
+     inkscape:label="Riquadro">
+    <path
+       transform="translate(39.091395,615.53971)"
+       style="display:inline;opacity:1;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#808080;stroke-width:8;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       d="m 928.80103,-22.538589 -845.282782,0 c -16.482886,0 -29.752501,-13.269616 -29.752501,-29.752501 l 0,-140.49498 c 0,-16.48289 13.269615,-29.7525 29.752501,-29.7525 l 1579.220352,0"
+       id="rect5271"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cssssc" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="sottotitolo">
+    <text
+       transform="translate(39.091395,615.53971)"
+       xml:space="preserve"
+       style="display:inline;font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:'Bitstream Vera Sans';letter-spacing:0px;word-spacing:0px;fill:#808080;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="936.70947"
+       y="-12.967175"
+       id="text5274"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan5276"
+         x="936.70947"
+         y="-12.967175"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:35px;font-family:OPTIAlpine-Bold;-inkscape-font-specification:'OPTIAlpine-Bold Bold';fill:#808080;fill-opacity:1">a free editor for your Waldorf Blofeld</tspan></text>
+  </g>
+  <g
+     style="display:inline"
+     transform="translate(39.091398,615.53971)"
+     id="g4215"
+     inkscape:groupmode="layer"
+     inkscape:label="Base senza b" />
+  <g
+     transform="translate(39.091398,615.53971)"
+     id="g4209"
+     inkscape:groupmode="layer"
+     inkscape:label="B"
+     style="display:inline">
+    <g
+       id="g5265"
+       transform="matrix(1.3567163,0,0,1.3567163,154.42614,-743.14742)">
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:136.88987732px;line-height:125%;font-family:OPTIAlpine-Bold;-inkscape-font-specification:'OPTIAlpine-Bold Bold';letter-spacing:0px;word-spacing:0px;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         x="53.068977"
+         y="561.66168"
+         id="text4217"
+         sodipodi:linespacing="125%"
+         transform="matrix(1.140749,0,0,0.87661702,0,3.8339679e-6)"><tspan
+           sodipodi:role="line"
+           x="53.068977"
+           y="561.66168"
+           id="tspan4219">igglesworth</tspan></text>
+      <g
+         id="text4211"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:136.88987732px;line-height:125%;font-family:OPTIAlpine-Bold;-inkscape-font-specification:'OPTIAlpine-Bold Bold';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         transform="scale(1.140749,0.87661702)">
+        <path
+           sodipodi:nodetypes="ccccccccccccccscscccs"
+           inkscape:connector-curvature="0"
+           id="path4222"
+           d="m -4.0037715,486.04341 c -7.9311005,-17.86566 -30.2644405,-31.97717 -30.2644405,-31.97717 0,0 2.627221,50.76786 6.574628,61.12133 -4.662225,3.93675 -6.574628,12.02838 -6.574628,12.02838 l 0,34.44573 29.1575443,0 0,-7.80272 c 6.5707141,6.16004 10.5405205,7.93961 16.1530057,9.03473 8.213392,1.50579 21.6286,-1.3689 29.294434,-8.89784 12.320089,-12.04631 13.004538,-29.97888 10.26674,-42.57275 -2.600907,-12.1832 -9.719181,-24.09262 -23.955728,-27.65176 -9.034732,-2.32713 -23.681949,0.13689 -31.7584517,9.4454 l -10.0727553,9.08897 -2.379827,-3.80992 c 0,0 -10.011023,-19.17784 -7.373128,-21.46213 2.637896,-2.28429 17.9247108,12.32497 20.9326065,9.00975 z m 28.7841495,14.73582 c 7.800886,-0.35139 13.278318,8.2134 13.141428,17.79569 0,9.71918 0.09097,12.33641 -7.711749,12.06263 -8.076502,-0.27378 -13.278317,-8.21339 -13.141427,-17.79568 0.136889,-9.99296 0.31739,-11.72956 7.711748,-12.06264 z" />
+      </g>
+    </g>
+  </g>
+</svg>

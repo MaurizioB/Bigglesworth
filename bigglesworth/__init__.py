@@ -13,6 +13,38 @@ QtCore.pyqtProperty = QtCore.Property
 from PyQt4.QtGui import QIdentityProxyModel as _QIdentityProxyModel
 QtCore.QIdentityProxyModel = _QIdentityProxyModel
 
+if sys.platform == 'win32':
+    class WinMenuSeparator(QtWidgets.QWidgetAction):
+        def __init__(self, *args, **kwargs):
+            QtWidgets.QWidgetAction.__init__(self, *args, **kwargs)
+            self.label = QtWidgets.QLabel()
+            self.label.setFrameStyle(QtWidgets.QFrame.StyledPanel|QtWidgets.QFrame.Sunken)
+            self.label.setAlignment(QtCore.Qt.AlignCenter)
+            self.label.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum))
+            self.label.setMaximumHeight(self.label.frameWidth())
+            self.setDefaultWidget(self.label)
+
+        def setText(self, text):
+            self.label.setText(text)
+            if text:
+                self.label.setMaximumHeight(16777215)
+            else:
+                self.label.setMaximumHeight(self.label.frameWidth())
+
+    def QMenuInsertSeparator(self, before):
+        action = WinMenuSeparator(self)
+        QtWidgets.QMenu.insertAction(self, before, action)
+        return action
+
+    def QMenuAddSeparator(self):
+        action = WinMenuSeparator(self)
+        QtWidgets.QMenu.addAction(self, action)
+        return action
+        
+    QtWidgets.QMenu.insertSeparator = QMenuInsertSeparator
+    QtWidgets.QMenu.addSeparator = QMenuAddSeparator
+
+
 from bigglesworth.logger import Logger
 from bigglesworth.editor import EditorWindow
 from bigglesworth.database import BlofeldDB
@@ -21,13 +53,13 @@ from bigglesworth.mainwindow import MainWindow
 from bigglesworth.themes import ThemeCollection
 from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, GlobalsDialog, 
     DumpReceiveDialog, DumpSendDialog, WarningMessageBox, SmallDumper, FirstRunWizard, LogWindow)
-from bigglesworth.utils import localPath
-from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR
+#from bigglesworth.utils import localPath
+from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR, LogInfo
 from bigglesworth.midiutils import SYSEX, CTRL, SysExEvent
 
-os.environ['MIDI_BACKEND'] = 'ALSA'
+from bigglesworth.mididevice import MidiDevice
+import bigglesworth.resources
 
-from bigglesworth.mididevice import MidiDevice, midiBackend, Alsa, RtMidi
 
 class Bigglesworth(QtWidgets.QApplication):
     progSendToggled = QtCore.pyqtSignal(bool)
@@ -43,8 +75,18 @@ class Bigglesworth(QtWidgets.QApplication):
         self.setApplicationName('Bigglesworth')
         self.settings = QtCore.QSettings()
         self.firstRunWizard = None
+        logo = QtGui.QIcon(':/images/bigglesworth_logo_whitebg.svg')
+        self.setWindowIcon(logo)
+
+        QtGui.QFontDatabase.addApplicationFont(':/fonts/DroidSansFallback.ttf')
+        QtGui.QFontDatabase.addApplicationFont(':/fonts/FiraSans-Regular.ttf')
+        QtGui.QFontDatabase.addApplicationFont(':/fonts/OPTIAlpine_Bold.otf')
 
         self.settings.beginGroup('MIDI')
+        rtmidi = self.settings.value('rtmidi', 0 if 'linux' in sys.platform else 1, int)
+        if self.argparse.rtmidi:
+            rtmidi = self.argparse.rtmidi
+        self.backend = True if rtmidi else False
         self._blofeldId = self.settings.value('blofeldId', 0x7f, int)
         self._progReceiveState = self.settings.value('progReceive', True, bool)
         self._ctrlReceiveState = self.settings.value('ctrlReceive', True, bool)
@@ -58,18 +100,21 @@ class Bigglesworth(QtWidgets.QApplication):
 
         self.splash = SplashScreen()
         self.splash.start()
-
-    def startUp(self):
         self.logger = Logger(self)
+        self.logger.append(LogInfo, 'Physical DPI: {}x{}'.format(self.splash.physicalDpiX(), self.splash.physicalDpiY()))
+        self.logger.append(LogInfo, 'Logical DPI: {}x{}'.format(self.splash.logicalDpiX(), self.splash.logicalDpiY()))
+
+    
+    def startUp(self):
         self.loggerWindow = LogWindow(self)
         if self.argparse.log:
             self.loggerWindow.show()
         self.splash.showMessage('Loading database engine', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .2)
 
         self.database = BlofeldDB(self)
-        if not self.database.initialize(localPath('library.sqlite')):
+        if not self.database.initialize():
             if self.database.lastError & (self.database.SoundsEmpty|self.database.ReferenceEmpty):
-                self.splash.showMessage('Creating factory database', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .25)
+                self.splash.showMessage('Creating factory database, this could take a while...', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .25)
                 self.database.initializeFactory(self.database.lastError)
             elif self.database.lastError & self.database.DatabaseFormatError:
                 print(self.database.lastError)
@@ -84,7 +129,7 @@ class Bigglesworth(QtWidgets.QApplication):
 
         self.splash.showMessage('Starting MIDI engine', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .5)
 
-        self.midiDevice = MidiDevice(self)
+        self.midiDevice = MidiDevice(self, mode=self.backend)
         self.graph = self.midiDevice.graph
         self.midiThread = QtCore.QThread()
         self.midiDevice.moveToThread(self.midiThread)
@@ -108,11 +153,24 @@ class Bigglesworth(QtWidgets.QApplication):
             if blofeldDetect or autoConnectInput or autoConnectOutput:
                 for client, port_dict in self.graph.port_id_dict.items():
                     for port in port_dict.values():
-                        if blofeldDetect and port.client.name == 'Blofeld' and \
-                            port.name.startswith('Blofeld MIDI ') and port.name.split()[-1].isdigit:
-                                port.connect(self.input)
-                                self.output.connect(port)
-                                continue
+                        #blofeld detect
+                        if blofeldDetect:
+                            if self.midiDevice.backend == MidiDevice.Alsa and \
+                                port.client.name == 'Blofeld' and \
+                                port.name.startswith('Blofeld MIDI ') and \
+                                port.name.split()[-1].isdigit():
+                                    port.connect(self.input)
+                                    self.output.connect(port)
+                                    continue
+                            elif port.client.name.startswith('Waldorf Blofeld ') or \
+                                port.client.name.startswith('Blofeld:Blofeld MIDI ') or \
+                                (port.client.name.startswith('Blofeld - Blofeld MIDI') and port.name.split()[-1].isdigit()):
+                                    if port.is_input:
+                                        self.output.connect(port)
+                                    else:
+                                        port.connect(self.input)
+
+                        #other ports
                         portName = '{}:{}'.format(port.client.name, port.name)
                         if port.is_input and portName in autoConnectOutput:
                             self.midiConnect(port, True, True)
@@ -126,10 +184,17 @@ class Bigglesworth(QtWidgets.QApplication):
         self.splash.showMessage('Preparing interface', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .7)
 
         self.themes = ThemeCollection(self)
+#        print(QtGui.QIcon.themeSearchPaths(), os.path.abspath(__file__))
+#        QtGui.QIcon.setThemeSearchPaths([QtCore.QDir('C:/Python27/icons').absolutePath()])
+#        print(QtGui.QIcon.themeSearchPaths())
+        QtGui.QIcon.setThemeName('Bigglesworth')
+#        print(QtGui.QIcon.hasThemeIcon('application-exit'))
 
         self.mainWindow = MainWindow(self)
+#        self.mainWindow.quitAction.setIcon(QtGui.QIcon(':/icons/Bigglesworth/16x16/dialog-information.svg'))
         self.mainWindow.closed.connect(self.checkClose)
         self.mainWindow.quitAction.triggered.connect(self.quit)
+        self.mainWindow.showLogAction.triggered.connect(self.loggerWindow.show)
         self.mainWindow.showSettingsAction.triggered.connect(self.showSettings)
         self.mainWindow.showGlobalsAction.triggered.connect(self.showGlobals)
         self.mainWindow.showGlobalsAction.setEnabled(True if all(self.connections) else False)
@@ -305,6 +370,10 @@ class Bigglesworth(QtWidgets.QApplication):
         self.editorWindow.midiInWidget.setConnections(len(inConn))
         self.editorWindow.midiOutWidget.setConnections(len(outConn))
 
+        if self.firstRunWizard and self.firstRunWizard.isVisible() and \
+            self.firstRunWizard.currentPage() == self.firstRunWizard.autoconnectPage and \
+            self.firstRunWizard.autoconnectPage.querying:
+                return
         self.settings.beginGroup('MIDI')
         autoConnect = self.settings.value('tryAutoConnect', True, bool)
         if not autoConnect:
@@ -328,13 +397,38 @@ class Bigglesworth(QtWidgets.QApplication):
         self.settings.endGroup()
         self.settings.sync()
 
+    def saveConnections(self, reset=True):
+        ([conn for conn in self.midiDevice.input.connections.input if not conn.hidden], 
+            [conn for conn in self.midiDevice.output.connections.output if not conn.hidden])
+        autoConnectInput = set(['{}:{}'.format(conn.src.client.name, conn.src.name) for conn in self.midiDevice.input.connections.input if not conn.hidden])
+        autoConnectOutput = set(['{}:{}'.format(conn.dest.client.name, conn.dest.name) for conn in self.midiDevice.output.connections.output if not conn.hidden])
+        self.settings.beginGroup('MIDI')
+        if not reset:
+            for port in self.settings.value('autoConnectInput', [], 'QStringList'):
+                autoConnectInput.add(port)
+            for port in self.settings.value('autoConnectOutput', [], 'QStringList'):
+                autoConnectOutput.add(port)
+        self.settings.setValue('autoConnectInput', list(autoConnectInput))
+        self.settings.setValue('autoConnectOutput', list(autoConnectOutput))
+        self.settings.endGroup()
+
     def midiConnect(self, port, direction, state):
         if direction:
+            print('midi {s}connect requested. "{src}" >> "{dst}", direction: "OUT"'.format(
+                s='' if state else 'dis', 
+                src=self.output, 
+                dst=port
+                ))
             if state:
                 self.output.connect(port)
             else:
                 self.output.disconnect(port)
         else:
+            print('midi {s}connect requested. "{src}" >> "{dst}", direction: "IN"'.format(
+                s='' if state else 'dis', 
+                src=port, 
+                dst=self.input
+                ))
             if state:
                 port.connect(self.input)
             else:
@@ -370,7 +464,7 @@ class Bigglesworth(QtWidgets.QApplication):
     def sendMidiEvent(self, event):
 #        if self.debug_sysex and event.type == SYSEX:
 #            print event.sysex
-        if midiBackend == Alsa:
+        if self.midiDevice.backend == MidiDevice.Alsa:
             alsa_event = event.get_event()
             alsa_event.source = self.output.client.id, self.output.id
             self.seq.output_event(alsa_event)
@@ -384,9 +478,10 @@ class Bigglesworth(QtWidgets.QApplication):
         self.dumpBlock = True
         self.midiDevice.midi_event.connect(self.dumpReceiveDialog.midiEventReceived)
         self.graph.conn_register.connect(self.dumpReceiveDialog.alsaConnEvent)
-        sounds = self.dumpReceiveDialog.exec_(collection, sounds)
-        if sounds:
-            self.database.addBatchRawSoundData(sounds, collection)
+        data = self.dumpReceiveDialog.exec_(collection, sounds)
+        if data:
+            sounds, overwrite = data
+            self.database.addBatchRawSoundData(sounds, collection, overwrite)
 #            for index, data in sounds.items():
 #                self.database.addRawSoundData(data, collection, index)
 
@@ -603,7 +698,7 @@ class Bigglesworth(QtWidgets.QApplication):
 
     def notify(self, receiver, event):
         if event.type() in (QtCore.QEvent.KeyPress, QtCore.QEvent.KeyRelease):
-            if self.editorWindow.isActiveWindow() and event.key() == QtCore.Qt.Key_F1:
+            if self.editorWindow.isActiveWindow() and event.key() == QtCore.Qt.Key_F1 and not event.isAutoRepeat():
                 self.editorWindow.showValues(True if event.type() == QtCore.QEvent.KeyPress else False)
         return QtWidgets.QApplication.notify(self, receiver, event)
 

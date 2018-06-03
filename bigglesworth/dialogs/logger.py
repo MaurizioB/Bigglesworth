@@ -123,6 +123,7 @@ class LogWindow(QtWidgets.QDialog):
 #        self.model.appendRow([timeItem, logLevelItem, QtGui.QStandardItem(message), QtGui.QStandardItem(extMessage)])
         self.logView.resizeRowsToContents()
         self.logView.resizeColumnsToContents()
+        self.logView.scrollToBottom()
         QtWidgets.QApplication.processEvents()
 
     def clear(self):
@@ -135,6 +136,7 @@ class LogWindow(QtWidgets.QDialog):
             self.appendRow(*data)
         self.logView.resizeRowsToContents()
         self.logView.resizeColumnsToContents()
+        self.logView.scrollToBottom()
 
     def save(self):
         res = QtWidgets.QFileDialog.getSaveFileName(self, 'Export log', 

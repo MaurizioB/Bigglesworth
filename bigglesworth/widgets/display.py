@@ -134,6 +134,11 @@ class BankSpin(TextSpin):
             if bank in self.valid:
                 continue
             self.valid.append(bank)
+#        if not self.valid:
+#            self.setRange(0, 0)
+#            self.setEnabled(False)
+#            return
+#        self.setEnabled(True)
         self.setRange(min(self.valid), max(self.valid))
         completer = QtWidgets.QCompleter(self.values, self)
         completer.setCompletionMode(completer.InlineCompletion)
@@ -190,6 +195,11 @@ class ProgSpin(GraphicsSpin):
 
     def setBank(self, bank):
         indexes = self.fullValid[bank]
+#        if not indexes:
+#            self.setRange(0, 0)
+#            self.setEnabled(False)
+#            return
+#        self.setEnabled(True)
         self.setRange(min(indexes), max(indexes))
         self.valid = indexes
         completer = QtWidgets.QCompleter([str(v) for v in indexes], self)

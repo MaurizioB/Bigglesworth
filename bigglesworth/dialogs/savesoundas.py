@@ -52,6 +52,7 @@ class SaveSoundAs(QtWidgets.QDialog):
         self.main = parent.main
         self.database = parent.database
         self.collectionCombo.addItems(self.database.referenceModel.collections)
+        self.collectionCombo.setItemData(1, QtGui.QIcon.fromTheme('go-home'), QtCore.Qt.DecorationRole)
         self.collectionCombo.currentIndexChanged.connect(self.setCollection)
         self.progCombo.currentIndexChanged.connect(self.checkOverwrite)
         self.saveBtn = self.buttonBox.button(self.buttonBox.Save)
@@ -131,7 +132,8 @@ class SaveSoundAs(QtWidgets.QDialog):
         self.progCombo.blockSignals(False)
         self.progCombo.setCurrentIndex(progIndex if progIndex >= 0 else 0)
 
-    def exec_(self, name='', collection=None):
+    def exec_(self, name='', collection=None, readOnly=False):
+        self.readOnlyLbl.setVisible(readOnly)
         if collection is None:
             self.locationWidget.setEnabled(False)
         else:

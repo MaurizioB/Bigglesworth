@@ -3,7 +3,20 @@ from Qt import QtCore, QtGui, QtWidgets
 class DatabaseWidget(QtWidgets.QLabel):
     def __init__(self, size):
         QtWidgets.QLabel.__init__(self)
-        self.setPixmap(QtGui.QIcon.fromTheme('server-database').pixmap(size, size))
+        self.basePixmap = QtGui.QIcon.fromTheme('server-database').pixmap(size, size)
+        self.warningPixmap = QtGui.QPixmap(self.basePixmap)
+        half = size * .5
+        #TODO: why does not work using fromTheme?
+        warningSource = QtGui.QIcon(':/icons/Bigglesworth/16x16/emblem-warning').pixmap(half, half)
+        qp = QtGui.QPainter(self.warningPixmap)
+        qp.drawPixmap(half, half, half, half, warningSource)
+        qp.end()
+        self.pixmaps = self.warningPixmap, self.basePixmap
+        self.setPixmap(self.basePixmap)
+
+    def setValid(self, valid):
+        self.setPixmap(self.pixmaps[valid])
+
 
 class StatusBar(QtWidgets.QStatusBar):
     def __init__(self, *args, **kwargs):
@@ -19,6 +32,7 @@ class StatusBar(QtWidgets.QStatusBar):
         self.database.backupStarted.connect(self.backupStarted)
         self.database.backupStatusChanged.connect(self.backupStatusChanged)
         self.database.backupFinished.connect(self.backupFinished)
+        self.database.backupError.connect(self.backupError)
 
     def backupStarted(self):
         self.showMessage('Backup started...', 2000)
@@ -32,6 +46,14 @@ class StatusBar(QtWidgets.QStatusBar):
     def backupFinished(self):
         self.progress.setVisible(False)
         self.showMessage('Backup completed!', 2000)
+        if self.databaseWidget:
+            self.databaseWidget.setValid(self.database.backup.success)
+
+    def backupError(self, error):
+        self.progress.setVisible(False)
+        self.showMessage('Backup error!', 1000000)
+        if self.databaseWidget:
+            self.databaseWidget.setValid(self.database.backup.success)
 
     def eventFilter(self, source, event):
         if event.type() == QtCore.QEvent.ToolTip and source == self.databaseWidget:
@@ -43,3 +65,4 @@ class StatusBar(QtWidgets.QStatusBar):
             self.databaseWidget = DatabaseWidget(self.height() - 2)
             self.addPermanentWidget(self.databaseWidget)
             self.databaseWidget.installEventFilter(self)
+            self.databaseWidget.setValid(self.database.backup.success)

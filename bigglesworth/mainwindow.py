@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.7
 # *-* encoding: utf-8 *-*
 
+from collections import OrderedDict
 from Qt import QtCore, QtGui, QtWidgets, QtSql
 
 from bigglesworth.const import factoryPresetsNamesDict
@@ -8,6 +9,8 @@ from bigglesworth.utils import loadUi, setBold
 #from bigglesworth.library import LibraryModel
 from bigglesworth.widgets import LibraryWidget, CollectionWidget
 from bigglesworth.dialogs import NewCollectionDialog, ManageCollectionsDialog, TagsDialog, AboutDialog
+
+#import icons
 
 class MainWindow(QtWidgets.QMainWindow):
     closed = QtCore.pyqtSignal()
@@ -20,6 +23,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent):
         QtWidgets.QMainWindow.__init__(self)
         loadUi('ui/mainwindow.ui', self)
+#        QtGui.QIcon.setThemeName('iconTheme')
         self.main = parent
         self.database = parent.database
         self.referenceModel = QtSql.QSqlTableModel()
@@ -37,8 +41,13 @@ class MainWindow(QtWidgets.QMainWindow):
         #TODO: load previous session (check if collection exists!)
         sessionMode = self.main.settings.value('startupSessionMode', 2, int)
         if sessionMode >= 2:
-            left = self.main.settings.value('sessionLayoutLeft', ['Blofeld'], 'QStringList')
-            right = self.main.settings.value('sessionLayoutRight', [None], 'QStringList')
+            #import sessions and remove duplicates
+            left = list(OrderedDict.fromkeys(self.main.settings.value('sessionLayoutLeft', ['Blofeld'], 'QStringList')))
+            right = list(OrderedDict.fromkeys(self.main.settings.value('sessionLayoutRight', [None], 'QStringList')))
+            for side in (left, right):
+                for i, c in enumerate(side):
+                    if c == '':
+                        side[i] = None
             if not all((left, right)):
                 if None not in left and None not in right:
                     if not left:
@@ -62,6 +71,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         for tab, collections in (self.leftTabWidget, left), (self.rightTabWidget, right):
             for collection in collections:
+                if collection not in (None, 'Blofeld') and collection not in self.database.referenceModel.allCollections:
+                    print (collection, 'not found?!')
+                    continue
                 self.openCollection(collection, tab)
 
 #        if self.leftTabWidget.count() < 1:
@@ -78,11 +90,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.leftTabWidget.manageCollections.connect(self.manageCollections)
         self.leftTabWidget.tabCloseRequested.connect(self.closeCollection)
         self.leftTabWidget.tabMoveRequested.connect(self.moveCollection)
+        self.leftTabWidget.tabSwapRequested.connect(self.tabSwap)
         self.rightTabWidget.openCollection.connect(self.openCollection)
         self.rightTabWidget.newCollection.connect(self.newCollection)
         self.rightTabWidget.newCollection.connect(self.manageCollections)
         self.rightTabWidget.tabCloseRequested.connect(self.closeCollection)
         self.rightTabWidget.tabMoveRequested.connect(self.moveCollection)
+        self.rightTabWidget.tabSwapRequested.connect(self.tabSwap)
 
         self.editTagsAction.triggered.connect(self.editTags)
         self.manageCollectionsAction.triggered.connect(self.manageCollections)
@@ -190,6 +204,22 @@ class MainWindow(QtWidgets.QMainWindow):
         widget = self.sender().removeTab(index)
         index = dest.addTab(widget, name)
         dest.setCurrentIndex(index)
+
+    def tabSwap(self):
+        leftTabs = []
+        rightTabs = []
+        leftIndex = self.leftTabWidget.currentIndex()
+        rightIndex = self.rightTabWidget.currentIndex()
+        for tab, destTabList in zip((self.leftTabWidget, self.rightTabWidget), (rightTabs, leftTabs)):
+            for index in range(tab.count()):
+                name = tab.tabText(0)
+                widget = tab.removeTab(0)
+                destTabList.append((widget, name))
+        for tab, destTabList in zip((self.leftTabWidget, self.rightTabWidget), (leftTabs, rightTabs)):
+            for widget, name in destTabList:
+                tab.addTab(widget, name)
+        self.leftTabWidget.setCurrentIndex(rightIndex)
+        self.rightTabWidget.setCurrentIndex(leftIndex)
 
     def checkSplitter(self, pos):
         if pos < self.leftTabWidget.currentWidget().minimumSizeHint().width() * .5 and not self.rightTabBar.isVisible():

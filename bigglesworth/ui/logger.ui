@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Error log</string>
+   <string>Bigglesworth log</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="1">
@@ -103,7 +103,9 @@
       <string>Export log file...</string>
      </property>
      <property name="icon">
-      <iconset theme="document-save"/>
+      <iconset theme="document-save">
+       <normaloff/>
+      </iconset>
      </property>
     </widget>
    </item>

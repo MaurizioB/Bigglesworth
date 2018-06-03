@@ -176,9 +176,7 @@ class ColorMenu(QtWidgets.QMenu):
         self.svgMenu = self.addMenu('SVG colors')
         for color, name in _svgColorsByRgb:
             self.svgMenu.addAction(self.createItem(color, name))
-        globalSeparator = QtWidgets.QAction('Base colors', self)
-        globalSeparator.setSeparator(True)
-        self.addAction(globalSeparator)
+        self.addSeparator().setText('Base colors')
         for color, name in _baseColorsByRgb:
             self.addAction(self.createItem(color, name))
 
