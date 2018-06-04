@@ -529,7 +529,7 @@ class DumpReceiveDialog(DumpDialog):
         if save:
             self.changedCollections[self.sourceModel][1] = state
 
-    def alsaConnEvent(self, conn, state):
+    def midiConnEvent(self, conn, state):
         inConn, outConn = connections = self.main.connections
         if all(connections):
             for row in range(self.tableModel.rowCount()):
@@ -771,7 +771,7 @@ class DumpSendDialog(DumpDialog):
         self.banksWidget.blockSignals(False)
         self.dumpBtn.setEnabled(valid)
 
-    def alsaConnEvent(self, conn, state):
+    def midiConnEvent(self, conn, state):
         if self.main.connections[1]:
             for row in range(self.tableModel.rowCount()):
                 if self.tableModel.item(row, 0).data(QtCore.Qt.CheckStateRole):

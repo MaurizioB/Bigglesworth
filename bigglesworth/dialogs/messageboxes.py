@@ -128,21 +128,22 @@ class InputMessageBox(QtWidgets.QDialog):
 
 
 class LocationRequestDialog(QtWidgets.QDialog):
-    def __init__(self, parent=None, bank=0, prog=0):
+    def __init__(self, parent=None, bank=None, prog=None):
         QtWidgets.QDialog.__init__(self, parent)
         layout = QtWidgets.QGridLayout()
+        self.setLayout(layout)
         layout.addWidget(QtWidgets.QLabel('Please select the desired location:'), 0, 0, 1, 2)
 
         layout.addWidget(QtWidgets.QLabel('Bank:'))
         self.bankCombo = QtWidgets.QComboBox()
         self.bankCombo.addItems([uppercase[b] for b in range(8)])
-        self.bankCombo.setCurrentIndex(bank)
+        self.bankCombo.setCurrentIndex(bank if bank is not None else 0)
         layout.addWidget(self.bankCombo, 1, 1)
 
         layout.addWidget(QtWidgets.QLabel('Program:'))
         self.progSpin = QtWidgets.QSpinBox()
         self.progSpin.setRange(1, 128)
-        self.progSpin.setValue(prog)
+        self.progSpin.setValue(prog if prog is not None else 0)
         layout.addWidget(self.progSpin, 2, 1)
 
         self.buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok|QtWidgets.QDialogButtonBox.Cancel)
@@ -151,7 +152,7 @@ class LocationRequestDialog(QtWidgets.QDialog):
         self.buttonBox.rejected.connect(self.reject)
 
     def exec_(self):
-        res = QtWidgets.QDialog.exec_()
+        res = QtWidgets.QDialog.exec_(self)
         if not res:
             return None, None
         return self.bankCombo.currentIndex(), self.progSpin.value() - 1

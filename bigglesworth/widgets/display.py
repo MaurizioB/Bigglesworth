@@ -493,7 +493,10 @@ class UndoDisplayBtn(DisplayBtn):
                 self.setMenu(self._menu)
             else:
                 self.setMenu(None)
-            self.setToolTip(self.undoStack.command(index - 1).undoText())
+            try:
+                self.setToolTip(self.undoStack.command(index - 1).undoText())
+            except:
+                self.setToolTip(self.undoStack.command(index - 1).text())
 
     def redoComputeContents(self, index):
         if index == self.undoStack.count():
@@ -506,7 +509,10 @@ class UndoDisplayBtn(DisplayBtn):
                 self.setMenu(self._menu)
             else:
                 self.setMenu(None)
-            self.setToolTip(self.undoStack.command(index).redoText())
+            try:
+                self.setToolTip(self.undoStack.command(index).redoText())
+            except:
+                self.setToolTip(self.undoStack.command(index).text())
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
@@ -756,7 +762,7 @@ class BlofeldDisplay(QtWidgets.QGraphicsView):
         self.bankSpin.setValidIndexes(validIndexes)
         self.progSpin.setValidIndexes(validIndexes)
         colId = self.referenceModel.allCollections.index(collection)
-        location = self.referenceModel.index(res[0].row(), colId + 2).data()
+        location = int(self.referenceModel.index(res[0].row(), colId + 2).data())
         bank = location >> 7
         prog = (location & 127)
         self.bankSpin.setValue(bank)

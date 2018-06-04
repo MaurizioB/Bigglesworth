@@ -436,7 +436,7 @@ class FirstRunWizard(QtWidgets.QWizard):
             self.logoLbl.setPixmap(QtGui.QPixmap(':/images/bigglesworth_textonly.svg').scaledToWidth(
                 self.width() * .95, QtCore.Qt.SmoothTransformation))
 
-    def alsaConnEvent(self, conn):
+    def midiConnEvent(self, conn):
         if self.currentPage() != self.midiPage:
             return
         self.button(self.NextButton).setEnabled(True if self.main.connections[1] else False)

@@ -38,6 +38,8 @@ class BlofeldDB(QtCore.QObject):
     ReadError, WriteError, InvalidError, DatabaseFormatError, TableFormatError, QueryError = Enum(6)
     SoundsEmpty, ReferenceEmpty = Enum(32, 64)
 
+    soundNameChanged = QtCore.pyqtSignal(str, str)
+
     backupStarted = QtCore.pyqtSignal()
     backupStatusChanged = QtCore.pyqtSignal(int)
     backupFinished = QtCore.pyqtSignal()
@@ -553,7 +555,7 @@ class BlofeldDB(QtCore.QObject):
 #        print('targetUid', targetUid)
         if not isinstance(targetUid, (str, unicode)):
             if collection:
-                self.query.exec_('UPDATE reference SET "{c}" = NULL WHERE "{c}" = {i}'.format(collection, index))
+                self.query.exec_('UPDATE reference SET "{c}" = NULL WHERE "{c}" = {i}'.format(c=collection, i=index))
                 self.query.prepare('INSERT INTO reference(uid, tags, "{}") VALUES(:uid, :tags, :location)'.format(collection))
                 self.query.bindValue(':location', index)
             else:
@@ -583,9 +585,7 @@ class BlofeldDB(QtCore.QObject):
                 return
         self.query.first()
         if self.query.value(0) == uid:
-            print('non scrivibile')
             return False
-        print('scrivibile')
         return True
 
     def getSoundDataFromUid(self, uid):
@@ -606,7 +606,7 @@ class BlofeldDB(QtCore.QObject):
         while self.query.next():
             value = self.query.value(0)
             if isinstance(value, (int, long)):
-                indexes.append(value)
+                indexes.append(int(value))
         if len(set(indexes)) != len(indexes):
             print('WARNING: duplicate indexes in collection', collection)
         return sorted(set(indexes))
@@ -1119,6 +1119,7 @@ class BlofeldDB(QtCore.QObject):
             collection = LibraryModel(self)
         else:
             collection = CollectionModel(name)
+        collection.soundNameChanged.connect(self.soundNameChanged)
         if self.main.argparse.log:
             collection.logger = self.logger
 #        collection.dataChanged.connect(self.collectionChanged)

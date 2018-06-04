@@ -321,8 +321,8 @@ class NameUndo(QtWidgets.QUndoCommand):
     def mergeWith(self, command):
         if command.id() not in range(363, 380):
             return False
-        self.newChars = command.newChars
-        self.oldChars = command.oldChars
+        self.newChars.update(command.newChars)
+        self.oldChars.update(command.oldChars)
         self.newText = command.newText
         self.setText(command.text() + '\nSound name')
         return True
@@ -403,6 +403,7 @@ class EditorWindow(QtWidgets.QMainWindow):
     openLibrarianRequested = QtCore.pyqtSignal()
     midiEvent = QtCore.pyqtSignal(object)
     midiConnect = QtCore.pyqtSignal(object, int, bool)
+    soundNameChanged = QtCore.pyqtSignal(str)
 
     def __init__(self, parent):
         QtWidgets.QMainWindow.__init__(self)
@@ -422,12 +423,15 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.currentCollections = None
         self.currentBank = None
         self.currentProg = None
+        self.setFromDump = False
 
+        inConn, outConn = self.main.connections
         self.editorMenuBar = EditorMenu(self)
         self.editorMenuBar.openSoundRequested.connect(self.openSoundFromMenu)
         self.editorMenuBar.importRequested.connect(self.importSound)
         self.editorMenuBar.randomAllRequest.connect(self.randomizeAll)
         self.editorMenuBar.randomCustomRequest.connect(self.randomizeCustom)
+        self.editorMenuBar.dumpMenu.setEnabled(True if any((any(inConn), any(outConn))) else False)
         self.leftLayout.insertWidget(0, self.editorMenuBar)
 
         self.saveBtn.button.setIcon(QtGui.QIcon.fromTheme('document-save'))
@@ -619,12 +623,18 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.midiInWidget.setCtrlState(self.main.ctrlReceiveState)
         self.main.progReceiveToggled.connect(self.midiInWidget.setProgState)
         self.main.ctrlReceiveToggled.connect(self.midiInWidget.setCtrlState)
+#        self.midiInWidget.setConnections(len([conn for conn in self.main.midiDevice.input.connections.input if not conn.hidden]))
+        self.midiInWidget.setConnections(any(inConn))
 
         self.midiOutWidget.clicked.connect(self.showMidiMenu)
         self.midiOutWidget.setProgState(self.main.progSendState)
         self.midiOutWidget.setCtrlState(self.main.ctrlSendState)
         self.main.progSendToggled.connect(self.midiOutWidget.setProgState)
         self.main.ctrlSendToggled.connect(self.midiOutWidget.setCtrlState)
+#        self.midiOutWidget.setConnections(len([conn for conn in self.main.midiDevice.output.connections.output if not conn.hidden]))
+        self.midiOutWidget.setConnections(any(outConn))
+
+        self.main.midiConnChanged.connect(self.midiConnChanged)
 
         self.pianoKeyboard.noteEvent.connect(self.noteEvent)
         self.modSlider.valueChanged.connect(self.modEvent)
@@ -712,7 +722,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.settings.endGroup()
         if remember:
             self.settings.setValue('autosave', state)
-        if state and self.editStatus == self.Modified:
+        if state and (self.editStatus == self.Modified or self.setFromDump):
             self.save()
 
     def showMidiMenu(self):
@@ -894,9 +904,11 @@ class EditorWindow(QtWidgets.QMainWindow):
         if not 'linux' in sys.platform:
             #fix for menus on windows (mac?)
             self.setPalette(theme.palette)
+            #for some reason, directly editing the existing palette doesn't work, so we need a copy of it
             palette = QtGui.QPalette(theme.palette)
             for role in (QtGui.QPalette.Inactive, QtGui.QPalette.Active):
-                palette.setColor(role, QtGui.QPalette.Button, palette.color(role, QtGui.QPalette.Window))
+#                palette.setColor(role, QtGui.QPalette.Button, palette.color(role, QtGui.QPalette.Window))
+                palette.setColor(role, QtGui.QPalette.Button, QtGui.QColor(QtCore.Qt.red))
                 palette.setColor(role, QtGui.QPalette.ButtonText, palette.color(role, QtGui.QPalette.WindowText))
             self.editorMenuBar.setPalette(palette)
         else:
@@ -933,8 +945,11 @@ class EditorWindow(QtWidgets.QMainWindow):
         cmd = self.undoStack.command(index)
         if isinstance(cmd, NameUndo):
             text = '{} reset to "{}"'.format(cmd.actionText(), cmd.oldText)
-        else:
+        elif isinstance(cmd, ValueUndo):
             text = '{} reset to {}'.format(cmd.actionText(), cmd.oldValueStr)
+        elif cmd.text() == 'Sound INITed':
+            text = 'Sound reset to previous values'
+#            self.display.nameEdit.setText('stocazzo')
         self.display.setStatusText(text)
 
     def redoUpdate(self, index=None):
@@ -943,8 +958,11 @@ class EditorWindow(QtWidgets.QMainWindow):
         cmd = self.undoStack.command(index)
         if isinstance(cmd, NameUndo):
             text = '{} restored to "{}"'.format(cmd.actionText(), cmd.newText)
-        else:
+        elif isinstance(cmd, ValueUndo):
             text = '{} restored to {}'.format(cmd.actionText(), cmd.valueStr)
+        elif cmd.text() == 'Sound INITed':
+            text = 'Sound re-INITed'
+#            self.display.nameEdit.setText('')
         self.display.setStatusText(text)
 
 #    def getUndoText(self, index, mode):
@@ -990,7 +1008,18 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.display.setStatusText(undo.text())
         self.undoStack.push(undo)
 
-    
+    def midiConnChanged(self, inConn, outConn):
+        self.midiInWidget.setConnections(len(inConn))
+        self.midiOutWidget.setConnections(len(outConn))
+        self.editorMenuBar.dumpMenu.setEnabled(True if any(inConn) and any(outConn) else False)
+
+    def nameChangedFromDatabase(self, uid, name):
+        if self.currentUid and self.currentUid == uid:
+            #TODO: check the logic behind this change...
+            self.display.nameEdit.setText(name)
+#            self.createNameUndo(name)
+
+
     def parameterChanged(self, id, childId, newValue, oldValue):
         location = 0
         parHigh, parLow = divmod(id, 128)
@@ -1046,12 +1075,16 @@ class EditorWindow(QtWidgets.QMainWindow):
     
     def save(self):
         if self.currentUid:
+            oldName = self.database.getNameFromUid(self.currentUid)
             if not self.database.isUidWritable(self.currentUid):
                 return self.saveAs(True)
             if self._editStatus == self.Modified:
                 saved = self.database.updateSound(self.currentUid, self.parameters)
+                if self.database.getNameFromUid(self.currentUid) != oldName:
+                    self.soundNameChanged.emit(self.currentUid)
                 if saved:
                     self.undoStack.setClean()
+                    self.setFromDump = False
                     return True
                 else:
                     return False
@@ -1082,6 +1115,7 @@ class EditorWindow(QtWidgets.QMainWindow):
             return False
         self.currentCollection, self.currentBank, self.currentProg = self.display.setCollections([collection], self.currentUid, collection)
         self.undoStack.setClean()
+        self.setFromDump = False
         return True
 
     def midiEventReceived(self, event):
@@ -1176,9 +1210,14 @@ class EditorWindow(QtWidgets.QMainWindow):
 
     def openSoundFromUid(self, uid, fromCollection=None):
 #        self.saveFrame.setEnabled(True)
-        if self._editStatus == self.Modified:
-            res = QtWidgets.QMessageBox.question(self, 'Sound modified', 
-                'The current sound has been modified', 
+        if self._editStatus == self.Modified or self.setFromDump:
+            if self._editStatus == self.Modified:
+                title = 'Sound modified'
+                message = 'The current sound has been modified.\nWhat do you want to do?'
+            else:
+                title = 'Sound dumped'
+                message = 'The current sound has been dumped from the Blofeld.\nWhat do you want to do?'
+            res = QtWidgets.QMessageBox.question(self, title, message, 
                 buttons=QtWidgets.QMessageBox.Save|QtWidgets.QMessageBox.Ignore|QtWidgets.QMessageBox.Cancel)
             if res == QtWidgets.QMessageBox.Cancel:
                 return
@@ -1230,7 +1269,10 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.currentCollections = collections if collections else None
         self.currentCollection, self.currentBank, self.currentProg = self.display.setCollections(collections, uid, fromCollection)
 
-    def setValues(self, data=None):
+    def setValues(self, data=None, fromDump=False, resetIndex=True):
+        self.setFromDump = fromDump
+        self.display.bankWidget.setDisabled(fromDump and resetIndex)
+        self.display.progWidget.setDisabled(fromDump and resetIndex)
         self.parameters.blockSignals(True)
         if not data:
             data = [p.default for p in Parameters.parameterData]
@@ -1271,6 +1313,43 @@ class EditorWindow(QtWidgets.QMainWindow):
                     setattr(self.parameters, child.attr, randrange(child.range.minimum, child.range.maximum + 1, child.range.step))
             else:
                 setattr(self.parameters, param.attr, randrange(param.range.minimum, param.range.maximum + 1, param.range.step))
+
+    def initNew(self):
+        if self._editStatus == self.Modified or self.setFromDump:
+            if self._editStatus == self.Modified:
+                title = 'Sound modified'
+                message = 'The current sound has been modified.\nWhat do you want to do?'
+            else:
+                title = 'Sound dumped'
+                message = 'The current sound has been dumped from the Blofeld.\nWhat do you want to do?'
+            res = QtWidgets.QMessageBox.question(self, title, message, 
+                buttons=QtWidgets.QMessageBox.Save|QtWidgets.QMessageBox.Ignore|QtWidgets.QMessageBox.Cancel)
+            if res == QtWidgets.QMessageBox.Cancel:
+                return
+            elif res == QtWidgets.QMessageBox.Save:
+                saved = self.saveAs()
+                if saved == False:
+                    return QtWidgets.QMessageBox.alert(self, 'Save error', 
+                    'There was a problem saving the sound', 
+                    QtWidgets.QMessageBox.Ok)
+        self.currentBank = self.currentProg = self.currentUid = None
+        self.setValues()
+
+    def initCurrent(self):
+        self.setFromDump = False
+#        self.parameters.blockSignals(True)
+        self.undoStack.beginMacro('Sound INITed')
+        data = [p.default for p in Parameters.parameterData]
+        for p, value in zip(Parameters.parameterData, data):
+            if p.attr.startswith('reserved'):
+                continue
+            setattr(self.parameters, p.attr, value)
+#        self.parameters.blockSignals(False)
+        self.undoStack.endMacro()
+        name = getName(self.parameters[363:379]).strip()
+#        self.undoStack.clear()
+#        self.undoView.setEmptyLabel('"{}" clean status'.format(name))
+        self.display.setStatusText('Sound INITed'.format(name))
 
     def randomizeCustom(self):
         randomDialog = RandomDialog()

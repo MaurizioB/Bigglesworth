@@ -66,6 +66,7 @@ class Bigglesworth(QtWidgets.QApplication):
     ctrlSendToggled = QtCore.pyqtSignal(bool)
     progReceiveToggled = QtCore.pyqtSignal(bool)
     ctrlReceiveToggled = QtCore.pyqtSignal(bool)
+    midiConnChanged = QtCore.pyqtSignal(object, object)
 
     def __init__(self, argparse, args):
         QtWidgets.QApplication.__init__(self, ['Bigglesworth'] + args)
@@ -178,7 +179,7 @@ class Bigglesworth(QtWidgets.QApplication):
                             self.midiConnect(port, False, True)
 
         self.graph.port_start.connect(self.newAlsaPort)
-        self.graph.conn_register.connect(self.alsaConnEvent)
+        self.graph.conn_register.connect(self.midiConnEvent)
         self.midiDevice.midi_event.connect(self.midiEventReceived)
 
         self.splash.showMessage('Preparing interface', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .7)
@@ -206,14 +207,18 @@ class Bigglesworth(QtWidgets.QApplication):
         self.mainWindow.dumpFromRequested.connect(self.dumpFrom)
 
         self.editorWindow = EditorWindow(self)
+        self.database.soundNameChanged.connect(self.editorWindow.nameChangedFromDatabase)
+        self.editorWindow.soundNameChanged.connect(self.refreshCollections)
         self.editorWindow.closed.connect(self.checkClose)
         self.editorWindow.openLibrarianRequested.connect(lambda: [self.mainWindow.show(), self.mainWindow.activateWindow()])
         self.editorWindow.midiEvent.connect(self.sendMidiEvent)
         self.editorWindow.midiConnect.connect(self.midiConnect)
+        self.editorWindow.editorMenuBar.dumpFromRequested.connect(self.dumpFrom)
+        self.editorWindow.editorMenuBar.dumpToRequested.connect(self.dumpTo)
         self.mainWindow.showEditorAction.triggered.connect(self.editorWindow.show)
         self.mainWindow.soundEditRequested.connect(self.editorWindow.openSoundFromUid)
-        self.editorWindow.midiInWidget.setConnections(len([conn for conn in self.midiDevice.input.connections.input if not conn.hidden]))
-        self.editorWindow.midiOutWidget.setConnections(len([conn for conn in self.midiDevice.output.connections.output if not conn.hidden]))
+#        self.editorWindow.midiInWidget.setConnections(len([conn for conn in self.midiDevice.input.connections.input if not conn.hidden]))
+#        self.editorWindow.midiOutWidget.setConnections(len([conn for conn in self.midiDevice.output.connections.output if not conn.hidden]))
 
         self.splash.showMessage('Applying preferences', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, 1)
 
@@ -232,9 +237,9 @@ class Bigglesworth(QtWidgets.QApplication):
         self.dumpReceiveDialog.midiEvent.connect(self.sendMidiEvent)
         self.dumpSendDialog = DumpSendDialog(self, self.mainWindow)
         self.dumpSendDialog.midiEvent.connect(self.sendMidiEvent)
-        self.mainDumper = SmallDumper(self)
+        self.mainDumper = SmallDumper(self, self.mainWindow)
         self.mainDumper.accepted.connect(lambda: setattr(self, 'dumpBlock', False))
-        self.editorDumper = SmallDumper(self)
+        self.editorDumper = SmallDumper(self, self.editorWindow)
         self.editorDumper.accepted.connect(lambda: setattr(self, 'dumpBlock', False))
 #        self.mainDumper.rejected.connect(lambda: setattr(self, 'dumpBlock', False))
 
@@ -353,7 +358,7 @@ class Bigglesworth(QtWidgets.QApplication):
         return ([conn for conn in self.midiDevice.input.connections.input if not conn.hidden], 
             [conn for conn in self.midiDevice.output.connections.output if not conn.hidden])
 
-    def alsaConnEvent(self, conn, state):
+    def midiConnEvent(self, conn, state):
         print('connection event', conn, state)
         if conn.hidden or (conn.dest != self.midiDevice.input and conn.src != self.midiDevice.output):
             return
@@ -365,10 +370,11 @@ class Bigglesworth(QtWidgets.QApplication):
             port = conn.src
         portName = '{}:{}'.format(port.client.name, port.name)
 
-        inConn, outConn = self.connections
-        self.mainWindow.showGlobalsAction.setEnabled(True if all((inConn, outConn)) else False)
-        self.editorWindow.midiInWidget.setConnections(len(inConn))
-        self.editorWindow.midiOutWidget.setConnections(len(outConn))
+        self.midiConnChanged.emit(*self.connections)
+#        inConn, outConn = self.connections
+#        self.mainWindow.showGlobalsAction.setEnabled(True if all((inConn, outConn)) else False)
+#        self.editorWindow.midiInWidget.setConnections(len(inConn))
+#        self.editorWindow.midiOutWidget.setConnections(len(outConn))
 
         if self.firstRunWizard and self.firstRunWizard.isVisible() and \
             self.firstRunWizard.currentPage() == self.firstRunWizard.autoconnectPage and \
@@ -477,7 +483,7 @@ class Bigglesworth(QtWidgets.QApplication):
     def fullDumpBlofeldToCollection(self, collection, sounds):
         self.dumpBlock = True
         self.midiDevice.midi_event.connect(self.dumpReceiveDialog.midiEventReceived)
-        self.graph.conn_register.connect(self.dumpReceiveDialog.alsaConnEvent)
+        self.graph.conn_register.connect(self.dumpReceiveDialog.midiConnEvent)
         data = self.dumpReceiveDialog.exec_(collection, sounds)
         if data:
             sounds, overwrite = data
@@ -485,16 +491,16 @@ class Bigglesworth(QtWidgets.QApplication):
 #            for index, data in sounds.items():
 #                self.database.addRawSoundData(data, collection, index)
 
-        self.graph.conn_register.disconnect(self.dumpReceiveDialog.alsaConnEvent)
+        self.graph.conn_register.disconnect(self.dumpReceiveDialog.midiConnEvent)
         self.midiDevice.midi_event.disconnect(self.dumpReceiveDialog.midiEventReceived)
         self.dumpBlock = False
 
     def fullDumpCollectionToBlofeld(self, collection, sounds):
         self.dumpBlock = True
         self.midiDevice.midi_event.connect(self.dumpSendDialog.midiEventReceived)
-        self.graph.conn_register.connect(self.dumpSendDialog.alsaConnEvent)
+        self.graph.conn_register.connect(self.dumpSendDialog.midiConnEvent)
         self.dumpSendDialog.exec_(collection, sounds)
-        self.graph.conn_register.disconnect(self.dumpSendDialog.alsaConnEvent)
+        self.graph.conn_register.disconnect(self.dumpSendDialog.midiConnEvent)
         self.midiDevice.midi_event.disconnect(self.dumpSendDialog.midiEventReceived)
         self.dumpBlock = False
 
@@ -517,7 +523,7 @@ class Bigglesworth(QtWidgets.QApplication):
             uid = model.index(index, 0).data()
             if uid:
                 if len(self.database.getCollectionsFromUid(uid)) == 1:
-                    message = 'The selected slot is not empty, overwrite the data or create a new slot?'
+                    message = 'The selected slot is not empty\nOverwrite the data or create a new slot?'
                 else:
                     message = 'The selected slot is not empty and is used in {} collections.\n' \
                         'Overwrite the data or create a new slot?'
@@ -537,7 +543,7 @@ class Bigglesworth(QtWidgets.QApplication):
             tot = 1
             dumper = self.mainDumper
         else:
-            self.dumpTargetData = {'collection': collection}
+            self.dumpTargetData = {'collection': collection, 'collectionIndex': index}
             if index is not None:
                 if not multi and index >= 0:
                     model = self.database.openCollection(collection)
@@ -545,17 +551,26 @@ class Bigglesworth(QtWidgets.QApplication):
                     if not isinstance(uid, (str, unicode)):
                         uid = None
                     self.dumpTargetData['uid'] = uid
-                    self.dumpTargetData['tot'] = 1
+#                    self.dumpTargetData['tot'] = 1
+                    tot = 1
                 elif multi:
                     if index < 0:
-                        self.dumpTargetData['tot'] = 16
+                        tot = 16
+#                        self.dumpTargetData['tot'] = 16
                         self.dumpTargetData['multi'] = -1
                     else:
-                        self.dumpTargetData['tot'] = 1
+                        tot = 1
+#                        self.dumpTargetData['tot'] = 1
                         self.dumpTargetData['multi'] = index
+                else:
+                    tot = 1
             elif multi:
-                self.dumpTargetData['tot'] = 1
-            dumper = self.editor
+                #TODO: check it!
+                tot = 1
+            else:
+                tot = 1
+            self.dumpTargetData['tot'] = tot
+            dumper = self.editorDumper
             
         event = SysExEvent(1, [INIT, IDW, IDE, self._blofeldId, SNDR, bank, prog, CHK, END])
         QtCore.QTimer.singleShot(50, lambda: self.sendMidiEvent(event))
@@ -579,6 +594,7 @@ class Bigglesworth(QtWidgets.QApplication):
             #process new data?
 
     def processEditorDumpData(self, event):
+        bank, prog = event.sysex[5:7]
         data = event.sysex[7:390]
         collection = self.dumpTargetData.get('collection', None)
         index = self.dumpTargetData.get('collectionIndex', None)
@@ -591,8 +607,13 @@ class Bigglesworth(QtWidgets.QApplication):
             self.editorDumper.count = count
         if count == tot:
             self.editorDumper.accept()
-            self.editorWindow.currentBank = self.editorWindow.currentProg = self.editorWindow.currentUid = None
-            self.editorWindow.setValues(data)
+            if index is None:
+                self.editorWindow.currentBank = self.editorWindow.currentProg = self.editorWindow.currentUid = None
+                resetIndex = True
+            elif uid is not None:
+                self.editorWindow.currentUid = uid
+                resetIndex = False
+            self.editorWindow.setValues(data, fromDump=True, resetIndex=resetIndex)
             #TODO: apply data to editor for multimode
         else:
             self.dumpTargetData['count'] = count
@@ -603,18 +624,30 @@ class Bigglesworth(QtWidgets.QApplication):
     def dumpTo(self, uid, index, multi):
         #uid, blofeld index/buffer, multi
 #        print('dump "{}" TO blofeld at {}, Multi {}'.format(uid, index, multi))
-        data = self.database.getSoundDataFromUid(uid)
         if index is None:
             bank = 0x7f
             prog = 0
         else:
             if multi:
                 bank = 0x7f
-                prog = index
+                if index >= 0:
+                    prog = index
+                else:
+                    prog = 0
             else:
                 bank = index >> 7
                 prog = index & 127
+        if self.sender() == self.mainWindow:
+            data = self.database.getSoundDataFromUid(uid)
+        else:
+            data = self.editorWindow.parameters[:]
         self.sendMidiEvent(SysExEvent(1, [INIT, IDW, IDE, self._blofeldId, SNDD, bank, prog] + data + [CHK, END]))
+
+    def refreshCollections(self, uid):
+        if not uid:
+            return
+        for collection in self.database.collections.values():
+            collection.updated.emit()
 
     def getSoundIndexFromCommandLine(self, arguments):
         if not arguments:
@@ -643,13 +676,13 @@ class Bigglesworth(QtWidgets.QApplication):
             self.firstRunWizard.autoconnectPage.midiConnect.connect(self.midiConnect)
             self.firstRunWizard.autoconnectPage.midiEvent.connect(self.sendMidiEvent)
             self.firstRunWizard.midiConnectionsWidget.midiConnect.connect(self.midiConnect)
-            self.graph.conn_register.connect(self.firstRunWizard.alsaConnEvent)
+            self.graph.conn_register.connect(self.firstRunWizard.midiConnEvent)
             self.midiDevice.midi_event.connect(self.firstRunWizard.midiEventReceived)
             self.globalsBlock = True
             res = self.firstRunWizard.exec_()
             self.globalsBlock = False
             self.midiDevice.midi_event.disconnect(self.firstRunWizard.midiEventReceived)
-            self.graph.conn_register.disconnect(self.firstRunWizard.alsaConnEvent)
+            self.graph.conn_register.disconnect(self.firstRunWizard.midiConnEvent)
             self.firstRunWizard.midiConnectionsWidget.midiConnect.disconnect(self.midiConnect)
             self.firstRunWizard.autoconnectPage.midiEvent.disconnect(self.sendMidiEvent)
             self.firstRunWizard.autoconnectPage.midiConnect.disconnect(self.midiConnect)
@@ -674,9 +707,9 @@ class Bigglesworth(QtWidgets.QApplication):
     def showSettings(self):
         self.globalsBlock = True
         self.midiDevice.midi_event.connect(self.settingsDialog.midiEventReceived)
-#        self.graph.conn_register.connect(self.settingsDialog.alsaConnEvent)
+#        self.graph.conn_register.connect(self.settingsDialog.midiConnEvent)
         res = self.settingsDialog.exec_()
-#        self.graph.conn_register.disconnect(self.settingsDialog.alsaConnEvent)
+#        self.graph.conn_register.disconnect(self.settingsDialog.midiConnEvent)
         self.midiDevice.midi_event.disconnect(self.settingsDialog.midiEventReceived)
         self.globalsBlock = False
         if not res:

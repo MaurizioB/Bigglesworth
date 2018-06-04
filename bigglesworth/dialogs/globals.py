@@ -230,7 +230,7 @@ class GlobalsDialog(QtWidgets.QDialog):
         self.okBtn.setEnabled(state)
         self.applyBtn.setEnabled(state if state and self.data != self.originalData else False)
 
-    def alsaConnEvent(self, *args):
+    def midiConnEvent(self, *args):
         enabled = True if all(self.main.connections) else False
         self.queryBtn.setEnabled(enabled)
         self.enableWidgets(True if enabled and self.wasEnabled else False)

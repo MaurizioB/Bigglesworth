@@ -18,6 +18,7 @@ class BaseLibraryModel(QtSql.QSqlQueryModel):
         }
 
     updated = QtCore.pyqtSignal()
+    soundNameChanged = QtCore.pyqtSignal(str, str)
     scheduledQueryUpdateSet = QtCore.pyqtSignal()
 
     def __init__(self):
@@ -70,6 +71,7 @@ class BaseLibraryModel(QtSql.QSqlQueryModel):
                 self.dbErrorLog('Error updating tags', (uid, value))
             if not self.query().exec_():
                 self.dbErrorLog('Error refreshing model', uid)
+            self.soundNameChanged.emit(uid, value)
             self.updated.emit()
         elif role == TagsRole:
             uid = index.sibling(index.row(), 0).data()

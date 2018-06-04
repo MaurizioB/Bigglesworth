@@ -25,6 +25,7 @@ class MainWindow(QtWidgets.QMainWindow):
         loadUi('ui/mainwindow.ui', self)
 #        QtGui.QIcon.setThemeName('iconTheme')
         self.main = parent
+        self.main.midiConnChanged.connect(lambda inConn, outConn: self.showGlobalsAction.setEnabled(True if all((inConn, outConn)) else False))
         self.database = parent.database
         self.referenceModel = QtSql.QSqlTableModel()
         self.statusbar.setDatabase(parent.database)
