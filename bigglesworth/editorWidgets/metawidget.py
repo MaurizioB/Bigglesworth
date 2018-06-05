@@ -99,59 +99,59 @@ class QColorStr(QtGui.QColor):
         return 'rgba({},{},{},{})'.format(self.red(), self.green(), self.blue(), self.alphaF())
 
 
-class MetaWidget(object):
-
-    labelChanged = QtCore.pyqtSignal(str)
-    labelPosChanged = QtCore.pyqtSignal(QtCore.Qt.Edge)
-
-    def __init__(self, label='', labelPos=QtCore.Qt.BottomEdge, labelColor=QtCore.Qt.white):
-        self._label = label
-        self._labelPos = labelPos
-        self._labelColor = QtCore.Qt.black
-        #TODO: what?!
-        for _method in ('_paletteChanged', ):
-            try:
-                getattr(self, _method)
-            except:
-                raise NotImplementedError('{}() must be implemented!'.format(_method))
-
-    label = makeQProperty(str, '_label', ('_labelChanged',))
-    labelColor = makeQProperty(QColorStr, '_labelColor', ('update'))
-
-    def setLabel(self, label):
-        self.label = label
-        self.labelChanged.emit(label)
-
-    if __binding__ == 'PyQt4':
-        @QtCore.pyqtProperty(QtCore.Qt.DockWidgetArea)
-        def labelPos(self):
-            return self._labelPos
-    else:
-        @QtCore.pyqtProperty(QtCore.Qt.Edge)
-        def labelPos(self):
-            return self._labelPos
-
-    @labelPos.setter
-    def labelPos(self, labelPos):
-        self._labelPos = labelPos
-        self._labelPosChanged()
-
-    def setLabelPos(self, labelPos):
-        self.labelPos = labelPos
-        self.labelPosChanged.emit(labelPos)
-
-    @QtCore.pyqtProperty(QtGui.QColor)
-    def labelColor(self):
-        return self._labelColor
-
-    @labelColor.setter
-    def labelColor(self, labelColor):
-        self._labelColor = labelColor
-        self._colorsChanged()
-
-
-class Spacer(QtWidgets.QWidget):
-    pass
+#class MetaWidget(object):
+#
+#    labelChanged = QtCore.pyqtSignal(str)
+#    labelPosChanged = QtCore.pyqtSignal(QtCore.Qt.Edge)
+#
+#    def __init__(self, label='', labelPos=QtCore.Qt.BottomEdge, labelColor=QtCore.Qt.white):
+#        self._label = label
+#        self._labelPos = labelPos
+#        self._labelColor = QtCore.Qt.black
+#        #TODO: what?!
+#        for _method in ('_paletteChanged', ):
+#            try:
+#                getattr(self, _method)
+#            except:
+#                raise NotImplementedError('{}() must be implemented!'.format(_method))
+#
+#    label = makeQProperty(str, '_label', ('_labelChanged',))
+#    labelColor = makeQProperty(QColorStr, '_labelColor', ('update'))
+#
+#    def setLabel(self, label):
+#        self.label = label
+#        self.labelChanged.emit(label)
+#
+#    if __binding__ == 'PyQt4':
+#        @QtCore.pyqtProperty(QtCore.Qt.DockWidgetArea)
+#        def labelPos(self):
+#            return self._labelPos
+#    else:
+#        @QtCore.pyqtProperty(QtCore.Qt.Edge)
+#        def labelPos(self):
+#            return self._labelPos
+#
+#    @labelPos.setter
+#    def labelPos(self, labelPos):
+#        self._labelPos = labelPos
+#        self._labelPosChanged()
+#
+#    def setLabelPos(self, labelPos):
+#        self.labelPos = labelPos
+#        self.labelPosChanged.emit(labelPos)
+#
+#    @QtCore.pyqtProperty(QtGui.QColor)
+#    def labelColor(self):
+#        return self._labelColor
+#
+#    @labelColor.setter
+#    def labelColor(self, labelColor):
+#        self._labelColor = labelColor
+#        self._colorsChanged()
+#
+#
+#class Spacer(QtWidgets.QWidget):
+#    pass
 
 
 class BaseWidget(QtWidgets.QWidget):

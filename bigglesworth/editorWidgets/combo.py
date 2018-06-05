@@ -183,21 +183,21 @@ class _Combo(QtWidgets.QComboBox):
         self._setModelSignals()
 
 class Combo(BaseWidget):
-    labelMargin = 2
-    comboPadding = 2
-    arrowDown = QtGui.QPainterPath()
-    arrowDown.moveTo(-4, -2)
-    arrowDown.lineTo(4, -2)
-    arrowDown.lineTo(0, 2)
-    arrowDown.closeSubpath()
-    arrowSize = 8
-    arrowUp = QtGui.QPainterPath()
-    arrowUp.moveTo(-4, 2)
-    arrowUp.lineTo(4, 2)
-    arrowUp.lineTo(0, -2)
-    arrowUp.closeSubpath()
-    arrows = arrowDown, arrowUp
-
+#    labelMargin = 2
+#    comboPadding = 2
+#    arrowDown = QtGui.QPainterPath()
+#    arrowDown.moveTo(-4, -2)
+#    arrowDown.lineTo(4, -2)
+#    arrowDown.lineTo(0, 2)
+#    arrowDown.closeSubpath()
+#    arrowSize = 8
+#    arrowUp = QtGui.QPainterPath()
+#    arrowUp.moveTo(-4, 2)
+#    arrowUp.lineTo(4, 2)
+#    arrowUp.lineTo(0, -2)
+#    arrowUp.closeSubpath()
+#    arrows = arrowDown, arrowUp
+#
     currentIndexChanged = QtCore.pyqtSignal(int)
 
     def __init__(self, parent=None, label='combo', labelPos=QtCore.Qt.BottomEdge, valueList=None):
