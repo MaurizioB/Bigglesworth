@@ -19,12 +19,21 @@ class _Combo(QtWidgets.QComboBox):
         QtWidgets.QComboBox.__init__(self, parent)
         self.setMinimumSize(self._minimumSizeHint)
         self._baseStyleSheet = ''
+        self.computeMetrics()
         self.addItems(valueList)
 #        self.addItems(['aaa', 'bbb', 'ccc', 'ddd', 'aaa', 'bbb', 'ccc', 'ddd', 'aaa', 'bbb', 'ccc', 'ddd'])
         self._setModelSignals()
         #this seems to be necessary to correctly apply css styling
         self.setView(ListView())
         self.opaque = False
+
+    def computeMetrics(self):
+        self._metrics = {}
+        dpi = (self.logicalDpiX() + self.logicalDpiY()) / 2.
+        ratio = 1. / 76 * dpi
+        for s in (1, 2, 4, 8, 80):
+            self._metrics['{}px'.format(s)] = s * ratio
+        self.padding *= ratio
 
     def _setOpaque(self, opaque):
         self.opaque = opaque
@@ -44,24 +53,24 @@ class _Combo(QtWidgets.QComboBox):
             QComboBox {{
                 color: {foreground};
                 padding: {padding}px;
-                border-top: 1px solid {light};
-                border-right: 1px solid {dark};
-                border-bottom: 1px solid {dark};
-                border-left: 1px solid {light};
-                border-radius: 2px;
+                border-top: {1px} solid {light};
+                border-right: {1px} solid {dark};
+                border-bottom: {1px} solid {dark};
+                border-left: {1px} solid {light};
+                border-radius: {2px};
                 background: {background};
             }}
             QComboBox:on {{
-                border-top: 1px solid {dark};
-                border-right: 1px solid {light};
-                border-bottom: 1px solid {light};
-                border-left: 1px solid {dark};
-                border-radius: 2px;
+                border-top: {1px} solid {dark};
+                border-right: {1px} solid {light};
+                border-bottom: {1px} solid {light};
+                border-left: {1px} solid {dark};
+                border-radius: {2px};
             }}
             QComboBox::drop-down {{
                 subcontrol-origin: padding;
                 subcontrol-position: right;
-                width: 8px;
+                width: {8px};
                 border: none;
             }}
             QComboBox::down-arrow {{
@@ -69,23 +78,23 @@ class _Combo(QtWidgets.QComboBox):
                 subcontrol-position: right;
                 width: 0px;
                 height: 0px;
-                margin-right: 2px;
-                border-left: 4px solid {background};
-                border-right: 4px solid {background};
-                border-top: 4px solid {foreground};
+                margin-right: {2px};
+                border-left: {4px} solid {background};
+                border-right: {4px} solid {background};
+                border-top: {4px} solid {foreground};
                 border-bottom: none;
             }}
             QComboBox::down-arrow:disabled {{
-                border-top: 4px solid {itemFgdColorDisabled};
+                border-top: {4px} solid {itemFgdColorDisabled};
             }}
             QComboBox::down-arrow:on {{
                 border-top: none;
-                border-bottom: 4px solid {foreground};
+                border-bottom: {4px} solid {foreground};
             }}
             QListView::item:!selected {{
                 background: {itemBgdColorEnabled};
                 color: {itemFgdColorEnabled};
-                min-width: 80px;
+                min-width: {80px};
             }}
             QListView::item:disabled:!selected {{
                 background: {itemBgdColorDisabled};
@@ -116,6 +125,7 @@ class _Combo(QtWidgets.QComboBox):
                 selectedItemFgdColorDisabled=_getCssQColorStr(palette.color(palette.Disabled, palette.HighlightedText)), 
                 selectedItemBgdColorEnabled=_getCssQColorStr(palette.color(palette.Active, palette.Highlight)), 
                 selectedItemFgdColorEnabled=_getCssQColorStr(palette.color(palette.Active, palette.HighlightedText)), 
+                **self._metrics
                 )
         self.applyStyleSheet()
 #        print(_getCssQColorStr(palette.color(palette.Active, palette.Text)), _getCssQFontStr(self.font()))
