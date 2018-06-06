@@ -340,6 +340,24 @@ class HDisplayGroup(DisplayGroup):
         self.setLayout(layout)
 
 
+class ProgSendWidget(VDisplayGroup):
+    def __init__(self):
+        VDisplayGroup.__init__(self)
+
+    def sizeHint(self):
+        base = VDisplayGroup.sizeHint(self)
+        base.setWidth(self.fontMetrics().width('D'))
+        base.setHeight(self.fontMetrics().height() * 3)
+        return base
+
+    def paintEvent(self, event):
+        VDisplayGroup.paintEvent(self, event)
+        qp = QtGui.QPainter(self)
+        font = self.font()
+        font.setPointSize(font.pointSize() * .7)
+        qp.drawText(self.rect(), QtCore.Qt.AlignCenter, 'S\nE\nN\nD')
+
+
 class UndoRedoProxy(QtCore.QSortFilterProxyModel):
     def __init__(self):
         QtCore.QSortFilterProxyModel.__init__(self)
@@ -644,6 +662,10 @@ class DisplayWidget(QtWidgets.QWidget):
         self.progWidget.addWidget(QtWidgets.QLabel('Prog:'), QtCore.Qt.AlignCenter)
         self.progSpin = ProgSpin()
         self.progWidget.addWidget(self.progSpin)
+
+#        self.progSendWidget = ProgSendWidget()
+##        self.progSendWidget.setEnabled(False)
+#        layout.addWidget(self.progSendWidget, 1, 2)
 
         self.catWidget = HDisplayGroup()
         self.catWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum))

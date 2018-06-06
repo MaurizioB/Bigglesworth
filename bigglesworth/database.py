@@ -161,7 +161,8 @@ class BlofeldDB(QtCore.QObject):
         if not QtCore.QFile.exists(self.path):
             self.logger.append(LogDebug, 'Database does not exists, trying to create')
             fileInfo = QtCore.QFileInfo(self.path)
-            if not QtCore.QFile.exists(fileInfo.absolutePath()) and not QtCore.QDir().mkdir(fileInfo.absolutePath()):
+#            if not QtCore.QFile.exists(fileInfo.absolutePath()) and not QtCore.QDir().mkdir(fileInfo.absolutePath()):
+            if not QtCore.QFile.exists(fileInfo.absolutePath()) and not QtCore.QDir().mkpath(fileInfo.absolutePath()):
                 self.logger.append(LogFatal, 'Write error!!!', 'Cannot create db directory')
                 self.lastError = self.WriteError
                 return False
