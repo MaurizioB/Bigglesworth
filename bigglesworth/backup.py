@@ -48,8 +48,8 @@ class BackUp(QtCore.QObject):
         self.success = True
 
     def setPath(self, path):
-        self.basePath = path
-        self.bkpPath = path + '.bkp'
+        self.basePath = path.encode(sys.getfilesystemencoding())
+        self.bkpPath = self.basePath + '.bkp'
 
     def queueBackup(self):
         self.backupStarted.emit()
@@ -67,7 +67,6 @@ class BackUp(QtCore.QObject):
 
     def doBackup(self):
         self.main.logger.append(LogDebug, 'Starting backup')
-#        print('lancio backup')
         res = sqlite.sqlite3_open_v2(self.basePath, ctypes.byref(srcDbPointer), SQLITE_OPEN_READONLY, nullPointer)
         if res != SQLITE_OK or srcDbPointer.value is None:
             self.main.logger.append(LogCritical, 'Error opening database for backup')
