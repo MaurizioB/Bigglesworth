@@ -232,23 +232,42 @@ class BlofeldDB(QtCore.QObject):
         self.logger.append(LogDebug, 'Checking reference table')
         self.query.exec_('PRAGMA table_info(reference)')
         if not self.query.next():
-            self.logger.append(LogDebug, 'Creating reference table')
+            self.logger.append(LogDebug, 'Preparing creation of reference table')
             self.query.exec_('CREATE TABLE reference ' + referenceDef)
             createBit |= self.ReferenceEmpty
         else:
             self.query.seek(-1)
             columns = []
             while self.query.next():
-                columns.append(self.query.value(1).lower())
-            if columns[:len(referenceColumns)] != referenceColumns:
-                self.logger.append(LogCritical, 'Reference table column mismatch', extMessage=columns)
-                self.lastError = self.TableFormatError
-                return False
+                columns.append(self.query.value(1))
+            newColumns = columns[len(referenceColumns):]
+            baseColumns = columns[:len(referenceColumns)]
+            if baseColumns != referenceColumns:
+                self.logger.append(LogCritical, 'Reference table column mismatch, deep checking', extMessage=columns)
+                self.query.exec_('SAVEPOINT refRename')
+                try:
+                    assert self.query.exec_('ALTER TABLE reference RENAME TO reference_old')
+                    newLayout = ', '.join(referenceColumns + newColumns)
+                    assert self.query.exec_('CREATE TABLE reference({})'.format(newLayout))
+                    reordered = referenceColumns[:]
+                    if 'blofeld' in baseColumns:
+                        reordered.pop(reordered.index('Blofeld'))
+                        reordered.insert(referenceColumns.index('Blofeld'), 'blofeld')
+                    assert self.query.exec_('INSERT INTO reference({}) SELECT {} FROM reference_old'.format(
+                        newLayout, ', '.join(reordered + newColumns)))
+                    assert self.query.exec_('DROP TABLE reference_old')
+                except:
+                    self.logger.append(LogCritical, 'Failed to reorder reference table')
+                    self.query.exec_('ROLLBACK TO refRename')
+                    self.lastError = self.TableFormatError
+                    return False
+                self.query.exec_('COMMIT')
+                self.logger.append(LogDebug, 'Reference table successfully reordered')
 
         self.logger.append(LogDebug, 'Checking templates table')
         self.query.exec_('PRAGMA table_info(templates)')
         if not self.query.next():
-            self.logger.append(LogDebug, 'Creating templates table')
+            self.logger.append(LogDebug, 'Preparing creation of templates table')
             self.query.exec_('CREATE TABLE templates ' + templateDef)
 
         self.logger.append(LogDebug, 'Checking ascii conversion table')
