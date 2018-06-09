@@ -10,7 +10,7 @@ from bigglesworth.utils import loadUi, localPath, getName, getChar, Enum, setBol
 from bigglesworth.const import (chr2ord, UidColumn, LocationColumn, 
     INIT, IDW, IDE, SNDP, END, templateGroupDict)
 from bigglesworth.parameters import Parameters, fullRangeCenterZero, driveCurves, arpLength, ctrl2sysex
-from bigglesworth.widgets import SoundsMenu, EditorMenu, EnvelopeView
+from bigglesworth.widgets import SoundsMenu, EditorMenu, EnvelopeView, MidiConnectionsDialog
 from bigglesworth.dialogs import RandomDialog, InputMessageBox, TemplateManager, SaveSoundAs, WarningMessageBox
 from bigglesworth.midiutils import NoteOffEvent, NoteOnEvent, CtrlEvent, ProgramEvent, SysExEvent, SYSEX, CTRL, NOTEON, NOTEOFF, PROGRAM
 
@@ -454,6 +454,8 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.undoStack.cleanChanged.connect(self.editStatusCheck)
 
         self.undoView = QtWidgets.QUndoView(self.undoStack)
+        self.undoView.setParent(self)
+        self.undoView.setWindowFlags(self.undoView.windowFlags() | QtCore.Qt.Window | QtCore.Qt.Tool)
         self.undoView.setCleanIcon(QtGui.QIcon.fromTheme('document-new'))
         self.undoView.setEmptyLabel('"Init" clean status')
         self.undoView.setWindowTitle('Bigglesworth editor undo list')
@@ -663,6 +665,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.nextSoundTimer.setSingleShot(True)
         self.nextSoundTimer.setInterval(400)
         self.nextSoundTimer.timeout.connect(self.openSoundFromBankProg)
+        self.display.progSendWidget.clicked.connect(self.sendProgramChange)
 
         saveMenu = QtWidgets.QMenu(self)
         self.saveAction = saveMenu.addAction('Save')
@@ -778,11 +781,16 @@ class EditorWindow(QtWidgets.QMainWindow):
         clientListMenu.setTitle('Connections ({})'.format(connections))
         if not clientListMenu.actions():
             clientListMenu.setEnabled(False)
+        menu.addSeparator()
+        showConnectionsAction = menu.addAction('Show MIDI connection dialog')
 
         res = menu.exec_(QtGui.QCursor.pos())
         if not res:
             return
-        if res == progAction:
+        if res == showConnectionsAction:
+            dialog = MidiConnectionsDialog(self.main, self)
+            dialog.exec_()
+        elif res == progAction:
             setattr(self.main, progActionAttr, progAction.isChecked())
         elif res == ctrlAction:
             setattr(self.main, ctrlActionAttr, ctrlAction.isChecked())
@@ -1164,13 +1172,13 @@ class EditorWindow(QtWidgets.QMainWindow):
 #            print ctrl2sysex[event.data]
 
     def noteEvent(self, eventType, note, velocity):
-        for channel in sorted(self.main.chanSend):
-            event = NoteOnEvent if eventType else NoteOffEvent
-            self.midiEvent.emit(event(1, channel, note, velocity))
+#        for channel in sorted(self.main.chanSend):
+        event = NoteOnEvent if eventType else NoteOffEvent
+        self.midiEvent.emit(event(1, 0, note, velocity))
 
     def modEvent(self, value):
-        for channel in sorted(self.main.chanSend):
-            self.midiEvent.emit(CtrlEvent(1, channel, 1, value))
+#        for channel in sorted(self.main.chanSend):
+        self.midiEvent.emit(CtrlEvent(1, 0, 1, value))
 
     def editStatusCheck(self, data):
         #TODO verifica meglio il clean!
@@ -1200,10 +1208,18 @@ class EditorWindow(QtWidgets.QMainWindow):
             prog = self.currentProg
         if (bank, prog) == (self.currentBank, self.currentProg):
             return
-        print('cambio a', bank, prog, collection)
+#        print('cambio a', bank, prog, collection)
         self.openSoundFromUid(self.database.getUidFromCollection(bank, prog, collection), collection)
+        if self.main.connections[1] and self.main.progSendState:
+            self.sendProgramChange()
 #        self.currentBank = bank
 #        self.currentProg = prog
+
+    def sendProgramChange(self):
+        if self.currentBank is None or self.currentProg is None:
+            return
+        self.midiEvent.emit(CtrlEvent(1, 0, 0, self.currentBank))
+        self.midiEvent.emit(ProgramEvent(1, 0, self.currentProg))
 
     def openSoundFromMenu(self, action):
         self.openSoundFromUid(action.data(), action.parentWidget().menuAction().data())

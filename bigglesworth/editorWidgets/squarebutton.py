@@ -60,6 +60,8 @@ class _Button(QtWidgets.QPushButton):
         if palette is None:
             palette = self.parent().palette()
         state = palette.Active if self.parent()._switchable and self.parent()._switched else palette.Inactive
+        if self.parent()._inverted:
+            state = palette.Inactive if state == palette.Active else palette.Active
         backgroundBase = palette.color(state, palette.Button)
         backgroundNormal = backgroundBase.darker(180)
         backgroundNormalLight = backgroundBase
@@ -108,6 +110,7 @@ class SquareButton(BaseWidget):
 #        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
         self._switchable = switchable
         self._switched = switched
+        self._inverted = False
         self.button = _Button(self)
         self.button.clicked.connect(self.clicked)
         self.setWidget(self.button)
@@ -125,6 +128,7 @@ class SquareButton(BaseWidget):
 
     switchable = makeQtProperty(bool, '_switchable', actions=(lambda self: self.button._setColors(self.palette()), ), signal='switchableChanged')
     switched = makeQtProperty(bool, '_switched', actions=(lambda self: self.button._setColors(self.palette()), ), signal='switchToggled')
+    inverted = makeQtProperty(bool, '_inverted', actions=(lambda self: self.button._setColors(self.palette()), ))
 
     def setMenu(self, menu=None):
         self._menu = menu

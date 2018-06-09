@@ -338,6 +338,18 @@ class BaseLibraryProxy(QtCore.QSortFilterProxyModel):
         return self.sourceModel().size()
 
 
+class FactoryProxy(BaseLibraryProxy):
+    filter = False
+
+    def customFilter(self, row, parent):
+#        if not filter:
+#            return True
+        index = self.sourceModel().index(row, LocationColumn)
+        if index.data() & 7:
+            return False
+        return True
+
+
 class BankProxy(BaseLibraryProxy):
     filter = -1
 

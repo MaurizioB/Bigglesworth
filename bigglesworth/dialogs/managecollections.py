@@ -215,7 +215,7 @@ class ManageCollectionsDialog(QtWidgets.QDialog):
         self.pragmaQuery.finish()
         self.query.finish()
         self.model.item(0, 1).setFlags(self.model.item(0, 1).flags() ^ QtCore.Qt.ItemIsEditable)
-        self.model.item(0, 1).setIcon(QtGui.QIcon.fromTheme('go-home'))
+        self.model.item(0, 1).setIcon(QtGui.QIcon(':/images/bigglesworth_logo.svg'))
         self.collectionsView.resizeColumnToContents(2)
         self.collectionsView.resizeColumnToContents(3)
         self.collectionsView.resizeRowsToContents()

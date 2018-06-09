@@ -15,3 +15,4 @@ from bigglesworth.dialogs.filedialogs import BaseFileDialog
 from bigglesworth.dialogs.settings import SettingsDialog
 from bigglesworth.dialogs.dump import DumpReceiveDialog, DumpSendDialog, SmallDumper
 from bigglesworth.dialogs.savesoundas import SaveSoundAs
+from bigglesworth.dialogs.duplicates import FindDuplicates

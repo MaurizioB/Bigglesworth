@@ -8,7 +8,7 @@ from bigglesworth.widgets import NameEdit, ContextMenu, CategoryDelegate, TagsDe
 from bigglesworth.utils import loadUi, getSysExContents, sanitize
 from bigglesworth.const import (TagsRole, UidColumn, LocationColumn, 
     NameColumn, CatColumn, TagsColumn, FactoryColumn, chr2ord, factoryPresets)
-from bigglesworth.library import CleanLibraryProxy, BankProxy, CatProxy, NameProxy, TagsProxy
+from bigglesworth.library import CleanLibraryProxy, BankProxy, CatProxy, NameProxy, TagsProxy, FactoryProxy
 from bigglesworth.dialogs import SoundTagsEditDialog, MultiSoundTagsEditDialog, DeleteSoundsMessageBox, DropDuplicatesMessageBox
 from bigglesworth.libs import midifile
 
@@ -171,6 +171,7 @@ class BaseLibraryView(QtWidgets.QTableView):
     tagEditRequested = QtCore.pyqtSignal(object)
     tagEditMultiRequested = QtCore.pyqtSignal(object)
     duplicateRequested = QtCore.pyqtSignal(str, int)
+    findDuplicatesRequested = QtCore.pyqtSignal(str, object)
     deleteRequested = QtCore.pyqtSignal(object)
     #blofeld index/buffer, collection, index, multi
     dumpFromRequested = QtCore.pyqtSignal(object, object, int, bool)
@@ -478,7 +479,8 @@ class BaseLibraryView(QtWidgets.QTableView):
         inConn, outConn = QtWidgets.QApplication.instance().connections
 
         if not selRows or not valid:
-            menu.addSeparator().setText('Empty slot')
+            pos = '{}{:03}'.format(uppercase[index.row() >> 7], (index.row() & 127) + 1)
+            menu.addSeparator().setText('Empty slot ' + pos)
             dumpMenu = menu.addMenu('Dump')
             if not all((inConn, outConn)):
                 dumpMenu.setEnabled(False)
@@ -486,7 +488,6 @@ class BaseLibraryView(QtWidgets.QTableView):
             dumpMenu.addSeparator().setText('Receive')
             dumpFromSoundBuffer = dumpMenu.addAction('Dump from Sound Edit Buffer')
             dumpFromSoundBuffer.triggered.connect(lambda: self.dumpFromRequested.emit(None, self.collection, index.row(), False))
-            pos = '{}{:03}'.format(uppercase[index.row() >> 7], (index.row() & 127) + 1)
             dumpFromIndex = dumpMenu.addAction('Dump from {}'.format(pos))
             dumpFromIndex.triggered.connect(lambda: self.dumpFromRequested.emit(index.row(), self.collection, index.row(), False))
             dumpFromMultiMenu = dumpMenu.addMenu('Dump from Multi Edit Buffer')
@@ -511,7 +512,9 @@ class BaseLibraryView(QtWidgets.QTableView):
             sendSep.setText('Send')
 
             duplicateAction = menu.addAction(QtGui.QIcon.fromTheme('edit-copy'), 'Duplicate')
+            findDuplicatesAction = menu.addAction(QtGui.QIcon.fromTheme('edit-find'), 'Find duplicates...')
             if isinstance(self, CollectionTableView):
+                findDuplicatesAction.triggered.connect(lambda: self.findDuplicatesRequested.emit(uid, self.collection))
                 recSep = dumpMenu.insertSeparator(sendSep)
                 recSep.setText('Receive')
                 dumpFromSoundBuffer = QtWidgets.QAction('Dump from Sound Edit Buffer', dumpMenu)
@@ -549,6 +552,7 @@ class BaseLibraryView(QtWidgets.QTableView):
                     deleteAction.setEnabled(False)
                     duplicateAction.setEnabled(False)
             else:
+                findDuplicatesAction.triggered.connect(lambda: self.findDuplicatesRequested.emit(uid, None))
                 dumpToSoundBuffer = dumpMenu.addAction('Dump to Sound Edit Buffer')
                 dumpToSoundBuffer.triggered.connect(lambda: self.dumpToRequested.emit(uid, None, False))
                 dumpToMultiMenu = dumpMenu.addMenu('Dump to Multi Edit Buffer')
@@ -1119,6 +1123,7 @@ class Fake:
 
 
 class BaseLibraryWidget(QtWidgets.QWidget):
+    findDuplicatesRequested = QtCore.pyqtSignal(str, object)
     #blofeld index/buffer, collection, index, multi
     dumpFromRequested = QtCore.pyqtSignal(object, object, int, bool)
     #uid, blofeld index/buffer, multi
@@ -1155,6 +1160,7 @@ class BaseLibraryWidget(QtWidgets.QWidget):
         self.collectionView.tagEditRequested.connect(self.tagEditRequested)
         self.collectionView.tagEditMultiRequested.connect(self.tagEditMultiRequested)
         self.collectionView.duplicateRequested.connect(self.duplicateRequested)
+        self.collectionView.findDuplicatesRequested.connect(self.findDuplicatesRequested)
         self.collectionView.deleteRequested.connect(self.deleteRequested)
 
         self.collectionView.dumpToRequested.connect(self.dumpToRequested)
@@ -1380,6 +1386,12 @@ class LibraryWidget(BaseLibraryWidget):
 
         self.collection = None
         self.editModeBtn.toggled.connect(self.setEditMode)
+
+        self.factoryProxy = FactoryProxy()
+        self.factoryProxy.setSourceModel(self.model)
+        self.factoryProxy.invalidated.connect(self.filtersInvalidated)
+        self.nameProxy.setSourceModel(self.factoryProxy)
+        self.hideFactoryChk.toggled.connect(self.factoryProxy.setFilter)
 
 #        self.model = self.database.openCollection()
 #        while self.model.canFetchMore():

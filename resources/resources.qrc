@@ -8,6 +8,8 @@
     <qresource prefix="images/">
         <file>blofeld_dt_perspective_alpha.png</file>
         <file>blofeld_kb_perspective_alpha.png</file>
+        <file>factory.svg</file>
+        <file>dump.svg</file>
         <file>bigglesworth_logo.svg</file>
         <file>bigglesworth_logo_whitebg.svg</file>
         <file>bigglesworth_textonly.svg</file>
@@ -94,6 +96,9 @@
         <file alias="16x16/edit-find.svg">icons/Bigglesworth/16x16/edit-find.svg</file>
         <file alias="22x22/edit-find.svg">icons/Bigglesworth/22x22/edit-find.svg</file>
         <file alias="24x24/edit-find.svg">icons/Bigglesworth/24x24/edit-find.svg</file>
+        <file alias="16x16/system-search.svg">icons/Bigglesworth/16x16/system-search.svg</file>
+        <file alias="22x22/system-search.svg">icons/Bigglesworth/22x22/system-search.svg</file>
+        <file alias="24x24/system-search.svg">icons/Bigglesworth/24x24/system-search.svg</file>
         <file alias="16x16/list-add.svg">icons/Bigglesworth/16x16/list-add.svg</file>
         <file alias="22x22/list-add.svg">icons/Bigglesworth/22x22/list-add.svg</file>
         <file alias="24x24/list-add.svg">icons/Bigglesworth/24x24/list-add.svg</file>

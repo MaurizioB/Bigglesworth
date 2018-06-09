@@ -44,6 +44,7 @@ class BlofeldDB(QtCore.QObject):
     backupStatusChanged = QtCore.pyqtSignal(int)
     backupFinished = QtCore.pyqtSignal()
     backupError = QtCore.pyqtSignal(str)
+    factoryStatus = QtCore.pyqtSignal(str, int)
 
     def __init__(self, main):
         QtCore.QObject.__init__(self)
@@ -358,6 +359,7 @@ class BlofeldDB(QtCore.QObject):
                     if data[1] == 0:
                         bank = string.ascii_uppercase[data[0]]
                         self.logger.append(LogDebug, 'starting bank ' + bank)
+                        self.factoryStatus.emit(preset, data[0])
                         print('starting bank ' + bank)
         self.query.exec_('PRAGMA journal_mode=DELETE')
 
@@ -400,7 +402,7 @@ class BlofeldDB(QtCore.QObject):
     def getTemplateNames(self):
         if not self.query.exec_('SELECT name FROM templates'):
             self.dbErrorLog('Error getting template names')
-            print(self.query.lastError().databaseText())
+#            print(self.query.lastError().databaseText())
             return []
         names = []
         while self.query.next():
@@ -579,12 +581,15 @@ class BlofeldDB(QtCore.QObject):
         return uid
 
     def isUidWritable(self, uid):
-        if not self.query.exec_('SELECT uid FROM reference WHERE ' \
-            '(blofeld_fact_200801 IS NOT NULL OR blofeld_fact_200802 IS NOT NULL OR ' \
-            'blofeld_fact_201200 IS NOT NULL) AND uid="{}"'.format(uid)):
+        if not self.query.exec_('SELECT uid FROM reference WHERE uid="{uid}" AND ({f})'.format(
+            f = ' OR '.join('"{}" IS NOT NULL'.format(f) for f in factoryPresets), 
+            uid = uid)):
                 self.dbErrorLog('Error querying for writable uid', uid)
                 return
+#        print(self.query.lastQuery())
         self.query.first()
+        if self.query.record().isNull(0):
+            return True
         if self.query.value(0) == uid:
             return False
         return True
@@ -598,6 +603,16 @@ class BlofeldDB(QtCore.QObject):
         if not isinstance(self.query.value(0), (int, long)):
             return False
         return map(int, [self.query.value(v) for v in range(383)])
+
+    def getIndexForUid(self, uid, collection):
+        if not self.query.exec_('SELECT "{}" FROM reference WHERE uid="{}"'.format(
+            collection, uid)):
+                self.dbErrorLog('Error getting indexes for collection', collection)
+                return None
+        self.query.first()
+        if self.query.record().isNull(0):
+            return None
+        return int(self.query.value(0))
 
     def getIndexesForCollection(self, collection):
         if not self.query.exec_('SELECT "{}" FROM reference'.format(collection)):
@@ -621,7 +636,7 @@ class BlofeldDB(QtCore.QObject):
         return self.query.value(0)
 
     def getNameFromUid(self, uid):
-        res = self.query.exec_(
+        self.query.prepare(
             'SELECT c00.char||c01.char||c02.char||c03.char||c04.char||c05.char||c06.char||c07.char||c08.char|' \
             '|c09.char||c10.char||c11.char||c12.char||c13.char||c14.char||c15.char FROM reference,sounds ' \
             'JOIN ascii AS c00 ON sounds.nameChar00 = c00.id JOIN ascii AS c01 ON sounds.nameChar01 = c01.id ' \
@@ -632,8 +647,9 @@ class BlofeldDB(QtCore.QObject):
             'JOIN ascii AS c10 ON sounds.nameChar10 = c10.id JOIN ascii AS c11 ON sounds.nameChar11 = c11.id ' \
             'JOIN ascii AS c12 ON sounds.nameChar12 = c12.id JOIN ascii AS c13 ON sounds.nameChar13 = c13.id ' \
             'JOIN ascii AS c14 ON sounds.nameChar14 = c14.id JOIN ascii AS c15 ON sounds.nameChar15 = c15.id ' \
-            'WHERE sounds.uid = reference.uid AND reference.uid = "{}"'.format(uid))
-        if not res:
+            'WHERE sounds.uid = reference.uid AND reference.uid = :uid')
+        self.query.bindValue(':uid', uid)
+        if not self.query.exec_():
             self.dbErrorLog('Error getting name from uid', uid)
             return ''
         self.query.next()
@@ -1158,4 +1174,9 @@ class CollectionManagerModel(QtSql.QSqlTableModel):
     @property
     def allCollections(self):
         return [self.headerData(c, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole) for c in range(2, self.columnCount())]
+
+    @property
+    def factoryPresets(self):
+        return [self.headerData(c, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole) for c in range(2, 5)]
+
 

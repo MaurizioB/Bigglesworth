@@ -2,6 +2,18 @@ from Qt import QtCore, QtGui, QtWidgets
 
 from bigglesworth.utils import loadUi, localPath, setBold
 
+class MidiConnectionsDialog(QtWidgets.QDialog):
+    def __init__(self, main, parent=None):
+        QtWidgets.QDialog.__init__(self, parent)
+        self.setWindowTitle('MIDI connections')
+        self.setWindowModality(QtCore.Qt.ApplicationModal)
+        layout = QtWidgets.QVBoxLayout()
+        self.setLayout(layout)
+        self.midiConnectionWidget = MidiConnectionsWidget()
+        layout.addWidget(self.midiConnectionWidget)
+        self.midiConnectionWidget.setMain(main)
+
+
 class MidiConnectionsWidget(QtWidgets.QWidget):
     midiConnect = QtCore.pyqtSignal(object, int, bool)
 

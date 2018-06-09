@@ -1,7 +1,7 @@
 from glob import glob
 from cx_Freeze import setup, Executable
 
-import sys
+import sys, os
 MAJ_VERSION, MIN_VERSION, REV_VERSION = 0, 0, 0
 
 def read_version():
@@ -11,8 +11,27 @@ def read_version():
 v = read_version()
 
 versionDot = '{}.{}.{}'.format(*v)
-versionComma = '{},{},{},0'.format(*v)
+versionComma = '{},{},{}'.format(*v)
 description = 'Editor/librarian for Blofeld'
+
+if os.path.exists('versionInfo'):
+    with open('versionInfo', 'r') as vi:
+        versionDotFile = vi.readline().strip('\r\n')
+        build = int(vi.readline().strip('\r\n'))
+else:
+    versionDotFile = versionDot
+    build = 0
+if versionDot != versionDotFile:
+    build = '0'
+else:
+    build = str(build + 1)
+
+with open('versionInfo', 'w') as vi:
+    vi.write(versionDot + '\n')
+    vi.write(build + '\n')
+
+versionDot += '.' + build
+versionComma += ',' + build
 
 resData = '''
 

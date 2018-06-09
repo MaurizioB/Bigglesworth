@@ -106,10 +106,12 @@ class TabCornerWidget(QtWidgets.QWidget):
         self.setLayout(layout)
         self.addBtn = QtWidgets.QToolButton()
         self.addBtn.setText('+')
+        self.addBtn.setToolTip('Open collections menu')
         size = max(self.fontMetrics().width('+'), self.fontMetrics().height())
-        self.addBtn.setMinimumHeight(size)
+        self.addBtn.setMinimumHeight(size + 4)
         layout.addWidget(self.addBtn, alignment=QtCore.Qt.AlignLeft)
         self.minimizeBtn = LeftCornerBtn() if direction == Left else RightCornerBtn()
+        self.minimizeBtn.setToolTip('Collapse to window side')
         layout.addWidget(self.minimizeBtn)
 
 #    def minimumSizeHint(self):
@@ -138,13 +140,22 @@ class BaseTabWidget(QtWidgets.QTabWidget):
     tabSwapRequested = QtCore.pyqtSignal()
     fullDumpCollectionToBlofeldRequested = QtCore.pyqtSignal(str, bool)
     fullDumpBlofeldToCollectionRequested = QtCore.pyqtSignal(str, bool)
+    findDuplicatesRequested = QtCore.pyqtSignal(object, object)
 
     def __init__(self, *args, **kwargs):
         QtWidgets.QTabWidget.__init__(self, *args, **kwargs)
+        self.main = QtWidgets.QApplication.instance()
+        self.database = self.main.database
+        self.referenceModel = self.database.referenceModel
         tabBar = LibraryTabBar()
         self.setTabBar(tabBar)
-        self.referenceModel = QtSql.QSqlTableModel()
+#        self.referenceModel = QtSql.QSqlTableModel()
         self.menu = QtWidgets.QMenu(self)
+        self.setStyleSheet('''
+            QTabBar::close-button {
+                image: url(:/icons/Bigglesworth/32x32/window-close.svg);
+            }
+            ''')
 
     @property
     def collections(self):
@@ -162,6 +173,10 @@ class BaseTabWidget(QtWidgets.QTabWidget):
     def addTab(self, widget, name):
         self.sideTabBar.addTab(name)
         index = QtWidgets.QTabWidget.addTab(self, widget, name)
+        if name == 'Blofeld':
+            self.setTabIcon(index, QtGui.QIcon(':/images/bigglesworth_logo.svg'))
+        elif name in factoryPresetsNamesDict.values():
+            self.setTabIcon(index, QtGui.QIcon(':/images/factory.svg'))
         self.tabBar().tabButton(0, self.tabBar().RightSide).setVisible(False if self.count() == 1 else True)
         if self.count() > 1:
             self.setMovable(True)
@@ -192,8 +207,8 @@ class BaseTabWidget(QtWidgets.QTabWidget):
             moveTabAction.setEnabled(False)
 
         collection = self.widget(index).collection
-        if collection:
-            dumpMenu = self.menu.addMenu('Dump "{}"'.format(collection))
+        if collection and collection not in factoryPresetsNamesDict:
+            dumpMenu = self.menu.addMenu(QtGui.QIcon(':/images/dump.svg'), 'Dump "{}"'.format(collection))
             dumpMenu.setSeparatorsCollapsible(False)
             sep = dumpMenu.addSeparator()
             sep.setText('Receive')
@@ -207,45 +222,37 @@ class BaseTabWidget(QtWidgets.QTabWidget):
             dumpToAllAction.triggered.connect(lambda: self.fullDumpCollectionToBlofeldRequested.emit(collection, True))
 
         self.menu.addSeparator()
-        self.menu.addMenu(self.getOpenCollectionMenu())
-#        menu.insertAction(menu.actions()[0], moveTabAction)
-#        menu.insertAction(moveTabAction, closeAction)
+        collectionMenu = self.menu.addMenu(self.getOpenCollectionMenu())
+        collectionMenu.setIcon(QtGui.QIcon.fromTheme('document-open'))
+        self.menu.addSeparator()
+        findDuplicatesAction = self.menu.addAction(QtGui.QIcon.fromTheme('edit-find'), 'Find duplicates...')
+        findDuplicatesAction.triggered.connect(lambda: self.findDuplicatesRequested.emit(None, collection))
         self.menu.exec_(pos)
 
     def getOpenCollectionMenu(self):
-        self.referenceModel.setTable('reference')
-#        self.referenceModel.refresh()
-        current = [self.tabText(t).lower() for t in range(self.count())]
-        current.extend([self.siblingTabWidget.tabText(t).lower() for t in range(self.siblingTabWidget.count())])
+        opened = self.collections + self.siblingTabWidget.collections
         menu = QtWidgets.QMenu('Open collection', self)
         menu.setSeparatorsCollapsible(False)
-        sep = menu.addSeparator()
-        sep.setText('Custom collections')
-        for c in range(5, self.referenceModel.columnCount()):
-            collection = self.referenceModel.headerData(c, QtCore.Qt.Horizontal)
-            if collection.lower() in current:
-                continue
-            action = menu.addAction(collection)
+        menu.addSeparator().setText('Custom collections')
+        for collection in self.referenceModel.collections:
+            action = menu.addAction(factoryPresetsNamesDict.get(collection, collection))
             action.triggered.connect(lambda state, collection=collection: self.openCollection.emit(collection))
+            if collection in opened:
+                action.setEnabled(False)
             if collection == 'Blofeld':
                 setBold(action)
-                action.setIcon(QtGui.QIcon.fromTheme('go-home'))
-        if len(menu.actions()) <= 1:
-            sep.setVisible(False)
-        sep = menu.addSeparator()
-        sep.setText('Factory presets')
-        for c in range(2, 5):
-            collection = self.referenceModel.headerData(c, QtCore.Qt.Horizontal)
-            if collection.lower() in current:
-                continue
-            action = menu.addAction(factoryPresetsNamesDict[collection])
-            action.triggered.connect(lambda state, collection=collection: self.openCollection.emit(collection))
-        if len(menu.actions()) <= 1:
-            sep.setVisible(False)
-        if not 'main library' in current:
-            menu.addSeparator()
-            action = menu.addAction(QtGui.QIcon.fromTheme('go-home'), 'Main library')
-            action.triggered.connect(lambda: self.openCollection.emit(''))
+                action.setIcon(QtGui.QIcon(':/images/bigglesworth_logo.svg'))
+        menu.addSeparator().setText('Factory presets')
+        for factory in self.referenceModel.factoryPresets:
+            action = menu.addAction(QtGui.QIcon(':/images/factory.svg'), factoryPresetsNamesDict[factory])
+            action.triggered.connect(lambda state, collection=factory: self.openCollection.emit(collection))
+            if factory in opened:
+                action.setEnabled(False)
+        menu.addSeparator()
+        mainLibraryAction = menu.addAction(QtGui.QIcon.fromTheme('go-home'), 'Main library')
+        mainLibraryAction.triggered.connect(lambda: self.openCollection.emit(''))
+        if '' in opened or None in opened:
+            mainLibraryAction.setEnabled(False)
         menu.addSeparator()
         newAction = menu.addAction(QtGui.QIcon.fromTheme('document-new'), 'Create new collection')
         newAction.triggered.connect(self.newCollection)

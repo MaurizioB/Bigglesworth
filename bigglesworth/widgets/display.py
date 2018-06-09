@@ -341,21 +341,46 @@ class HDisplayGroup(DisplayGroup):
 
 
 class ProgSendWidget(VDisplayGroup):
+    clicked = QtCore.pyqtSignal()
+
     def __init__(self):
         VDisplayGroup.__init__(self)
+        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred))
+        self.compute()
+        self.setToolTip('Send Program change to Blofeld')
+        self.setStatusTip('Send the current bank/program location to the Blofeld')
 
-    def sizeHint(self):
+    def compute(self):
+        font = self.font()
+        font.setPointSize(self.height() * .25)
+        fm = QtGui.QFontMetrics(font)
+        self.textPath = QtGui.QPainterPath()
+        self.textPath.addText(0, 0, font, 'D')
+        self.deltaY = self.textPath.boundingRect().height() + fm.descent()
+        self.textPath.addText(0, self.deltaY, font, 'E')
+        self.textPath.addText(0, self.deltaY * 2, font, 'N')
+        self.textPath.addText(0, self.deltaY * 3, font, 'D')
+        self.textPath.translate(0, self.deltaY)
+
+    def minimumSizeHint(self):
         base = VDisplayGroup.sizeHint(self)
-        base.setWidth(self.fontMetrics().width('D'))
-        base.setHeight(self.fontMetrics().height() * 3)
+        base.setWidth(self.fontMetrics().width('D') + 4)
         return base
 
     def paintEvent(self, event):
         VDisplayGroup.paintEvent(self, event)
         qp = QtGui.QPainter(self)
-        font = self.font()
-        font.setPointSize(font.pointSize() * .7)
-        qp.drawText(self.rect(), QtCore.Qt.AlignCenter, 'S\nE\nN\nD')
+        qp.translate(1.5, -.5 + (self.height() - 2 - self.textPath.boundingRect().height()) * .5)
+        for letter in 'S', 'E', 'N', 'D':
+            qp.translate(0, self.deltaY)
+            qp.drawText(0, 0, letter)
+
+    def mousePressEvent(self, event):
+        self.clicked.emit()
+        return VDisplayGroup.mousePressEvent(self, event)
+
+    def resizeEvent(self, event):
+        self.compute()
 
 
 class UndoRedoProxy(QtCore.QSortFilterProxyModel):
@@ -393,6 +418,7 @@ class UndoView(QtWidgets.QListView):
         QtWidgets.QListView.__init__(self)
         self.undoStack = view.stack()
         self.undoView = view
+        self.mode = mode
         if mode:
             proxy = RedoProxy()
         else:
@@ -418,6 +444,8 @@ class UndoView(QtWidgets.QListView):
             QtWidgets.QListView.mousePressEvent(self, event)
         else:
             index = self.model().mapToSource(index).row()
+            if not self.mode:
+                index = max(0, index - 1)
             self.undoStack.setIndex(index)
             self.undoSelected.emit(index)
 
@@ -642,7 +670,7 @@ class DisplayWidget(QtWidgets.QWidget):
 
         self.collectionWidget = HDisplayGroup()
         self.collectionWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
-        layout.addWidget(self.collectionWidget, 0, 0, 1, 2)
+        layout.addWidget(self.collectionWidget, 0, 0, 1, 3)
         self.collectionLabel = CollectionLabel('no collection')
         self.collectionLabel.setEnabled(False)
         self.collectionWidget.addWidget(self.collectionLabel)
@@ -663,20 +691,20 @@ class DisplayWidget(QtWidgets.QWidget):
         self.progSpin = ProgSpin()
         self.progWidget.addWidget(self.progSpin)
 
-#        self.progSendWidget = ProgSendWidget()
-##        self.progSendWidget.setEnabled(False)
-#        layout.addWidget(self.progSendWidget, 1, 2)
+        self.progSendWidget = ProgSendWidget()
+        self.progSendWidget.setEnabled(False)
+        layout.addWidget(self.progSendWidget, 1, 2)
 
         self.catWidget = HDisplayGroup()
         self.catWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum))
-        layout.addWidget(self.catWidget, 2, 0, 1, 2)
+        layout.addWidget(self.catWidget, 2, 0, 1, 3)
         self.catWidget.layout().setSpacing(8)
         self.catWidget.addWidget(QtWidgets.QLabel('Cat:'))
         self.catSpin = TextSpin(categories)
         self.catWidget.addWidget(self.catSpin)
 
         editLayout = QtWidgets.QHBoxLayout()
-        layout.addLayout(editLayout, 0, 2)
+        layout.addLayout(editLayout, 0, 3)
         self.editStatusWidget = EditStatusWidget()
         editLayout.addWidget(self.editStatusWidget)
         self.editModeLabel = QtWidgets.QLabel('Sound mode Edit buffer')
@@ -688,10 +716,10 @@ class DisplayWidget(QtWidgets.QWidget):
         self.nameEdit.setFrame(False)
         self.nameEdit.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum))
         self.nameEdit.setObjectName('nameEdit')
-        layout.addWidget(self.nameEdit, 1, 2)
+        layout.addWidget(self.nameEdit, 1, 3)
 
         statusLayout = QtWidgets.QHBoxLayout()
-        layout.addLayout(statusLayout, 2, 2)
+        layout.addLayout(statusLayout, 2, 3)
 
         self.statusLabel = QtWidgets.QLabel('Status: ready')
         statusLayout.addWidget(self.statusLabel)
@@ -762,6 +790,7 @@ class BlofeldDisplay(QtWidgets.QGraphicsView):
         self.bankSpin = self.mainWidget.bankSpin
         self.progWidget = self.mainWidget.progWidget
         self.progSpin = self.mainWidget.progSpin
+        self.progSendWidget = self.mainWidget.progSendWidget
 
     def setLocation(self, uid, collection=None):
         self.bankSpin.blockSignals(True)
@@ -796,12 +825,16 @@ class BlofeldDisplay(QtWidgets.QGraphicsView):
 
     def setCollections(self, collections, uid=None, fromCollection=None):
         if not collections:
-            self.collectionLabel.setText('no collection')
             self.collectionLabel.setEnabled(False)
+            self.collectionLabel.setText('no collection')
+            self.collectionLabel.setStatusTip('This sound is not part of any collection.')
             state = False
         elif len(collections) == 1:
             fromCollection = collections[0]
-            self.collectionLabel.setText(factoryPresetsNamesDict.get(fromCollection, fromCollection))
+            readableCollection = factoryPresetsNamesDict.get(fromCollection, fromCollection)
+            self.collectionLabel.setText(readableCollection)
+            self.collectionLabel.setToolTip('This sound has been selected from the collection "{}"'.format(readableCollection))
+            self.collectionLabel.setStatusTip('This sound has been selected from the collection "{}"'.format(readableCollection))
             self.collectionLabel.setEnabled(True)
             state = True
         else:
@@ -812,9 +845,12 @@ class BlofeldDisplay(QtWidgets.QGraphicsView):
                 self.collectionLabel.setText('various...')
                 state = False
             self.collectionLabel.setEnabled(True)
-            self.collectionLabel.setToolTip('This sound is used in these collections:<br/><br/>' + '<br/>'.join(collections))
+            self.collectionLabel.setToolTip('This sound is part of these collections:<br/><br/>' + '<br/>'.join(collections))
+            self.collectionLabel.setStatusTip('This sound is part of these collections: "' + '", "'.join(
+                factoryPresetsNamesDict.get(c, c) for c in collections)) + '"'
         self.bankWidget.setEnabled(state)
         self.progWidget.setEnabled(state)
+        self.progSendWidget.setEnabled(state)
         bank, prog = self.setLocation(uid, fromCollection)
         return fromCollection, bank, prog
 
@@ -844,6 +880,21 @@ class BlofeldDisplay(QtWidgets.QGraphicsView):
             QtWidgets.QGraphicsView.contextMenuEvent(self, event)
             return
         self.customContextMenuRequested.emit(event.pos())
+
+    def mouseMoveEvent(self, event):
+        w = self.itemAt(event.pos())
+        if isinstance(w, QtWidgets.QGraphicsProxyWidget):
+            w = w.widget()
+            widget = w.childAt(w.mapFromGlobal(event.pos()))
+            if widget:
+                tip = widget.statusTip()
+            else:
+                tip = ''
+            self.window().statusBar().showMessage(tip)
+        return QtWidgets.QGraphicsView.mouseMoveEvent(self, event)
+
+    def leaveEvent(self, event):
+        self.window().statusBar().showMessage('')
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.RightButton and event.pos() in self.nameEdit.geometry() and not self.nameEdit.hasFocus():

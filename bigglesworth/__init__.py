@@ -52,10 +52,10 @@ from bigglesworth.widgets import SplashScreen
 from bigglesworth.mainwindow import MainWindow
 from bigglesworth.themes import ThemeCollection
 from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, GlobalsDialog, 
-    DumpReceiveDialog, DumpSendDialog, WarningMessageBox, SmallDumper, FirstRunWizard, LogWindow)
+    DumpReceiveDialog, DumpSendDialog, WarningMessageBox, SmallDumper, FirstRunWizard, LogWindow, FindDuplicates)
 #from bigglesworth.utils import localPath
-from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR, LogInfo
-from bigglesworth.midiutils import SYSEX, CTRL, SysExEvent
+from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR, LogInfo, factoryPresets, factoryPresetsNamesDict
+from bigglesworth.midiutils import SYSEX, CTRL, NOTEOFF, NOTEON, PROGRAM, SysExEvent
 
 from bigglesworth.mididevice import MidiDevice
 import bigglesworth.resources
@@ -115,7 +115,8 @@ class Bigglesworth(QtWidgets.QApplication):
         self.database = BlofeldDB(self)
         if not self.database.initialize():
             if self.database.lastError & (self.database.SoundsEmpty|self.database.ReferenceEmpty):
-                self.splash.showMessage('Creating factory database, this could take a while...', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .25)
+                self.database.factoryStatus.connect(self.updateSplashFactory)
+#                self.splash.showMessage('Creating factory database, this could take a while...', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .25)
                 self.database.initializeFactory(self.database.lastError)
             elif self.database.lastError & self.database.DatabaseFormatError:
                 print(self.database.lastError)
@@ -195,16 +196,20 @@ class Bigglesworth(QtWidgets.QApplication):
 #        self.mainWindow.quitAction.setIcon(QtGui.QIcon(':/icons/Bigglesworth/16x16/dialog-information.svg'))
         self.mainWindow.closed.connect(self.checkClose)
         self.mainWindow.quitAction.triggered.connect(self.quit)
+        self.mainWindow.duplicatesAction.triggered.connect(self.findDuplicates)
         self.mainWindow.showLogAction.triggered.connect(self.loggerWindow.show)
         self.mainWindow.showSettingsAction.triggered.connect(self.showSettings)
         self.mainWindow.showGlobalsAction.triggered.connect(self.showGlobals)
         self.mainWindow.showGlobalsAction.setEnabled(True if all(self.connections) else False)
         self.mainWindow.leftTabWidget.fullDumpBlofeldToCollectionRequested.connect(self.fullDumpBlofeldToCollection)
         self.mainWindow.leftTabWidget.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeld)
+        self.mainWindow.leftTabWidget.findDuplicatesRequested.connect(self.findDuplicates)
         self.mainWindow.rightTabWidget.fullDumpBlofeldToCollectionRequested.connect(self.fullDumpBlofeldToCollection)
         self.mainWindow.rightTabWidget.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeld)
+        self.mainWindow.rightTabWidget.findDuplicatesRequested.connect(self.findDuplicates)
         self.mainWindow.dumpToRequested.connect(self.dumpTo)
         self.mainWindow.dumpFromRequested.connect(self.dumpFrom)
+        self.mainWindow.findDuplicatesRequested.connect(self.findDuplicates)
 
         self.editorWindow = EditorWindow(self)
         self.database.soundNameChanged.connect(self.editorWindow.nameChangedFromDatabase)
@@ -473,12 +478,23 @@ class Bigglesworth(QtWidgets.QApplication):
         if self.midiDevice.backend == MidiDevice.Alsa:
             alsa_event = event.get_event()
             alsa_event.source = self.output.client.id, self.output.id
-            self.seq.output_event(alsa_event)
+            if event.type in (CTRL, NOTEOFF, NOTEON, PROGRAM):
+                for chan in sorted(self._chanSend):
+                    alsa_event.set_data({'control.channel': chan})
+                    self.seq.output_event(alsa_event)
+            else:
+                self.seq.output_event(alsa_event)
             self.seq.drain_output()
         else:
-            rtmidi_event = event.get_binary()
             for port in self.seq.ports[1]:
-                port.send_message(rtmidi_event)
+                if event.type in (CTRL, NOTEOFF, NOTEON, PROGRAM):
+                    for chan in sorted(self._chanSend):
+                        event.channel = chan
+                        rtmidi_event = event.get_binary()
+                        port.send_message(rtmidi_event)
+                else:
+                    rtmidi_event = event.get_binary()
+                    port.send_message(rtmidi_event)
 
     def fullDumpBlofeldToCollection(self, collection, sounds):
         self.dumpBlock = True
@@ -643,6 +659,11 @@ class Bigglesworth(QtWidgets.QApplication):
             data = self.editorWindow.parameters[:]
         self.sendMidiEvent(SysExEvent(1, [INIT, IDW, IDE, self._blofeldId, SNDD, bank, prog] + data + [CHK, END]))
 
+    def findDuplicates(self, uid=None, collection=None):
+        dialog = FindDuplicates(self.mainWindow)
+        if not dialog.exec_(uid, collection):
+            return
+
     def refreshCollections(self, uid):
         if not uid:
             return
@@ -746,6 +767,12 @@ class Bigglesworth(QtWidgets.QApplication):
         if not (self.mainWindow.isVisible() and self.editorWindow.isVisible()) and \
             self.loggerWindow.isVisible():
                 self.loggerWindow.close()
+
+    def updateSplashFactory(self, factory, bank):
+        factoryIndex = factoryPresets.index(factory)
+        pos = (factoryIndex * 8 + bank + 1) / .24
+        status = '{} ({} of 3) {}%'.format(factoryPresetsNamesDict[factory], factoryIndex + 1, int(pos))
+        self.splash.showMessage('Creating factory database, please wait... {}'.format(status), QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .25 + pos * .0025)
 
     def exec_(self):
         #TODO: fix, maybe with some polished signal from the splash?

@@ -44,7 +44,8 @@ WTBD = 0x12
 factoryPresets = ['blofeld_fact_200801', u'blofeld_fact_200802', u'blofeld_fact_201200']
 #factoryPresetsPaths = ['presets/{}.mid'.format(f) for f in factoryPresets]
 factoryPresetsNames = ['Waldorf Factory Jan.2008', 'Waldorf Factory Feb.2008', 'Waldorf Factory 2012']
-factoryPresetsNamesDict = {f:n for f, n in zip(factoryPresets, factoryPresetsNames)}
+#factoryPresetsNamesDict = {f:n for f, n in zip(factoryPresets, factoryPresetsNames)}
+factoryPresetsNamesDict = dict(zip(factoryPresets, factoryPresetsNames))
 #    'blofeld_fact_200801': 'Waldorf Factory Jan.2008', 
 #    'blofeld_fact_200802': 'Waldorf Factory Feb.2008', 
 #    'blofeld_fact_201200': 'Waldorf Factory 2012', 

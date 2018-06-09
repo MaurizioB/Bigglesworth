@@ -1,4 +1,4 @@
-from bigglesworth.widgets.midiconnections import MidiConnectionsWidget
+from bigglesworth.widgets.midiconnections import MidiConnectionsWidget, MidiConnectionsDialog
 from bigglesworth.widgets.contextmenu import ContextMenu
 from bigglesworth.widgets.splashscreen import SplashScreen
 from bigglesworth.widgets.statusbar import StatusBar

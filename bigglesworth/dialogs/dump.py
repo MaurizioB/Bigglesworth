@@ -5,18 +5,8 @@ from Qt import QtCore, QtGui, QtWidgets
 from bigglesworth.utils import loadUi, localPath, getName
 from bigglesworth.const import (UidColumn, LocationColumn, NameColumn, CatColumn, TagsColumn, CatRole, TagsRole, 
     INIT, IDE, IDW, CHK, SNDR, SNDD, END)
-from bigglesworth.widgets import CategoryDelegate, TagsDelegate, CheckBoxDelegate, MidiConnectionsWidget
+from bigglesworth.widgets import CategoryDelegate, TagsDelegate, CheckBoxDelegate, MidiConnectionsDialog
 from bigglesworth.midiutils import SysExEvent, SYSEX
-
-
-class MidiConnectionDialog(QtWidgets.QDialog):
-    def __init__(self, parent):
-        QtWidgets.QDialog.__init__(self, parent)
-        layout = QtWidgets.QVBoxLayout()
-        self.setLayout(layout)
-        self.midiConnectionWidget = MidiConnectionsWidget()
-        layout.addWidget(self.midiConnectionWidget)
-        self.midiConnectionWidget.setMain(parent.main)
 
 
 class SmallDumper(QtWidgets.QDialog):
@@ -185,12 +175,12 @@ class DumpDialog(QtWidgets.QDialog):
 
         self.dumper = Dumper(self)
         self.midiVisible = False
-        self.midiConnectionDialog = MidiConnectionDialog(self)
+        self.midiConnectionsDialog = MidiConnectionsDialog(self.main, self)
         self.midiBtn.clicked.connect(self.showMidiConnections)
 
     def showMidiConnections(self):
         self.midiVisible = True
-        self.midiConnectionDialog.exec_()
+        self.midiConnectionsDialog.exec_()
         self.midiVisible = False
 
     def tableMenu(self, pos):

@@ -14,6 +14,7 @@ from bigglesworth.dialogs import NewCollectionDialog, ManageCollectionsDialog, T
 
 class MainWindow(QtWidgets.QMainWindow):
     closed = QtCore.pyqtSignal()
+    findDuplicatesRequested = QtCore.pyqtSignal(str, object)
     soundEditRequested = QtCore.pyqtSignal(str, str)
     #blofeld index/buffer, collection, index, multi
     dumpFromRequested = QtCore.pyqtSignal(object, object, int, bool)
@@ -163,6 +164,7 @@ class MainWindow(QtWidgets.QMainWindow):
             dest = self.sender()
         colWidget.dumpFromRequested.connect(self.dumpFromRequested)
         colWidget.dumpToRequested.connect(self.dumpToRequested)
+        colWidget.findDuplicatesRequested.connect(self.findDuplicatesRequested)
         index = dest.addTab(colWidget, name)
         dest.setCurrentIndex(index)
 
