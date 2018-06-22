@@ -13,6 +13,23 @@ QtCore.pyqtProperty = QtCore.Property
 from PyQt4.QtGui import QIdentityProxyModel as _QIdentityProxyModel
 QtCore.QIdentityProxyModel = _QIdentityProxyModel
 
+def topMostDumpDialog(instance):
+    if instance._isDumpDialog:
+        return instance
+    if instance.parent() and isinstance(instance.parent(), QtWidgets.QDialog):
+            return instance.parent().topMostDumpDialog()
+    return instance
+
+def topMostDialog(instance):
+    if not instance.parent():
+        return instance
+    if isinstance(instance.parent(), QtWidgets.QDialog):
+        return instance.parent().topMostDialog()
+    return instance
+
+QtWidgets.QDialog._isDumpDialog = False
+QtWidgets.QDialog.topMostDumpDialog = topMostDumpDialog
+
 if sys.platform == 'win32':
     class WinMenuSeparator(QtWidgets.QWidgetAction):
         def __init__(self, *args, **kwargs):
@@ -52,7 +69,8 @@ from bigglesworth.widgets import SplashScreen
 from bigglesworth.mainwindow import MainWindow
 from bigglesworth.themes import ThemeCollection
 from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, GlobalsDialog, 
-    DumpReceiveDialog, DumpSendDialog, WarningMessageBox, SmallDumper, FirstRunWizard, LogWindow, FindDuplicates)
+    DumpReceiveDialog, DumpSendDialog, WarningMessageBox, SmallDumper, FirstRunWizard, LogWindow, 
+    BlofeldDumper, FindDuplicates)
 #from bigglesworth.utils import localPath
 from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR, LogInfo, factoryPresets, factoryPresetsNamesDict
 from bigglesworth.midiutils import SYSEX, CTRL, NOTEOFF, NOTEON, PROGRAM, SysExEvent
@@ -70,12 +88,13 @@ class Bigglesworth(QtWidgets.QApplication):
 
     def __init__(self, argparse, args):
         QtWidgets.QApplication.__init__(self, ['Bigglesworth'] + args)
+        self.startTimer = QtCore.QElapsedTimer()
+        self.startTimer.start()
         self.argparse = argparse
         self._arguments = args
         self.setOrganizationName('jidesk')
         self.setApplicationName('Bigglesworth')
         self.settings = QtCore.QSettings()
-        self.firstRunWizard = None
         logo = QtGui.QIcon(':/images/bigglesworth_logo_whitebg.svg')
         self.setWindowIcon(logo)
 
@@ -96,8 +115,13 @@ class Bigglesworth(QtWidgets.QApplication):
         self._ctrlSendState = self.settings.value('ctrlSend', True, bool)
         self._chanSend = self.settings.value('chanSend', set((0, )), set)
         self.settings.endGroup()
+
+        self.firstRunWizard = None
+        self.firstRunObject = None
         self.globalsBlock = False
         self.dumpBlock = False
+        self.dumpBuffer = []
+        self.watchedDialogs = []
 
         self.splash = SplashScreen()
         self.splash.start()
@@ -196,20 +220,23 @@ class Bigglesworth(QtWidgets.QApplication):
 #        self.mainWindow.quitAction.setIcon(QtGui.QIcon(':/icons/Bigglesworth/16x16/dialog-information.svg'))
         self.mainWindow.closed.connect(self.checkClose)
         self.mainWindow.quitAction.triggered.connect(self.quit)
-        self.mainWindow.duplicatesAction.triggered.connect(self.findDuplicates)
         self.mainWindow.showLogAction.triggered.connect(self.loggerWindow.show)
         self.mainWindow.showSettingsAction.triggered.connect(self.showSettings)
         self.mainWindow.showGlobalsAction.triggered.connect(self.showGlobals)
         self.mainWindow.showGlobalsAction.setEnabled(True if all(self.connections) else False)
         self.mainWindow.leftTabWidget.fullDumpBlofeldToCollectionRequested.connect(self.fullDumpBlofeldToCollection)
         self.mainWindow.leftTabWidget.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeld)
-        self.mainWindow.leftTabWidget.findDuplicatesRequested.connect(self.findDuplicates)
         self.mainWindow.rightTabWidget.fullDumpBlofeldToCollectionRequested.connect(self.fullDumpBlofeldToCollection)
         self.mainWindow.rightTabWidget.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeld)
-        self.mainWindow.rightTabWidget.findDuplicatesRequested.connect(self.findDuplicates)
         self.mainWindow.dumpToRequested.connect(self.dumpTo)
         self.mainWindow.dumpFromRequested.connect(self.dumpFrom)
-        self.mainWindow.findDuplicatesRequested.connect(self.findDuplicates)
+
+        self.duplicatesDialog = FindDuplicates(self.mainWindow)
+        self.duplicatesDialog.duplicateSelected.connect(self.showSoundInLibrary)
+        self.mainWindow.duplicatesAction.triggered.connect(self.duplicatesDialog.launch)
+        self.mainWindow.leftTabWidget.findDuplicatesRequested.connect(self.duplicatesDialog.launch)
+        self.mainWindow.rightTabWidget.findDuplicatesRequested.connect(self.duplicatesDialog.launch)
+        self.mainWindow.findDuplicatesRequested.connect(self.duplicatesDialog.launch)
 
         self.editorWindow = EditorWindow(self)
         self.database.soundNameChanged.connect(self.editorWindow.nameChangedFromDatabase)
@@ -242,9 +269,9 @@ class Bigglesworth(QtWidgets.QApplication):
         self.dumpReceiveDialog.midiEvent.connect(self.sendMidiEvent)
         self.dumpSendDialog = DumpSendDialog(self, self.mainWindow)
         self.dumpSendDialog.midiEvent.connect(self.sendMidiEvent)
-        self.mainDumper = SmallDumper(self, self.mainWindow)
+        self.mainDumper = SmallDumper(self.mainWindow)
         self.mainDumper.accepted.connect(lambda: setattr(self, 'dumpBlock', False))
-        self.editorDumper = SmallDumper(self, self.editorWindow)
+        self.editorDumper = SmallDumper(self.editorWindow)
         self.editorDumper.accepted.connect(lambda: setattr(self, 'dumpBlock', False))
 #        self.mainDumper.rejected.connect(lambda: setattr(self, 'dumpBlock', False))
 
@@ -459,7 +486,18 @@ class Bigglesworth(QtWidgets.QApplication):
             sysexType = event.sysex[4]
             print('sysex received!', sysexType)
             if sysexType == SNDD:
-                pass
+                if (self.firstRunWizard and self.firstRunWizard.isVisible()) or \
+                    (self.firstRunObject and not self.firstRunObject.isCompleted):
+                        return
+                active = self.activeModalWidget()
+                if active:
+                    if active.topMostDumpDialog():
+                        return
+                    self.dumpBuffer.append(event.sysex)
+                    self.watchDialog(active)
+                    return
+                self.dumpBuffer.append(event.sysex)
+                self.processDumpBuffer()
 #                self.sound_dump_received(Sound(event.sysex[5:390], SRC_BLOFELD))
             elif sysexType == SNDP:
                 self.editorWindow.midiEventReceived(event)
@@ -468,7 +506,7 @@ class Bigglesworth(QtWidgets.QApplication):
 #            elif len(event.sysex) == 15 and event.sysex[3:5] == [6, 2]:
 #                self.device_event.emit(event.sysex)
             return
-        elif event.type == CTRL:
+        elif event.type in (CTRL, NOTEON, NOTEOFF):
             self.editorWindow.midiEventReceived(event)
         print('midi event received', event, 'source:', self.graph.port_id_dict[event.source[0]][event.source[1]])
 
@@ -636,6 +674,17 @@ class Bigglesworth(QtWidgets.QApplication):
             event = SysExEvent(1, [INIT, IDW, IDE, self._blofeldId, SNDR, 0x7f, count, CHK, END])
             QtCore.QTimer.singleShot(200, lambda: self.sendMidiEvent(event))
 
+    def processDumpBuffer(self):
+        active = self.activeWindow()
+        if not active:
+            active = self.mainWindow if self.mainWindow.isVisible() else self.editorWindow
+        self.dumpBlock = True
+        dumper = BlofeldDumper(active, self.dumpBuffer)
+        self.midiDevice.midi_event.connect(dumper.midiEventReceived)
+        res = dumper.exec_()
+        self.midiDevice.midi_event.disconnect(dumper.midiEventReceived)
+        self.dumpBlock = False
+        print(res)
 
     def dumpTo(self, uid, index, multi):
         #uid, blofeld index/buffer, multi
@@ -659,10 +708,27 @@ class Bigglesworth(QtWidgets.QApplication):
             data = self.editorWindow.parameters[:]
         self.sendMidiEvent(SysExEvent(1, [INIT, IDW, IDE, self._blofeldId, SNDD, bank, prog] + data + [CHK, END]))
 
-    def findDuplicates(self, uid=None, collection=None):
-        dialog = FindDuplicates(self.mainWindow)
-        if not dialog.exec_(uid, collection):
-            return
+#    def findDuplicates(self, uid=None, collection=None):
+#        dialog = FindDuplicates(self.mainWindow)
+#        res = dialog.exec_(uid, collection)
+#        if not res:
+#            return
+#        print(self.sender())
+
+    def showSoundInLibrary(self, uid, collection=None):
+#        if not collection:
+#            collection = None
+        for side in (self.mainWindow.leftTabWidget, self.mainWindow.rightTabWidget):
+            if collection in side.collections:
+                side.setCurrentIndex(side.collections.index(collection))
+                break
+        else:
+            side = self.mainWindow.focusWidget()
+            while side and not isinstance(side, QtWidgets.QTabWidget):
+                side = side.parent()
+            self.mainWindow.openCollection(collection, side)
+        collectionWidget = side.currentWidget()
+        collectionWidget.focusUid(uid)
 
     def refreshCollections(self, uid):
         if not uid:
@@ -749,6 +815,26 @@ class Bigglesworth(QtWidgets.QApplication):
         self.globalsBlock = False
         if not res:
             return
+
+    def eventFilter(self, source, event):
+        if source in self.watchedDialogs and event.type() == QtCore.QEvent.QCloseEvent:
+            source.removeEventFilter(self)
+            self.watchedDialogs.pop(self.watchedDialogs.index(source))
+            active = self.activeModalWidget()
+            if active:
+                if active.topMostDumpDialog():
+                    return
+                else:
+                    self.watchDialog(active)
+            else:
+                QtCore.QTimer.singleShot(0, self.processDumpBuffer)
+        return QtWidgets.QApplication.eventFilter(self, source, event)
+
+    def watchDialog(self, dialog):
+        dialog = dialog.topMostDialog()
+        if dialog not in self.watchedDialogs:
+            self.watchedDialogs.append(dialog)
+            dialog.installEventFilter(self)
 
     def notify(self, receiver, event):
         if event.type() in (QtCore.QEvent.KeyPress, QtCore.QEvent.KeyRelease):

@@ -28,6 +28,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.main = parent
         self.main.midiConnChanged.connect(lambda inConn, outConn: self.showGlobalsAction.setEnabled(True if all((inConn, outConn)) else False))
         self.database = parent.database
+        self.database.tagsModel.dataChanged.connect(self.checkTagFilters)
         self.referenceModel = QtSql.QSqlTableModel()
         self.statusbar.setDatabase(parent.database)
 
@@ -255,6 +256,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rightTabBar.setVisible(not visible)
         self.leftTabWidget.minimizeBtn.setVisible(visible)
         QtWidgets.QApplication.processEvents()
+
+    def checkTagFilters(self):
+        print('checco')
+        for widget in self.leftTabWidget.collections + self.rightTabWidget.collections:
+            if isinstance(widget, CollectionWidget):
+                widget.filterTagsEdit.setTags()
 
     def closeEvent(self, event):
         self.main.settings.setValue('sessionLayoutLeft', self.leftTabWidget.collections)

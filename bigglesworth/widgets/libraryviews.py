@@ -181,7 +181,14 @@ class BaseLibraryView(QtWidgets.QTableView):
 
     def __init__(self, *args, **kwargs):
         QtWidgets.QTableView.__init__(self, *args, **kwargs)
+        self.database = QtWidgets.QApplication.instance().database
         self.horizontalHeader().setStretchLastSection(True)
+        self.horizontalHeader().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.horizontalHeader().customContextMenuRequested.connect(self.sortMenu)
+        #TODO: think about disabling sort by click (then uncomment highlightHeader in sortByColumn)
+        self.horizontalHeader().sectionClicked.connect(self.sortByColumn)
+        self.horizontalHeader().sortIndicatorChanged.connect(self.highlightHeader)
+
         self.setMouseTracking(True)
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.showMenu)
@@ -211,6 +218,78 @@ class BaseLibraryView(QtWidgets.QTableView):
         self.externalFileDropContents = None
 
         self.doubleClicked.connect(self.soundDoubleClicked)
+        self.cornerButton = None
+
+    def sortMenu(self, *args):
+#        if isinstance(args, QtCore.QPoint):
+#            pos = args
+#        elif isinstance(args, QtCore.QEvent):
+#            pos = args.pos()
+        menu = QtWidgets.QMenu()
+        sortDefaultAction = menu.addAction(QtGui.QIcon.fromTheme('database-index'), 
+            'Sort by index' if isinstance(self, CollectionTableView) else 'Restore default order')
+        sortDefaultAction.setData((-1, ))
+        menu.addSeparator()
+        alphaMenu = menu.addMenu(QtGui.QIcon.fromTheme('view-sort-ascending'), 'Alphabetically')
+        sortNameAscAction = alphaMenu.addAction(QtGui.QIcon.fromTheme('arrow-down-double'), 'Ascending')
+        sortNameAscAction.setData((NameColumn, ))
+        sortNameDescAction = alphaMenu.addAction(QtGui.QIcon.fromTheme('arrow-up-double'), 'Descending')
+        sortNameDescAction.setData((NameColumn, QtCore.Qt.DescendingOrder))
+        catMenu = menu.addMenu(QtGui.QIcon.fromTheme('document-open'), 'By category')
+        sortCatAscAction = catMenu.addAction(QtGui.QIcon.fromTheme('arrow-down-double'), 'Ascending')
+        sortCatAscAction.setData((CatColumn, ))
+        sortCatDescAction = catMenu.addAction(QtGui.QIcon.fromTheme('arrow-up-double'), 'Descending')
+        sortCatDescAction.setData((CatColumn, QtCore.Qt.DescendingOrder))
+        tagMenu = menu.addMenu(QtGui.QIcon.fromTheme('tag'), 'By tag')
+        sortTagAscAction = tagMenu.addAction(QtGui.QIcon.fromTheme('arrow-down-double'), 'Ascending')
+        sortTagAscAction.setData((TagsColumn, ))
+        sortTagDescAction = tagMenu.addAction(QtGui.QIcon.fromTheme('arrow-up-double'), 'Descending')
+        sortTagDescAction.setData((TagsColumn, QtCore.Qt.DescendingOrder))
+
+        res = menu.exec_(QtGui.QCursor.pos())
+        if res and res.data():
+            self.sortByColumn(*res.data())
+
+    def sortByColumn(self, column, order=QtCore.Qt.AscendingOrder):
+        header = self.horizontalHeader()
+        if column <= 0:
+            if self.model().sortRole() == QtCore.Qt.InitialSortOrderRole:
+                return
+            self.model().setSortRole(QtCore.Qt.InitialSortOrderRole)
+            self.model().invalidate()
+            header.setSortIndicatorShown(False)
+            header.setSortIndicator(-1, order)
+#            self.highlightHeader(-1, order)
+            return
+        if self.sender() == self.horizontalHeader():
+            if not header.isSortIndicatorShown() or self.model().sortColumn() != column:
+                order = QtCore.Qt.AscendingOrder
+            elif self.model().sortOrder() == QtCore.Qt.AscendingOrder:
+                order = QtCore.Qt.DescendingOrder
+            else:
+                self.model().setSortRole(QtCore.Qt.InitialSortOrderRole)
+                self.model().invalidate()
+                header.setSortIndicatorShown(False)
+                header.setSortIndicator(-1, order)
+#                self.highlightHeader(-1, order)
+                return
+        self.model().setSortRole(QtCore.Qt.DisplayRole)
+        header.setSortIndicatorShown(True)
+        QtWidgets.QTableView.sortByColumn(self, column, order)
+#        self.highlightHeader(column, order)
+
+    def highlightHeader(self, index, order):
+        normalFont = self.font()
+        highlightFont = self.font()
+        highlightFont.setBold(True)
+        if self.cornerButton:
+            self.cornerButton.setFont(highlightFont if index < 0 else normalFont)
+        model = self.model()
+        for section in range(model.columnCount()):
+            if self.isColumnHidden(section):
+                continue
+            model.setHeaderData(section, QtCore.Qt.Horizontal, 
+                highlightFont if section == index else normalFont, QtCore.Qt.FontRole)
 
     def soundDoubleClicked(self, index):
         if self.parent().editModeBtn.isChecked():
@@ -450,6 +529,18 @@ class BaseLibraryView(QtWidgets.QTableView):
         QtWidgets.QTableView.setModel(self, model)
         model.layoutChanged.connect(self.restoreLayout)
         self.restoreLayout()
+        libAlert = '<br/><br/><b>WARNING</b>: this could take a lot of time in the full library view! ' \
+            'Use the context menu to restore default order.' if isinstance(self, LibraryTableView) else ''
+        for column in range(model.columnCount()):
+            if column == NameColumn:
+                colName = 'alphabetically'
+            elif column == CatColumn:
+                colName = 'by category'
+            elif column == TagsColumn:
+                colName = 'by tag'
+            else:
+                continue
+            model.setHeaderData(column, QtCore.Qt.Horizontal, 'Sort {}{}'.format(colName, libAlert), QtCore.Qt.ToolTipRole)
 
     def restoreLayout(self):
         self.setColumnHidden(UidColumn, True)
@@ -481,6 +572,9 @@ class BaseLibraryView(QtWidgets.QTableView):
         if not selRows or not valid:
             pos = '{}{:03}'.format(uppercase[index.row() >> 7], (index.row() & 127) + 1)
             menu.addSeparator().setText('Empty slot ' + pos)
+            initAction = menu.addAction('INIT this slot')
+            initAction.triggered.connect(lambda: self.database.initSound(index.row(), self.collection))
+            menu.addSeparator()
             dumpMenu = menu.addMenu('Dump')
             if not all((inConn, outConn)):
                 dumpMenu.setEnabled(False)
@@ -501,18 +595,20 @@ class BaseLibraryView(QtWidgets.QTableView):
             menu.addSeparator().setText(name)
             soundEditAction = menu.addAction('Open in the sound editor')
             soundEditAction.triggered.connect(lambda _, uid=uid: self.window().soundEditRequested.emit(uid, self.collection))
-            editTagsAction = menu.addAction('Edit tags...')
-            editTagsAction.triggered.connect(lambda _, index=index: self.tagEditRequested.emit(index))
 
-            dumpMenu = menu.addMenu('Dump')
+            dumpMenu = menu.addMenu(QtGui.QIcon(':/images/dump.svg'), 'Dump')
             if not outConn:
                 dumpMenu.setEnabled(False)
             dumpMenu.setSeparatorsCollapsible(False)
             sendSep = dumpMenu.addSeparator()
             sendSep.setText('Send')
 
+            editTagsAction = menu.addAction(QtGui.QIcon.fromTheme('tag'), 'Edit tags...')
+            editTagsAction.triggered.connect(lambda _, index=index: self.tagEditRequested.emit(index))
+
             duplicateAction = menu.addAction(QtGui.QIcon.fromTheme('edit-copy'), 'Duplicate')
             findDuplicatesAction = menu.addAction(QtGui.QIcon.fromTheme('edit-find'), 'Find duplicates...')
+
             if isinstance(self, CollectionTableView):
                 findDuplicatesAction.triggered.connect(lambda: self.findDuplicatesRequested.emit(uid, self.collection))
                 recSep = dumpMenu.insertSeparator(sendSep)
@@ -572,7 +668,7 @@ class BaseLibraryView(QtWidgets.QTableView):
         else:
             uidList = [idx.sibling(idx.row(), UidColumn).data(QtCore.Qt.DisplayRole) for idx in selRows]
             menu.addSeparator().setText('{} sounds selected'.format(len(selRows)))
-            editTagsMultiAction = menu.addAction('Edit tags...')
+            editTagsMultiAction = menu.addAction(QtGui.QIcon.fromTheme('tag'), 'Edit tags...')
             editTagsMultiAction.triggered.connect(lambda: self.tagEditMultiRequested.emit(selRows))
             if isinstance(self, CollectionTableView):
                 deleteAction = menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 'Remove from "{}"'.format(self.collection))
@@ -625,6 +721,20 @@ class CollectionTableView(BaseLibraryView):
         self.autoScrollTimer.timeout.connect(self.doAutoScroll)
         self.setAutoScroll(False)
         self.dropIndicatorPosition = self.OnViewport
+        self.cornerButton = self.findChild(QtWidgets.QAbstractButton)
+        self.cornerButton.clicked.disconnect()
+        self.cornerButton.setToolTip('Restore default order (by bank/prog)')
+        self.cornerButton.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.cornerButton.customContextMenuRequested.connect(self.sortMenu)
+        self.cornerButton.clicked.connect(lambda: self.sortByColumn(-1))
+        cornerLayout = QtWidgets.QHBoxLayout()
+        self.cornerButton.setLayout(cornerLayout)
+        self.cornerLbl = QtWidgets.QLabel('Index')
+        self.cornerLbl.setAlignment(QtCore.Qt.AlignCenter)
+        cornerLayout.addWidget(self.cornerLbl)
+        font = self.font()
+        font.setBold(True)
+        self.cornerButton.setFont(font)
 
     def doAutoScroll(self):
         self.verticalScrollBar().setValue(self.verticalScrollBar().value() + self.autoScrollDelta)
@@ -968,158 +1078,158 @@ class CollectionTableView(BaseLibraryView):
                 rect |= self.visualRect(self.dropSelectionIndexes[0].sibling(self.dropSelectionIndexes[0].row(), TagsColumn))
                 qp.drawLine(rect.x(), rect.top(), rect.width(), rect.top())
 
-class Fake:
-
-    def dragMoveEvent(self, event):
-        QtWidgets.QTableView.dragMoveEvent(self, event)
-        rows = self.getSelectedDragRows(event)
-        if event.source() == self:
-            currentIndex = self.indexAt(event.pos())
-            if self.dropIndicatorPosition() == self.OnItem:
-                if not self.selectRows(currentIndex, rows, event.keyboardModifiers()):
-                    self.dropSelectionRect = QtCore.QRect()
-                    event.ignore()
-            elif self.dropIndicatorPosition() == self.OnViewport:
-                self.dropSelectionRect = QtCore.QRect()
-                event.ignore()
-            else:
-                y = self.rowViewportPosition(currentIndex.row())
-                if self.dropIndicatorPosition() == self.BelowItem:
-                    y += self.rowHeight(currentIndex.row()) - 1
-                    height = -1
-                height = 1
-                width = sum(self.columnWidth(c) for c in range(self.model().columnCount()))
-                self.dropSelectionRect = QtCore.QRect(self.columnViewportPosition(0), y, width, height)
-
-    def selectRows(self, index, rows, modifiers):
-        if index.row() in rows:
-            return False
-        if modifiers ==  QtCore.Qt.ShiftModifier:
-            if index.row() + len(rows) > self.model().rowCount():
-                if rows[-1] + len(rows) + 1 > self.model().rowCount():
-                    return False
-                startRow = self.model().rowCount() - len(rows)
-            elif index.row() + len(rows) - 1 in rows:
-                return False
-            else:
-                startRow = index.row()
-            endRow = startRow + len(rows)
-        else:
-            startRow = index.row()
-            endRow = startRow + 1
-        y = self.rowViewportPosition(startRow)
-        height = sum(self.rowHeight(r) for r in range(startRow, endRow))
-        width = sum(self.columnWidth(c) for c in range(self.model().columnCount()))
-        self.dropSelectionRect = QtCore.QRect(self.columnViewportPosition(0), y, width, height)
-        return True
-
-    def dragLeaveEvent(self, event):
-        self.dropSelectionRect = QtCore.QRect()
-        QtWidgets.QTableView.dragLeaveEvent(self, event)
-
-    def dropEvent(self, event):
-        self.dropSelectionRect = QtCore.QRect()
-        if event.source() == self:
-            self.internalDropEvent(event)
-            return
-        QtWidgets.QTableView.dropEvent(self, event)
-
-    def getSelectedDragRows(self, event):
-        stream = QtCore.QDataStream(event.mimeData().data('application/x-qabstractitemmodeldatalist'))
-        rows = set()
-        while not stream.atEnd():
-            rows.add(stream.readInt32())
-            #column
-            stream.readInt32()
-            #read item role data
-            [(stream.readInt32(), stream.readQVariant()) for role in range(stream.readInt32())]
-        return sorted(rows)
-
-    def internalDropEvent(self, event):
-        self.dropSelectionRect = QtCore.QRect()
-        originalTargetRowNumber = targetRowNumber = self.indexAt(event.pos()).row()
-        rows = self.getSelectedDragRows(event)
-        if self.dropIndicatorPosition() == self.OnItem:
-            self.internalDropIntoEvent(event, rows, targetRowNumber)
-            return
-        if self.dropIndicatorPosition() == self.AboveItem:
-            if rows[-1] == targetRowNumber - 1:
-                event.ignore()
-                return
-        elif self.dropIndicatorPosition() == self.BelowItem:
-            if rows[0] == targetRowNumber + 1:
-                event.ignore()
-                return
-            originalTargetRowNumber += 1
-            targetRowNumber += 1
-        if targetRowNumber > rows[-1]:
-            targetRowNumber -= len(rows)
-        event.accept()
-        self.model().rowsAboutToBeMoved.emit(rows[0], rows[-1], originalTargetRowNumber)
-        sourceRows = [self.model().takeRow(rows[0]) for row in rows]
-        for row in reversed(sourceRows):
-            self.model().insertRow(targetRowNumber, row)
-        self.model().rowsMoved.emit(rows[0], rows[-1], originalTargetRowNumber)
-
-    def internalDropIntoEvent(self, event, rows, targetRowNumber):
-        msgBox = DropOverMessageBox(self)
-        if targetRowNumber == rows[-1] + 1:
-            msgBox.removeButton(msgBox.beforeButton)
-        elif targetRowNumber == rows[0] - 1:
-            msgBox.removeButton(msgBox.afterButton)
-        res = msgBox.exec_()
-        if res == msgBox.Cancel:
-            event.ignore()
-            return
-        targetRowNumber = targetRowNumber
-        if res == 0:
-            originalTargetRowNumber = targetRowNumber
-            if originalTargetRowNumber + len(rows) > self.model().rowCount():
-                originalTargetRowNumber = self.model().rowCount() - len(rows)
-            if targetRowNumber > rows[-1]:
-                sourceRowNumber = rows[0]
-                targetRowNumber -= len(rows)
-            else:
-                sourceRowNumber = rows[-1]
-            sourceRows = [self.model().takeRow(rows[0]) for row in rows]
-            if event.keyboardModifiers() == QtCore.Qt.ShiftModifier:
-                if targetRowNumber + len(rows) > self.model().rowCount():
-                    targetRowNumber = self.model().rowCount() - len(rows)
-                if targetRowNumber < rows[0]:
-                    sourceRowNumber = rows[0]
-                targetRows = [self.model().takeRow(targetRowNumber) for row in rows]
-            else:
-                targetRows = [self.model().takeRow(targetRowNumber)]
-            self.model().rowsAboutToBeSwapped.emit(rows[0], rows[-1], originalTargetRowNumber, len(targetRows))
-            for row in reversed(sourceRows):
-                self.model().insertRow(targetRowNumber, row)
-            for row in reversed(targetRows):
-                self.model().insertRow(sourceRowNumber, row)
-            event.accept()
-            self.model().rowsSwapped.emit(rows[0], rows[-1], originalTargetRowNumber, len(targetRows))
-            return
-        self.model().rowsAboutToBeMoved.emit(rows[0], rows[-1], targetRowNumber)
-        sourceRows = [self.model().takeRow(rows[0]) for row in rows]
-        if res == 1:
-            if targetRowNumber > rows[-1]:
-                targetRowNumber -= len(rows)
-            for row in reversed(sourceRows):
-                self.model().insertRow(targetRowNumber, row)
-        elif res == 2:
-            if targetRowNumber > rows[-1]:
-                targetRowNumber -= len(rows)
-            targetRowNumber += 1
-            for row in reversed(sourceRows):
-                self.model().insertRow(targetRowNumber, row)
-        event.accept()
-        self.model().rowsMoved.emit(rows[0], rows[-1], targetRowNumber)
-
-    def paintEvent(self, event):
-        QtWidgets.QTableView.paintEvent(self, event)
-        qp = QtGui.QPainter(self.viewport())
-        qp.setPen(self.dropIntoPen)
-        qp.setBrush(self.dropIntoBrush)
-        qp.drawRect(self.dropSelectionRect)
+#class Fake:
+#
+#    def dragMoveEvent(self, event):
+#        QtWidgets.QTableView.dragMoveEvent(self, event)
+#        rows = self.getSelectedDragRows(event)
+#        if event.source() == self:
+#            currentIndex = self.indexAt(event.pos())
+#            if self.dropIndicatorPosition() == self.OnItem:
+#                if not self.selectRows(currentIndex, rows, event.keyboardModifiers()):
+#                    self.dropSelectionRect = QtCore.QRect()
+#                    event.ignore()
+#            elif self.dropIndicatorPosition() == self.OnViewport:
+#                self.dropSelectionRect = QtCore.QRect()
+#                event.ignore()
+#            else:
+#                y = self.rowViewportPosition(currentIndex.row())
+#                if self.dropIndicatorPosition() == self.BelowItem:
+#                    y += self.rowHeight(currentIndex.row()) - 1
+#                    height = -1
+#                height = 1
+#                width = sum(self.columnWidth(c) for c in range(self.model().columnCount()))
+#                self.dropSelectionRect = QtCore.QRect(self.columnViewportPosition(0), y, width, height)
+#
+#    def selectRows(self, index, rows, modifiers):
+#        if index.row() in rows:
+#            return False
+#        if modifiers ==  QtCore.Qt.ShiftModifier:
+#            if index.row() + len(rows) > self.model().rowCount():
+#                if rows[-1] + len(rows) + 1 > self.model().rowCount():
+#                    return False
+#                startRow = self.model().rowCount() - len(rows)
+#            elif index.row() + len(rows) - 1 in rows:
+#                return False
+#            else:
+#                startRow = index.row()
+#            endRow = startRow + len(rows)
+#        else:
+#            startRow = index.row()
+#            endRow = startRow + 1
+#        y = self.rowViewportPosition(startRow)
+#        height = sum(self.rowHeight(r) for r in range(startRow, endRow))
+#        width = sum(self.columnWidth(c) for c in range(self.model().columnCount()))
+#        self.dropSelectionRect = QtCore.QRect(self.columnViewportPosition(0), y, width, height)
+#        return True
+#
+#    def dragLeaveEvent(self, event):
+#        self.dropSelectionRect = QtCore.QRect()
+#        QtWidgets.QTableView.dragLeaveEvent(self, event)
+#
+#    def dropEvent(self, event):
+#        self.dropSelectionRect = QtCore.QRect()
+#        if event.source() == self:
+#            self.internalDropEvent(event)
+#            return
+#        QtWidgets.QTableView.dropEvent(self, event)
+#
+#    def getSelectedDragRows(self, event):
+#        stream = QtCore.QDataStream(event.mimeData().data('application/x-qabstractitemmodeldatalist'))
+#        rows = set()
+#        while not stream.atEnd():
+#            rows.add(stream.readInt32())
+#            #column
+#            stream.readInt32()
+#            #read item role data
+#            [(stream.readInt32(), stream.readQVariant()) for role in range(stream.readInt32())]
+#        return sorted(rows)
+#
+#    def internalDropEvent(self, event):
+#        self.dropSelectionRect = QtCore.QRect()
+#        originalTargetRowNumber = targetRowNumber = self.indexAt(event.pos()).row()
+#        rows = self.getSelectedDragRows(event)
+#        if self.dropIndicatorPosition() == self.OnItem:
+#            self.internalDropIntoEvent(event, rows, targetRowNumber)
+#            return
+#        if self.dropIndicatorPosition() == self.AboveItem:
+#            if rows[-1] == targetRowNumber - 1:
+#                event.ignore()
+#                return
+#        elif self.dropIndicatorPosition() == self.BelowItem:
+#            if rows[0] == targetRowNumber + 1:
+#                event.ignore()
+#                return
+#            originalTargetRowNumber += 1
+#            targetRowNumber += 1
+#        if targetRowNumber > rows[-1]:
+#            targetRowNumber -= len(rows)
+#        event.accept()
+#        self.model().rowsAboutToBeMoved.emit(rows[0], rows[-1], originalTargetRowNumber)
+#        sourceRows = [self.model().takeRow(rows[0]) for row in rows]
+#        for row in reversed(sourceRows):
+#            self.model().insertRow(targetRowNumber, row)
+#        self.model().rowsMoved.emit(rows[0], rows[-1], originalTargetRowNumber)
+#
+#    def internalDropIntoEvent(self, event, rows, targetRowNumber):
+#        msgBox = DropOverMessageBox(self)
+#        if targetRowNumber == rows[-1] + 1:
+#            msgBox.removeButton(msgBox.beforeButton)
+#        elif targetRowNumber == rows[0] - 1:
+#            msgBox.removeButton(msgBox.afterButton)
+#        res = msgBox.exec_()
+#        if res == msgBox.Cancel:
+#            event.ignore()
+#            return
+#        targetRowNumber = targetRowNumber
+#        if res == 0:
+#            originalTargetRowNumber = targetRowNumber
+#            if originalTargetRowNumber + len(rows) > self.model().rowCount():
+#                originalTargetRowNumber = self.model().rowCount() - len(rows)
+#            if targetRowNumber > rows[-1]:
+#                sourceRowNumber = rows[0]
+#                targetRowNumber -= len(rows)
+#            else:
+#                sourceRowNumber = rows[-1]
+#            sourceRows = [self.model().takeRow(rows[0]) for row in rows]
+#            if event.keyboardModifiers() == QtCore.Qt.ShiftModifier:
+#                if targetRowNumber + len(rows) > self.model().rowCount():
+#                    targetRowNumber = self.model().rowCount() - len(rows)
+#                if targetRowNumber < rows[0]:
+#                    sourceRowNumber = rows[0]
+#                targetRows = [self.model().takeRow(targetRowNumber) for row in rows]
+#            else:
+#                targetRows = [self.model().takeRow(targetRowNumber)]
+#            self.model().rowsAboutToBeSwapped.emit(rows[0], rows[-1], originalTargetRowNumber, len(targetRows))
+#            for row in reversed(sourceRows):
+#                self.model().insertRow(targetRowNumber, row)
+#            for row in reversed(targetRows):
+#                self.model().insertRow(sourceRowNumber, row)
+#            event.accept()
+#            self.model().rowsSwapped.emit(rows[0], rows[-1], originalTargetRowNumber, len(targetRows))
+#            return
+#        self.model().rowsAboutToBeMoved.emit(rows[0], rows[-1], targetRowNumber)
+#        sourceRows = [self.model().takeRow(rows[0]) for row in rows]
+#        if res == 1:
+#            if targetRowNumber > rows[-1]:
+#                targetRowNumber -= len(rows)
+#            for row in reversed(sourceRows):
+#                self.model().insertRow(targetRowNumber, row)
+#        elif res == 2:
+#            if targetRowNumber > rows[-1]:
+#                targetRowNumber -= len(rows)
+#            targetRowNumber += 1
+#            for row in reversed(sourceRows):
+#                self.model().insertRow(targetRowNumber, row)
+#        event.accept()
+#        self.model().rowsMoved.emit(rows[0], rows[-1], targetRowNumber)
+#
+#    def paintEvent(self, event):
+#        QtWidgets.QTableView.paintEvent(self, event)
+#        qp = QtGui.QPainter(self.viewport())
+#        qp.setPen(self.dropIntoPen)
+#        qp.setBrush(self.dropIntoBrush)
+#        qp.drawRect(self.dropSelectionRect)
 
 
 class BaseLibraryWidget(QtWidgets.QWidget):
@@ -1135,6 +1245,7 @@ class BaseLibraryWidget(QtWidgets.QWidget):
         self.database = parent.database
 
         self.filterTagsEdit.setModel(self.database.tagsModel)
+        self.filterTagsEdit.setAutoPopup(True)
         self.filterNameEdit.setMinimumWidth(self.fontMetrics().width('AAAAAAAAAAAAAAAA'))
         self.collectionView.tagsDelegate.tagClicked.connect(self.setTagFilter)
 
@@ -1219,8 +1330,9 @@ class CollectionWidget(BaseLibraryWidget):
     def __init__(self, parent, collection):
         BaseLibraryWidget.__init__(self, 'ui/collectionwidget.ui', parent, collection)
 #        loadUi('ui/collectionwidget.ui', self)
-        self.collectionView.database = parent.database
+#        self.collectionView.database = parent.database
         self.collectionView.collection = collection
+        self.collectionView.horizontalHeader().sortIndicatorChanged.connect(self.checkFilters)
 
 #        self.filterTagsEdit.setModel(self.database.tagsModel)
 #        self.filterNameEdit.setMinimumWidth(self.fontMetrics().width('AAAAAAAAAAAAAAAA'))
@@ -1286,6 +1398,20 @@ class CollectionWidget(BaseLibraryWidget):
 
         self.updateFilterCombos()
 
+    def clearFilters(self):
+        self.bankCombo.setCurrentIndex(0)
+        self.catCombo.setCurrentIndex(0)
+        self.filterNameEdit.setText('')
+        self.filterTagsEdit.setTags()
+        self.emptySlotsChk.setChecked(True)
+
+    def focusUid(self, uid):
+        self.clearFilters()
+        index = self.collectionView.model().index(
+            self.database.getIndexForUid(uid, self.collection), NameColumn)
+        self.collectionView.setCurrentIndex(index)
+        self.collectionView.scrollTo(index)
+
     def deleteRequested(self, uidList):
         self.database.removeSounds(uidList, self.collection)
 
@@ -1316,11 +1442,13 @@ class CollectionWidget(BaseLibraryWidget):
             self.collectionView.scrollTo(newIndex)
 
     def checkFilters(self, *args):
-        if self.bankCombo.currentIndex() != 0 or \
+        if self.collectionView.horizontalHeader().isSortIndicatorShown() or \
+            self.bankCombo.currentIndex() != 0 or \
             self.catCombo.currentIndex() != 0 or \
             self.filterNameEdit.text() or \
             self.filterTagsEdit.tags:
                 self.emptySlotsChk.setEnabled(False)
+                #TODO: is this necessary?!?
                 self.cleanLibraryProxy.setFilter(False)
         else:
             self.emptySlotsChk.setEnabled(True)
@@ -1416,6 +1544,25 @@ class LibraryWidget(BaseLibraryWidget):
 #        self.collectionView.tagEditMultiRequested.connect(self.tagEditMultiRequested)
 #        self.collectionView.duplicateRequested.connect(self.duplicateRequested)
 #        self.collectionView.deleteRequested.connect(self.deleteRequested)
+
+    def clearFilters(self):
+        self.filterNameEdit.setText('')
+        self.filterTagsEdit.setTags()
+        self.hideFactoryChk.setChecked(False)
+
+    def focusUid(self, uid):
+        self.clearFilters()
+        res = self.collectionView.model().match(
+            self.collectionView.model().index(0, UidColumn), 
+            QtCore.Qt.DisplayRole, uid, flags=QtCore.Qt.MatchFixedString)
+        if res:
+            index = res[0]
+            self.collectionView.setCurrentIndex(index)
+            #for some reason, scrollTo doesn't always work fine in library (too many elements?)
+            pos = index.row()
+            tot = self.collectionView.model().rowCount()
+            scrollValue = pos * self.collectionView.verticalScrollBar().maximum() / float(tot)
+            self.collectionView.verticalScrollBar().setValue(int(scrollValue))
 
     def duplicateRequested(self, uid, source):
         if self.database.duplicateSound(uid):

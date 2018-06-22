@@ -101,6 +101,28 @@ class ValuesObject(dict):
 #        new = new._replace(children={})
 #    return new
 
+_groups = (
+    ('Osc', 'Oscillators'), 
+    ('Glide', 'Common'), 
+    ('Modulation', 'Modulation'), 
+    ('Arp', 'Arpeggiator'), 
+    ('Filter Envelope', 'Envelopes'), 
+    ('Amplifier Envelope', 'Envelopes'), 
+    ('Envelope 3', 'Envelopes'), 
+    ('Envelope 4', 'Envelopes'), 
+    ('Name Char', 'Name'), 
+    ('Filter 1', 'Filters'), 
+    ('Filter 2', 'Filters'), 
+    ('LFO', 'LFOs'), 
+    ('Modifier', 'Modifiers'), 
+    ('Amplifier Mod', 'Common'), 
+    ('Effect', 'Effects'), 
+    ('', 'Common'), 
+    (None, 'Common'), 
+    )
+
+orderedParameterGroups = ['Common', 'Oscillators', 'LFOs', 'Envelopes', 'Filters', 'Effects', 'Arpeggiator', 'Modulation', 'Modifiers', 'Name']
+
 class _ParameterData(object):
     def __init__(self, parameterData):
         self._parameterData = parameterData
@@ -137,6 +159,16 @@ class _(object):
         self.family = family
         self.children = children if children else {}
         self.parent = parent
+        if attr.startswith('reserved'):
+            self.group = 'None'
+            return
+        if family:
+            for groupStr, group in _groups:
+                if family.startswith(groupStr):
+                    self.group = group
+                    break
+        else:
+            self.group = 'Common'
 
     def __repr__(self):
         return 'Parameter "{fullName}" ({attr}): from {min} to {max}{step}'.format(
@@ -155,10 +187,14 @@ class _(object):
 fullRange = tuple([str(x) for x in range(128)])
 fmAmount = ('off', )+fullRange[1:]
 octave = ('128\'', '64\'', '32\'', '16\'', '8\'', '4\'', '2\'', '1\'', '1/2\'')
-semitoneRange = tuple(['{s}{n}'.format(n=n, s='+' if n>0 else '') for n in range(-12, 13)])
-fullRangeCenterZero = tuple(['{s}{n}'.format(n=n, s='+' if n>0 else '') for n in range(-64, 64)])
-bendRange = tuple(['{s}{n}'.format(n=n, s='+' if n>0 else '') for n in range(-24, 25)])
-keytrackRange = tuple('{s}{v}%'.format(s='' if v < 0 else '+', v=v) for v in (-204 + m + 25 * r for r in range(16) for m in (4, 7, 10, 13, 16, 19, 22, 25)))
+#semitoneRange = tuple(['{s}{n}'.format(n=n, s='+' if n>0 else '') for n in range(-12, 13)])
+semitoneRange = tuple(['{:{}}'.format(n, '+' if n else '') for n in range(-12, 13)])
+#fullRangeCenterZero = tuple(['{s}{n}'.format(n=n, s='+' if n>0 else '') for n in range(-64, 64)])
+fullRangeCenterZero = tuple(['{:{}}'.format(n, '+' if n else '') for n in range(-64, 64)])
+#bendRange = tuple(['{s}{n}'.format(n=n, s='+' if n>0 else '') for n in range(-24, 25)])
+bendRange = tuple(['{:{}}'.format(n, '+' if n else '') for n in range(-24, 25)])
+#keytrackRange = tuple('{s}{v}%'.format(s='' if v < 0 else '+', v=v) for v in (-204 + m + 25 * r for r in range(16) for m in (4, 7, 10, 13, 16, 19, 22, 25)))
+keytrackRange = tuple('{:{}}%'.format(v, '+' if v else '') for v in (-204 + m + 25 * r for r in range(16) for m in (4, 7, 10, 13, 16, 19, 22, 25)))
 balanceRange = tuple('F1 {}'.format(x) for x in range(64, 0, -1)) + ('middle', ) + tuple('F2 {}'.format(x) for x in range(1, 64))
 panRange = tuple('left {}'.format(x) for x in range(64, 0, -1)) + ('center', ) + tuple('right {}'.format(x) for x in range(1, 64))
 filterRouting = ('parallel', 'serial')
@@ -186,10 +222,6 @@ oscShapes = ('off', 'Pulse', 'Saw', 'Triangle', 'Sine', 'Alt 1', 'Alt 2', 'Reson
     '1-2-3-4-5', '19/twenty', 'Wavetrip1', 'Wavetrip2', 'Wavetrip3', 'Wavetrip4', 'MaleVoice', 'Low Piano', 'ResoSweep',
     'Xmas Bell', 'FM Piano', 'Fat Organ', 'Vibes', 'Chorus 2', 'True PWM', 'UpperWaves') + ('reserved', ) * 13 + \
     tuple('User Wt. {}'.format(w) for w in range(1, 40))
-modSource = ('off', 'LFO 1', 'LFO1*MW', 'LFO 2', 'LFO2*Press', 'LFO 3', 'FilterEnv', 'AmpEnv', 'Env3', 'Env4', 'Keytrack',
-    'Velocity', 'Rel. Velo', 'Pressure', 'Poly Press', 'Pitch Bend', 'Mod Wheel', 'Sustain', 'Foot Ctrl', 'BreathCtrl',
-    'Control W', 'Control X', 'Control Y', 'Control Z', 'Unisono V.', 'Modifier 1', 'Modifier 2', 'Modifier 3', 'Modifier 4',
-    'minimum', 'MAXIMUM')
 glide = ('Portamento', 'fingered P', 'Glissando', 'fingered G')
 driveCurves = ('Clipping', 'Tube', 'Hard', 'Medium', 'Soft', 'Pickup 1', 'Pickup 2', 'Rectifier', 'Square', 'Binary', 
     'Overflow', 'Sine Shaper', 'Osc 1 Mod')
@@ -202,6 +234,10 @@ lfoSpeeds = tuple('{} bars'.format(b) for b in tuple(
     (5, 4, 3.5, 3, 2.5, 2, 1.5)) + ('1 bar', ) + \
     tuple('1/{}'.format(d) for d in ('2.', '1T', '2', '4.', '2T', '4', '8.', '4T', '8', '16.', '8T', '16', '32.', '16T', '32', '48'))
 lfoSpeeds = [l for l in lfoSpeeds for r in 0, 1]
+modSource = ('off', 'LFO 1', 'LFO1*MW', 'LFO 2', 'LFO2*Press', 'LFO 3', 'FilterEnv', 'AmpEnv', 'Env3', 'Env4', 'Keytrack',
+    'Velocity', 'Rel. Velo', 'Pressure', 'Poly Press', 'Pitch Bend', 'Mod Wheel', 'Sustain', 'Foot Ctrl', 'BreathCtrl',
+    'Control W', 'Control X', 'Control Y', 'Control Z', 'Unisono V.', 'Modifier 1', 'Modifier 2', 'Modifier 3', 'Modifier 4',
+    'minimum', 'MAXIMUM')
 modOperator = ('+', '-', '*', 'AND', 'OR', 'XOR', 'MAX', 'min')
 modDest = ('Pitch', 'O1 Pitch', 'O1 FM', 'O1 PW/Wave', 'O2 Pitch', 'O2 FM', 'O2 PW/Wave', 'O3 Pitch', 'O3 FM', 'O3 PW',
     'O1 Level', 'O1 Balance', 'O2 Level', 'O2 Balance', 'O3 Level', 'O3 Balance', 'RMod Level', 'RMod Bal.',
@@ -710,6 +746,7 @@ class Parameters(QtCore.QObject):
     parameterData = parameterData
     parameterList = []
     ids = []
+    groups = set()
 
     def __new__(cls, *args, **kwargs):
         obj = QtCore.QObject.__new__(cls, *args, **kwargs)

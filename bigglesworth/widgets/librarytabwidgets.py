@@ -151,11 +151,34 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         self.setTabBar(tabBar)
 #        self.referenceModel = QtSql.QSqlTableModel()
         self.menu = QtWidgets.QMenu(self)
+
+        metrics = {}
+        dpi = (self.logicalDpiX() + self.logicalDpiY()) / 2.
+        ratio = 1. / 76 * dpi
+        for s in (1, 2, 4, 8):
+            metrics['{}px'.format(s)] = s * ratio
+
         self.setStyleSheet('''
-            QTabBar::close-button {
-                image: url(:/icons/Bigglesworth/32x32/window-close.svg);
-            }
-            ''')
+                QTabBar::close-button {{
+                    image: url(:/icons/Bigglesworth/32x32/window-close.svg);
+                    border: {1px} solid transparent;
+                }}
+                QTabBar::close-button:hover {{
+                    border: {1px} solid palette(mid);
+                    border-radius: {2px};
+                }}
+                /* scroll buttons are too tall (at least on oxygen) when using stylesheets, 
+                we need to override them anyway */
+                QTabBar QToolButton {{
+                    border: {1px} solid palette(mid);
+                    border-radius: {4px};
+                    margin: {8px} {1px};
+                    background-color: palette(button);
+                }}
+                QTabBar QToolButton:hover {{
+                    border-color: palette(dark);
+                }}
+                '''.format(**metrics))
 
     @property
     def collections(self):
@@ -173,9 +196,11 @@ class BaseTabWidget(QtWidgets.QTabWidget):
     def addTab(self, widget, name):
         self.sideTabBar.addTab(name)
         index = QtWidgets.QTabWidget.addTab(self, widget, name)
-        if name == 'Blofeld':
+        if widget.collection is None:
+            self.setTabIcon(index, QtGui.QIcon.fromTheme('go-home'))
+        elif widget.collection == 'Blofeld':
             self.setTabIcon(index, QtGui.QIcon(':/images/bigglesworth_logo.svg'))
-        elif name in factoryPresetsNamesDict.values():
+        elif widget.collection in factoryPresetsNamesDict:
             self.setTabIcon(index, QtGui.QIcon(':/images/factory.svg'))
         self.tabBar().tabButton(0, self.tabBar().RightSide).setVisible(False if self.count() == 1 else True)
         if self.count() > 1:

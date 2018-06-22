@@ -7,7 +7,9 @@ from Qt import QtCore
 LogInfo, LogDebug, LogWarning, LogCritical, LogFatal = range(5)
 
 #library roles
-CatRole = QtCore.Qt.UserRole + 1
+UidRole = QtCore.Qt.UserRole + 1
+DataRole = UidRole + 1
+CatRole = DataRole + 1
 LocationRole = CatRole + 1
 TagsRole = LocationRole + 1
 TagColorRole = TagsRole + 1

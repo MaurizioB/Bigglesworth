@@ -2,10 +2,11 @@ from string import uppercase
 from Qt import QtCore, QtGui, QtWidgets, QtSql
 
 from bigglesworth.utils import loadUi, localPath
-from bigglesworth.const import factoryPresetsNamesDict
+from bigglesworth.const import UidRole, LocationRole, factoryPresetsNamesDict
 from bigglesworth.parameters import Parameters
 
 class FindDuplicates(QtWidgets.QDialog):
+    duplicateSelected = QtCore.pyqtSignal(str, object)
     def __init__(self, parent):
         QtWidgets.QDialog.__init__(self, parent)
         loadUi(localPath('ui/duplicates.ui'), self)
@@ -17,6 +18,15 @@ class FindDuplicates(QtWidgets.QDialog):
         self.tableView.setModel(self.model)
         self.treeView.setModel(self.model)
         self.uid = None
+        self.tableView.doubleClicked.connect(self.doubleClicked)
+        self.treeView.doubleClicked.connect(self.doubleClicked)
+
+    def doubleClicked(self, index):
+        uid = index.data(UidRole)
+        if uid is None:
+            return
+        collection = index.data(LocationRole)
+        self.duplicateSelected.emit(uid, collection)
 
     def search(self):
         self.model.clear()
@@ -105,13 +115,13 @@ class FindDuplicates(QtWidgets.QDialog):
         if not query.exec_(queryStr):
             print(query.lastError().driverText(), query.lastError().databaseText())
         ignoreFactory = self.ignoreFactoryChk.isChecked()
-        print(query.lastQuery())
+#        print(query.lastQuery())
 
         collDict = {c:0 for c in allCollections}
         collDict.update({None: 0})
         while query.next():
             uidListRaw = query.value(0)
-            print(uidListRaw)
+#            print(uidListRaw)
             if not isinstance(uidListRaw, (str, unicode)):
                 continue
             if ignoreFactory:
@@ -139,10 +149,15 @@ class FindDuplicates(QtWidgets.QDialog):
                             )
                     else:
                         text = name
-                    self.model.setItem(self.model.rowCount(), c + 1, QtGui.QStandardItem(text))
+                    soundItem = QtGui.QStandardItem(text)
+                    soundItem.setData(uid, UidRole)
+                    soundItem.setData(coll, LocationRole)
+                    self.model.setItem(self.model.rowCount(), c + 1, soundItem)
                 if not collections:
                     collDict[None] += 1
-                    self.model.appendRow(QtGui.QStandardItem(name))
+                    soundItem = QtGui.QStandardItem(name)
+                    soundItem.setData(uid, UidRole)
+                    self.model.appendRow(soundItem)
 
         if self.model.rowCount():
             self.tableView.horizontalHeader().setVisible(True)
@@ -192,7 +207,7 @@ class FindDuplicates(QtWidgets.QDialog):
 #        print(query.lastQuery())
         while query.next():
             uidListRaw = query.value(0)
-            print(uidListRaw)
+#            print(uidListRaw)
             if not isinstance(uidListRaw, (str, unicode)):
                 continue
             if ignoreFactory:
@@ -207,6 +222,10 @@ class FindDuplicates(QtWidgets.QDialog):
 #            print(uidList)
             firstUid = uidList.pop(0)
             parent = QtGui.QStandardItem(self.database.getNameFromUid(firstUid))
+            parent.setData(firstUid, UidRole)
+            parentCollId = self.database.getCollectionsFromUid(firstUid, ignoreFactory)
+            if parentCollId:
+                parent.setData(allCollections[parentCollId[0]], LocationRole)
             self.model.appendRow(parent)
             collDict = {}
             for uid in uidList:
@@ -235,14 +254,19 @@ class FindDuplicates(QtWidgets.QDialog):
                             )
                     else:
                         text = name
-                    collItem.appendRow(QtGui.QStandardItem(text))
+                    soundItem = QtGui.QStandardItem(text)
+                    soundItem.setData(uid, UidRole)
+                    soundItem.setData(coll, LocationRole)
+                    collItem.appendRow(soundItem)
                 if not collections:
                     collItem = collDict.get(None)
                     if not collItem:
                         collItem = QtGui.QStandardItem('No collection')
                         collDict[None] = collItem
                         parent.appendRow(collItem)
-                    collItem.appendRow(QtGui.QStandardItem(name))
+                    soundItem = QtGui.QStandardItem(name)
+                    soundItem.setData(uid, UidRole)
+                    collItem.appendRow(soundItem)
         if self.model.rowCount():
             for r in range(self.model.rowCount()):
                 self.treeView.expand(self.model.index(r, 0))
@@ -251,27 +275,38 @@ class FindDuplicates(QtWidgets.QDialog):
             noItems.setEnabled(False)
             self.model.appendRow(noItems)
 
-    def exec_(self, uid=None, collection=None):
+    def launch(self, uid=None, collection=None):
+        self.model.clear()
         self.collectionCombo.addItems(self.referenceModel.collections)
         self.collectionCombo.setItemData(1, QtGui.QIcon(':/images/bigglesworth_logo.svg'), QtCore.Qt.DecorationRole)
         self.uid = uid
+        self.collectionCombo.currentIndexChanged.connect(self.ignoreFactoryChk.setDisabled)
         if isinstance(uid, (str, unicode)) and uid:
             self.nameLbl.setText('<b>{}</b>'.format(self.database.getNameFromUid(uid)))
             self.nameWidget.setVisible(True)
             self.tableView.setVisible(True)
             self.treeView.setVisible(False)
-            self.collectionCombo.currentIndexChanged.connect(self.ignoreFactoryChk.setDisabled)
+#            self.collectionCombo.currentIndexChanged.connect(self.ignoreFactoryChk.setDisabled)
         else:
             self.nameWidget.setVisible(False)
             self.tableView.setVisible(False)
             self.treeView.setVisible(True)
-            try:
-                self.collectionCombo.currentIndexChanged.disconnect()
-            except:
-                pass
+#            try:
+#                self.collectionCombo.currentIndexChanged.disconnect()
+#            except:
+#                pass
         if collection is not None:
-            self.collectionCombo.setCurrentIndex(self.referenceModel.collections.index(collection) + 1)
-        return QtWidgets.QDialog.exec_(self)
+            try:
+                self.collectionCombo.setCurrentIndex(self.referenceModel.collections.index(collection) + 1)
+                self.ignoreFactoryChk.setChecked(True)
+            except:
+                self.collectionCombo.setCurrentIndex(0)
+                self.ignoreFactoryChk.setChecked(False)
+        else:
+            self.collectionCombo.setCurrentIndex(0)
+            self.ignoreFactoryChk.setChecked(False)
+        self.show()
+#        return QtWidgets.QDialog.exec_(self)
 
 
 

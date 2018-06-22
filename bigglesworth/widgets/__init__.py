@@ -1,3 +1,4 @@
+from bigglesworth.widgets.modmatrix import ModMatrixView
 from bigglesworth.widgets.midiconnections import MidiConnectionsWidget, MidiConnectionsDialog
 from bigglesworth.widgets.contextmenu import ContextMenu
 from bigglesworth.widgets.splashscreen import SplashScreen

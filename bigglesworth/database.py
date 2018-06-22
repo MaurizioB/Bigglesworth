@@ -108,6 +108,13 @@ class BlofeldDB(QtCore.QObject):
             backupFile = QtCore.QFileInfo(self.path + '.bkp')
             if backupFile.exists():
                 backupInfo = 'last saved {} ago'.format(elapsedFrom(backupFile.lastModified()))
+                if self.backupTimer.isActive():
+                    elapsed = backupFile.lastModified().msecsTo(QtCore.QDateTime.currentDateTime())
+                    if elapsed > self.backupTimer.interval():
+                        elapsed = self.main.startTimer.elapsed()
+                    next = int((self.backupTimer.interval() - elapsed) / 60000)
+                    backupInfo += '<br/>&nbsp;&nbsp;Next backup in {} minute{}'.format(
+                        next if next > 1 else 'less than a', 's' if next > 1 else '')
             else:
                 if not self.backup.success:
                     backupInfo = 'Error creating backup!'
@@ -631,7 +638,10 @@ class BlofeldDB(QtCore.QObject):
         self.query.first()
         if self.query.record().isNull(0):
             return None
-        return int(self.query.value(0))
+        try:
+            return int(self.query.value(0))
+        except:
+            return None
 
     def getIndexesForCollection(self, collection):
         if not self.query.exec_('SELECT "{}" FROM reference'.format(collection)):
@@ -811,6 +821,11 @@ class BlofeldDB(QtCore.QObject):
                 self.dbErrorLog('Error creating collection from source', name, source)
                 return False
         return True
+
+    def initSound(self, index, collection):
+        self.addRawSoundData([p.default for p in Parameters.parameterData], collection=collection, index=index)
+        self.collections[collection].query().exec_()
+        self.collections[collection].updated.emit()
 
     def getAlternateNameChrs(self, uid, name):
 #        self.query.exec_(

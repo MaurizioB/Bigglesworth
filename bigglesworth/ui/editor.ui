@@ -447,9 +447,6 @@
         </item>
         <item>
          <widget class="SquareButton" name="modMatrixBtn">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
             <horstretch>0</horstretch>
@@ -486,7 +483,7 @@
        </widget>
       </item>
       <item row="1" column="1" colspan="2" alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-       <widget class="QLabel" name="blofeldLogo">
+       <widget class="QLabel" name="bigglesworthLogo">
         <property name="minimumSize">
          <size>
           <width>20</width>

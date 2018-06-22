@@ -771,7 +771,7 @@ class EnvelopePreview(BaseEnvelopeView):
         if event.pos() in self.rect():
             self.clicked.emit()
 
-    def sizeHint(self):
+    def _sizeHint(self):
         return QtCore.QSize(40, 30)
 
     def resizeEvent(self, event):
@@ -844,18 +844,21 @@ class EnvelopePreviewWidget(QtWidgets.QWidget):
 
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        layout = QtWidgets.QVBoxLayout()
-        self.setLayout(layout)
-        layout.setSpacing(0)
-        layout.setContentsMargins(0, 0, 0, 0)
+        self.layout = QtWidgets.QVBoxLayout()
+        self.setLayout(self.layout)
+        self.layout.setSpacing(0)
+        self.layout.setContentsMargins(0, 0, 0, 0)
 
         self.maximizeBtn = PreviewMaximizeBtn()
-        layout.addWidget(self.maximizeBtn)
+        self.layout.addWidget(self.maximizeBtn)
         self.maximizeBtn.clicked.connect(self.clicked)
 
         self.view = EnvelopePreview(self)
-        layout.addWidget(self.view)
+        self.layout.addWidget(self.view)
         self.view.clicked.connect(self.clicked)
+
+        self.layout.setStretchFactor(self.maximizeBtn, 8)
+        self.layout.setStretchFactor(self.view, 8)
 
         self.setToolTip('Open envelope editor')
 
@@ -865,7 +868,10 @@ class EnvelopePreviewWidget(QtWidgets.QWidget):
     def leaveEvent(self, event):
         self.maximizeBtn.setHover(False)
 
-    def sizeHint(self):
+    def resizeEvent(self, event):
+        self.view.setMaximumHeight(self.view.width() * .75)
+
+    def _sizeHint(self):
         return QtCore.QSize(40, 30)
 
 

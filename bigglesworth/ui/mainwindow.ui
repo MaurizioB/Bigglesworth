@@ -150,9 +150,7 @@
   </action>
   <action name="editTagsAction">
    <property name="icon">
-    <iconset theme="tag">
-     <normaloff/>
-    </iconset>
+    <iconset theme="tag"/>
    </property>
    <property name="text">
     <string>Edit &amp;tags...</string>
@@ -227,7 +225,9 @@
   </action>
   <action name="duplicatesAction">
    <property name="icon">
-    <iconset theme="edit-find"/>
+    <iconset theme="edit-find">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>Find &amp;duplicates...</string>

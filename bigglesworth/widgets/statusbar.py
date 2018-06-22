@@ -35,7 +35,7 @@ class StatusBar(QtWidgets.QStatusBar):
         self.database.backupError.connect(self.backupError)
 
     def backupStarted(self):
-        self.showMessage('Backup started...', 2000)
+        self.showMessage('Backup started...')
         self.progress.setValue(0)
         self.progress.setVisible(True)
 #        self.addWidget(self.progress)
@@ -45,7 +45,7 @@ class StatusBar(QtWidgets.QStatusBar):
 
     def backupFinished(self):
         self.progress.setVisible(False)
-        self.showMessage('Backup completed!', 2000)
+        self.showMessage('Backup completed!', 8000)
         if self.databaseWidget:
             self.databaseWidget.setValid(self.database.backup.success)
 

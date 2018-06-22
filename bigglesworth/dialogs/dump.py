@@ -1,20 +1,574 @@
 from string import uppercase
 
-from Qt import QtCore, QtGui, QtWidgets
+from Qt import QtCore, QtGui, QtWidgets, QtSql
 
-from bigglesworth.utils import loadUi, localPath, getName
-from bigglesworth.const import (UidColumn, LocationColumn, NameColumn, CatColumn, TagsColumn, CatRole, TagsRole, 
-    INIT, IDE, IDW, CHK, SNDR, SNDD, END)
+from bigglesworth.utils import loadUi, localPath, getName, setBold, setItalic
+from bigglesworth.const import (UidColumn, LocationColumn, NameColumn, CatColumn, TagsColumn, FactoryColumn, DataRole, 
+    INIT, IDE, IDW, CHK, SNDR, SNDD, END, factoryPresetsNamesDict)
 from bigglesworth.widgets import CategoryDelegate, TagsDelegate, CheckBoxDelegate, MidiConnectionsDialog
 from bigglesworth.midiutils import SysExEvent, SYSEX
+from bigglesworth.parameters import Parameters, orderedParameterGroups
+
+IndexesRole = QtCore.Qt.UserRole + 32
+CheckColumn = UidColumn
+DupColumn = TagsColumn
+DestColumn = FactoryColumn
+
+paramFields = []
+paramPairs = []
+for p in Parameters.parameterData:
+    if p.attr.startswith('reserved') or p.attr.startswith('nameChar') or p.attr == 'category':
+        continue
+    paramFields.append('{a} = :{a}'.format(a=p.attr))
+    paramPairs.append((':' + p.attr, p.id))
+prepareStr = 'SELECT uid FROM sounds WHERE (' + ' AND '.join(paramFields) + ')'
+
+
+class ValueProxy(QtCore.QSortFilterProxyModel):
+    validIndexes = currentIndexes = []
+    currentData = None
+
+    def data(self, index, role):
+        if role in (QtCore.Qt.DisplayRole, QtCore.Qt.ToolTipRole):
+            if self.currentData:
+                if index.column() == 1:
+                    id = self.mapToSource(index).row()
+                    if id not in self.currentIndexes:
+                        return ''
+                    value = self.currentData[id]
+                    valueText = Parameters.parameterData[id].valueDict[value]
+                    if role == QtCore.Qt.ToolTipRole:
+                        valueText += ' ({})'.format(value)
+                    return valueText
+            elif index.column() == 0:
+                return 'No sound selected'
+        return QtCore.QSortFilterProxyModel.data(self, index, role)
+
+    def headerData(self, section, orientation, role):
+        if not self.currentData and role == QtCore.Qt.DisplayRole and orientation == QtCore.Qt.Vertical and section == 0:
+            return ''
+        if orientation == QtCore.Qt.Vertical and role == QtCore.Qt.TextAlignmentRole:
+            return QtCore.Qt.AlignCenter
+        return QtCore.QSortFilterProxyModel.headerData(self, section, orientation, role)
+
+    def setFilter(self, data, indexes=None):
+        if data != self.currentData:
+            self.currentData = data
+        if indexes is not None:
+            self.currentIndexes = indexes
+        else:
+            self.currentIndexes = self.validIndexes
+        self.invalidateFilter()
+
+    def filterAcceptsRow(self, row, parent):
+        if not self.currentData:
+            return True if row == 0 else False
+        return True if row in self.currentIndexes else False
+
+
+class CollectionValidator(QtGui.QRegExpValidator):
+    valid = QtCore.pyqtSignal(bool)
+    def __init__(self):
+        QtGui.QRegExpValidator.__init__(self, QtCore.QRegExp(r'^(?!.* {2})(?=\S)[a-zA-Z0-9\ \-\_]+$'))
+        self.referenceModel = QtWidgets.QApplication.instance().database.referenceModel
+        self.allCollections = [c.lower() for c in self.referenceModel.allCollections + factoryPresetsNamesDict.values()]
+        self.allCollections.append('main library')
+
+    def validate(self, input, pos):
+        valid, input, pos = QtGui.QRegExpValidator.validate(self, input, pos)
+        if valid == self.Acceptable:
+            if input.lower() in self.allCollections:
+                valid = self.Intermediate
+        #technically this is not right, but since QLineEdit automatically manages the correction
+        #we assume that the Unacceptable input will not be taken into account (hence it will be
+        #Acceptable or Intermediate anyway)
+        self.valid.emit(True if valid != self.Intermediate else False)
+        return valid, input, pos
+
+
+class CollectionNameEdit(QtWidgets.QLineEdit):
+    valid = QtCore.pyqtSignal(bool)
+
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QLineEdit.__init__(self, *args, **kwargs)
+        self.validator = CollectionValidator()
+        self.setValidator(self.validator)
+        self._valid = False
+        self.isValid = lambda: self._valid
+        self.validator.valid.connect(self.setValid)
+        self.validator.valid.connect(self.valid)
+        palette = self.palette()
+        self.defaultColor = (
+            (palette.Disabled, palette.color(palette.Disabled, palette.Text)), 
+            (palette.Active, palette.color(palette.Active, palette.Text)), 
+            (palette.Inactive, palette.color(palette.Inactive, palette.Text))
+            )
+
+#    def focusInEvent(self, event):
+#        self.validator.validate(self.text(), self.cursorPosition())
+#        QtWidgets.QLineEdit.focusInEvent(self, event)
+
+    def setValid(self, valid):
+        self._valid = valid
+        palette = self.palette()
+        if valid:
+            for group, color in self.defaultColor:
+                palette.setColor(group, palette.Text, color)
+        else:
+            red = QtGui.QColor(QtCore.Qt.red)
+            palette.setColor(palette.Text, red)
+            red.setAlpha(128)
+            palette.setColor(palette.Disabled, palette.Text, red)
+        self.setPalette(palette)
+
+
+class LocationDelegate(QtWidgets.QStyledItemDelegate):
+    def paint(self, qp, option, index):
+        self.initStyleOption(option, index)
+        pos = index.data(QtCore.Qt.DisplayRole)
+        if pos is not None:
+            option.text = '{}{:03}'.format(uppercase[pos >> 7], (pos & 127) + 1)
+            option.displayAlignment = QtCore.Qt.AlignCenter
+        QtWidgets.QApplication.style().drawControl(QtWidgets.QStyle.CE_ItemViewItem, option, qp)
+
+
+class BlofeldDumper(QtWidgets.QDialog):
+    def __init__(self, parent, dumpBuffer=None):
+        QtWidgets.QDialog.__init__(self, parent)
+        loadUi(localPath('ui/blofelddumper.ui'), self)
+        self._isDumpDialog = True
+        self.main = QtWidgets.QApplication.instance()
+        self.database = self.main.database
+        self.query = QtSql.QSqlQuery()
+        self.query.prepare(prepareStr)
+        self.referenceModel = self.database.referenceModel
+        self.allCollections = self.referenceModel.allCollections
+        self.collectionBuffer = {}
+
+        self.okBtn = self.buttonBox.button(self.buttonBox.Ok)
+        self.openBtn = self.buttonBox.button(self.buttonBox.Open)
+        self.cornerButton = self.valueTable.findChild(QtWidgets.QAbstractButton)
+        l = QtWidgets.QHBoxLayout()
+        self.cornerButton.setLayout(l)
+        indexLbl = QtWidgets.QLabel('Idx')
+        indexLbl.setAlignment(QtCore.Qt.AlignCenter)
+        l.addWidget(indexLbl)
+        self.valueTable.verticalHeader().setMinimumWidth(self.fontMetrics().width('Idx') * 2)
+
+        self.collectionCombo.addItems(self.referenceModel.collections)
+        self.collectionCombo.setItemData(1, QtGui.QIcon(':/images/bigglesworth_logo.svg'), QtCore.Qt.DecorationRole)
+        self.collectionCombo.currentIndexChanged.connect(self.collectionChanged)
+
+        self.dumpModel = QtGui.QStandardItemModel()
+        self.dumpModel.dataChanged.connect(self.checkImport)
+        self.dumpTable.setModel(self.dumpModel)
+        self.dumpModel.setHorizontalHeaderLabels(['', '', 'Name', 'Category', 'Duplicates', 'Dest'])
+        self.dumpTable.setColumnHidden(LocationColumn, True)
+        self.dumpTable.resizeColumnToContents(0)
+        self.dumpTable.resizeColumnToContents(CatColumn)
+        self.dumpTable.resizeColumnToContents(DestColumn)
+        self.dumpTable.horizontalHeader().setResizeMode(QtWidgets.QHeaderView.Fixed)
+        self.dumpTable.horizontalHeader().setResizeMode(DupColumn, QtWidgets.QHeaderView.Stretch)
+        self.dumpTable.clicked.connect(self.showValues)
+        self.dumpTable.doubleClicked.connect(self.toggleCheck)
+        self.dumpTable.customContextMenuRequested.connect(self.dumpTableMenu)
+        self.dumpTable.selectionModel().selectionChanged.connect(self.showValues)
+        self.paramTree.clicked.connect(self.showValues)
+
+        checkBoxDelegate = CheckBoxDelegate(self.dumpTable)
+        self.dumpTable.setItemDelegateForColumn(0, checkBoxDelegate)
+        catDelegate = CategoryDelegate(self.dumpTable)
+        self.dumpTable.setItemDelegateForColumn(CatColumn, catDelegate)
+        destDelegate = LocationDelegate()
+        self.dumpTable.setItemDelegateForColumn(DestColumn, destDelegate)
+
+        self.timeout = QtCore.QTimer()
+        self.timeout.setInterval(1000)
+
+        self.dumper = SmallDumper(self)
+        self.timeout.timeout.connect(self.dumper.accept)
+        self.dumper.closeAsk = False
+        self.dumper.accepted.connect(self.checkImport)
+        self.dumper.accepted.connect(self.timeout.stop)
+        self.dumper.rejected.connect(self.checkImport)
+        self.dumper.rejected.connect(self.timeout.stop)
+
+        self.tot = 0
+        while dumpBuffer:
+            self.processData(dumpBuffer.pop(0))
+
+        self.importGroup.setId(self.importRadio, 0)
+        self.importGroup.setId(self.newRadio, 1)
+        self.importGroup.setId(self.noImportRadio, 2)
+        self.importGroup.buttonClicked.connect(self.checkImportGroup)
+        self.newRadio.toggled.connect(lambda state: self.newEdit.setFocus() if state else None)
+        self.newEdit.valid.connect(self.checkImport)
+        self.newEdit.valid.connect(self.setNewIcon)
+        self.overwriteChk.toggled.connect(self.checkImport)
+
+        self.selectAllBtn.clicked.connect(self.dumpTable.selectAll)
+        self.selectNoneBtn.clicked.connect(self.dumpTable.clearSelection)
+        self.checkSelectionBtn.clicked.connect(self.checkAll)
+        self.uncheckSelectionBtn.clicked.connect(self.checkNone)
+
+        self.paramSplitter.setCollapsible(1, False)
+        self.paramModel = QtGui.QStandardItemModel()
+        self.paramTree.setModel(self.paramModel)
+        self.rootParam = QtGui.QStandardItem('Parameters')
+        self.paramModel.appendRow(self.rootParam)
+
+        self.valueModel = QtGui.QStandardItemModel()
+        self.valueModel.setHorizontalHeaderLabels(['Parameter', 'Value'])
+        self.valueProxy = ValueProxy()
+        self.valueProxy.setFilter([], [])
+        self.valueProxy.setSourceModel(self.valueModel)
+        self.valueTable.setModel(self.valueProxy)
+        self.valueTable.horizontalHeader().setResizeMode(0, QtWidgets.QHeaderView.Stretch)
+
+        paramTreeDict = {}
+        self.validIndexes = []
+        for p in Parameters.parameterData:
+            if p.attr.startswith('reserved'):
+                self.valueModel.appendRow(QtGui.QStandardItem())
+                continue
+            ValueProxy.validIndexes.append(p.id)
+            self.valueModel.appendRow(QtGui.QStandardItem(p.fullName))
+            self.validIndexes.append(p.id)
+            family = p.family if p.family else 'General'
+            groupItem, families, groupIndexes = paramTreeDict.get(p.group, (None, {}, []))
+            if not groupItem:
+                groupItem = QtGui.QStandardItem(p.group)
+                paramTreeDict[p.group] = groupItem, families, groupIndexes
+            groupIndexes.append(p.id)
+            groupItem.setData(groupIndexes, IndexesRole)
+            familyItem, familyIndexes = families.get(family, (None, []))
+            if not familyItem:
+                familyItem = QtGui.QStandardItem(family)
+                families[family] = familyItem, familyIndexes
+                groupItem.appendRow(familyItem)
+            familyIndexes.append(p.id)
+            familyItem.setData(familyIndexes, IndexesRole)
+        for group in orderedParameterGroups:
+            self.rootParam.appendRow(paramTreeDict[group][0])
+        self.paramTree.expand(self.paramModel.index(0, 0))
+
+    def showValues(self, index):
+        if self.sender() == self.dumpTable.selectionModel():
+            if not index.indexes():
+                self.valueProxy.setFilter([], [])
+                self.paramGroupBox.setEnabled(False)
+                self.valueTable.setSpan(0, 0, 1, 2)
+            return
+        elif self.sender() == self.dumpTable:
+            data = index.sibling(index.row(), CheckColumn).data(DataRole)
+            if self.paramTree.currentIndex().isValid():
+                indexes = self.paramTree.currentIndex().data(IndexesRole)
+            else:
+                indexes = None
+                self.paramTree.blockSignals(True)
+                self.paramTree.setCurrentIndex(self.paramModel.indexFromItem(self.rootParam))
+                self.paramTree.blockSignals(False)
+#                indexes = self.rootParam.data(IndexesRole)
+        else:
+            indexes = index.data(IndexesRole)
+            currentIndex = self.dumpTable.currentIndex()
+            data = currentIndex.sibling(currentIndex.row(), CheckColumn).data(DataRole)
+        self.paramGroupBox.setEnabled(True)
+        self.valueProxy.setFilter(data, indexes)
+#        self.valueTable.setSpan(0, 0, 1, 1)
+        self.valueTable.resizeColumnToContents(1)
+        self.valueTable.viewport().update()
+
+    def dumpTableMenu(self, pos):
+        menu = QtWidgets.QMenu()
+        selectAllAction = menu.addAction(QtGui.QIcon.fromTheme('edit-select-all'), 'Select all')
+        selectNoneAction = menu.addAction(QtGui.QIcon.fromTheme('edit-select-none'), 'Select none')
+        menu.addSeparator()
+        checkAction = menu.addAction(QtGui.QIcon.fromTheme('checkmark'), 'Check selected')
+        uncheckAction = menu.addAction(QtGui.QIcon.fromTheme('list-remove'), 'Uncheck selected')
+        if not self.dumpTable.selectionModel().selectedRows():
+            checkAction.setEnabled(False)
+            uncheckAction.setEnabled(False)
+        res = menu.exec_(QtGui.QCursor.pos())
+        if res == selectAllAction:
+            self.dumpTable.selectAll()
+        elif res == selectNoneAction:
+            self.dumpTable.clearSelection()
+        elif res == checkAction:
+            self.checkAll()
+        elif res == uncheckAction:
+            self.checkNone()
+
+    def toggleCheck(self, index):
+        index = index.sibling(index.row(), CheckColumn)
+        self.dumpModel.setData(index, not index.data(QtCore.Qt.CheckStateRole), QtCore.Qt.CheckStateRole)
+
+    def checkAll(self):
+        for index in self.dumpTable.selectionModel().selectedRows():
+            self.dumpModel.setData(index, QtCore.Qt.Checked, QtCore.Qt.CheckStateRole)
+
+    def checkNone(self):
+        for index in self.dumpTable.selectionModel().selectedRows():
+            self.dumpModel.setData(index, QtCore.Qt.Unchecked, QtCore.Qt.CheckStateRole)
+
+    def checkImportGroup(self, index):
+        checked = self.importGroup.checkedId()
+        if not checked:
+            overwrite = self.collectionCombo.currentIndex()
+            self.overwriteChk.setEnabled(overwrite)
+            self.overwriteBtn.setEnabled(overwrite)
+            self.collectionCombo.setEnabled(True)
+        else:
+            self.overwriteChk.setEnabled(False)
+            self.overwriteBtn.setEnabled(False)
+            self.collectionCombo.setEnabled(False)
+        self.checkImport()
+
+    def collectionChanged(self, id):
+        if id == 0:
+            self.overwriteChk.setEnabled(False)
+            self.overwriteBtn.setEnabled(False)
+        else:
+            self.overwriteChk.setEnabled(True)
+            self.overwriteBtn.setEnabled(True)
+            self.checkImport()
+
+    def setNewIcon(self, valid):
+        if valid:
+            self.newIcon.setPixmap(QtGui.QPixmap())
+            self.newIcon.setToolTip('')
+            self.newEdit.setToolTip('')
+        else:
+            option = QtWidgets.QStyleOptionFrame()
+            option.initFrom(self.newEdit)
+            height = self.style().subElementRect(
+                QtWidgets.QStyle.SE_LineEditContents, option, self.newEdit).height() - \
+                self.newIcon.lineWidth() * 8
+            self.newIcon.setPixmap(QtGui.QIcon.fromTheme('emblem-warning').pixmap(height))
+            self.newIcon.setToolTip('The selected name is invalid')
+            self.newEdit.setToolTip('The selected name is invalid')
+
+    def checkImport(self):
+        if self.sender() == self.dumper and self.dumpModel.rowCount() == 1:
+            self.dumpModel.blockSignals(True)
+            self.dumpModel.item(0, CheckColumn).setCheckState(True)
+            self.dumpModel.blockSignals(False)
+        selected = [(r, self.dumpModel.item(r, LocationColumn).data(QtCore.Qt.DisplayRole)) for r in range(self.dumpModel.rowCount()) \
+            if self.dumpModel.item(r, CheckColumn).data(QtCore.Qt.CheckStateRole)]
+        count = len(selected)
+
+        #verifica meglio la logica, forse si riesce a migliorare
+        self.okBtn.setEnabled(count)
+        self.openBtn.setEnabled(True if count == 1 else False)
+        for b in self.importGroup.buttons():
+            b.setEnabled(count)
+        if self.newRadio.isChecked():
+            self.newEdit.setEnabled(count)
+            self.newIcon.setEnabled(count)
+            self.okBtn.setEnabled(self.newEdit.isValid())
+            self.openBtn.setEnabled(self.openBtn.isEnabled() and self.newEdit.isValid())
+            return
+        elif self.noImportRadio.isChecked():
+            self.okBtn.setEnabled(False)
+            return
+
+        if not count:
+            return
+        if not self.collectionCombo.currentIndex():
+            return
+        collection = self.collectionCombo.currentText()
+        collIndexes = self.collectionBuffer.get(collection)
+        if not collIndexes:
+            collIndexes = self.collectionBuffer.setdefault(collection, self.database.getIndexesForCollection(collection))
+#        print(collIndexes, selected)
+        willOverwrite = 0
+        multi = False
+        for row, index in selected:
+            if index > 1023:
+                multi = True
+                break
+            if index in collIndexes:
+                willOverwrite += 1
+        if self.overwriteChk.isChecked():
+            if multi or (willOverwrite and willOverwrite < len(collIndexes)):
+                state = QtCore.Qt.PartiallyChecked
+                icon = QtGui.QIcon.fromTheme('emblem-question')
+            elif willOverwrite == len(collIndexes):
+                state = QtCore.Qt.Checked
+                if collIndexes == [s[1] for s in selected]:
+                    icon = QtGui.QIcon.fromTheme('emblem-warning')
+                else:
+                    icon = QtGui.QIcon.fromTheme('emblem-question')
+            else:
+                state = QtCore.Qt.Unchecked
+                icon = QtGui.QIcon()
+            self.overwriteChk.setCheckState(state)
+            self.overwriteChk.setEnabled(state)
+            self.overwriteBtn.setIcon(icon)
+            self.overwriteBtn.setEnabled(state)
+            self.okBtn.setEnabled(state)
+            for row in range(self.dumpModel.rowCount()):
+                if multi:
+                    destIndex = None
+                else:
+                    destItem = self.dumpModel.item(row, LocationColumn)
+                    destIndex = destItem.data(QtCore.Qt.DisplayRole)
+                    font = destItem.data(QtCore.Qt.FontRole)
+                    font.setBold(True)
+                    destItem.setData(font, QtCore.Qt.FontRole)
+#                    setBold(destItem, destIndex in collIndexes)
+                self.dumpModel.item(row, DestColumn).setData(destIndex, QtCore.Qt.DisplayRole)
+        else:
+            if multi:
+                if len(collIndexes) + count >= 1024:
+                    state = False
+                    icon = QtGui.QIcon.fromTheme('emblem-warning')
+                else:
+                    state = True
+                    icon = QtGui.QIcon.fromTheme('emblem-question')
+            elif len(collIndexes) + count >= 1024:
+                state = False
+                icon = QtGui.QIcon.fromTheme('emblem-warning')
+            elif willOverwrite:
+                state = True
+                icon = QtGui.QIcon.fromTheme('emblem-warning')
+            else:
+                state = True
+                icon = QtGui.QIcon()
+            self.okBtn.setEnabled(state)
+            self.overwriteChk.setEnabled(True)
+            self.overwriteBtn.setEnabled(not icon.isNull())
+            for row in range(self.dumpModel.rowCount()):
+                if multi:
+                    destIndex = None
+                else:
+                    destItem = self.dumpModel.item(row, LocationColumn)
+                    destIndex = destItem.data(QtCore.Qt.DisplayRole)
+                    if destIndex in collIndexes:
+                        setItalic(destItem, True)
+                        destItem.setEnabled(False)
+                    else:
+                        setItalic(destItem, False)
+                        destItem.setEnabled(True)
+                self.dumpModel.item(row, DestColumn).setData(destIndex, QtCore.Qt.DisplayRole)
+
+        #implementare overwriteBtn, forse con un dict?
+
+    def processData(self, sysex):
+        self.dumpModel.dataChanged.disconnect(self.checkImport)
+        bank, prog = sysex[5:7]
+        data = sysex[7:390]
+        checkItem = QtGui.QStandardItem()
+        checkItem.setData(data, DataRole)
+        indexItem = QtGui.QStandardItem()
+        indexItem.setData((bank << 7) + prog, QtCore.Qt.DisplayRole)
+        destItem = QtGui.QStandardItem()
+        nameItem = QtGui.QStandardItem(getName(data[363:379]))
+        catItem = QtGui.QStandardItem()
+        catItem.setData(data[379], QtCore.Qt.DisplayRole)
+
+        for attr, id in paramPairs:
+            self.query.bindValue(attr, data[id])
+        if not self.query.exec_():
+            print(self.query.lastError().driverText(), self.query.lastError().databaseText())
+        duplicates = {}
+        while self.query.next():
+            uid = self.query.value(0)
+            if uid in duplicates:
+                continue
+            duplicates[uid] = self.database.getNameFromUid(uid), self.database.getCollectionsFromUid(uid, False)
+        names = []
+        colls = []
+        for k in sorted(duplicates, key=lambda v: duplicates[v][0]):
+            name, collList = duplicates[k]
+            collList = [self.allCollections[c] for c in collList]
+            names.append(name.strip())
+            colls.append('<b>{}</b>: {}'.format(name.strip(), ', '.join(factoryPresetsNamesDict.get(c, c) for c in collList)))
+        dupItem = QtGui.QStandardItem(', '.join(names))
+        if colls:
+            dupItem.setData('Duplicate locations:<ul><li>' + '</li><li>'.join(coll for coll in colls) + '</li></ul>'
+                , QtCore.Qt.ToolTipRole)
+        
+        self.dumpModel.appendRow([checkItem, indexItem, nameItem, catItem, dupItem, destItem])
+
+        if bank < 0x20:
+            if bank == 0:
+                if prog > 0:
+                    if self.dumpModel.rowCount() > 1:
+                        self.tot = 128
+                    else:
+                        self.tot = 1
+                else:
+                    self.tot = 1
+            else:
+                if self.dumpModel.rowCount() > 127:
+                    self.tot = 1024
+                else:
+                    self.tot = 128
+            index = '{}{:03}'.format(uppercase[bank], prog + 1)
+        else:
+            #TODO: check this for multiple sound edit buffer manual sends
+            if self.dumpModel.rowCount() == 1 and prog == 0:
+                index = 'Buff'
+                self.tot = 1
+            else:
+                index = 'M{:02}'.format(prog + 1)
+                self.tot = 16
+        self.dumpModel.setHeaderData(self.dumpModel.rowCount() - 1, QtCore.Qt.Vertical, index, QtCore.Qt.DisplayRole)
+        if bank == 0x7f and prog > 1 and self.dumpModel.rowCount() > 1:
+            self.dumpModel.setHeaderData(0, QtCore.Qt.Vertical, 'M01', QtCore.Qt.DisplayRole)
+        self.dumpTable.resizeRowsToContents()
+        self.dumpTable.scrollToBottom()
+        self.dumpModel.dataChanged.connect(self.checkImport)
+
+        if not self.isVisible():
+            return
+        self.dumper.show()
+        if self.dumper.tot != self.tot:
+            self.dumper.start(tot=self.tot)
+        self.dumper.count = self.dumpModel.rowCount()
+        self.timeout.start()
+
+    def midiEventReceived(self, event):
+        if event.type != SYSEX:
+            return
+        if event.sysex[4] != SNDD:
+            return
+        self.processData(event.sysex)
+
+    def exec_(self):
+        self.valueTable.setSpan(0, 0, 1, 2)
+        self.newEdit.setText('Dump ' + QtCore.QDate.currentDate().toString('dd-MM-yy'))
+        QtCore.QTimer.singleShot(0, lambda: [self.dumper.start(self.tot), self.timeout.start()])
+        res = QtWidgets.QDialog.exec_(self)
+        return res
+
 
 
 class SmallDumper(QtWidgets.QDialog):
-    def __init__(self, main, parent=None):
+    def __init__(self, parent=None):
         QtWidgets.QDialog.__init__(self, parent)
         loadUi(localPath('ui/smalldumper.ui'), self)
+        self._isDumpDialog = True
         self.setModal(True)
         self._count = 0
+        self.closeable = False
+        self.closeAsk = True
+        self.closeMessage = 'Stop the dump process?'
+
+    def closeEvent(self, event):
+        if self.closeable:
+            event.accept()
+            return
+        else:
+            if self.closeAsk and QtWidgets.QMessageBox.question(self, 
+                'Stop dump', 
+                self.closeMessage, 
+                QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel
+                ) == QtWidgets.QMessageBox.Ok:
+                    event.accept()
+                    return
+        event.ignore()
 
     def showEvent(self, event):
         self.waiter.active = True
@@ -31,7 +585,7 @@ class SmallDumper(QtWidgets.QDialog):
         self._count = count
         self.progressBar.setValue(count)
 
-    def start(self, uid=None, tot=1, collection=None, collectionIndex=None):
+    def start(self, tot=1, uid=None, collection=None, collectionIndex=None):
 #        self.waiter.active = True
         self.tot = tot
         self.progressBar.setVisible(True if tot > 1 else False)
@@ -46,6 +600,7 @@ class Dumper(QtWidgets.QDialog):
     def __init__(self, parent):
         QtWidgets.QDialog.__init__(self, parent)
         loadUi(localPath('ui/dumper.ui'), self)
+        self._isDumpDialog = True
         self.blockable = False
         self.elapsed = QtCore.QElapsedTimer()
         self.clock = QtCore.QTimer()
@@ -150,6 +705,7 @@ class DumpDialog(QtWidgets.QDialog):
     def __init__(self, uiPath, main, parent):
         QtWidgets.QDialog.__init__(self, parent)
         loadUi(localPath(uiPath), self)
+        self._isDumpDialog = True
         self.main = main
         self.database = main.database
         self.cancelBtn = self.buttonBox.button(self.buttonBox.Cancel)

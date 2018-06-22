@@ -85,6 +85,7 @@ class SoundsMenu(FactoryMenu):
             self.insertSeparator(self.locationsMenu.menuAction())
         if not self.done or self.lastShownTimer.hasExpired(10000):
             self.populate()
+        self.tagsMenu.setEnabled(True if self.tags else False)
         self.done = True
 
     def startShownTimer(self):

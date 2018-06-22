@@ -104,8 +104,11 @@ class BaseLibraryModel(QtSql.QSqlQueryModel):
             prog = (section & 127) + 1
             return '{}{:03}'.format(string.ascii_uppercase[bank], prog)
         #this is necessary because in some cases the headers are set to "0" once results are filtered
-        elif orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
-            return headerLabels.get(section)
+        elif orientation == QtCore.Qt.Horizontal:
+            if role == QtCore.Qt.DisplayRole:
+                return headerLabels.get(section)
+#            elif role == QtCore.Qt.ToolTipRole:
+#                return ''
         return QtSql.QSqlQueryModel.headerData(self, section, orientation, role)
 
 

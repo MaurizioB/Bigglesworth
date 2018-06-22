@@ -53,22 +53,33 @@ class FilterNameEdit(QtWidgets.QLineEdit):
 
 class TagsCompleter(QtWidgets.QCompleter):
     def __init__(self, model, parent):
-        QtWidgets.QCompleter.__init__(self, model, parent)
+        self.baseModel = QtGui.QStandardItemModel()
+        self.createBaseModel(model)
+        QtWidgets.QCompleter.__init__(self, self.baseModel, parent)
         self.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
-        self.baseModel = model
         self.setWidget(parent)
         self.highlighted.connect(self.setText)
         parent.tagsChanged.connect(self.updateModel)
 #        self.setCompletionMode(self.UnfilteredPopupCompletion)
 
+    def createBaseModel(self, model):
+        self.baseModel.clear()
+        for row in range(model.rowCount()):
+            tagItem = QtGui.QStandardItem(model.index(row, 0).data())
+            tagItem.setData(getValidQColor(model.index(row, 1).data(), backgroundRole), QtCore.Qt.BackgroundRole)
+            tagItem.setData(getValidQColor(model.index(row, 2).data(), foregroundRole), QtCore.Qt.ForegroundRole)
+            self.baseModel.appendRow(tagItem)
+
     def updateModel(self, tags):
         if not tags:
             self.setModel(self.baseModel)
+            return
         model = QtGui.QStandardItemModel()
         for row in range(self.baseModel.rowCount()):
-            tag = self.baseModel.index(row, 0).data()
-            if not tag in tags:
-                model.appendRow(QtGui.QStandardItem(tag))
+#            tag = self.baseModel.index(row, 0).data()
+            tagItem = self.baseModel.item(row, 0)
+            if not tagItem.text() in tags:
+                model.appendRow(tagItem.clone())
         self.setModel(model)
 
     def setText(self, text):
@@ -116,6 +127,11 @@ class FilterTagsEdit(FilterNameEdit):
         self.cursorBlink = False
         self.installEventFilter(self)
         self.tagsX = 0
+        self.completer = None
+        self.autoPopup = False
+
+    def setAutoPopup(self, auto):
+        self.autoPopup = auto
 
     @property
     def tagCursor(self):
@@ -144,7 +160,9 @@ class FilterTagsEdit(FilterNameEdit):
         QtWidgets.QLineEdit.setText(self, text)
         self.checkMargins()
 
-    def setTags(self, tags):
+    def setTags(self, tags=None):
+        if tags is None:
+            tags = []
         self.tags = tags
         self.tagsChanged.emit(tags)
         self.setText('')
@@ -243,6 +261,11 @@ class FilterTagsEdit(FilterNameEdit):
         elif event.key() == QtCore.Qt.Key_Escape:
             QtWidgets.QLineEdit.setText(self, '')
             self.completer.popup().hide()
+        elif event.key() == QtCore.Qt.Key_Down and self.autoPopup and not self.completer.popup().isVisible():
+            self.completer.setCompletionPrefix(self.text())
+            self.completer.complete()
+            if self.completer.popup().model().rowCount():
+                self.completer.popup().show()
         else:
             QtWidgets.QLineEdit.keyPressEvent(self, event)
 
@@ -262,6 +285,11 @@ class FilterTagsEdit(FilterNameEdit):
         return QtWidgets.QLineEdit.eventFilter(self, source, event)
 
     def setModel(self, tagsModel):
+        try:
+            self.textEdited.disconnect(self.completer.setCompletionPrefix)
+            self.tagsModel.dataChanged.disconnect(self.reloadTags)
+        except:
+            pass
         self.completer = TagsCompleter(tagsModel, self)
         self.completer.popup().installEventFilter(self)
         self.textEdited.connect(self.completer.setCompletionPrefix)
@@ -276,6 +304,41 @@ class FilterTagsEdit(FilterNameEdit):
             bgColor = getValidQColor(self.tagsModel.index(row, 1).data(), backgroundRole)
             fgColor = getValidQColor(self.tagsModel.index(row, 2).data(), foregroundRole)
             self.tagColors[tag] = bgColor, fgColor
+        newTags = []
+        for tag in self.tags:
+            if tag in self.tagColors:
+                newTags.append(tag)
+        if set(newTags) != set(self.tags):
+            self.setTags(newTags)
+
+    def contextMenuEvent(self, event):
+        menu = self.createStandardContextMenu()
+        firstAction = menu.actions()[0]
+        tags = {}
+        for row in range(self.completer.model().rowCount()):
+            tagItem = self.completer.model().item(row, 0)
+            tags[tagItem.text()] = tagItem
+#        firstAction.setIcon(QtGui.QIcon.fromTheme('edit-undo'))
+        option = QtWidgets.QStyleOptionMenuItem()
+        option.initFrom(menu)
+        iconSize = self.style().pixelMetric(QtWidgets.QStyle.PM_SmallIconSize, option, menu)
+        for tag in sorted(tags):
+            tagItem = tags[tag]
+            icon = QtGui.QPixmap(iconSize, iconSize)
+            icon.fill(QtCore.Qt.transparent)
+            qp = QtGui.QPainter(icon)
+            qp.setRenderHints(qp.Antialiasing)
+            qp.setPen(QtGui.QPen(tagItem.data(QtCore.Qt.BackgroundRole), iconSize * .25))
+            qp.setBrush(tagItem.data(QtCore.Qt.ForegroundRole))
+#            qp.translate(.5, .5)
+            deltaPos = iconSize * .125
+            qp.drawRoundedRect(deltaPos, deltaPos, iconSize - deltaPos * 2 - 1, iconSize - deltaPos * 2 - 1, deltaPos * .5, deltaPos * .5)
+            qp.end()
+            tagAction = QtWidgets.QAction(QtGui.QIcon(icon), tag, menu)
+            tagAction.triggered.connect(lambda _, tag=tag: self.setTags(self.tags + [tag]))
+            menu.insertAction(firstAction, tagAction)
+        menu.insertSeparator(firstAction)
+        menu.exec_(self.mapToGlobal(event.pos()))
 
     def paintEvent(self, event):
         QtWidgets.QLineEdit.paintEvent(self, event)

@@ -360,6 +360,7 @@ class FirstRunObject(QtCore.QObject):
     def __init__(self, main):
         QtCore.QObject.__init__(self, main)
         self.main = main
+        self.isCompleted = False
         self.mainWindow = main.mainWindow
         self.editorWindow = main.editorWindow
         self.dumpReceiveDialog = main.dumpReceiveDialog
@@ -413,6 +414,7 @@ class FirstRunObject(QtCore.QObject):
             except:
                 pass
         self.deleteLater()
+        self.isCompleted = True
         self.completed.emit(completed)
 
     def eventFilter(self, source, event):

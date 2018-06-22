@@ -49,6 +49,8 @@ class _Combo(QtWidgets.QComboBox):
         else:
             foreground = palette.color(palette.WindowText)
             background = palette.color(palette.Window)
+        foregroundDisabled = QtGui.QColor(foreground)
+        foregroundDisabled.setAlpha(128)
         self._baseStyleSheet = '''
             QComboBox {{
                 color: {foreground};
@@ -59,6 +61,9 @@ class _Combo(QtWidgets.QComboBox):
                 border-left: {1px} solid {light};
                 border-radius: {2px};
                 background: {background};
+            }}
+            QComboBox::disabled {{
+                color: {foregroundDisabled};
             }}
             QComboBox:on {{
                 border-top: {1px} solid {dark};
@@ -114,6 +119,7 @@ class _Combo(QtWidgets.QComboBox):
             '''.format(
                 padding=self.padding, 
                 foreground=_getCssQColorStr(foreground), 
+                foregroundDisabled=_getCssQColorStr(foregroundDisabled), 
                 background=_getCssQColorStr(background), 
                 light=_getCssQColorStr(palette.color(palette.Midlight)), 
                 dark=_getCssQColorStr(palette.color(palette.Dark)), 

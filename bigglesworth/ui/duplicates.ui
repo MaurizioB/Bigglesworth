@@ -126,6 +126,9 @@
      <property name="editTriggers">
       <set>QAbstractItemView::NoEditTriggers</set>
      </property>
+     <property name="expandsOnDoubleClick">
+      <bool>false</bool>
+     </property>
      <attribute name="headerVisible">
       <bool>false</bool>
      </attribute>
@@ -153,7 +156,9 @@
          <string>Full library</string>
         </property>
         <property name="icon">
-         <iconset theme="go-home"/>
+         <iconset theme="go-home">
+          <normaloff/>
+         </iconset>
         </property>
        </item>
       </widget>

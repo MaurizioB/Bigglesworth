@@ -10,7 +10,7 @@ from bigglesworth.utils import loadUi, localPath, getName, getChar, Enum, setBol
 from bigglesworth.const import (chr2ord, UidColumn, LocationColumn, 
     INIT, IDW, IDE, SNDP, END, templateGroupDict)
 from bigglesworth.parameters import Parameters, fullRangeCenterZero, driveCurves, arpLength, ctrl2sysex
-from bigglesworth.widgets import SoundsMenu, EditorMenu, EnvelopeView, MidiConnectionsDialog
+from bigglesworth.widgets import SoundsMenu, EditorMenu, EnvelopeView, MidiConnectionsDialog, ModMatrixView
 from bigglesworth.dialogs import RandomDialog, InputMessageBox, TemplateManager, SaveSoundAs, WarningMessageBox
 from bigglesworth.midiutils import NoteOffEvent, NoteOnEvent, CtrlEvent, ProgramEvent, SysExEvent, SYSEX, CTRL, NOTEON, NOTEOFF, PROGRAM
 
@@ -19,6 +19,7 @@ from squarebutton import SquareButton
 from dial import Dial
 from slider import Slider
 from frame import Frame
+from stackedwidget import StackedWidget
 
 Combo.setRange = lambda *args: None
 Combo.setValueList = lambda self, valueList: self.combo.addItems(valueList)
@@ -617,8 +618,8 @@ class EditorWindow(QtWidgets.QMainWindow):
 
         self.keyOctaveCombo.currentIndexChanged.connect(self.setOctave)
 #        logo = QtGui.QIcon(':/images/bigglesworth_textonly_gray.svg').pixmap(QtCore.QSize(140, 140))
-        self.blofeldPixmap = QtGui.QPixmap(':/images/bigglesworth_textonly_gray.svg')
-        self.blofeldLogo.setPixmap(self.blofeldPixmap.scaledToWidth(140, QtCore.Qt.SmoothTransformation))
+        self.bigglesworthLogoPixmap = QtGui.QPixmap(':/images/bigglesworth_textonly_gray.svg')
+        self.bigglesworthLogo.setPixmap(self.bigglesworthLogoPixmap.scaledToWidth(140, QtCore.Qt.SmoothTransformation))
 
         self.midiInWidget.clicked.connect(self.showMidiMenu)
         self.midiInWidget.setProgState(self.main.progReceiveState)
@@ -688,6 +689,81 @@ class EditorWindow(QtWidgets.QMainWindow):
                         if isinstance(child, QtWidgets.QWidget):
                             stackedWidget.addWidget(child)
 
+        self.modMatrixBtn.clicked.connect(self.showModMatrix)
+        self.modMatrixView = None
+#        self.showModMatrix()
+
+    def showModMatrix(self):
+        if not self.modMatrixView:
+            self.buildModMatrix()
+        else:
+            self.repaintModMatrixCover()
+        self.modMatrixCover.show()
+        self.modMatrixView.show()
+        self.modMatrixCover.resize(self.centralWidget().size())
+        self.modMatrixView.resize(self.centralWidget().size())
+
+    def hideModMatrix(self):
+        self.modMatrixCover.hide()
+        self.modMatrixView.hide()
+
+    def buildModMatrix(self):
+        self.modMatrixCover = QtWidgets.QLabel(self)
+        self.modMatrixCover.setAutoFillBackground(True)
+        self.modMatrixCover.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Ignored))
+#        layout = self.centralWidget().layout()
+#        layout.addWidget(self.modMatrixCover, 0, 0, layout.rowCount(), layout.columnCount())
+        self.repaintModMatrixCover()
+        self.modMatrixView = ModMatrixView(self)
+#        layout.addWidget(self.modMatrixView, 0, 0, layout.rowCount(), layout.columnCount())
+        self.modMatrixView.closeModMatrix.connect(self.hideModMatrix)
+        self.modMatrixView.modAnimationChanged.connect(lambda state: self.settings.setValue('modAnimation', state))
+        self.modMatrixView.modFocusChanged.connect(lambda state: self.settings.setValue('modFocus', state))
+
+    def renderObject(self, obj, qp):
+        if not obj:
+            return False
+        if isinstance(obj, QtWidgets.QLayout):
+            return any(self.renderObject(obj.itemAt(i).widget(), qp) for i in range(obj.count()))
+        elif not (isinstance(obj, QtWidgets.QWidget) and obj.isVisible()):
+            return False
+        elif isinstance(obj, StackedWidget):
+            child = obj.widget(obj.currentIndex)
+            qp.save()
+            qp.translate(obj.geometry().topLeft())
+            child.render(qp, child.geometry().topLeft())
+            qp.restore()
+            return True
+        elif isinstance(obj, QtWidgets.QGraphicsView):
+            obj.viewport().render(qp, obj.geometry().topLeft())
+        else:
+            obj.render(qp, obj.geometry().topLeft())
+        return True
+
+    def repaintModMatrixCover(self):
+        focused = (self.mixerFrame, self.filtersFrame, self.pianoKeyboard, self.bigglesworthLogo, 
+            self.filterEnvelopeFrame, self.amplifierEnvelopeFrame, self.envelope3Frame, self.envelope4Frame, 
+            self.osc1Frame, self.osc2Frame, self.osc3Frame, self.lfo1Frame, self.lfo2Frame, self.lfo3Frame, 
+            )
+        pm = QtGui.QPixmap(self.centralWidget().size())
+        pm.fill(self.palette().color(QtGui.QPalette.Window))
+        qp = QtGui.QPainter(pm)
+        qp.setPen(QtCore.Qt.NoPen)
+        unfocusedColor = QtGui.QColor(8, 8, 8, 192)
+        transparent = QtGui.QColor(QtCore.Qt.transparent)
+        for child in self.centralWidget().children():
+            if child in (self.modMatrixCover, self.modMatrixView):
+                continue
+            qp.setBrush(transparent)
+            if self.renderObject(child, qp) and child not in focused:
+                qp.setBrush(unfocusedColor)
+                qp.drawRoundedRect(child.geometry(), 2, 2)
+
+        qp.end()
+        self.modMatrixCover.setPixmap(pm)
+
+
+#        self.ModMatrixView.show()
 
 
 #    def keyPressEvent(self, event):
@@ -1393,7 +1469,13 @@ class EditorWindow(QtWidgets.QMainWindow):
     def resizeEvent(self, event):
         self.nameEditMask.setGeometry(self.geometry().adjusted(-10, -10, 20, 20))
         width = self.midiSection.width() + self.saveFrame.width() + self.displayLayout.horizontalSpacing()
-        self.blofeldLogo.setPixmap(self.blofeldPixmap.scaledToWidth(width, QtCore.Qt.SmoothTransformation))
+        self.bigglesworthLogo.setPixmap(self.bigglesworthLogoPixmap.scaledToWidth(width, QtCore.Qt.SmoothTransformation))
+        if self.modMatrixView and self.modMatrixView.isVisible():
+            self.modMatrixCover.resize(self.centralWidget().size())
+            self.repaintModMatrixCover()
+            self.modMatrixView.resize(self.centralWidget().size())
+#        if self.ModMatrixView and self.ModMatrixView.isVisible():
+#            self.ModMatrixView.resize(self.centralWidget().size())
 #        print(self.osc1Shape.mapTo(self.centralWidget(), self.osc1Shape.rect().topLeft()))
 
 

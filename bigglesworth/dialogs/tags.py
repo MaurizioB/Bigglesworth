@@ -34,6 +34,7 @@ class TagsDialog(QtWidgets.QDialog):
     def __init__(self, parent):
         QtWidgets.QDialog.__init__(self, parent)
         loadUi('ui/tagsdialog.ui', self)
+        self.changed = False
         self.shadow = ShadowWidget(self)
         self.shadow.hide()
         self.layout().addWidget(self.shadow, 0, 0, self.layout().rowCount(), self.layout().columnCount())
@@ -46,12 +47,12 @@ class TagsDialog(QtWidgets.QDialog):
         self.applyBtn.clicked.connect(self.apply)
         self.buttonBox.button(self.buttonBox.Ok).clicked.connect(lambda: [self.apply(), self.accept()])
 
-        self.tagsModel = parent.database.tagsModel
+        self.tagsModel = QtWidgets.QApplication.instance().database.tagsModel
         self.tagsView.setModel(self.tagsModel)
         self.tagsView.selectionModel().selectionChanged.connect(self.selectionChanged)
         self.tagsModel.dataChanged.connect(self.selectionChanged)
-        self.tagsView.model().layoutChanged.connect(lambda: self.applyBtn.setEnabled(True))
-        self.tagsModel.dataChanged.connect(lambda: self.applyBtn.setEnabled(True))
+#        self.tagsView.model().layoutChanged.connect(self.enableAppy)
+#        self.tagsModel.dataChanged.connect(self.enableAppy)
 
         self.addBtn.clicked.connect(self.tagsView.addTag)
         self.rejected.connect(self.tagsModel.revertAll)
@@ -61,6 +62,9 @@ class TagsDialog(QtWidgets.QDialog):
 #        self.tagsView.updateEnd.connect(lambda: self.buttonBox.button(self.buttonBox.Apply).setEnabled(False))
 #        self.addBtn.clicked.connect(lambda: self.buttonBox.button(self.buttonBox.Apply).setEnabled(True))
 #        self.buttonBox.accepted.connect(self.commit)
+
+    def enableAppy(self):
+        self.applyBtn.setEnabled(True)
 
     def apply(self):
         if not self.applyBtn.isEnabled():
@@ -104,6 +108,7 @@ class TagsDialog(QtWidgets.QDialog):
 
         self.applyBtn.setEnabled(False)
         self.tagsView.applied()
+        self.changed = True
 
     def selectionChanged(self, *args):
         self.delBtn.setEnabled(True if self.tagsView.selectionModel().selectedRows() else False)
@@ -113,6 +118,14 @@ class TagsDialog(QtWidgets.QDialog):
         self.tagsView.deleteTagsAsk(rows)
         self.buttonBox.button(self.buttonBox.Apply).setEnabled(True)
 
+    def exec_(self):
+        #TODO: controlla se serve davvero
+        self.tagsView.model().layoutChanged.connect(self.enableAppy)
+        self.tagsModel.dataChanged.connect(self.enableAppy)
+        res = QtWidgets.QDialog.exec_(self)
+        self.tagsView.model().layoutChanged.disconnect(self.enableAppy)
+        self.tagsModel.dataChanged.disconnect(self.enableAppy)
+        return res
 
 class DeleteTagsMessageBox(QtWidgets.QMessageBox):
     def __init__(self, parent, tags):
