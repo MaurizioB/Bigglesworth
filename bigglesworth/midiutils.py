@@ -220,7 +220,7 @@ _event_types_raw = {
 #                        258048: 'SYSRT',
                         262016: ('SYSTEM', 'SYSTEM'),
 #                        536870912: 'DUMMY',
-                        1073741823: ('USR0', 'ANY'), 
+#                        1073741823: ('USR0', 'ANY'), 
                         }
 
 _event_type_names = {}

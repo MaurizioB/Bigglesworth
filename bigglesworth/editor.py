@@ -719,6 +719,18 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.modMatrixView.closeModMatrix.connect(self.hideModMatrix)
         self.modMatrixView.modAnimationChanged.connect(lambda state: self.settings.setValue('modAnimation', state))
         self.modMatrixView.modFocusChanged.connect(lambda state: self.settings.setValue('modFocus', state))
+        self.modMatrixView.modShadowChanged.connect(lambda state: self.settings.setValue('modShadows', state))
+
+        for param in Parameters.parameterData[245:309]:
+            obj = getattr(self.modMatrixView, param.attr)
+            setattr(self, param.attr, obj)
+            obj.valueChanged.connect(self.updateParameter)
+#            self.parameters.parameters('filterEnvelopeMode').valueChanged.connect(lambda index:
+
+#        for param in Parameters.parameterData[261:309]:
+#            obj = getattr(self.modMatrixView, param.attr)
+#            setattr(self, param.attr, obj)
+#            obj.valueChanged.connect(self.updateParameter)
 
     def renderObject(self, obj, qp):
         if not obj:
@@ -1202,6 +1214,11 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.setFromDump = False
         return True
 
+    def acceptBlofeldId(self, id):
+        if self.main.blofeldId == 0x7f:
+            return True
+        return id == self.main.blofeldId
+
     def midiEventReceived(self, event):
         if event.type == PROGRAM:
             if self.main.progReceiveState and event.channel in self.main.chanReceive:
@@ -1235,9 +1252,16 @@ class EditorWindow(QtWidgets.QMainWindow):
                 index = ctrl2sysex[event.param]
                 self.parameters[index] = event.value
                 self.bankBuffer = None
+        elif event.type == SYSEX:
+            if event.sysex[:3] == [INIT, IDW, IDE] and event.sysex[4] == SNDP and \
+                self.acceptBlofeldId(event.sysex[3]):
+                    id = (event.sysex[6] << 7) + event.sysex[7]
+                    setattr(self.parameters, Parameters.parameterData[id].attr, event.sysex[8])
+            else:
+                print('unknown SysExEvent received:\n{}', ', '.join('0x{:x}'.format(e) for e in event.sysex))
+
 #                setattr(self.parameters, self.sender().objectName(), value)
 #        print(event.type == NOTE)
-        pass
 #        if event.type == NOTE
 #        if not self.main.ctrlReceiveState
 #        if event.type == SYSEX:

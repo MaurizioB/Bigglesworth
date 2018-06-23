@@ -14,7 +14,7 @@ class _Combo(QtWidgets.QComboBox):
     _minWidth = 24
     _minHeight = 8
     _minimumSizeHint = QtCore.QSize(_minWidth, _minHeight)
-    _minimumDataWidth = _dataWidth = 32
+    _minimumDataWidth = _dataWidth = 16
     def __init__(self, parent, valueList=None):
         QtWidgets.QComboBox.__init__(self, parent)
         self.setMinimumSize(self._minimumSizeHint)

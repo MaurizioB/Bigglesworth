@@ -150,7 +150,9 @@
   </action>
   <action name="editTagsAction">
    <property name="icon">
-    <iconset theme="tag"/>
+    <iconset theme="tag">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>Edit &amp;tags...</string>
@@ -183,6 +185,9 @@
    </property>
   </action>
   <action name="showWavetableAction">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>&amp;Wavetable editor</string>
    </property>

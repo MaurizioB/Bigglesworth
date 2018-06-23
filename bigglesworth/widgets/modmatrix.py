@@ -10,9 +10,13 @@ from Qt import QtCore, QtGui, QtWidgets
 from metawidget import BaseWidget
 from dial import _Dial
 from combo import _Combo
+try:
+    from bigglesworth.parameters import Parameters
+except:
+    pass
 
 In, Out = 0, 1
-Left, Top, Right, Bottom = 0, 1, 2, 3
+Left, Top, Right, Bottom = 1, 2, 4, 8
 
 QtCore.pyqtSignal = QtCore.Signal
 def setItalic(item, italic=True):
@@ -52,7 +56,7 @@ modDestGroups = {
 
 modColors = [
     QtGui.QColor(0, 0, 0), 
-    QtGui.QColor(255, 255, 0), 
+    QtGui.QColor(216, 216, 0), 
     QtGui.QColor(128, 0, 0), 
     QtGui.QColor(64, 192, 128), 
     QtGui.QColor(255, 0, 255), 
@@ -69,6 +73,57 @@ modColors = [
     QtGui.QColor(0, 255, 0), 
 ]
 
+
+class BaseModParamObject(QtCore.QObject):
+    valueChanged = QtCore.pyqtSignal(int)
+    def __init__(self, main, id, paramId, baseValue=None):
+        QtCore.QObject.__init__(self, main)
+        self.main = main
+        self.id = id
+        self.paramId = paramId
+        self.value = baseValue if baseValue is not None else Parameters.parameterData[self.paramDelta + id * 3 + paramId].default
+        self.setRange = self.setValueList = lambda *args: None
+        self.setObjectName(self.baseName.format(id + 1, self.attrList[paramId]))
+
+
+class ModulationObject(BaseModParamObject):
+    paramDelta = 261
+    baseName = 'modulation{}{}'
+    attrList = ('Source', 'Destination', 'Amount')
+    def __init__(self, main, id, paramId, baseValue=None):
+        BaseModParamObject.__init__(self, main, id, paramId, baseValue=None)
+        if paramId == 0:
+            self.setValue = lambda value: self.main.checkSource(id, value)
+        elif paramId == 1:
+            self.setValue = lambda value: self.main.checkTarget(id, value)
+        else:
+            self.setValue = lambda value: self.main.checkAmount(id, value)
+
+
+class ModifierObject(BaseModParamObject):
+    paramDelta = 245
+    baseName = 'modifier{}{}'
+    attrList = ('SourceA', 'SourceB', 'Operation', 'Constant')
+    def __init__(self, main, id, paramId, widget, baseValue=None):
+        BaseModParamObject.__init__(self, main, id, paramId, baseValue=None)
+        self.main = main
+        self.id = id
+        self.paramId = paramId
+#        if paramId == 0:
+#            self.setValue = lambda value: self.main.setModifierSourceA(id, value)
+#        elif paramId == 1:
+#            self.setValue = lambda value: self.main.setModifierSourceB(id, value)
+#        elif paramId == 2:
+#            self.setValue = lambda value: self.main.setModifierOperator(id, value)
+#        else:
+#            self.setValue = lambda value: self.main.setModifierConstant(id, value)
+        self.widget = widget
+        self.widget.currentIndexChanged.connect(self.valueChanged)
+
+    def setValue(self, value):
+        self.widget.blockSignals(True)
+        self.widget.setValue(value)
+        self.widget.blockSignals(False)
 
 class VerticalHeader(QtWidgets.QHeaderView):
 #    sectionHighlight = QtCore.pyqtSignal(int)
@@ -110,6 +165,59 @@ class VerticalHeader(QtWidgets.QHeaderView):
         menu.exec_(QtGui.QCursor.pos())
 
 
+class AmountSpinBox(QtWidgets.QSpinBox):
+    regexp = QtGui.QRegExpValidator(QtCore.QRegExp(r'^[+|-]{0,1}\d+$'))
+
+    def __init__(self):
+        QtWidgets.QSpinBox.__init__(self)
+        self.setRange(0, 127)
+        self.valueChanged.connect(self.update)
+        self.setStyleSheet('''
+        QSpinBox::up-button, QSpinBox::down-button {
+            border: none;
+            width: 10px;
+        }
+        QSpinBox::down-arrow, QSpinBox::up-arrow {
+            width: 0px;
+            height: 0px;
+            border-left: 3px solid palette(base);
+            border-right: 3px solid palette(base);
+        }
+        QSpinBox::up-arrow {
+            border-top: none;
+            border-bottom: 3px solid black;
+        }
+        QSpinBox::up-arrow:disabled {
+            border-bottom: 3px solid palette(mid);
+        }
+        QSpinBox::down-arrow {
+            border-top: 3px solid black;
+            border-bottom: none;
+        }
+        QSpinBox::down-arrow:disabled {
+            border-top: 3px solid palette(mid);
+        }
+        QSpinBox::up-arrow:pressed, QSpinBox::down-arrow:pressed {
+            left: 1px;
+        }
+        ''')
+
+    def textFromValue(self, value):
+        return fullRangeCenterZero[value]
+
+    def validate(self, text, pos):
+        return self.regexp.validate(text, pos)
+
+    def valueFromText(self, text):
+        if text[0].isdigit():
+            text = '+' + text
+        try:
+            return fullRangeCenterZero.index(text)
+        except Exception as e:
+            print(e)
+            return self.value()
+
+
 class ModTable(QtWidgets.QTableWidget):
 #    sectionHighlight = QtCore.pyqtSignal(int)
     modSourceChanged = QtCore.pyqtSignal(int, int)
@@ -134,20 +242,21 @@ class ModTable(QtWidgets.QTableWidget):
 
             sourceCombo = _Combo(self)
             sourceCombo.setValue = sourceCombo.setCurrentIndex
+            sourceCombo.value = sourceCombo.currentIndex
             sourceCombo.addItems(modSource)
             sourceCombo.currentIndexChanged.connect(lambda idx, m=row: self.modSourceChanged.emit(m, idx))
             sourceCombo.currentIndexChanged.connect(lambda idx, m=row: self.checkSource(m, idx))
             self.setCellWidget(row, 0, sourceCombo)
 
-            spin = QtWidgets.QSpinBox()
+            spin = AmountSpinBox()
             spin.setEnabled(False)
-            spin.setRange(0, 127)
             spin.valueChanged.connect(lambda v, m=row: self.modAmountChanged.emit(m, v))
             self.setCellWidget(row, 1, spin)
 
             destCombo = _Combo(self)
             destCombo.setEnabled(False)
             destCombo.setValue = destCombo.setCurrentIndex
+            destCombo.value = destCombo.currentIndex
             destCombo.addItems(modDest)
             destCombo.setCurrentIndex(-1)
             destCombo.currentIndexChanged.connect(lambda idx, m=row: self.modDestinationChanged.emit(m, idx))
@@ -221,55 +330,66 @@ class BaseDialog(QtWidgets.QDialog):
 
 class ModifiersDialog(BaseDialog):
     shown = False
-    modifierSourceAChanged = QtCore.pyqtSignal(int, int)
-    modifierSourceBChanged = QtCore.pyqtSignal(int, int)
-    modifierOperatorChanged = QtCore.pyqtSignal(int, int)
-    modifierConstantChanged = QtCore.pyqtSignal(int, int)
+    sourceAChanged = QtCore.pyqtSignal(int, int)
+    sourceBChanged = QtCore.pyqtSignal(int, int)
+    operatorChanged = QtCore.pyqtSignal(int, int)
+    constantChanged = QtCore.pyqtSignal(int, int)
 
     def __init__(self, main):
         BaseDialog.__init__(self, main)
         self.setWindowTitle('Modifiers')
         layout = self.layout()
 
-        layout.addWidget(QtWidgets.QLabel('Source A'), 0, 1)
-        layout.addWidget(QtWidgets.QLabel('Operator'), 0, 2)
-        layout.addWidget(QtWidgets.QLabel('Source B'), 0, 3)
-        layout.addWidget(QtWidgets.QLabel('Constant'), 0, 4)
+        for col, label in enumerate(('Source A', 'Oper.', 'Source B', 'Const.'), 1):
+            lbl = QtWidgets.QLabel(label)
+            lbl.setAlignment(QtCore.Qt.AlignCenter)
+            layout.addWidget(lbl, 0, col)
 
+        self.modifiers = []
         palette = self.palette()
         modSourceBItems = ['Constant'] + list(modSource[1:])
+        maxSizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
         for row in range(1, 5):
             layout.addWidget(QtWidgets.QLabel('Mod. {}'.format(row)))
             sourceACombo = _Combo(self)
             sourceACombo.addItems(modSource)
             sourceACombo.setValue = sourceACombo.setCurrentIndex
-            sourceACombo.currentIndexChanged.connect(lambda idx, m=row: self.modifierSourceAChanged.emit(m, idx))
+            sourceACombo.value = sourceACombo.currentIndex
+            sourceACombo.currentIndexChanged.connect(lambda idx, m=row: self.sourceAChanged.emit(m, idx))
             layout.addWidget(sourceACombo, row, 1)
 
             operatorCombo = _Combo(self)
             operatorCombo.addItems(modOperator)
+            operatorCombo.setSizePolicy(maxSizePolicy)
             operatorCombo.setValue = operatorCombo.setCurrentIndex
-            operatorCombo.currentIndexChanged.connect(lambda idx, m=row: self.modifierOperatorChanged.emit(m, idx))
+            operatorCombo.value = operatorCombo.currentIndex
+            operatorCombo.currentIndexChanged.connect(lambda idx, m=row: self.operatorChanged.emit(m, idx))
             layout.addWidget(operatorCombo, row, 2)
 
             sourceBCombo = _Combo(self)
             sourceBCombo.addItems(modSourceBItems)
-            sourceBCombo.setValue = sourceBCombo.setCurrentIndex
-            sourceBCombo.currentIndexChanged.connect(lambda idx, m=row: self.modifierSourceBChanged.emit(m, idx))
+            sourceBCombo.value = sourceBCombo.currentIndex
+            sourceBCombo.currentIndexChanged.connect(lambda idx, m=row: self.sourceBChanged.emit(m, idx))
             layout.addWidget(sourceBCombo, row, 3)
 
             constantCombo = _Combo(self)
             constantCombo.setEnabled(False)
             constantCombo.addItems(fullRangeCenterZero)
             constantCombo.setValue = constantCombo.setCurrentIndex
-            constantCombo.currentIndexChanged.connect(lambda idx, m=row: self.modifierConstantChanged.emit(m, idx))
-            sourceBCombo.currentIndexChanged.connect(lambda idx, combo=constantCombo: combo.setEnabled(idx))
+            constantCombo.value = constantCombo.currentIndex
+            constantCombo.currentIndexChanged.connect(lambda idx, m=row: self.constantChanged.emit(m, idx))
             layout.addWidget(constantCombo, row, 4)
+
+            sourceBCombo.setValue = lambda idx, src=sourceBCombo, const=constantCombo: [
+                src.setCurrentIndex(idx), const.setDisabled(idx)]
+            sourceBCombo.currentIndexChanged.connect(lambda idx, combo=constantCombo: combo.setDisabled(idx))
 
             sourceACombo.setPalette(palette)
             operatorCombo.setPalette(palette)
             sourceBCombo.setPalette(palette)
             constantCombo.setPalette(palette)
+
+            self.modifiers.append((sourceACombo, sourceBCombo, operatorCombo, constantCombo))
 
     def showEvent(self, event):
         if not self.shown:
@@ -301,11 +421,16 @@ class BaseDialogProxy(QtWidgets.QGraphicsProxyWidget):
         self.siblings = []
         self.geometryChanged.connect(self.checkPos)
         self.minimizeColor = self.minimizeColors[0]
-        self.shadow = QtWidgets.QGraphicsDropShadowEffect()
-        self.shadow.setBlurRadius(5)
-        self.shadow.setOffset(2, 2)
-        self.setGraphicsEffect(self.shadow)
         self.shown = False
+
+    def setShadow(self, shadow):
+        if shadow:
+            shadow = QtWidgets.QGraphicsDropShadowEffect()
+            shadow.setBlurRadius(5)
+            shadow.setOffset(2, 2)
+        else:
+            shadow = None
+        self.setGraphicsEffect(shadow)
 
     def showEvent(self, event):
         if not self.shown:
@@ -334,8 +459,11 @@ class BaseDialogProxy(QtWidgets.QGraphicsProxyWidget):
         QtWidgets.QGraphicsProxyWidget.hoverLeaveEvent(self, event)
         self.update(self.minimizeRect)
 
-    def snapBoundingRect(self):
-        return self.sceneBoundingRect().adjusted(-5, -5, 5, 5)
+    def wheelEvent(self, event):
+        QtWidgets.QGraphicsProxyWidget.wheelEvent(self, event)
+        if not self.dialog.minimized:
+            self.dialog.repaint()
+#            self.update(self.boundingRect())
 
     def checkPos(self):
         if not self.scene():
@@ -345,7 +473,6 @@ class BaseDialogProxy(QtWidgets.QGraphicsProxyWidget):
         b = self.sceneBoundingRect()
         for s in self.siblings:
             sRect = s.sceneBoundingRect()
-#            snapRect = s.snapBoundingRect()
             if not b.intersects(sRect.adjusted(-5, -5, 5, 5)):
                 continue
             sRight = sRect.right() + right
@@ -526,6 +653,13 @@ class Panel(QtWidgets.QWidget):
 #        self.focusBtn.setMaximumSize(24, 24)
         layout.addWidget(self.focusBtn)
 
+        self.shadowBtn = QtWidgets.QPushButton(QtGui.QIcon.fromTheme('stateshape'), 'Shadows')
+        self.shadowBtn.setToolTip('Enable/Disable shadows')
+        self.shadowBtn.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.shadowBtn.setCheckable(True)
+        self.shadowBtn.setChecked(True)
+        layout.addWidget(self.shadowBtn)
+
         self.exitBtn = QtWidgets.QPushButton(QtGui.QIcon.fromTheme('window-close'), '')
         self.exitBtn.setFocusPolicy(QtCore.Qt.NoFocus)
         layout.addWidget(self.exitBtn)
@@ -541,7 +675,7 @@ class Panel(QtWidgets.QWidget):
 #            self.labelIcon.setPixmap(QtGui.QIcon.fromTheme('preferences-other').pixmap(self.height()))
             opt = QtWidgets.QStyleOptionButton()
             opt.initFrom(self.exitBtn)
-            for btn in (self.exitBtn, self.playBtn, self.focusBtn):
+            for btn in (self.exitBtn, self.playBtn, self.focusBtn, self.shadowBtn):
                 btn.setMaximumWidth(btn.iconSize().width() + 4 + btn.fontMetrics().width(btn.text()) + \
                     self.style().pixelMetric(QtWidgets.QStyle.PM_ButtonMargin, opt, btn) * 2)
                 btn.setFlat(True)
@@ -552,9 +686,10 @@ class Panel(QtWidgets.QWidget):
         if not state:
             self.labelIcon.setFixedHeight(self.height())
         self.labelIcon.setVisible(not state)
-        self.exitBtn.setVisible(state)
+#        self.exitBtn.setVisible(state)
         self.playBtn.setVisible(state)
         self.focusBtn.setVisible(state)
+        self.shadowBtn.setVisible(state)
         self.adjustSize()
 
     def resizeEvent(self, event):
@@ -570,22 +705,25 @@ class Panel(QtWidgets.QWidget):
 class PanelProxy(QtWidgets.QGraphicsProxyWidget):
     modAnimation = QtCore.pyqtSignal(bool)
     modFocus = QtCore.pyqtSignal(bool)
+    modShadow = QtCore.pyqtSignal(bool)
     def __init__(self):
         QtWidgets.QGraphicsProxyWidget.__init__(self)
         self.panel = Panel(self)
         self.setWidget(self.panel)
         self.panel.playBtn.toggled.connect(self.modAnimation)
         self.panel.focusBtn.toggled.connect(self.modFocus)
-#        self.leaveTimer = QtCore.QBasicTimer()
-#
-#    def hoverEnterEvent(self, event):
-#        self.leaveTimer.stop()
-#        self.toggleView(True)
-#        QtWidgets.QGraphicsProxyWidget.hoverEnterEvent(self, event)
-#
-#    def hoverLeaveEvent(self, event):
-#        self.leaveTimer.start(500, self)
-#        QtWidgets.QGraphicsProxyWidget.hoverLeaveEvent(self, event)
+        self.panel.shadowBtn.toggled.connect(self.modShadow)
+        self.leaveTimer = QtCore.QBasicTimer()
+        QtCore.QTimer.singleShot(2000, lambda: self.toggleView(False))
+
+    def hoverEnterEvent(self, event):
+        self.leaveTimer.stop()
+        self.toggleView(True)
+        QtWidgets.QGraphicsProxyWidget.hoverEnterEvent(self, event)
+
+    def hoverLeaveEvent(self, event):
+        self.leaveTimer.start(500, self)
+        QtWidgets.QGraphicsProxyWidget.hoverLeaveEvent(self, event)
 
     def timerEvent(self, event):
         if event.timerId() == self.leaveTimer.timerId():
@@ -617,8 +755,10 @@ class ModMixer(QtWidgets.QGraphicsWidget):
         layout = QtWidgets.QGraphicsLinearLayout(QtCore.Qt.Vertical)
         self.setLayout(layout)
         self.dialProxy = DialProxy()
-        self.dial = _Dial()
+        self.dial = _Dial(valueList=fullRangeCenterZero)
+        self.dial.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
         self.dial.setValue(amount)
+        self.dial.defaultValue = 64
 #        self.dial.setKeepValueVisible(True)
         self.dial.setStyleSheet('background: transparent;')
         self.dial.setMinimumSize(40, 40)
@@ -711,7 +851,7 @@ class Modulation(QtWidgets.QGraphicsObject):
         self.mixerPos = None
         self.mixerDelta = None
         self.mixer.setPos(self.pathItem.path().pointAtPercent(.5))
-        self.mixer.setZValue(pathItem.zValue() + .1)
+        self.mixer.setZValue(self.pathItem.zValue() + .1)
         self.setZValue(1000)
 
         if source.direction == Out:
@@ -738,7 +878,16 @@ class Modulation(QtWidgets.QGraphicsObject):
         self.shadow = QtWidgets.QGraphicsDropShadowEffect()
         self.shadow.setBlurRadius(5)
         self.shadow.setOffset(2, 2)
-        self.setGraphicsEffect(self.shadow)
+#        self.setGraphicsEffect(self.shadow)
+
+    def setShadow(self, shadow):
+        if shadow:
+            shadow = QtWidgets.QGraphicsDropShadowEffect()
+            shadow.setBlurRadius(5)
+            shadow.setOffset(2, 2)
+        else:
+            shadow = None
+        self.setGraphicsEffect(shadow)
 
     @property
     def vector(self):
@@ -978,7 +1127,7 @@ class Modulation(QtWidgets.QGraphicsObject):
         if state and self.opacity() < 1:
             self.opacityAnimation.setDirection(self.opacityAnimation.Forward)
             self.opacityAnimation.start()
-        elif not state:
+        elif not state and self.opacity() > .5:
             self.opacityAnimation.setDirection(self.opacityAnimation.Backward)
             self.opacityAnimation.start()
 
@@ -1104,15 +1253,16 @@ class ConnectionPath(QtWidgets.QGraphicsPathItem):
 
 
 _holeColor = QtGui.QColor(64, 64, 64)
-def createConnGradient(baseColor):
+def createConnGradient(baseColor, darker=200):
     grad = QtGui.QRadialGradient(0.5, 0.5, 0.5)
     grad.setCoordinateMode(grad.ObjectBoundingMode)
     grad.setColorAt(0, _holeColor)
     grad.setColorAt(0.49, _holeColor)
-    grad.setColorAt(0.5, baseColor.darker())
+    grad.setColorAt(0.5, baseColor.darker(darker))
     grad.setColorAt(0.75, baseColor)
-    grad.setColorAt(1, baseColor.darker().darker())
+    grad.setColorAt(1, baseColor.darker(darker * 1.5))
     return grad
+
 
 class Connector(QtWidgets.QGraphicsWidget):
 #    _disabledOutColor = _outColor.darker()
@@ -1120,7 +1270,7 @@ class Connector(QtWidgets.QGraphicsWidget):
 #    _disabledInColor = _inColor.darker()
 #    _disabledInColor.setAlpha(128)
 
-    inColor = createConnGradient(QtGui.QColor(QtCore.Qt.red))
+    inColor = createConnGradient(QtGui.QColor(QtCore.Qt.red).lighter(115), 175)
     
 #    inColor.setCoordinateMode(inColor.ObjectBoundingMode)
 #    inColor.setColorAt(0, _holeColor)
@@ -1148,9 +1298,12 @@ class Connector(QtWidgets.QGraphicsWidget):
         self.connRect = QtCore.QRectF(0, 0, 16, 16)
 #        self.snapPoint = QtCore.QPointF(8, 8)
         self.labelPos = labelPos
+        font = self.font()
+        font.setBold(False)
+        self.setFont(font)
         if self.name:
-            self.labelRect = QtCore.QRectF(QtGui.QFontMetrics(self.font()).boundingRect(
-                QtCore.QRect(), QtCore.Qt.TextExpandTabs, self.name)).adjusted(-2, -2, 2, 0)
+            self.labelRect = QtCore.QRectF(QtWidgets.QApplication.fontMetrics().boundingRect(
+                QtCore.QRect(), QtCore.Qt.TextExpandTabs, self.name)).adjusted(-3, -2, 3, 0)
             if labelPos == Bottom:
                 self.labelRect.moveTop(20)
                 self.labelRect.moveLeft(-(self.labelRect.width() - self.connRect.width()) * .5)
@@ -1223,12 +1376,13 @@ class Connector(QtWidgets.QGraphicsWidget):
             qp.setBrush(QtCore.Qt.white)
             qp.drawRoundedRect(self.labelRect, 2, 2)
             qp.setPen(QtCore.Qt.black)
+            qp.setFont(self.font())
             qp.drawText(self.labelRect, QtCore.Qt.AlignCenter, self.name)
 
 
 class BaseContainer(QtWidgets.QGraphicsWidget):
     moved = QtCore.pyqtSignal(object)
-    def __init__(self, name, reference=None):
+    def __init__(self, name, reference=None, labelPos=None):
         QtWidgets.QGraphicsWidget.__init__(self)
         self.name = name
         self.reference = reference
@@ -1239,6 +1393,17 @@ class BaseContainer(QtWidgets.QGraphicsWidget):
         self.geometryChanged.connect(lambda: self.moved.emit(self))
         self.connectors = {}
         self.connRef = {}
+        self.labelPos = labelPos
+        font = self.font()
+        font.setBold(False)
+        self.setFont(font)
+        if name and labelPos is not None:
+            self.labelRect = QtWidgets.QApplication.fontMetrics().boundingRect(self.name).adjusted(-4, -2, 4, 2)
+            self.labelRect.moveTopLeft(QtCore.QPoint(0, 0))
+            if labelPos == Left:
+                self.labelRect.moveLeft(-self.labelRect.width())
+        else:
+            self.labelRect = None
 
     def connectToScene(self):
         if self.reference:
@@ -1286,12 +1451,20 @@ class BaseContainer(QtWidgets.QGraphicsWidget):
         qp.translate(-.5, -.5)
         qp.setBrush(QtGui.QColor(240, 240, 240, 120))
         qp.drawRoundedRect(self.boundingRect(), 2, 2)
+        if self.labelRect:
+#            qp.setPen(QtCore.Qt.lightGray)
+            qp.setBrush(QtCore.Qt.white)
+            if self.labelPos == Left:
+                qp.rotate(-90)
+            qp.drawRoundedRect(self.labelRect, 2, 2)
+            qp.setFont(self.font())
+            qp.drawText(self.labelRect, QtCore.Qt.AlignCenter, self.name)
         qp.restore()
 
 
 class ReferenceContainer(BaseContainer):
-    def __init__(self, name, reference):
-        BaseContainer.__init__(self, name, reference)
+    def __init__(self, name, reference, labelPos=None):
+        BaseContainer.__init__(self, name, reference, labelPos)
 
     def addConnector(self, id, direction, name, reference):
         connector = Connector(self, id, direction, name)
@@ -1301,10 +1474,16 @@ class ReferenceContainer(BaseContainer):
 
 
 class LayoutContainer(BaseContainer):
-    def __init__(self, name, reference=None):
-        BaseContainer.__init__(self, name, reference)
+    def __init__(self, name, reference=None, labelPos=None):
+        BaseContainer.__init__(self, name, reference, labelPos)
         self.layout = QtWidgets.QGraphicsGridLayout()
-        self.layout.setContentsMargins(0, 0, 0, 0)
+        left = top = right = bottom = 0
+        if labelPos == Top:
+            top = self.labelRect.height()
+        elif labelPos == Left:
+            left = self.labelRect.height()
+        self.layout.setContentsMargins(left, top, right, bottom)
+        self.layout.setSpacing(0)
         self.setLayout(self.layout)
 
     def addConnector(self, id, direction, name, labelPos=Bottom, row=None, column=None, rowSpan=1, columnSpan=1):
@@ -1327,12 +1506,14 @@ class ModMatrixScene(QtWidgets.QGraphicsScene):
     def __init__(self, editorWindow):
         QtWidgets.QGraphicsScene.__init__(self)
         self.editorWindow = editorWindow
+        self.settings = QtCore.QSettings()
         self.view = None
         self.tempLine = None
         self.containers = {}
         self.modulations = {m:None for m in range(16)}
         self.sources = {}
         self.destinations = {}
+        self.shadowItems = set()
 
         self.panel = PanelProxy()
         self.panel.widget().setMaximumHeight(self.editorWindow.editorMenuBar.height())
@@ -1386,6 +1567,24 @@ class ModMatrixScene(QtWidgets.QGraphicsScene):
         self.highlighted = -1
         self.opacityState = True
         self.panel.modFocus.connect(self.setOpacityState)
+
+        self.panel.modShadow.connect(self.setShadowState)
+
+        self.shadowState = True
+
+    def addItem(self, item):
+        QtWidgets.QGraphicsScene.addItem(self, item)
+        try:
+            item.setShadow(self.settings.value('modShadows', True, bool))
+            self.shadowItems.add(item)
+        except:
+            pass
+
+    def setShadowState(self, state):
+        self.shadowState = state
+        self.panel.panel.shadowBtn.setChecked(state)
+        for item in self.shadowItems:
+            item.setShadow(state)
 
     def setAnimationState(self, state):
         self.panel.panel.playBtn.setChecked(state)
@@ -1504,6 +1703,10 @@ class ModMatrixScene(QtWidgets.QGraphicsScene):
 #        self.modulationChanged.emit(modId, modulation.source.id, modulation.target.id, 0)
 
     def createMod(self, modId, sourceId, destinationId=None, amount=None):
+        if sourceId <= 0:
+            sourceId = self.modTable.cellWidget(modId, 0).currentIndex()
+            if sourceId <= 0:
+                return
         if amount is None:
             amount = self.modTable.cellWidget(modId, 1).value()
         if destinationId is None:
@@ -1515,41 +1718,64 @@ class ModMatrixScene(QtWidgets.QGraphicsScene):
             amount=amount
             )
         modulation.mixer.dial.valueChanged.connect(lambda value, m=modId: self.amountChanged.emit(m, value))
-        self.modulationChanged.emit(modId, modulation.source.id, modulation.target.id, modulation.amount)
         self.modulations[modId] = modulation
+        self.modulationChanged.emit(modId, modulation.source.id, modulation.target.id, modulation.amount)
         self.addItem(modulation)
         if not self.animationTimer.isActive() and self.animationState:
             self.animationTimer.start()
+        else:
+            self.connPen.setColor(modColors[modId])
+            modulation.pathItem.setPen(self.connPen)
         return modulation
 
     def checkSource(self, modId, sourceId, emit=False):
         modulation = self.modulations[modId]
-        if modulation and not sourceId:
+        if modulation and modulation.source.id == sourceId:
+            return
+        elif modulation and not sourceId:
             self.removeMod(modId)
         elif not modulation and sourceId:
             self.createMod(modId, sourceId)
         else:
-            modulation.setSource(self.sources[sourceId])
+            try:
+                modulation.setSource(self.sources[sourceId])
+            except:
+                self.createMod(modId, sourceId)
         if emit:
             self.modTable.modulationChanged(modId, sourceId, -1, -1)
+        self.modulationChanged.disconnect(self.modTable.modulationChanged)
+        self.modulationChanged.emit(modId, sourceId, -1, -1)
+        self.modulationChanged.connect(self.modTable.modulationChanged)
 
     def checkAmount(self, modId, amount):
         modulation = self.modulations[modId]
         if not modulation:
-            print('amount changed for no modulation?!')
+            modulation = self.createMod(modId, -1, amount=amount)
+        elif modulation.amount == amount:
             return
+#            print('amount changed for no modulation?!')
+#            return
         modulation.mixer.dial.blockSignals(True)
         modulation.mixer.dial.setValue(amount)
         modulation.mixer.dial.blockSignals(False)
+        self.modulationChanged.disconnect(self.modTable.modulationChanged)
+        self.modulationChanged.emit(modId, -1, -1, amount)
+        self.modulationChanged.connect(self.modTable.modulationChanged)
 
     def checkTarget(self, modId, destinationId, emit=False):
         modulation = self.modulations[modId]
         if not modulation:
-            print('target changed for no modulation?!')
+            modulation = self.createMod(modId, -1, destinationId=destinationId)
+#            print('target changed for no modulation?!')
+#            return
+        elif modulation.target.id == destinationId:
             return
         modulation.setTarget(self.destinations[destinationId])
         if emit:
             self.modTable.modulationChanged(modId, modulation.source.id, destinationId, -1)
+        self.modulationChanged.disconnect(self.modTable.modulationChanged)
+        self.modulationChanged.emit(modId, -1, destinationId, -1)
+        self.modulationChanged.connect(self.modTable.modulationChanged)
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton and \
@@ -1570,6 +1796,7 @@ class ModMatrixScene(QtWidgets.QGraphicsScene):
         mouseItems = self.items(event.scenePos(), QtCore.Qt.IntersectsItemShape, QtCore.Qt.DescendingOrder)
         mixList = []
         modList = []
+        connector = None
         for item in mouseItems:
             if isinstance(item, ModMixer):
                 mixList.append(item)
@@ -1578,15 +1805,21 @@ class ModMatrixScene(QtWidgets.QGraphicsScene):
             elif isinstance(item, (Modulation, ConnectionPath)):
                 modList.append(item)
             elif isinstance(item, Connector) and self.opacityState:
-                for m in self.modulations.values():
-                    if m and item in (m.source, m.target):
-                        m.checkOpacity(True)
-#                for m in item.modulations:
-#                    m.checkOpacity(True)
+                connector = item
         if mixList and modList and mixList[0] != modList[0].topLevelItem():
             mixList[0].topLevelItem().setZValue(modList[0].topLevelItem().zValue() + .1)
-
+        if not self.opacityState and connector and not mixList:
+            for m in self.modulations.values():
+                if m and m not in modList:
+                    if (connector.direction and m.source == connector) or \
+                        (not connector.direction and m.target == connector):
+                            m.checkOpacity(True)
+                    else:
+                        m.checkOpacity(False)
         QtWidgets.QGraphicsScene.mouseMoveEvent(self, event)
+        item = self.itemAt(event.scenePos())
+        if item:
+            self.views()[0].window().statusBar().showMessage('{} {}'.format(item.__class__.__name__, item.zValue()))
 
     def dragStart(self, connector, pos):
         self.tempLine = ConnectionPath(connector, pos)
@@ -1663,9 +1896,9 @@ class ModMatrixScene(QtWidgets.QGraphicsScene):
             return
         container, connector = self.getDragData(event)
         modulation = Modulation(modId, connector, target, pathItem=self.tempLine)
+        self.modulations[modId] = modulation
         self.modulationChanged.emit(modId, modulation.source.id, modulation.target.id, modulation.amount)
         modulation.mixer.dial.valueChanged.connect(lambda value, m=modId: self.amountChanged.emit(m, value))
-        self.modulations[modId] = modulation
         self.addItem(modulation)
         if not self.animationTimer.isActive() and self.animationState:
             self.animationTimer.start()
@@ -1673,7 +1906,11 @@ class ModMatrixScene(QtWidgets.QGraphicsScene):
             self.connPen.setColor(modColors[modId])
             modulation.pathItem.setPen(self.connPen)
 
-    def _helpEvent(self, event):
+    def resetPositions(self):
+        for container in self.containers.values():
+            container.setRefGeometry()
+
+    def helpEvent(self, event):
         item = self.itemAt(event.scenePos())
         if isinstance(item, (ModMixer, DialProxy)):
             modulation = item.topLevelItem()
@@ -1691,23 +1928,50 @@ class ModMatrixScene(QtWidgets.QGraphicsScene):
                     ))
         QtWidgets.QGraphicsScene.helpEvent(self, event)
 
+    def contextMenuEvent(self, event):
+        if event.scenePos() in self.modTableDialogProxy.geometry():
+            QtWidgets.QGraphicsScene.contextMenuEvent(self, event)
+            return
+        for item in self.items(event.scenePos(), QtCore.Qt.IntersectsItemShape, QtCore.Qt.DescendingOrder):
+            if isinstance(item, ModMixer):
+                QtWidgets.QGraphicsScene.contextMenuEvent(self, event)
+                return
+        menu = QtWidgets.QMenu()
+        existingMods = list(modId for modId, mod in self.modulations.items() if mod)
+        modCount = len(existingMods)
+        if existingMods and modCount < 16:
+            if modCount == 1:
+                text = 'Randomize modulation {}'.format(existingMods[0] + 1)
+            else:
+                text = 'Randomize {} existing modulations'.format(modCount)
+            randomizeExistingAction = menu.addAction(text)
+            randomizeExistingAction.triggered.connect(lambda: self.randomizeMods(existingMods))
+        randomizeAllAction = menu.addAction('Randomize all 16 modulations')
+        randomizeAllAction.triggered.connect(lambda: self.randomizeMods())
+        menu.addSeparator()
+        clearAction = menu.addAction('Clear all')
+        clearAction.triggered.connect(self.removeAll)
+        menu.addSeparator()
+        resetPosAction = menu.addAction('Reset container positions')
+        resetPosAction.triggered.connect(self.resetPositions)
+        menu.exec_(event.screenPos())
 
-    def createLayoutContainer(self, name, sources, targets, refWidget=None, labelPos=Bottom):
+    def createLayoutContainer(self, name, sources, targets, refWidget=None, labelPos=Left, connLabelPos=Bottom):
         if refWidget:
             refWidget = getattr(self.editorWindow, refWidget)
-        cont = LayoutContainer(name, refWidget)
+        cont = LayoutContainer(name, refWidget, labelPos)
         self.addItem(cont)
         cont.connectToScene()
         self.containers[name] = cont
         for id, name, pos in sources:
-            self.sources[id] = cont.addConnector(id, Out, name, labelPos, *pos)
+            self.sources[id] = cont.addConnector(id, Out, name, connLabelPos, *pos)
         for id, name, pos in targets:
-            self.destinations[id] = cont.addConnector(id, In, name, labelPos, *pos)
+            self.destinations[id] = cont.addConnector(id, In, name, connLabelPos, *pos)
         return cont
 
-    def createRefContainer(self, name, sources, targets, refWidget=None):
+    def createRefContainer(self, name, sources, targets, refWidget=None, labelPos=Top, connLabelPos=Bottom):
         refWidget = getattr(self.editorWindow, refWidget)
-        cont = ReferenceContainer(name, refWidget)
+        cont = ReferenceContainer(name, refWidget, labelPos)
         self.addItem(cont)
         cont.connectToScene()
         self.containers[name] = cont
@@ -1719,39 +1983,39 @@ class ModMatrixScene(QtWidgets.QGraphicsScene):
             self.destinations[id] = cont.addConnector(id, In, name, refWidget)
 
     def buildLayout(self):
-        self.createRefContainer('OSC1', [], [
+        self.createRefContainer('OSC 1', [], [
             (1, 'Pitch', 'osc1Shape'), 
             (2, 'FM', 'osc1FMSource'), 
             (3, 'PW/Wave', 'osc1PWMSource')
             ], 'osc1Frame')
 
-        self.createRefContainer('OSC2', [], [
+        self.createRefContainer('OSC 2', [], [
             (4, 'Pitch', 'osc2Shape'), 
             (5, 'FM', 'osc2FMSource'), 
             (6, 'PW/Wave', 'osc2PWMSource')
             ], 'osc2Frame')
 
-        self.createRefContainer('OSC3', [], [
+        self.createRefContainer('OSC 3', [], [
             (7, 'Pitch', 'osc3Shape'), 
             (8, 'FM', 'osc3FMSource'), 
             (9, 'PW/Wave', 'osc3PWMSource')
             ], 'osc3Frame')
 
-        self.createRefContainer('LFO1', [
+        self.createRefContainer('LFO 1', [
             (1, 'LFO', 'LFO1Shape'), 
             (2, 'Press', 'LFO1Keytrack')
             ], [
             (31, 'Speed', 'LFO1Speed')
             ], 'lfo1Frame')
 
-        self.createRefContainer('LFO2', [
+        self.createRefContainer('LFO 2', [
             (3, 'LFO', 'LFO2Shape'), 
             (4, 'Press', 'LFO2Keytrack')
             ], [
             (32, 'Speed', 'LFO2Speed')
             ], 'lfo2Frame')
 
-        self.createRefContainer('LFO3', [
+        self.createRefContainer('LFO 3', [
             (5, 'LFO', 'LFO3Shape'), 
             ], [
             (33, 'Speed', 'LFO3Speed')
@@ -1763,21 +2027,21 @@ class ModMatrixScene(QtWidgets.QGraphicsScene):
             (14, 'O3\nlevel', 'mixerOsc3Level'), (15, 'O3\nbal', 'mixerOsc3Balance'), 
             (16, 'Ring\nlevel', 'mixerRingModLevel'), (17, 'Ring\nbal', 'mixerRingModBalance'), 
             (18, 'Noise\nlevel', 'mixerNoiseLevel'), (19, 'Noise\nbal', 'mixerNoiseBalance')
-            ], 'mixerFrame')
+            ], 'mixerFrame', Left)
 
-        self.createRefContainer('Filter1', [], [
+        self.createRefContainer('Filter 1', [], [
             (20, 'Cutoff', 'filter1Cutoff'), (21, 'Reson.', 'filter1Resonance'), 
             (22, 'FM', 'filter1FMSource'), (23, 'Drive', 'filter1Drive'), 
             (24, 'Pan', 'filter1PanSource')
             ], 'filter1Frame')
 
-        self.createRefContainer('Filter2', [], [
+        self.createRefContainer('Filter 2', [], [
             (25, 'Cutoff', 'filter2Cutoff'), (26, 'Reson.', 'filter2Resonance'), 
             (27, 'FM', 'filter2FMSource'), (28, 'Drive', 'filter2Drive'), 
             (29, 'Pan', 'filter2PanSource')
             ], 'filter2Frame')
 
-        self.createRefContainer('FilterEnv', [
+        self.createRefContainer('Filter Env.', [
             (6, 'Filt', 'filterEnvelopeMode')
             ], [
             (34, 'Attack', 'filterEnvelopeAttack'), 
@@ -1786,7 +2050,7 @@ class ModMatrixScene(QtWidgets.QGraphicsScene):
             (37, 'Release', 'filterEnvelopeRelease'), 
             ], 'filterEnvelopeFrame')
 
-        self.createRefContainer('AmpEnv', [
+        self.createRefContainer('Amp Env.', [
             (7, 'Amp', 'amplifierEnvelopeMode')
             ], [
             (38, 'Attack', 'amplifierEnvelopeAttack'), 
@@ -1795,7 +2059,7 @@ class ModMatrixScene(QtWidgets.QGraphicsScene):
             (41, 'Release', 'amplifierEnvelopeRelease'), 
             ], 'amplifierEnvelopeFrame')
 
-        self.createRefContainer('Env3', [
+        self.createRefContainer('Envelope 3', [
             (8, 'Env3', 'envelope3Mode')
             ], [
             (42, 'Attack', 'envelope3Attack'), 
@@ -1804,7 +2068,7 @@ class ModMatrixScene(QtWidgets.QGraphicsScene):
             (45, 'Release', 'envelope3Release'), 
             ], 'envelope3Frame')
 
-        self.createRefContainer('Env4', [
+        self.createRefContainer('Envelope 4', [
             (9, 'Env4', 'envelope4Mode')
             ], [
             (46, 'Attack', 'envelope4Attack'), 
@@ -1824,7 +2088,7 @@ class ModMatrixScene(QtWidgets.QGraphicsScene):
             (17, 'Sustain', (1, 2)), 
             (18, 'FootCtrl', (1, 3)), 
             (19, 'BreathCtrl', (1, 4)), 
-            ], [], 'pianoKeyboard', Right)
+            ], [], 'pianoKeyboard', Left, Right)
 
         self.createLayoutContainer('General', [
             (20, 'CtrlW', (0, 3)), 
@@ -1845,7 +2109,7 @@ class ModMatrixScene(QtWidgets.QGraphicsScene):
             (53, 'M4 Amount', (3, 1)), 
             (0, 'Pitch', (2, 5)), 
             (30, 'Volume', (2, 6)), 
-            ], 'arpEfxStackedWidget', Right)
+            ], 'arpEfxStackedWidget', Left, Right)
 
 #        self.createLayoutContainer('Pitch', [], [(0, 'Pitch')])
 #        self.createLayoutContainer('CtrlW', [(20, 'CtrlW', Top)], [])
@@ -1865,7 +2129,9 @@ class ModMatrixScene(QtWidgets.QGraphicsScene):
 class ModMatrixView(QtWidgets.QGraphicsView):
     modAnimationChanged = QtCore.pyqtSignal(bool)
     modFocusChanged = QtCore.pyqtSignal(bool)
+    modShadowChanged = QtCore.pyqtSignal(bool)
     closeModMatrix = QtCore.pyqtSignal()
+    shown = False
 
     def __init__(self, editorWindow):
         QtWidgets.QGraphicsView.__init__(self, editorWindow)
@@ -1892,28 +2158,105 @@ class ModMatrixView(QtWidgets.QGraphicsView):
             }}
             '''.format(dis='rgb({}, {}, {})'.format(*disColor.getRgb()[:3])))
 
-        self.setScene(ModMatrixScene(self.editorWindow))
-        self.scene().closeModMatrix.connect(self.closeModMatrix)
+        scene = ModMatrixScene(self.editorWindow)
+        self.setScene(scene)
+        scene.closeModMatrix.connect(self.closeModMatrix)
+
         self.settings = QtCore.QSettings()
-        self.scene().setAnimationState(self.settings.value('modAnimation', True, bool))
-        self.scene().setOpacityState(self.settings.value('modFocus', True, bool))
-        self.scene().panel.modAnimation.connect(self.modAnimationChanged)
-        self.scene().panel.modFocus.connect(self.modFocusChanged)
+        scene.setAnimationState(self.settings.value('modAnimation', True, bool))
+        scene.setOpacityState(self.settings.value('modFocus', True, bool))
+        scene.setShadowState(self.settings.value('modShadows', True, bool))
+        scene.panel.modAnimation.connect(self.modAnimationChanged)
+        scene.panel.modFocus.connect(self.modFocusChanged)
+        scene.panel.modShadow.connect(self.modShadowChanged)
+
+        self.modObjects = []
+        for m in range(16):
+            paramId = 261 + m * 3
+            sourceId = self.editorWindow.parameters[paramId]
+            destinationId = self.editorWindow.parameters[paramId + 1]
+            amount = self.editorWindow.parameters[paramId + 2]
+            if sourceId > 0:
+                scene.createMod(m, sourceId, destinationId, amount)
+            modSourceObj = ModulationObject(scene, m, 0, sourceId)
+            modDestObj = ModulationObject(scene, m, 1, destinationId)
+            modAmountObj = ModulationObject(scene, m, 2, amount)
+            setattr(self, modSourceObj.objectName(), modSourceObj)
+            setattr(self, modDestObj.objectName(), modDestObj)
+            setattr(self, modAmountObj.objectName(), modAmountObj)
+            self.modObjects.append((modSourceObj, modDestObj, modAmountObj))
+            scene.modulationChanged.emit(m, sourceId, destinationId, amount)
+        scene.modulationChanged.connect(self.emitModulationChanged)
+        scene.amountChanged.connect(lambda modId, amount: self.emitModulationChanged(modId, -1, -1, amount))
+
+        self.modifierObjects = []
+        for m in range(4):
+            paramId = 245 + m * 4
+            sourceA = self.editorWindow.parameters[paramId]
+            sourceB = self.editorWindow.parameters[paramId + 1]
+            operator = self.editorWindow.parameters[paramId + 2]
+            constant = self.editorWindow.parameters[paramId + 3]
+            sourceACombo, sourceBCombo, operatorCombo, constantCombo = scene.modifiersDialogProxy.dialog.modifiers[m]
+            sourceACombo.setValue(sourceA)
+            sourceBCombo.setValue(sourceB)
+            operatorCombo.setValue(operator)
+            constantCombo.setValue(constant)
+            sourceAObj = ModifierObject(scene, m, 0, sourceACombo, sourceA)
+            sourceBObj = ModifierObject(scene, m, 1, sourceBCombo, sourceB)
+            operatorObj = ModifierObject(scene, m, 2, operatorCombo, operator)
+            constantObj = ModifierObject(scene, m, 3, constantCombo, constant)
+            setattr(self, sourceAObj.objectName(), sourceAObj)
+            setattr(self, sourceBObj.objectName(), sourceBObj)
+            setattr(self, operatorObj.objectName(), operatorObj)
+            setattr(self, constantObj.objectName(), constantObj)
+            self.modifierObjects.append((sourceAObj, sourceBObj, operatorObj, constantObj))
+
+    def showEvent(self, event):
+        if self.scene().animationState:
+            self.scene().animationTimer.start()
+        if not self.shown:
+            self.shown = False
+            self.scene().modTable.scrollToTop()
+
+    def hideEvent(self, event):
+        self.scene().animationTimer.stop()
+
+    def emitModulationChanged(self, modId, source, destination, amount):
+#        print(modId, source, destination, amount)
+        modSourceObj, modDestObj, modAmountObj = self.modObjects[modId]
+        self.scene().modulationChanged.disconnect(self.emitModulationChanged)
+        if source >= 0:
+            modSourceObj.valueChanged.emit(source)
+#        else:
+#            self.scene().modulationChanged.connect(self.emitModulationChanged)
+#            return
+        if destination >= 0:
+            modDestObj.valueChanged.emit(destination)
+        if amount >= 0:
+            modAmountObj.valueChanged.emit(amount)
+        self.scene().modulationChanged.connect(self.emitModulationChanged)
 
     def resizeEvent(self, event):
         self.scene().setSceneRect(QtCore.QRectF(self.viewport().rect()))
 
 if __name__ == '__main__':
+    import sys
     from PyQt4 import uic
+    sys.path.append(os.path.expanduser('~/data/code/blofeld/'))
+    from bigglesworth.parameters import Parameters
 
     class EditorWindow(QtWidgets.QMainWindow):
         def __init__(self):
             QtWidgets.QMainWindow.__init__(self)
             uic.loadUi(os.path.expanduser('~/data/code/blofeld/wip/editorTemp.ui'), self)
+            self.parameters = {p: 0 for p in range(389)}
+            self.posLabel = QtWidgets.QLabel()
+            self.statusBar().addPermanentWidget(self.posLabel)
 
         def eventFilter(self, source, event):
             if event.type() == QtCore.QEvent.HoverMove:
-                self.statusBar().showMessage('{}, {}'.format(event.pos().x(), event.pos().y()))
+#                self.statusBar().showMessage('{}, {}'.format(event.pos().x(), event.pos().y()))
+                self.posLabel.setText('{}, {}'.format(event.pos().x(), event.pos().y()))
             return QtWidgets.QMainWindow.eventFilter(self, source, event)
 
         def resizeEvent(self, event):
@@ -1922,7 +2265,6 @@ if __name__ == '__main__':
     class EditorMenuBar(QtWidgets.QMenuBar):
         pass
 
-    import sys
     app = QtWidgets.QApplication(sys.argv)
 
 

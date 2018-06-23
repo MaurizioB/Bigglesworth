@@ -186,12 +186,12 @@ class _Dial(QtWidgets.QWidget):
 
         self.setRange(*fullRange if fullRange else (minimum, maximum, step))
 
+        self.value = self.minimum
         self._baseValueList = FakeValueList(self)
         if valueList:
             self.setValueList(valueList)
 
         self._absoluteValue = 0
-        self.value = self.minimum
         self._currentIndex = 0
         self.defaultValue = self.minimum
         self.angleValue = self.rangeAngleStartMath + self.rangeAngleSpanMath * self._absoluteValue

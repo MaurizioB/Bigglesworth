@@ -20,6 +20,23 @@ def _getCssQColorStr(color):
         return 'rgba({},{},{},{:.0f}%)'.format(color.red(), color.green(), color.blue(), color.alphaF() * 100)
 
 
+class StatusLabel(QtWidgets.QLabel):
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QLabel.__init__(self, *args, **kwargs)
+        self._text = self.text()
+
+    def minimumSizeHint(self):
+        default = QtWidgets.QLabel.minimumSizeHint(self)
+        return QtCore.QSize(10, default.height())
+
+    def setText(self, text):
+        self._text = text
+        QtWidgets.QLabel.setText(self, self.fontMetrics().elidedText(self._text, QtCore.Qt.ElideRight, self.width()))
+
+    def resizeEvent(self, event):
+        QtWidgets.QLabel.setText(self, self.fontMetrics().elidedText(self._text, QtCore.Qt.ElideRight, self.width() - 120))
+
+
 class DisplayNameEdit(NameEdit):
     focusChanged = QtCore.pyqtSignal(bool)
 
@@ -721,7 +738,7 @@ class DisplayWidget(QtWidgets.QWidget):
         statusLayout = QtWidgets.QHBoxLayout()
         layout.addLayout(statusLayout, 2, 3)
 
-        self.statusLabel = QtWidgets.QLabel('Status: ready')
+        self.statusLabel = StatusLabel('Status: ready')
         statusLayout.addWidget(self.statusLabel)
 
         self.undoBtn = UndoDisplayBtn(QtGui.QIcon.fromTheme('edit-undo'))

@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.7
 # *-* encoding: utf-8 *-*
 
+from random import randrange
 from collections import OrderedDict
 from Qt import QtCore, QtGui, QtWidgets, QtSql
 
@@ -9,7 +10,7 @@ from bigglesworth.utils import loadUi, setBold
 #from bigglesworth.library import LibraryModel
 from bigglesworth.widgets import LibraryWidget, CollectionWidget
 from bigglesworth.dialogs import NewCollectionDialog, ManageCollectionsDialog, TagsDialog, AboutDialog
-
+from bigglesworth.forcebwu import MayTheForce
 #import icons
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -107,7 +108,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.libraryMenu.aboutToShow.connect(self.createOpenCollectionActions)
 #        self.openCollectionAction.triggered.connect(self.openCollection)
 
-        self.aboutAction.triggered.connect(AboutDialog(self).exec_)
+        self.aboutAction.triggered.connect(self.showAbout)
         self.aboutQtAction.triggered.connect(lambda: QtWidgets.QMessageBox.aboutQt(self, 'About Qt...'))
 
     def createOpenCollectionActions(self):
@@ -258,10 +259,16 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QApplication.processEvents()
 
     def checkTagFilters(self):
-        print('checco')
+#        print('checco')
         for widget in self.leftTabWidget.collections + self.rightTabWidget.collections:
             if isinstance(widget, CollectionWidget):
                 widget.filterTagsEdit.setTags()
+
+    def showAbout(self):
+        if not randrange(3):
+            MayTheForce(self).exec_()
+        else:
+            AboutDialog(self).exec_()
 
     def closeEvent(self, event):
         self.main.settings.setValue('sessionLayoutLeft', self.leftTabWidget.collections)

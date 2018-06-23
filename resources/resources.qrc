@@ -4,6 +4,11 @@
         <file>DroidSansFallback.ttf</file>
         <file>FiraSans-Regular.ttf</file>
         <file>OPTIAlpine_Bold.otf</file>
+        <file>Starjedi.ttf</file>
+        <file>SWCrawlTitle.ttf</file>
+        <file>SWCrawlBody.ttf</file>
+        <file>onesizerev.ttf</file>
+        <file>onesize.ttf</file>
     </qresource>
     <qresource prefix="images/">
         <file>blofeld_dt_perspective_alpha.png</file>
@@ -16,6 +21,7 @@
         <file>bigglesworth_textonly_gray.svg</file>
         <file>bigglesworth_splash.svg</file>
         <file>bigglesworth_splash_transparent.svg</file>
+        <file>midi.svg</file>
     </qresource>
     <qresource prefix="icons/Bigglesworth">
         <file alias="index.theme">icons/Bigglesworth/index.theme</file>
@@ -138,6 +144,8 @@
         <file alias="16x16/document-new.svg">icons/Bigglesworth/16x16/document-new.svg</file>
         <file alias="22x22/document-new.svg">icons/Bigglesworth/22x22/document-new.svg</file>
         <file alias="24x24/document-new.svg">icons/Bigglesworth/24x24/document-new.svg</file>
+        <file alias="16x16/stateshape.svg">icons/Bigglesworth/16x16/stateshape.svg</file>
+        <file alias="22x22/stateshape.svg">icons/Bigglesworth/22x22/stateshape.svg</file>
         <file alias="32x32/application-exit.svg">icons/Bigglesworth/32x32/application-exit.svg</file>
         <file alias="16x16/application-exit.svg">icons/Bigglesworth/16x16/application-exit.svg</file>
         <file alias="22x22/application-exit.svg">icons/Bigglesworth/22x22/application-exit.svg</file>

@@ -88,6 +88,7 @@ class Bigglesworth(QtWidgets.QApplication):
 
     def __init__(self, argparse, args):
         QtWidgets.QApplication.__init__(self, ['Bigglesworth'] + args)
+#        self.setEffectEnabled(QtCore.Qt.UI_AnimateCombo, False)
         self.startTimer = QtCore.QElapsedTimer()
         self.startTimer.start()
         self.argparse = argparse
@@ -473,6 +474,8 @@ class Bigglesworth(QtWidgets.QApplication):
                 port.disconnect(self.input)
 
     def midiEventReceived(self, event):
+        if event.source[0] == self.midiDevice.output.client.id:
+            return
         if self.globalsBlock:
             return
         elif self.dumpBlock:
@@ -508,7 +511,7 @@ class Bigglesworth(QtWidgets.QApplication):
             return
         elif event.type in (CTRL, NOTEON, NOTEOFF):
             self.editorWindow.midiEventReceived(event)
-        print('midi event received', event, 'source:', self.graph.port_id_dict[event.source[0]][event.source[1]])
+        print('midi event received', event, 'source:', event.source, self.graph.port_id_dict[event.source[0]][event.source[1]])
 
     def sendMidiEvent(self, event):
 #        if self.debug_sysex and event.type == SYSEX:
