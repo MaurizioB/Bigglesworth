@@ -83,7 +83,7 @@ files.extend(glob('bigglesworth/editorWidgets/*py'))
 files.extend(glob('bigglesworth/editorWidgets/*json'))
 
 buildOptions = dict(packages = [], excludes = [], includes = ['atexit'], include_files = zip(files, files))
-macbuildOptions = {'iconfile': 'icons/bigglesworth_icon.icns', 'bundle_name': 'Bigglesworth'}
+macbuildOptions = {'iconfile': 'resources/bigglesworth_icon.icns', 'bundle_name': 'Bigglesworth'}
 dmgOptions = {'applications_shortcut': True}
 
 if platform == WIN:
