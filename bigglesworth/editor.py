@@ -642,7 +642,6 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.pianoKeyboard.noteEvent.connect(self.noteEvent)
         self.modSlider.valueChanged.connect(self.modEvent)
 
-        print('osc1Frame margins', self.osc1Frame.getContentsMargins(), self.osc1Frame.layout().getContentsMargins())
         self.osc1Frame.customContextMenuRequested.connect(self.templateMenu)
         self.osc2Frame.customContextMenuRequested.connect(self.templateMenu)
         self.osc3Frame.customContextMenuRequested.connect(self.templateMenu)
