@@ -82,7 +82,7 @@ files.extend(glob('resources/*.png'))
 files.extend(glob('bigglesworth/editorWidgets/*py'))
 files.extend(glob('bigglesworth/editorWidgets/*json'))
 
-buildOptions = dict(packages = [], excludes = [], includes = ['atexit'], include_files = zip(files, files))
+buildOptions = dict(packages = [], excludes = [], includes = ['atexit', 'PyQt4.QtSql'], include_files = zip(files, files))
 macbuildOptions = {'iconfile': 'resources/bigglesworth_icon.icns', 'bundle_name': 'Bigglesworth'}
 dmgOptions = {'applications_shortcut': True}
 

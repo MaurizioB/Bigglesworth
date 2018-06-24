@@ -202,7 +202,10 @@ class BaseTabWidget(QtWidgets.QTabWidget):
             self.setTabIcon(index, QtGui.QIcon(':/images/bigglesworth_logo.svg'))
         elif widget.collection in factoryPresetsNamesDict:
             self.setTabIcon(index, QtGui.QIcon(':/images/factory.svg'))
-        self.tabBar().tabButton(0, self.tabBar().RightSide).setVisible(False if self.count() == 1 else True)
+        try:
+            self.tabBar().tabButton(0, self.tabBar().RightSide).setVisible(False if self.count() == 1 else True)
+        except:
+            self.tabBar().tabButton(0, self.tabBar().LeftSide).setVisible(False if self.count() == 1 else True)
         if self.count() > 1:
             self.setMovable(True)
         return index
