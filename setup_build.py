@@ -2,6 +2,10 @@ from glob import glob
 from cx_Freeze import setup, Executable
 
 import sys, os
+
+WIN, OSX = 0, 1
+platform = WIN if sys.platform=='win32' else OSX
+
 MAJ_VERSION, MIN_VERSION, REV_VERSION = 0, 0, 0
 
 def read_version():
@@ -67,36 +71,10 @@ BLOCK "VarFileInfo"
 
 
 files = [
-#         'bigglesworth/FiraSans-Regular.ttf', 
-#         'bigglesworth/blofeld_efx', 
-#         'bigglesworth/blofeld_efx_ranges', 
-#         'bigglesworth/blofeld_params', 
-#         'bigglesworth/.bw_secret', 
-#         'bigglesworth/magnifying-glass.png', 
-#         'bigglesworth/dial_icon.png', 
-#         'bigglesworth/wt_icon.png', 
-#         'bigglesworth/bigglesworth_logo.png', 
-#         'bigglesworth/blofeld_logo.svg', 
-        'bigglesworth/presets/blofeld_fact_200801.mid', 
-        'bigglesworth/presets/blofeld_fact_200802.mid', 
-        'bigglesworth/presets/blofeld_fact_201200.mid', 
-
-#         'bigglesworth/editor.ui', 
-#         'bigglesworth/main.ui', 
-#         'bigglesworth/wavetable.ui', 
-
-#         'bigglesworth/dialogs/about.ui', 
-#         'bigglesworth/dialogs/dumpdialog.ui', 
-#         'bigglesworth/dialogs/globals.ui', 
-#         'bigglesworth/dialogs/midi_import.ui', 
-#         'bigglesworth/dialogs/print_library.ui', 
-#         'bigglesworth/dialogs/settings.ui', 
-#         'bigglesworth/dialogs/summary.ui', 
-#         'bigglesworth/dialogs/wave_panel.ui', 
-#         'bigglesworth/dialogs/wavetable_undo.ui', 
-#         'bigglesworth/dialogs/wavetable_list.ui', 
-
-         ]
+    'bigglesworth/presets/blofeld_fact_200801.mid', 
+    'bigglesworth/presets/blofeld_fact_200802.mid', 
+    'bigglesworth/presets/blofeld_fact_201200.mid', 
+    ]
 
 files.extend(glob('bigglesworth/ui/*.ui'))
 files.extend(glob('resources/*.svg'))
@@ -108,21 +86,32 @@ buildOptions = dict(packages = [], excludes = [], includes = ['atexit'], include
 macbuildOptions = {'iconfile': 'icons/bigglesworth_icon.icns', 'bundle_name': 'Bigglesworth'}
 dmgOptions = {'applications_shortcut': True}
 
-base = 'Win32GUI' if sys.platform=='win32' else None
+if platform == WIN:
+    base = 'Win32GUI'
 
-executables = [
-#    Executable('Bigglesworth.py', base=base, icon='resources/bigglesworth_icon.ico')
-    Executable('Bigglesworth.py', base=base), 
-    Executable('Bigglesworth.py', targetName='BigglesworthDebug.exe', base='Console')
-#    Executable('simple.py', base=base)
-]
+    executables = [
+#        Executable('Bigglesworth.py', base=base, icon='resources/bigglesworth_icon.ico')
+        Executable('Bigglesworth.py', base=base), 
+        Executable('Bigglesworth.py', base='Console', targetName='BigglesworthDebug.exe')
+    ]
+
+else:
+    base = None
+
+    executables = [
+        Executable('Bigglesworth.py', base=base, targetName = 'BigglesworthApp'), 
+        Executable('Bigglesworth.py', base='Console', targetName='BigglesworthDebug')
+    ]
+
+
 setup(name='Bigglesworth',
       version = versionDot,
       description = description,
       options = dict(build_exe = buildOptions, bdist_mac = macbuildOptions),
       executables = executables)
 
-with open('build/winResource.rc', 'w') as winFile:
-    winFile.write(resData)
+if platform == WIN:
+    with open('build/winResource.rc', 'w') as winFile:
+        winFile.write(resData)
     
 
