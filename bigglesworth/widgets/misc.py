@@ -239,7 +239,7 @@ class MidiWidget(QtWidgets.QFrame):
         self.setCtrlState = self.toolBox.setCtrlState
 
     def setConnections(self, count):
-        self.label.setText('{} ({})'.format('OUT' if self.direction else 'IN', count))
+        self.label.setText('{} ({})'.format('OUT' if self.direction else 'IN', int(count)))
         self.label.setEnabled(False if count else True)
         self.toolBox.setEnabled(True if count else False)
 

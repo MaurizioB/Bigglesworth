@@ -215,7 +215,10 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         widget = self.widget(index)
         QtWidgets.QTabWidget.removeTab(self, index)
         if self.count():
-            self.tabBar().tabButton(0, self.tabBar().RightSide).setVisible(False if self.count() == 1 else True)
+            try:
+                self.tabBar().tabButton(0, self.tabBar().RightSide).setVisible(False if self.count() == 1 else True)
+            except:
+                self.tabBar().tabButton(0, self.tabBar().LeftSide).setVisible(False if self.count() == 1 else True)
         if self.count() <= 1:
             self.setMovable(False)
         return widget
