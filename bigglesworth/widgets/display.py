@@ -1,4 +1,4 @@
-import os
+import os, sys
 from bisect import bisect_left
 os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
 
