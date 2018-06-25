@@ -44,8 +44,13 @@ class RtMidiSequencer(QtCore.QObject):
         self.in_graph_dict = {}
         self.out_graph_dict = {}
         self.client_dict = {}
+        self.knownPorts = None
 
     def update_graph(self):
+        currentPorts = self.listener_in.get_ports(), self.listener_out.get_ports()
+        if currentPorts == self.knownPorts:
+            return
+        self.knownPorts = currentPorts
         previous_out_clients = self.out_graph_dict.keys()
         previous_in_clients = self.in_graph_dict.keys()
         for previous_list in previous_out_clients, previous_in_clients:
@@ -53,7 +58,7 @@ class RtMidiSequencer(QtCore.QObject):
                 if port_name.startswith('Bigglesworth'):
                     previous_list.pop(previous_list.index(port_name))
         new_out_clients = []
-        for port_name in self.listener_in.get_ports():
+        for port_name in currentPorts[0]:
             if port_name.startswith('Bigglesworth'):
                 continue
             if port_name in previous_out_clients:
@@ -77,7 +82,7 @@ class RtMidiSequencer(QtCore.QObject):
                 new_index += 1
 
         new_in_clients = []
-        for port_name in self.listener_out.get_ports():
+        for port_name in currentPorts[1]:
             if port_name.startswith('Bigglesworth'):
                 continue
             if port_name in previous_in_clients:
@@ -338,7 +343,7 @@ class MidiDevice(QtCore.QObject):
         while self.keep_going:
             try:
                 #better use qtimer in seq
-                sleep(.1)
+                sleep(.5)
                 self.seq.update_graph()
             except Exception as e:
                 print e
