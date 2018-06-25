@@ -2,6 +2,7 @@ from glob import glob
 from cx_Freeze import setup, Executable
 
 import sys, os
+sys.path.append('./bigglesworth/editorWidgets')
 
 WIN, OSX = 0, 1
 platform = WIN if sys.platform=='win32' else OSX
@@ -79,10 +80,25 @@ files = [
 files.extend(glob('bigglesworth/ui/*.ui'))
 files.extend(glob('resources/*.svg'))
 files.extend(glob('resources/*.png'))
-files.extend(glob('bigglesworth/editorWidgets/*py'))
-files.extend(glob('bigglesworth/editorWidgets/*json'))
+#files.extend(glob('bigglesworth/editorWidgets/*py'))
+#files.extend(glob('bigglesworth/editorWidgets/*json'))
 
-buildOptions = dict(packages = [], excludes = [], includes = ['atexit', 'PyQt4.QtSql'], include_files = zip(files, files))
+files = zip(files, files)
+files.append(('bigglesworth/editorWidgets/pianokbmap.json', 'pianokbmap.json'))
+
+includes = ['atexit', 'PyQt4.QtSql', 
+#   custom widgets
+    'colorselectbutton', 
+    'combo', 
+    'dial', 
+    'frame', 
+    'pianokeyboard', 
+    'slider', 
+    'squarebutton', 
+    'stackedwidget', 
+    ]
+
+buildOptions = dict(packages = [], excludes = [], includes = includes, include_files = files)
 macbuildOptions = {'iconfile': 'resources/bigglesworth_icon.icns', 'bundle_name': 'Bigglesworth'}
 dmgOptions = {'applications_shortcut': True}
 
