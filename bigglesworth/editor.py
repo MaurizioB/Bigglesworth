@@ -1236,9 +1236,6 @@ class EditorWindow(QtWidgets.QMainWindow):
         elif event.type == CTRL:
             if event.channel not in self.main.chanReceive:
                 return
-            if self.main.ctrlSendState and event.param != 0:
-                pass
-                self.midiEvent.emit(event)
             if event.param == 0:
                 if self.main.progReceiveState:
                     self.bankBuffer = event.value
@@ -1252,6 +1249,8 @@ class EditorWindow(QtWidgets.QMainWindow):
                 index = ctrl2sysex[event.param]
                 self.parameters[index] = event.value
                 self.bankBuffer = None
+            elif self.main.ctrlSendState and event.param != 0:
+                self.midiEvent.emit(event)
         elif event.type == SYSEX:
             if event.sysex[:3] == [INIT, IDW, IDE] and event.sysex[4] == SNDP and \
                 self.acceptBlofeldId(event.sysex[3]):
