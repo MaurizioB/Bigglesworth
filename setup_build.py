@@ -38,6 +38,7 @@ with open('versionInfo', 'w') as vi:
 versionDot += '.' + build
 versionComma += ',' + build
 
+print('\nBuilding version {}\n\n'.format(versionDot))
 resData = '''
 
 1 VERSIONINFO
