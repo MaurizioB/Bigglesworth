@@ -15,7 +15,11 @@ try:
 except:
     pass
 
-with open(os.path.join(os.path.dirname(__file__), 'pianokbmap.json'), 'r') as jsf:
+#fix for cx_freeze import
+basePath = os.path.dirname(__file__)
+if basePath.endswith('library.zip'):
+    basePath.replace('\\library.zip', '').replace('/library.zip', '')
+with open(os.path.join(basePath, 'pianokbmap.json'), 'r') as jsf:
     _localeData = json.loads(jsf.read())
 
 _layoutCountries = {}
