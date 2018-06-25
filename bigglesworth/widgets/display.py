@@ -108,6 +108,12 @@ class GraphicsSpin(QtWidgets.QSpinBox):
             }
            ''')
 
+        #There's a strange bug on OSX, which creates a "Python[...] unlockFocus called too many times."
+        #and then segfaults. We can't accept focus for QSpinBox built inside a QGraphicsScene
+        #TODO: find more about this...
+        if sys.platform == 'darwin':
+            self.setFocusPolicy(QtCore.Qt.NoFocus)
+
     def contextMenuEvent(self, event):
         pass
 
@@ -728,6 +734,9 @@ class DisplayWidget(QtWidgets.QWidget):
         self.editModeLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Maximum))
         editLayout.addWidget(self.editModeLabel)
         self.nameEdit = DisplayNameEdit()
+        #see note on GraphicsSpin
+        if sys.platform == 'darwin':
+            self.nameEdit.setFocusPolicy(QtCore.Qt.NoFocus)
         self.nameEdit.setWindowFlags(QtCore.Qt.BypassGraphicsProxyWidget)
         self.nameEdit.setText('Init')
         self.nameEdit.setFrame(False)
