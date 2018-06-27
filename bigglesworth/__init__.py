@@ -198,7 +198,7 @@ class Bigglesworth(QtWidgets.QApplication):
                                         port.connect(self.input)
 
                         #other ports
-                        portName = '{}:{}'.format(port.client.name, port.name)
+                        portName = u'{}:{}'.format(port.client.name, port.name)
                         if port.is_input and portName in autoConnectOutput:
                             self.midiConnect(port, True, True)
                         if port.is_output and portName in autoConnectInput:
@@ -379,7 +379,7 @@ class Bigglesworth(QtWidgets.QApplication):
             return
         autoConnectInput = set(self.settings.value('autoConnectInput', [], 'QStringList'))
         autoConnectOutput = set(self.settings.value('autoConnectOutput', [], 'QStringList'))
-        portName = '{}:{}'.format(port.client.name, port.name)
+        portName = u'{}:{}'.format(port.client.name, port.name)
         if port.is_input and portName in autoConnectOutput:
             self.output.connect(port)
         if port.is_output and portName in autoConnectInput:
@@ -401,7 +401,7 @@ class Bigglesworth(QtWidgets.QApplication):
         else:
             direction = False
             port = conn.src
-        portName = '{}:{}'.format(port.client.name, port.name)
+        portName = u'{}:{}'.format(port.client.name, port.name)
 
         self.midiConnChanged.emit(*self.connections)
 #        inConn, outConn = self.connections
@@ -439,8 +439,8 @@ class Bigglesworth(QtWidgets.QApplication):
     def saveConnections(self, reset=True):
         ([conn for conn in self.midiDevice.input.connections.input if not conn.hidden], 
             [conn for conn in self.midiDevice.output.connections.output if not conn.hidden])
-        autoConnectInput = set(['{}:{}'.format(conn.src.client.name, conn.src.name) for conn in self.midiDevice.input.connections.input if not conn.hidden])
-        autoConnectOutput = set(['{}:{}'.format(conn.dest.client.name, conn.dest.name) for conn in self.midiDevice.output.connections.output if not conn.hidden])
+        autoConnectInput = set([u'{}:{}'.format(conn.src.client.name, conn.src.name) for conn in self.midiDevice.input.connections.input if not conn.hidden])
+        autoConnectOutput = set([u'{}:{}'.format(conn.dest.client.name, conn.dest.name) for conn in self.midiDevice.output.connections.output if not conn.hidden])
         self.settings.beginGroup('MIDI')
         if not reset:
             for port in self.settings.value('autoConnectInput', [], 'QStringList'):
@@ -453,7 +453,7 @@ class Bigglesworth(QtWidgets.QApplication):
 
     def midiConnect(self, port, direction, state):
         if direction:
-            print('midi {s}connect requested. "{src}" >> "{dst}", direction: "OUT"'.format(
+            print(u'midi {s}connect requested. "{src}" >> "{dst}", direction: "OUT"'.format(
                 s='' if state else 'dis', 
                 src=self.output, 
                 dst=port
@@ -463,7 +463,7 @@ class Bigglesworth(QtWidgets.QApplication):
             else:
                 self.output.disconnect(port)
         else:
-            print('midi {s}connect requested. "{src}" >> "{dst}", direction: "IN"'.format(
+            print(u'midi {s}connect requested. "{src}" >> "{dst}", direction: "IN"'.format(
                 s='' if state else 'dis', 
                 src=port, 
                 dst=self.input

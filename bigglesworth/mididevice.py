@@ -46,8 +46,18 @@ class RtMidiSequencer(QtCore.QObject):
         self.client_dict = {}
         self.knownPorts = None
 
+    def getInPorts(self):
+        return map(lambda p: p.decode('utf-8'), self.listener_in.get_ports(None))
+
+    def getOutPorts(self):
+        return map(lambda p: p.decode('utf-8'), self.listener_out.get_ports(None))
+
+    def getPorts(self):
+        return (map(lambda p: p.decode('utf-8'), self.listener_in.get_ports(None)), 
+            map(lambda p: p.decode('utf-8'), self.listener_out.get_ports(None)))
+
     def update_graph(self):
-        currentPorts = self.listener_in.get_ports(), self.listener_out.get_ports()
+        currentPorts = self.getPorts()
         if currentPorts == self.knownPorts:
             return
         self.knownPorts = currentPorts
@@ -116,10 +126,11 @@ class RtMidiSequencer(QtCore.QObject):
         self.client_dict[1] = output_name
         self.out_graph_dict[output_name] = 1
         in_id = 2
-        for in_id, port_name in enumerate(self.listener_in.get_ports(), in_id):
+        inPorts, outPorts = self.getPorts()
+        for in_id, port_name in enumerate(inPorts, in_id):
             self.out_graph_dict[port_name] = in_id
             self.client_dict[in_id] = port_name
-        for out_id, port_name in enumerate(self.listener_out.get_ports(), in_id + 1):
+        for out_id, port_name in enumerate(outPorts, in_id + 1):
             self.in_graph_dict[port_name] = out_id
             self.client_dict[out_id] = port_name
         for client_id, name in self.client_dict.items():
@@ -163,7 +174,8 @@ class RtMidiSequencer(QtCore.QObject):
                 port.set_error_callback(self.error_callback, (port, source))
                 self.ports[OUTPUT].append(port)
             dest_name = self.client_dict[dest]
-            port.open_port(port.get_ports().index(dest_name), 'output')
+#            port.open_port(port.get_ports(None).index(dest_name), 'output')
+            port.open_port(self.getOutPorts().index(dest_name), 'output')
             self.connections[port] = dest_name
             self.conn_created.emit({'connect.sender.client': 1, 'connect.sender.port': 0, 'connect.dest.client': dest, 'connect.dest.port': 0})
 
@@ -177,7 +189,8 @@ class RtMidiSequencer(QtCore.QObject):
                 self.ports[INPUT].append(port)
             source_name = self.client_dict[source]
             try:
-                port.open_port(port.get_ports().index(source_name), 'input')
+#                port.open_port(port.get_ports(None).index(source_name), 'input')
+                port.open_port(self.getInPorts().index(source_name), 'input')
                 port.set_callback(self.midi_event.emit, source)
                 port.set_error_callback(self.error_callback, (port, source))
                 self.connections[port] = source_name
@@ -198,7 +211,7 @@ class RtMidiSequencer(QtCore.QObject):
             target_name = self.client_dict[source]
         for port, dest in self.connections.items():
             if target_name == dest:
-                print('rtmidi closing port "{}" target "{}"'.format(port, target_name))
+                print(u'rtmidi closing port "{}" target "{}"'.format(port, target_name))
                 print('port is open?', port.is_port_open())
                 try:
                     #TODO: let's understand better what's going on here and why sometimes this hangs...

@@ -12,6 +12,8 @@ class MidiConnectionsDialog(QtWidgets.QDialog):
         self.midiConnectionWidget = MidiConnectionsWidget()
         layout.addWidget(self.midiConnectionWidget)
         self.midiConnectionWidget.setMain(main)
+#        self.midiConnectionWidget.midiConnect.connect(main.editorWindow.midiConnect)
+        self.midiConnectionWidget.midiConnect.connect(main.midiConnect)
 
 
 class MidiConnectionsWidget(QtWidgets.QWidget):
@@ -141,7 +143,7 @@ class MidiConnectionsWidget(QtWidgets.QWidget):
             if out_ports:
                 self.clientList[1].append((client, out_ports))
                 clientItem = QtGui.QStandardItem(client.name)
-                clientItem.setData('<b>Client:</b> {name}<br/><b>Address:</b> {id}'.format(name=client.name, id=client.id), QtCore.Qt.ToolTipRole)
+                clientItem.setData(u'<b>Client:</b> {name}<br/><b>Address:</b> {id}'.format(name=client.name, id=client.id), QtCore.Qt.ToolTipRole)
                 clientItem.setEnabled(False)
                 for port in out_ports:
                     portItem = QtGui.QStandardItem(port.name)
@@ -149,7 +151,7 @@ class MidiConnectionsWidget(QtWidgets.QWidget):
                     setBold(portItem, connected)
                     if connected:
                         inConn += 1
-                    portItem.setData('<b>Client:</b> {c}<br/><b>Port:</b> {p}<br/><b>Address:</b> {cid}:{pid}'.format(
+                    portItem.setData(u'<b>Client:</b> {c}<br/><b>Port:</b> {p}<br/><b>Address:</b> {cid}:{pid}'.format(
                         c=client.name, p=port.name, cid=client.id, pid=port.id), QtCore.Qt.ToolTipRole)
                     portItem.setData(port)
                     clientItem.appendRow(portItem)
