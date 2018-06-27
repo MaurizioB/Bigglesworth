@@ -16,6 +16,8 @@ except:
 from time import *
 from PyQt4 import QtCore
 
+RTMIDI = 2
+
 
 class Const(object):
     def __init__(self, value=None):
@@ -773,6 +775,7 @@ class Port(QtCore.QObject):
         self.info_dict = self.seq.get_port_info(self.id, self.client.id)
         self.name = self.info_dict['name']
         if self.graph.backend == ALSA:
+            self.name = self.name.decode('utf-8')
             self.caps = get_port_caps(self.info_dict['capability'])
             self.type = get_port_type(self.info_dict['type'])
             if not len(self.type) or alsaseq.SEQ_PORT_CAP_NO_EXPORT in self.caps:
@@ -911,6 +914,8 @@ class Client(QtCore.QObject):
         for s in ['broadcast_filter', 'error_bounce', 'event_filter', 'event_lost', 'type']:
             setattr(self, s, self.info_dict[s])
         self._name = self.info_dict['name']
+        if graph.backend != RTMIDI:
+            self._name = self._name.decode('utf-8')
         self.port_n = self.info_dict['num_ports']
         self.port_dict = {}
 
@@ -955,8 +960,6 @@ class Client(QtCore.QObject):
 
     def __repr__(self):
         return 'Client "{}" ({})'.format(self.name, self.id)
-
-RTMIDI = 1
 
 class Graph(QtCore.QObject):
     graph_changed = QtCore.pyqtSignal()
