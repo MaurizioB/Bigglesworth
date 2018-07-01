@@ -68,20 +68,31 @@ class DatabaseCorruptionMessageBox(MessageBoxDetailedHtml):
         self.setDetailedText(error)
 
 
-class WarningMessageBox(MessageBoxDetailedHtml):
-    def __init__(self, parent, title, message, detailed, buttons=QtWidgets.QMessageBox.Ok):
+class AdvancedMessageBox(MessageBoxDetailedHtml):
+    def __init__(self, parent, title, message, detailed='', buttons=QtWidgets.QMessageBox.Ok):
         MessageBoxDetailedHtml.__init__(self, parent)
-        self.setIcon(self.Warning)
         self.setWindowTitle(title)
         self.setText(message)
-        self.setDetailedText(detailed)
+        if detailed:
+            self.setDetailedText(detailed)
         if isinstance(buttons, self.StandardButtons):
             self.setStandardButtons(buttons)
         else:
             for standardButton, data in buttons.items():
                 button = self.addButton(standardButton)
                 setButtonData(button, data)
-#            self.setStandardButtons()
+
+
+class QuestionMessageBox(AdvancedMessageBox):
+    def __init__(self, *args, **kwargs):
+        AdvancedMessageBox.__init__(self, *args, **kwargs)
+        self.setIcon(self.Question)
+
+
+class WarningMessageBox(AdvancedMessageBox):
+    def __init__(self, *args, **kwargs):
+        AdvancedMessageBox.__init__(self, *args, **kwargs)
+        self.setIcon(self.Warning)
 
 
 class InputMessageBox(QtWidgets.QDialog):

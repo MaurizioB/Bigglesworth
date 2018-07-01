@@ -90,14 +90,24 @@ class ModulationObject(BaseModParamObject):
     paramDelta = 261
     baseName = 'modulation{}{}'
     attrList = ('Source', 'Destination', 'Amount')
-    def __init__(self, main, id, paramId, baseValue=None):
-        BaseModParamObject.__init__(self, main, id, paramId, baseValue=None)
+    def __init__(self, main, modId, paramId, baseValue=None):
+        BaseModParamObject.__init__(self, main, modId, paramId, baseValue=None)
+        self.main = main
+        self.modId = modId
+        self.paramId = paramId
+        self.value = baseValue
         if paramId == 0:
-            self.setValue = lambda value: self.main.checkSource(id, value)
+            self.setter = self.main.checkSource
         elif paramId == 1:
-            self.setValue = lambda value: self.main.checkTarget(id, value)
+            self.setter = self.main.checkTarget
         else:
-            self.setValue = lambda value: self.main.checkAmount(id, value)
+            self.setter = self.main.checkAmount
+
+    def setValue(self, value):
+        values = [-1, -1, -1]
+        values[self.paramId] = value
+        self.setter(self.modId, value)
+        self.main.modTable.modulationChanged(self.modId, *values)
 
 
 class ModifierObject(BaseModParamObject):
@@ -299,6 +309,7 @@ class ModTable(QtWidgets.QTableWidget):
                 widget.setEnabled(True if sourceId else False)
             widget.blockSignals(False)
         self.scrollTo(self.model().index(modId, 0))
+        self.repaint()
 
     def amountChanged(self, mod, amount):
         self.cellWidget(mod, 1).setValue(amount)

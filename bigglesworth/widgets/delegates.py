@@ -21,7 +21,8 @@ class CategoryDelegate(QtWidgets.QStyledItemDelegate):
         return Parameters.parameterData.category.values[value]
 
     def editorEvent(self, event, model, option, index):
-        if self.parent().editTriggers() & self.parent().EditKeyPressed and \
+        if index.flags() & QtCore.Qt.ItemIsEditable and \
+            self.parent().editTriggers() & self.parent().EditKeyPressed and \
             event.type() == QtCore.QEvent.MouseButtonRelease and \
             event.button() == QtCore.Qt.LeftButton:
                 self.parent().edit(index)

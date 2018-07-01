@@ -70,7 +70,7 @@ from bigglesworth.mainwindow import MainWindow
 from bigglesworth.themes import ThemeCollection
 from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, GlobalsDialog, 
     DumpReceiveDialog, DumpSendDialog, WarningMessageBox, SmallDumper, FirstRunWizard, LogWindow, 
-    BlofeldDumper, FindDuplicates)
+    BlofeldDumper, FindDuplicates, SoundImport, SoundExport)
 #from bigglesworth.utils import localPath
 from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR, LogInfo, factoryPresets, factoryPresetsNamesDict
 from bigglesworth.midiutils import SYSEX, CTRL, NOTEOFF, NOTEON, PROGRAM, SysExEvent
@@ -229,6 +229,8 @@ class Bigglesworth(QtWidgets.QApplication):
         self.mainWindow.leftTabWidget.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeld)
         self.mainWindow.rightTabWidget.fullDumpBlofeldToCollectionRequested.connect(self.fullDumpBlofeldToCollection)
         self.mainWindow.rightTabWidget.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeld)
+        self.mainWindow.importRequested.connect(self.importRequested)
+        self.mainWindow.exportRequested.connect(lambda uidList, collection: SoundExport(self.mainWindow, uidList, collection).exec_())
         self.mainWindow.dumpToRequested.connect(self.dumpTo)
         self.mainWindow.dumpFromRequested.connect(self.dumpFrom)
 
@@ -496,10 +498,10 @@ class Bigglesworth(QtWidgets.QApplication):
                 if active:
                     if active.topMostDumpDialog():
                         return
-                    self.dumpBuffer.append(event.sysex)
+                    self.dumpBuffer.append(event.sysex[5:390])
                     self.watchDialog(active)
                     return
-                self.dumpBuffer.append(event.sysex)
+                self.dumpBuffer.append(event.sysex[5:390])
                 self.processDumpBuffer()
 #                self.sound_dump_received(Sound(event.sysex[5:390], SRC_BLOFELD))
             elif sysexType == SNDP:
@@ -536,6 +538,42 @@ class Bigglesworth(QtWidgets.QApplication):
                 else:
                     rtmidi_event = event.get_binary()
                     port.send_message(rtmidi_event)
+
+    def importRequested(self):
+        dialog = SoundImport(self.mainWindow)
+        if dialog.exec_():
+            self.processImport(dialog)
+
+    def processImport(self, dialog):
+        dataDict = dialog.getSelectedSoundData()
+        if dialog.mode & dialog.OpenSound:
+            index = dataDict.keys()[0]
+            data = dataDict[index]
+            if dialog.mode & dialog.LibraryImport:
+                if dialog.mode & dialog.NewImport:
+                    collection = dialog.newEdit.text()
+                    self.database.createCollection(collection)
+                else:
+                    if dialog.collectionCombo.currentIndex():
+                        collection = dialog.collectionCombo.currentText()
+                    else:
+                        collection = None
+                uid = self.database.addRawSoundData(data, collection=collection, index=index)
+                self.mainWindow.openCollection(collection).selectUidList([uid])
+                self.editorWindow.openSoundFromUid(uid, collection)
+            else:
+                self.editorWindow.openOrphanSound(data)
+        elif dialog.mode & dialog.LibraryImport:
+            if dialog.mode & dialog.NewImport:
+                collection = dialog.newEdit.text()
+                self.database.createCollection(collection)
+            else:
+                if dialog.collectionCombo.currentIndex():
+                    collection = dialog.collectionCombo.currentText()
+                else:
+                    collection = None
+            uidList = self.database.addBatchRawSoundData(dataDict, collection, overwrite=False)
+            self.mainWindow.openCollection(collection).selectUidList(uidList)
 
     def fullDumpBlofeldToCollection(self, collection, sounds):
         self.dumpBlock = True
@@ -687,7 +725,8 @@ class Bigglesworth(QtWidgets.QApplication):
         res = dumper.exec_()
         self.midiDevice.midi_event.disconnect(dumper.midiEventReceived)
         self.dumpBlock = False
-        print(res)
+        if res:
+            self.processImport(dumper)
 
     def dumpTo(self, uid, index, multi):
         #uid, blofeld index/buffer, multi

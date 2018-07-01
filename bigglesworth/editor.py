@@ -94,7 +94,7 @@ _effects = [
     ]
 
 
-MidiIn, MidiOut = Enum(2)
+MidiIn, MidiOut = range(2)
 
 
 class FilterRoutingDisplay(QtWidgets.QWidget):
@@ -432,7 +432,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.editorMenuBar.importRequested.connect(self.importSound)
         self.editorMenuBar.randomAllRequest.connect(self.randomizeAll)
         self.editorMenuBar.randomCustomRequest.connect(self.randomizeCustom)
-        self.editorMenuBar.dumpMenu.setEnabled(True if any((any(inConn), any(outConn))) else False)
+        self.editorMenuBar.dumpMenu.setEnabled(True if (any(inConn) or any(outConn)) else False)
         self.leftLayout.insertWidget(0, self.editorMenuBar)
 
         self.saveBtn.button.setIcon(QtGui.QIcon.fromTheme('document-save'))
@@ -1107,7 +1107,7 @@ class EditorWindow(QtWidgets.QMainWindow):
     def midiConnChanged(self, inConn, outConn):
         self.midiInWidget.setConnections(len(inConn))
         self.midiOutWidget.setConnections(len(outConn))
-        self.editorMenuBar.dumpMenu.setEnabled(True if any(inConn) and any(outConn) else False)
+        self.editorMenuBar.dumpMenu.setEnabled(True if any(inConn) or any(outConn) else False)
 
     def nameChangedFromDatabase(self, uid, name):
         if self.currentUid and self.currentUid == uid:
@@ -1344,8 +1344,7 @@ class EditorWindow(QtWidgets.QMainWindow):
                     QtWidgets.QMessageBox.Ok)
         self.saveBtn.setSwitchable(False)
         self.saveBtn.setSwitched(False)
-        if not self.isVisible():
-            self.show()
+        self.show()
         self.activateWindow()
         data = self.database.getSoundDataFromUid(uid)
         if not data:
@@ -1383,6 +1382,29 @@ class EditorWindow(QtWidgets.QMainWindow):
 #            return
         self.currentCollections = collections if collections else None
         self.currentCollection, self.currentBank, self.currentProg = self.display.setCollections(collections, uid, fromCollection)
+
+    def openOrphanSound(self, data, fromDump=True):
+        if self._editStatus == self.Modified or self.setFromDump:
+            if self._editStatus == self.Modified:
+                title = 'Sound modified'
+                message = 'The current sound has been modified.\nWhat do you want to do?'
+            else:
+                title = 'Sound dumped'
+                message = 'The current sound has been dumped from the Blofeld.\nWhat do you want to do?'
+            res = QtWidgets.QMessageBox.question(self, title, message, 
+                buttons=QtWidgets.QMessageBox.Save|QtWidgets.QMessageBox.Ignore|QtWidgets.QMessageBox.Cancel)
+            if res == QtWidgets.QMessageBox.Cancel:
+                return
+            elif res == QtWidgets.QMessageBox.Save:
+                saved = self.saveAs()
+                if saved == False:
+                    return QtWidgets.QMessageBox.alert(self, 'Save error', 
+                    'There was a problem saving the sound', 
+                    QtWidgets.QMessageBox.Ok)
+        self.currentBank = self.currentProg = self.currentUid = None
+        self.setValues(data, fromDump=fromDump, resetIndex=True)
+        self.show()
+        self.activateWindow()
 
     def setValues(self, data=None, fromDump=False, resetIndex=True):
         self.setFromDump = fromDump

@@ -497,6 +497,7 @@ class BlofeldDB(QtCore.QObject):
         soundsPrepareNorm = soundsPre + 'uid) ' + soundsPost + ':uid)'
         noTags = json.dumps([])
 
+        imported = []
         if collection:
             refPrepare = 'INSERT INTO reference(uid, tags, "{}") VALUES(:uid, :tags, :location)'.format(collection)
         else:
@@ -517,7 +518,7 @@ class BlofeldDB(QtCore.QObject):
                         uid = str(uuid.uuid4())
                         self.query.prepare(soundsPrepareNorm)
                 else:
-                    self.query.exec_('UPDATE reference SET "{c}" = NULL WHERE "{c}" = {i}'.format(collection, index))
+                    self.query.exec_('UPDATE reference SET "{0}" = NULL WHERE "{0}" = {1}'.format(collection, index))
                     uid = str(uuid.uuid4())
                     self.query.prepare(soundsPrepareNorm)
             else:
@@ -529,6 +530,7 @@ class BlofeldDB(QtCore.QObject):
             if not self.query.exec_():
                 self.dbErrorLog('Error importing sound to library')
                 break
+            imported.append(uid)
             if exists:
                 continue
             self.query.prepare(refPrepare)
@@ -541,6 +543,7 @@ class BlofeldDB(QtCore.QObject):
                 break
         else:
             self.sql.commit()
+            self.referenceModel.refresh()
             self.libraryModel.setQuery()
             while self.libraryModel.canFetchMore():
                 self.libraryModel.fetchMore()
@@ -552,7 +555,7 @@ class BlofeldDB(QtCore.QObject):
                 self.logger.append(LogDebug, 'Raw data successfully added to collection', collection)
             else:
                 self.logger.append(LogDebug, 'Raw data successfully added to library')
-            return True
+            return imported
         self.logger.append(LogWarning, 'Batch data add failure')
         self.sql.rollback()
         return False
@@ -602,7 +605,7 @@ class BlofeldDB(QtCore.QObject):
         while self.libraryModel.canFetchMore():
             self.libraryModel.fetchMore()
         self.libraryModel.updated.emit()
-        self.logger.append(LogDebug, 'Batch data successfully added', uid)
+        self.logger.append(LogDebug, 'Raw data successfully added', uid)
         print('success!!!')
         return uid
 
@@ -629,6 +632,16 @@ class BlofeldDB(QtCore.QObject):
         if not isinstance(self.query.value(0), (int, long)):
             return False
         return map(int, [self.query.value(v) for v in range(383)])
+
+    def getIndexesFromUidList(self, uidList, collection):
+        if not self.query.exec_('SELECT "{}" FROM reference WHERE {}'.format(
+            collection, ' OR '.join('uid="{}"'.format(uid) for uid in uidList))):
+                self.dbErrorLog('Error getting indexes for collection', collection)
+                return None
+        indexes = []
+        while self.query.next():
+            indexes.append(self.query.value(0))
+        return indexes
 
     def getIndexForUid(self, uid, collection):
         if not self.query.exec_('SELECT "{}" FROM reference WHERE uid="{}"'.format(

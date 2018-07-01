@@ -1,9 +1,10 @@
 from Qt import QtCore, QtGui, QtWidgets, QtSql
 
-from bigglesworth.const import factoryPresetsNamesDict
+from bigglesworth.const import factoryPresetsNamesDict, NameColumn
 from bigglesworth.utils import setBold
 
 Left, Right = 0, 1
+NumKeys = {getattr(QtCore.Qt, 'Key_{}'.format(n)):n for n in range(10)}
 
 class BaseCornerBtn(QtWidgets.QToolButton):
     def __init__(self, *args, **kwargs):
@@ -186,6 +187,32 @@ class BaseTabWidget(QtWidgets.QTabWidget):
 #        for i in range(self.count()):
 #            collections.append(self.widget(i).collection)
         return [self.widget(i).collection for i in range(self.count())]
+
+    def keyPressEvent(self, event):
+        if event.modifiers() == QtCore.Qt.ControlModifier:
+            if ((event.key() == QtCore.Qt.Key_L and isinstance(self, RightTabWidget)) or \
+            (event.key() == QtCore.Qt.Key_R and isinstance(self, LeftTabWidget))):
+                siblingFocusWidget = self.siblingTabWidget.focusWidget()
+                if siblingFocusWidget and not isinstance(siblingFocusWidget, (QtWidgets.QTabWidget, QtWidgets.QTabBar)):
+                    siblingFocusWidget.setFocus()
+                else:
+                    self.siblingTabWidget.currentWidget().filterNameEdit.setFocus()
+                return
+            elif event.key() in NumKeys:
+                tabIndex = NumKeys[event.key()]
+                if tabIndex > 0:
+                    self.setCurrentIndex(tabIndex - 1)
+                    return
+            elif event.key() == QtCore.Qt.Key_O:
+                self.openCollectionMenu()
+        elif event.key() == QtCore.Qt.Key_F2 and self.focusWidget() != self.currentWidget().collectionView:
+            startEdit = not self.currentWidget().editModeBtn.isChecked()
+            self.currentWidget().editModeBtn.setChecked(startEdit)
+            if not self.currentWidget().collectionView.currentIndex().isValid():
+                self.currentWidget().collectionView.setCurrentIndex(self.currentWidget().collectionView.model().index(0, NameColumn))
+                if startEdit:
+                    self.currentWidget().collectionView.setFocus()
+        QtWidgets.QTabWidget.keyPressEvent(self, event)
 
     def setSiblings(self, tabBar, tabWidget):
         self.sideTabBar = tabBar

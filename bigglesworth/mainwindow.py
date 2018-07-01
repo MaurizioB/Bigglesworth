@@ -16,6 +16,8 @@ from bigglesworth.forcebwu import MayTheForce
 class MainWindow(QtWidgets.QMainWindow):
     closed = QtCore.pyqtSignal()
     findDuplicatesRequested = QtCore.pyqtSignal(str, object)
+    exportRequested = QtCore.pyqtSignal(object, object)
+    importRequested = QtCore.pyqtSignal()
     soundEditRequested = QtCore.pyqtSignal(str, str)
     #blofeld index/buffer, collection, index, multi
     dumpFromRequested = QtCore.pyqtSignal(object, object, int, bool)
@@ -108,8 +110,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.libraryMenu.aboutToShow.connect(self.createOpenCollectionActions)
 #        self.openCollectionAction.triggered.connect(self.openCollection)
 
+        self.importAction.triggered.connect(self.importRequested)
+        self.exportAction.triggered.connect(lambda: self.exportRequested.emit([], None))
         self.aboutAction.triggered.connect(self.showAbout)
         self.aboutQtAction.triggered.connect(lambda: QtWidgets.QMessageBox.aboutQt(self, 'About Qt...'))
+
+    @property
+    def editorWindow(self):
+        return QtWidgets.QApplication.instance().editorWindow
 
     def createOpenCollectionActions(self):
         self.openCollectionMenu.clear()
@@ -162,13 +170,23 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             name = 'Main library'
             colWidget = LibraryWidget(self)
+        if collection in self.leftTabWidget.collections:
+            self.leftTabWidget.setCurrentIndex(self.leftTabWidget.collections.index(collection))
+            return self.leftTabWidget.currentWidget()
+        elif collection in self.rightTabWidget.collections:
+            self.rightTabWidget.setCurrentIndex(self.rightTabWidget.collections.index(collection))
+            return self.rightTabWidget.currentWidget()
         if dest is None:
             dest = self.sender()
+            if not dest in (self.leftTabWidget, self.rightTabWidget):
+                dest = self.leftTabWidget
         colWidget.dumpFromRequested.connect(self.dumpFromRequested)
         colWidget.dumpToRequested.connect(self.dumpToRequested)
         colWidget.findDuplicatesRequested.connect(self.findDuplicatesRequested)
+        colWidget.exportRequested.connect(self.exportRequested)
         index = dest.addTab(colWidget, name)
         dest.setCurrentIndex(index)
+        return colWidget
 
     def newCollection(self, clone=''):
         if isinstance(self.sender(), QtWidgets.QTabWidget):

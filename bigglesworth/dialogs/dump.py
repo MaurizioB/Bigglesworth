@@ -1,13 +1,16 @@
 from string import uppercase
+from unidecode import unidecode
 
 from Qt import QtCore, QtGui, QtWidgets, QtSql
 
-from bigglesworth.utils import loadUi, localPath, getName, setBold, setItalic
-from bigglesworth.const import (UidColumn, LocationColumn, NameColumn, CatColumn, TagsColumn, FactoryColumn, DataRole, 
+from bigglesworth.utils import loadUi, localPath, getName, setBold, setItalic, Enum
+from bigglesworth.const import (chr2ord, UidColumn, LocationColumn, NameColumn, CatColumn, TagsColumn, FactoryColumn, DataRole, 
     INIT, IDE, IDW, CHK, SNDR, SNDD, END, factoryPresetsNamesDict)
 from bigglesworth.widgets import CategoryDelegate, TagsDelegate, CheckBoxDelegate, MidiConnectionsDialog
 from bigglesworth.midiutils import SysExEvent, SYSEX
 from bigglesworth.parameters import Parameters, orderedParameterGroups
+from bigglesworth.dialogs import UnknownFileImport, SoundFileImport, QuestionMessageBox
+from bigglesworth.libs import midifile
 
 IndexesRole = QtCore.Qt.UserRole + 32
 CheckColumn = UidColumn
@@ -125,17 +128,31 @@ class CollectionNameEdit(QtWidgets.QLineEdit):
 class LocationDelegate(QtWidgets.QStyledItemDelegate):
     def paint(self, qp, option, index):
         self.initStyleOption(option, index)
-        pos = index.data(QtCore.Qt.DisplayRole)
-        if pos is not None:
-            option.text = '{}{:03}'.format(uppercase[pos >> 7], (pos & 127) + 1)
-            option.displayAlignment = QtCore.Qt.AlignCenter
+        if index.sibling(index.row(), CheckColumn).data(QtCore.Qt.CheckStateRole):
+            pos = index.data(QtCore.Qt.DisplayRole)
+            if pos is not None:
+                if pos & 1024:
+                    option.font.setBold(True)
+                    pos -= 1024
+                if pos & 2048:
+                    option.font.setStrikeOut(True)
+                    pos -= 2048
+                option.text = '{}{:03}'.format(uppercase[pos >> 7], (pos & 127) + 1)
+                option.displayAlignment = QtCore.Qt.AlignCenter
+        else:
+            option.text = ''
         QtWidgets.QApplication.style().drawControl(QtWidgets.QStyle.CE_ItemViewItem, option, qp)
 
 
-class BlofeldDumper(QtWidgets.QDialog):
+class BaseImportDialog(QtWidgets.QDialog):
+    shown = False
+    headerLabels = ['', '', 'Name', 'Category', 'Duplicates', 'Dest']
+
+    NoImport, LibraryImport, CollectionImport, NewImport, Overwrite, AutoIndex, OpenSound = Enum(0, 1, 2, 4, 64, 128, 1024)
+
     def __init__(self, parent, dumpBuffer=None):
         QtWidgets.QDialog.__init__(self, parent)
-        loadUi(localPath('ui/blofelddumper.ui'), self)
+        loadUi(localPath('ui/soundimport.ui'), self)
         self._isDumpDialog = True
         self.main = QtWidgets.QApplication.instance()
         self.database = self.main.database
@@ -146,7 +163,13 @@ class BlofeldDumper(QtWidgets.QDialog):
         self.collectionBuffer = {}
 
         self.okBtn = self.buttonBox.button(self.buttonBox.Ok)
+        self.okBtn.setText('Import')
+        self.okBtn.setEnabled(False)
+        self.okBtn.clicked.connect(self.accept)
         self.openBtn = self.buttonBox.button(self.buttonBox.Open)
+        self.openBtn.setEnabled(False)
+        self.openBtn.clicked.connect(self.openSound)
+
         self.cornerButton = self.valueTable.findChild(QtWidgets.QAbstractButton)
         l = QtWidgets.QHBoxLayout()
         self.cornerButton.setLayout(l)
@@ -159,14 +182,12 @@ class BlofeldDumper(QtWidgets.QDialog):
         self.collectionCombo.setItemData(1, QtGui.QIcon(':/images/bigglesworth_logo.svg'), QtCore.Qt.DecorationRole)
         self.collectionCombo.currentIndexChanged.connect(self.collectionChanged)
 
+        self.importCombo.currentIndexChanged.connect(self.checkImport)
+
         self.dumpModel = QtGui.QStandardItemModel()
         self.dumpModel.dataChanged.connect(self.checkImport)
         self.dumpTable.setModel(self.dumpModel)
-        self.dumpModel.setHorizontalHeaderLabels(['', '', 'Name', 'Category', 'Duplicates', 'Dest'])
-        self.dumpTable.setColumnHidden(LocationColumn, True)
-        self.dumpTable.resizeColumnToContents(0)
-        self.dumpTable.resizeColumnToContents(CatColumn)
-        self.dumpTable.resizeColumnToContents(DestColumn)
+        self.resetModel()
         self.dumpTable.horizontalHeader().setResizeMode(QtWidgets.QHeaderView.Fixed)
         self.dumpTable.horizontalHeader().setResizeMode(DupColumn, QtWidgets.QHeaderView.Stretch)
         self.dumpTable.clicked.connect(self.showValues)
@@ -197,11 +218,12 @@ class BlofeldDumper(QtWidgets.QDialog):
         while dumpBuffer:
             self.processData(dumpBuffer.pop(0))
 
-        self.importGroup.setId(self.importRadio, 0)
-        self.importGroup.setId(self.newRadio, 1)
-        self.importGroup.setId(self.noImportRadio, 2)
-        self.importGroup.buttonClicked.connect(self.checkImportGroup)
-        self.newRadio.toggled.connect(lambda state: self.newEdit.setFocus() if state else None)
+#        self.indexModeGroup.buttonClicked.connect(self.checkImport)
+        
+        self.collIndexModeGroup.buttonClicked.connect(self.checkImport)
+        self.newIndexModeGroup.buttonClicked.connect(self.checkImport)
+
+#        self.newRadio.toggled.connect(lambda state: self.newEdit.setFocus() if state else None)
         self.newEdit.valid.connect(self.checkImport)
         self.newEdit.valid.connect(self.setNewIcon)
         self.overwriteChk.toggled.connect(self.checkImport)
@@ -251,15 +273,111 @@ class BlofeldDumper(QtWidgets.QDialog):
         for group in orderedParameterGroups:
             self.rootParam.appendRow(paramTreeDict[group][0])
         self.paramTree.expand(self.paramModel.index(0, 0))
+        self.mode = 0
+
+    def openSound(self):
+        self.mode |= self.OpenSound
+        self.accept()
+
+    def resetModel(self):
+        self.dumpModel.clear()
+        self.dumpModel.setHorizontalHeaderLabels(self.headerLabels)
+        self.dumpTable.setColumnHidden(LocationColumn, True)
+        self.dumpTable.resizeColumnToContents(0)
+        self.dumpTable.resizeColumnToContents(CatColumn)
+        self.dumpTable.resizeColumnToContents(DestColumn)
+#        self.dumpTable.horizontalHeader().setResizeMode(QtWidgets.QHeaderView.Fixed)
+        self.dumpTable.horizontalHeader().setResizeMode(NameColumn, QtWidgets.QHeaderView.Stretch)
+        self.dumpTable.horizontalHeader().setResizeMode(DupColumn, QtWidgets.QHeaderView.Stretch)
+
+    def processData(self, data):
+        self.dumpModel.dataChanged.disconnect(self.checkImport)
+        bank, prog = data[:2]
+        data = data[2:]
+        checkItem = QtGui.QStandardItem()
+        checkItem.setData(data, DataRole)
+        indexItem = QtGui.QStandardItem()
+        indexItem.setData((bank << 7) + prog, QtCore.Qt.DisplayRole)
+        destItem = QtGui.QStandardItem()
+        nameItem = QtGui.QStandardItem(getName(data[363:379]))
+        catItem = QtGui.QStandardItem()
+        catItem.setData(data[379], QtCore.Qt.DisplayRole)
+
+        for attr, id in paramPairs:
+            value = Parameters.parameterData[id].range.sanitize(data[id])
+            self.query.bindValue(attr, value)
+        if not self.query.exec_():
+            print(self.query.lastError().driverText(), self.query.lastError().databaseText())
+        duplicates = {}
+        while self.query.next():
+            uid = self.query.value(0)
+            if uid in duplicates:
+                continue
+            duplicates[uid] = self.database.getNameFromUid(uid), self.database.getCollectionsFromUid(uid, False)
+        names = []
+        colls = []
+        for k in sorted(duplicates, key=lambda v: duplicates[v][0]):
+            name, collList = duplicates[k]
+            collList = [self.allCollections[c] for c in collList]
+            if not collList:
+                collList = ['(Main library only)']
+            names.append(name.strip())
+            colls.append('<b>{}</b>: {}'.format(name.strip(), ', '.join(factoryPresetsNamesDict.get(c, c) for c in collList)))
+        dupItem = QtGui.QStandardItem(', '.join(set(names)))
+        if colls:
+            colls = set(colls)
+            dupItem.setData('Duplicate locations:<ul><li>' + '</li><li>'.join(coll for coll in colls) + '</li></ul>'
+                , QtCore.Qt.ToolTipRole)
+        
+        self.dumpModel.appendRow([checkItem, indexItem, nameItem, catItem, dupItem, destItem])
+
+        if self._isDumpDialog:
+            if bank < 0x20:
+                if bank == 0:
+                    if prog > 0:
+                        if self.dumpModel.rowCount() > 1:
+                            self.tot = 128
+                        else:
+                            self.tot = 1
+                    else:
+                        self.tot = 1
+                else:
+                    if self.dumpModel.rowCount() > 127:
+                        self.tot = 1024
+                    else:
+                        self.tot = 128
+                index = '{}{:03}'.format(uppercase[bank], prog + 1)
+            else:
+                #TODO: check this for multiple sound edit buffer manual sends
+                if self.dumpModel.rowCount() == 1 and prog == 0:
+                    index = 'Buff'
+                    self.tot = 1
+                else:
+                    index = 'M{:02}'.format(prog + 1)
+                    self.tot = 16
+        else:
+            try:
+                index = '{}{:03}'.format(uppercase[bank], prog + 1)
+            except:
+                index = ''
+        self.dumpModel.setHeaderData(self.dumpModel.rowCount() - 1, QtCore.Qt.Vertical, index, QtCore.Qt.DisplayRole)
+        if bank == 0x7f and prog > 1 and self.dumpModel.rowCount() > 1:
+            self.dumpModel.setHeaderData(0, QtCore.Qt.Vertical, 'M01', QtCore.Qt.DisplayRole)
+        self.dumpTable.resizeRowsToContents()
+        self.dumpTable.scrollToBottom()
+        self.dumpModel.dataChanged.connect(self.checkImport)
 
     def showValues(self, index):
         if self.sender() == self.dumpTable.selectionModel():
             if not index.indexes():
                 self.valueProxy.setFilter([], [])
                 self.paramGroupBox.setEnabled(False)
+                self.paramGroupBox.setTitle('Sound parameters')
                 self.valueTable.setSpan(0, 0, 1, 2)
             return
         elif self.sender() == self.dumpTable:
+            self.paramGroupBox.setTitle('Sound parameters for "{}"'.format(
+                index.sibling(index.row(), NameColumn).data().strip()))
             data = index.sibling(index.row(), CheckColumn).data(DataRole)
             if self.paramTree.currentIndex().isValid():
                 indexes = self.paramTree.currentIndex().data(IndexesRole)
@@ -311,26 +429,9 @@ class BlofeldDumper(QtWidgets.QDialog):
         for index in self.dumpTable.selectionModel().selectedRows():
             self.dumpModel.setData(index, QtCore.Qt.Unchecked, QtCore.Qt.CheckStateRole)
 
-    def checkImportGroup(self, index):
-        checked = self.importGroup.checkedId()
-        if not checked:
-            overwrite = self.collectionCombo.currentIndex()
-            self.overwriteChk.setEnabled(overwrite)
-            self.overwriteBtn.setEnabled(overwrite)
-            self.collectionCombo.setEnabled(True)
-        else:
-            self.overwriteChk.setEnabled(False)
-            self.overwriteBtn.setEnabled(False)
-            self.collectionCombo.setEnabled(False)
-        self.checkImport()
-
     def collectionChanged(self, id):
-        if id == 0:
-            self.overwriteChk.setEnabled(False)
-            self.overwriteBtn.setEnabled(False)
-        else:
-            self.overwriteChk.setEnabled(True)
-            self.overwriteBtn.setEnabled(True)
+        self.collImportModeWidget.setEnabled(id)
+        if id:
             self.checkImport()
 
     def setNewIcon(self, valid):
@@ -348,178 +449,410 @@ class BlofeldDumper(QtWidgets.QDialog):
             self.newIcon.setToolTip('The selected name is invalid')
             self.newEdit.setToolTip('The selected name is invalid')
 
+    def clearDestIndexes(self, selected):
+        try:
+            self.dumpModel.dataChanged.disconnect(self.checkImport)
+        except:
+            pass
+        for row, srcIndex in selected:
+            self.dumpModel.item(row, DestColumn).setData(None, QtCore.Qt.DisplayRole)
+        self.dumpModel.dataChanged.connect(self.checkImport)
+        self.dumpModel.layoutChanged.emit()
+
+    def getSelected(self):
+        return [(r, self.dumpModel.item(r, LocationColumn).data(QtCore.Qt.DisplayRole)) for r in range(self.dumpModel.rowCount()) \
+            if self.dumpModel.item(r, CheckColumn).data(QtCore.Qt.CheckStateRole)]
+
+    def getSelectedSoundData(self):
+        data = {}
+        for row in range(self.dumpModel.rowCount()):
+            checkItem = self.dumpModel.item(row, CheckColumn)
+            if checkItem.data(QtCore.Qt.CheckStateRole):
+                if self.mode & self.CollectionImport:
+                    index = self.dumpModel.item(row, DestColumn).data(QtCore.Qt.DisplayRole)
+                else:
+                    index = row
+                data[index] = checkItem.data(DataRole)
+        return data
+
     def checkImport(self):
         if self.sender() == self.dumper and self.dumpModel.rowCount() == 1:
             self.dumpModel.blockSignals(True)
             self.dumpModel.item(0, CheckColumn).setCheckState(True)
             self.dumpModel.blockSignals(False)
-        selected = [(r, self.dumpModel.item(r, LocationColumn).data(QtCore.Qt.DisplayRole)) for r in range(self.dumpModel.rowCount()) \
-            if self.dumpModel.item(r, CheckColumn).data(QtCore.Qt.CheckStateRole)]
+
+
+        selected = self.getSelected()
         count = len(selected)
 
-        #verifica meglio la logica, forse si riesce a migliorare
-        self.okBtn.setEnabled(count)
-        self.openBtn.setEnabled(True if count == 1 else False)
-        for b in self.importGroup.buttons():
-            b.setEnabled(count)
-        if self.newRadio.isChecked():
-            self.newEdit.setEnabled(count)
-            self.newIcon.setEnabled(count)
-            self.okBtn.setEnabled(self.newEdit.isValid())
-            self.openBtn.setEnabled(self.openBtn.isEnabled() and self.newEdit.isValid())
-            return
-        elif self.noImportRadio.isChecked():
+        if count == 1:
+            self.openBtn.setEnabled(True)
+            if self.importCombo.currentIndex():
+                text = 'Import and edit'
+            else:
+                text = 'Edit'
+            self.openBtn.setText(text)
+        else:
+            self.openBtn.setEnabled(False)
+        self.destinationStack.setEnabled(count)
+        self.importCombo.setEnabled(count)
+        if not self.importCombo.currentIndex() or not count:
+            self.countLbl.setText('0')
             self.okBtn.setEnabled(False)
+            self.clearDestIndexes(selected)
             return
 
-        if not count:
-            return
-        if not self.collectionCombo.currentIndex():
-            return
-        collection = self.collectionCombo.currentText()
-        collIndexes = self.collectionBuffer.get(collection)
-        if not collIndexes:
-            collIndexes = self.collectionBuffer.setdefault(collection, self.database.getIndexesForCollection(collection))
-#        print(collIndexes, selected)
-        willOverwrite = 0
-        multi = False
-        for row, index in selected:
-            if index > 1023:
-                multi = True
-                break
-            if index in collIndexes:
-                willOverwrite += 1
-        if self.overwriteChk.isChecked():
-            if multi or (willOverwrite and willOverwrite < len(collIndexes)):
-                state = QtCore.Qt.PartiallyChecked
-                icon = QtGui.QIcon.fromTheme('emblem-question')
-            elif willOverwrite == len(collIndexes):
-                state = QtCore.Qt.Checked
-                if collIndexes == [s[1] for s in selected]:
-                    icon = QtGui.QIcon.fromTheme('emblem-warning')
+        self.mode = self.LibraryImport
+
+        if self.importCombo.currentIndex() == 1:
+            if self.collectionCombo.currentIndex():
+                if count > 1024:
+                    self.collImportModeWidget.setEnabled(False)
+                    self.okBtn.setEnabled(False)
+                    self.clearDestIndexes()
+                    return
+                self.collImportModeWidget.setEnabled(True)
+                self.mode |= self.CollectionImport
+                collection = self.collectionCombo.currentText()
+                collIndexes = self.collectionBuffer.get(collection)
+                if not collIndexes:
+                    collIndexes = self.collectionBuffer.setdefault(collection, self.database.getIndexesForCollection(collection))
+                if self.collAutoIndexRadio.isChecked():
+                    self.mode |= self.AutoIndex
+                    self.countLbl.setText(str(count))
+                    self.okBtn.setEnabled(True)
+                if len(collIndexes) + count > 1024:
+                    self.overwriteChk.setEnabled(True)
+                    if not self.overwriteChk.isChecked():
+                        self.okBtn.setEnabled(False)
                 else:
-                    icon = QtGui.QIcon.fromTheme('emblem-question')
+                    self.overwriteChk.setEnabled(self.collSourceIndexRadio.isChecked())
+                    if self.overwriteChk.isChecked():
+                        self.okBtn.setEnabled(True)
+                if self.overwriteChk.isChecked():
+                    self.mode |= self.Overwrite
             else:
-                state = QtCore.Qt.Unchecked
-                icon = QtGui.QIcon()
-            self.overwriteChk.setCheckState(state)
-            self.overwriteChk.setEnabled(state)
-            self.overwriteBtn.setIcon(icon)
-            self.overwriteBtn.setEnabled(state)
-            self.okBtn.setEnabled(state)
-            for row in range(self.dumpModel.rowCount()):
-                if multi:
-                    destIndex = None
-                else:
-                    destItem = self.dumpModel.item(row, LocationColumn)
-                    destIndex = destItem.data(QtCore.Qt.DisplayRole)
-                    font = destItem.data(QtCore.Qt.FontRole)
-                    font.setBold(True)
-                    destItem.setData(font, QtCore.Qt.FontRole)
-#                    setBold(destItem, destIndex in collIndexes)
-                self.dumpModel.item(row, DestColumn).setData(destIndex, QtCore.Qt.DisplayRole)
+                self.collImportModeWidget.setEnabled(False)
+                collIndexes = []
+        elif self.importCombo.currentIndex() == 2:
+            if count > 1024:
+                self.okBtn.setEnabled(False)
+                self.clearDestIndexes(selected)
+                return
+            self.okBtn.setEnabled(True)
+            self.mode |= self.CollectionImport | self.NewImport
+            if self.newAutoIndexRadio.isChecked():
+                self.mode |= self.AutoIndex
+            collIndexes = []
+
+        if not self.mode & (self.CollectionImport | self.NewImport):
+            self.clearDestIndexes(selected)
+            return
+
+        srcIndexList = []
+        unknownIndexes = 0
+        for row, srcIndex in selected:
+            if srcIndex >> 7 > 7:
+                unknownIndexes += 1
+            else:
+                srcIndexList.append(srcIndex)
+        hasDuplicates = len(srcIndexList) and len(srcIndexList) != len(set(srcIndexList))
+        hasValidIndexes = not hasDuplicates and not unknownIndexes
+
+        self.newSourceIndexRadio.setEnabled(hasValidIndexes)
+        if not hasValidIndexes:
+            if self.mode & self.NewImport:
+                self.okBtn.setEnabled(not self.newSourceIndexRadio.isChecked())
+            else:
+                self.collSourceIndexRadio.setEnabled(False)
+                if self.collSourceIndexRadio.isChecked():
+                    self.okBtn.setEnabled(False)
+            if not self.okBtn.isEnabled():
+                return
         else:
-            if multi:
-                if len(collIndexes) + count >= 1024:
-                    state = False
-                    icon = QtGui.QIcon.fromTheme('emblem-warning')
-                else:
-                    state = True
-                    icon = QtGui.QIcon.fromTheme('emblem-question')
-            elif len(collIndexes) + count >= 1024:
-                state = False
-                icon = QtGui.QIcon.fromTheme('emblem-warning')
-            elif willOverwrite:
-                state = True
-                icon = QtGui.QIcon.fromTheme('emblem-warning')
-            else:
-                state = True
-                icon = QtGui.QIcon()
-            self.okBtn.setEnabled(state)
-            self.overwriteChk.setEnabled(True)
-            self.overwriteBtn.setEnabled(not icon.isNull())
-            for row in range(self.dumpModel.rowCount()):
-                if multi:
-                    destIndex = None
-                else:
-                    destItem = self.dumpModel.item(row, LocationColumn)
-                    destIndex = destItem.data(QtCore.Qt.DisplayRole)
-                    if destIndex in collIndexes:
-                        setItalic(destItem, True)
-                        destItem.setEnabled(False)
-                    else:
-                        setItalic(destItem, False)
-                        destItem.setEnabled(True)
-                self.dumpModel.item(row, DestColumn).setData(destIndex, QtCore.Qt.DisplayRole)
+            self.collSourceIndexRadio.setEnabled(True)
+            if self.mode & self.CollectionImport and \
+                not self.mode & self.AutoIndex and \
+                not self.mode & self.Overwrite:
+                    self.okBtn.setEnabled(False if set(srcIndexList) & set(collIndexes) else True)
 
-        #implementare overwriteBtn, forse con un dict?
-
-    def processData(self, sysex):
         self.dumpModel.dataChanged.disconnect(self.checkImport)
-        bank, prog = sysex[5:7]
-        data = sysex[7:390]
-        checkItem = QtGui.QStandardItem()
-        checkItem.setData(data, DataRole)
-        indexItem = QtGui.QStandardItem()
-        indexItem.setData((bank << 7) + prog, QtCore.Qt.DisplayRole)
-        destItem = QtGui.QStandardItem()
-        nameItem = QtGui.QStandardItem(getName(data[363:379]))
-        catItem = QtGui.QStandardItem()
-        catItem.setData(data[379], QtCore.Qt.DisplayRole)
-
-        for attr, id in paramPairs:
-            self.query.bindValue(attr, data[id])
-        if not self.query.exec_():
-            print(self.query.lastError().driverText(), self.query.lastError().databaseText())
-        duplicates = {}
-        while self.query.next():
-            uid = self.query.value(0)
-            if uid in duplicates:
-                continue
-            duplicates[uid] = self.database.getNameFromUid(uid), self.database.getCollectionsFromUid(uid, False)
-        names = []
-        colls = []
-        for k in sorted(duplicates, key=lambda v: duplicates[v][0]):
-            name, collList = duplicates[k]
-            collList = [self.allCollections[c] for c in collList]
-            names.append(name.strip())
-            colls.append('<b>{}</b>: {}'.format(name.strip(), ', '.join(factoryPresetsNamesDict.get(c, c) for c in collList)))
-        dupItem = QtGui.QStandardItem(', '.join(names))
-        if colls:
-            dupItem.setData('Duplicate locations:<ul><li>' + '</li><li>'.join(coll for coll in colls) + '</li></ul>'
-                , QtCore.Qt.ToolTipRole)
-        
-        self.dumpModel.appendRow([checkItem, indexItem, nameItem, catItem, dupItem, destItem])
-
-        if bank < 0x20:
-            if bank == 0:
-                if prog > 0:
-                    if self.dumpModel.rowCount() > 1:
-                        self.tot = 128
+        if not self.mode & self.NewImport:
+            print('CollectionImport')
+            if self.mode & self.Overwrite:
+                print('overwrite')
+                if self.mode & self.AutoIndex:
+                    if len(collIndexes) + count < 1024:
+                        current = 0
+                        for row, srcIndex in selected:
+                            while current in collIndexes:
+                                current += 1
+                            self.dumpModel.item(row, DestColumn).setData(current, QtCore.Qt.DisplayRole)
+                            current += 1
                     else:
-                        self.tot = 1
+                        current = 0
+                        while current + count <= 1024 or current not in collIndexes:
+                            current += 1
+                        for row, srcIndex in selected:
+                            newIndex = current + (1024 if current in collIndexes else 0)
+                            self.dumpModel.item(row, DestColumn).setData(newIndex, QtCore.Qt.DisplayRole)
+                            current += 1
                 else:
-                    self.tot = 1
+                    for row, srcIndex in selected:
+                        if srcIndex in collIndexes:
+                            srcIndex += 1024
+                        self.dumpModel.item(row, DestColumn).setData(srcIndex, QtCore.Qt.DisplayRole)
             else:
-                if self.dumpModel.rowCount() > 127:
-                    self.tot = 1024
+                print('no overwrite')
+                if self.mode & self.AutoIndex:
+                    print('AutoIndex')
+                    current = 0
+                    for row, srcIndex in selected:
+                        while current in collIndexes:
+                            current += 1
+                        self.dumpModel.item(row, DestColumn).setData(current, QtCore.Qt.DisplayRole)
+                        current += 1
                 else:
-                    self.tot = 128
-            index = '{}{:03}'.format(uppercase[bank], prog + 1)
-        else:
-            #TODO: check this for multiple sound edit buffer manual sends
-            if self.dumpModel.rowCount() == 1 and prog == 0:
-                index = 'Buff'
-                self.tot = 1
+                    for row, srcIndex in selected:
+                        if srcIndex in collIndexes:
+                            srcIndex += 2048
+                        self.dumpModel.item(row, DestColumn).setData(srcIndex, QtCore.Qt.DisplayRole)
+        elif self.mode & self.NewImport:
+            print('NewImport')
+            if self.mode & self.AutoIndex:
+                print('AutoIndex')
+                for current, (row, srcIndex) in enumerate(selected):
+                    self.dumpModel.item(row, DestColumn).setData(current, QtCore.Qt.DisplayRole)
             else:
-                index = 'M{:02}'.format(prog + 1)
-                self.tot = 16
-        self.dumpModel.setHeaderData(self.dumpModel.rowCount() - 1, QtCore.Qt.Vertical, index, QtCore.Qt.DisplayRole)
-        if bank == 0x7f and prog > 1 and self.dumpModel.rowCount() > 1:
-            self.dumpModel.setHeaderData(0, QtCore.Qt.Vertical, 'M01', QtCore.Qt.DisplayRole)
-        self.dumpTable.resizeRowsToContents()
-        self.dumpTable.scrollToBottom()
+                print('SourceIndex')
+                done = {}
+                invalid = []
+                for row, srcIndex in selected:
+                    if srcIndex >> 7 <= 7:
+                        if srcIndex in done:
+                            invalid.append((row, srcIndex))
+                            continue
+                        self.dumpModel.item(row, DestColumn).setData(srcIndex, QtCore.Qt.DisplayRole)
+                        done[srcIndex] = row
+                    else:
+                        invalid.append((row, srcIndex))
+                if invalid:
+                    orphan = set()
+                    for row, srcIndex in invalid:
+                        if srcIndex in done:
+                            srcIndex = max(done) + 1
+                            if srcIndex >= 1024:
+                                srcIndex = 0
+                            while srcIndex in done:
+                                srcIndex += 1
+                            self.dumpModel.item(row, DestColumn).setData(srcIndex, QtCore.Qt.DisplayRole)
+                            done[srcIndex] = row
+                        else:
+                            strict = set(done.values()) - orphan
+                            if row < min(strict):
+                                current = 0
+                            else:
+                                current = max(done) + 1
+                            while current in done:
+                                current += 1
+                            self.dumpModel.item(row, DestColumn).setData(current, QtCore.Qt.DisplayRole)
+                            done[current] = row
+                            orphan.add(row)
+
         self.dumpModel.dataChanged.connect(self.checkImport)
+        self.dumpModel.layoutChanged.emit()
+
+    def exec_(self):
+        self.valueTable.setSpan(0, 0, 1, 2)
+        return QtWidgets.QDialog.exec_(self)
+
+
+class SourceFileModel(QtCore.QSortFilterProxyModel):
+    def data(self, index, role):
+        if role == QtCore.Qt.DisplayRole:
+            return QtCore.QDir.toNativeSeparators(self.mapToSource(index).data(QtCore.Qt.DisplayRole))
+        return QtCore.QSortFilterProxyModel.data(self, index, role)
+
+
+class SoundImport(BaseImportDialog):
+    SysExFile, MidiFile = Enum(1, 2)
+    
+    def __init__(self, parent, filePath=None):
+        BaseImportDialog.__init__(self, parent)
+        self.setWindowTitle('Sound import')
+        self._isDumpDialog = False
+        self.dumpHeader.hide()
+        self.browseBtn.clicked.connect(self.openFileDialog)
+        self.sourceFileModel = QtGui.QStandardItemModel()
+        self.pathModel = SourceFileModel()
+        self.pathModel.setSourceModel(self.sourceFileModel)
+        self.sourceFileView.setModel(self.pathModel)
+        self.filePath = filePath
+        self._loadError = None
+#        self.sourceFileView.setMaximumHeight(self.sourceFileView.sizeHintForRow(0))
+
+    @property
+    def filePath(self):
+        return self._filePath
+
+    @filePath.setter
+    def filePath(self, path):
+        self._filePath = path
+        if path:
+            item = QtGui.QStandardItem(path)
+            self.sourceFileModel.appendRow(item)
+            count = max(1, min(self.sourceFileModel.rowCount(), 4)) + .5
+            self.sourceFileView.setMaximumHeight(self.sourceFileView.sizeHintForRow(0) * count)
+#        self.filePathEdit.setText(QtCore.QDir.toNativeSeparators(path))
+
+    def showEvent(self, event):
+        if not self.shown:
+            self.shown = True
+            if self._loadError:
+                QtCore.QTimer.singleShot(0, lambda: QtWidgets.QMessageBox.critical(self, 
+                    'File error', 
+                    'An problem occurred while loading the file:\n{}'.format(self._loadError), 
+                    QtWidgets.QMessageBox.Ok))
+
+    def processSysEx(self):
+        try:
+            with open(self.filePath, 'rb') as syx:
+                full = iter(map(ord, syx.read()))
+            while True:
+                init = full.next()
+                if init != INIT:
+                    break
+                device = full.next(), full.next()
+                #devId
+                full.next()
+                msgType = full.next()
+                if device != (IDW, IDE) and msgType != SNDD:
+                    current = None
+                    while current != 0xf7:
+                        current = full.next()
+                    continue
+                current = None
+                data = []
+                while current != 0xf7:
+                    current = full.next()
+                    data.append(current)
+                self.processData(data[:-2])
+        except StopIteration:
+            return True
+        except Exception as e:
+            self._loadError = e
+            return False
+
+    def processMidi(self):
+        try:
+            content = midifile.read_midifile(self.filePath)
+            for track in content:
+                for event in track:
+                    if isinstance(event, midifile.SysexEvent) and \
+                        len(event.data) == 392 and event.data[:4] == [131, 7, IDW, IDE] and event.data[5] == SNDD:
+                            self.processData(event.data[6:-1])
+            return True
+        except Exception as e:
+            self._loadError = e
+            return False
+
+    def openFileDialog(self):
+        clear = False
+#        currentCount = self.dumpModel.rowCount()
+#        selected = [(r, self.dumpModel.item(r, LocationColumn).data(QtCore.Qt.DisplayRole)) for r in range(self.dumpModel.rowCount()) \
+#            if self.dumpModel.item(r, CheckColumn).data(QtCore.Qt.CheckStateRole)]
+#        currentCount = len(selected)
+        if self.dumpModel.rowCount():
+            message = 'Add to the existing contents or clear the current list?'
+            details = ''
+            if len(self.getSelected()) >= 1024:
+                '<br/><br/><b>NOTE</b>: The current list already contains 1024 or more items. See "Details" to know more.'
+                details = 'A collection can contain up to 1024 sounds. If you select more sounds, import to existing/new collection' \
+                    'will be disabled, and they will only be added to the "Main library".'
+            res = QuestionMessageBox(self, 
+                'Import sounds', message, details, 
+                buttons={QtWidgets.QMessageBox.Open: ('Add', QtGui.QIcon.fromTheme('list-add')), 
+                    QtWidgets.QMessageBox.Discard: ('Clear', QtGui.QIcon.fromTheme('document-new')), 
+                    QtWidgets.QMessageBox.Cancel: None
+                    }).exec_()
+            if res == QtWidgets.QMessageBox.Cancel:
+                return
+            elif res == QtWidgets.QMessageBox.Discard:
+                clear = True
+        dialog = SoundFileImport(self, self.filePath)
+        res = dialog.exec_()
+        if res:
+            if dialog._selectedContent & dialog.SoundDump:
+                if any(self.sourceFileModel.findItems(res)) and \
+                    (self.sourceFileModel.rowCount() == 1 or not clear):
+                    QtWidgets.QMessageBox.warning(self, 
+                        'File already loaded', 
+                        'The selected file has already been imported.', 
+                        QtWidgets.QMessageBox.Ok)
+                    return
+                if clear:
+                    self.sourceFileModel.clear()
+                    self.resetModel()
+                self.filePath = res
+                if dialog._selectedContent & dialog.SysExFile:
+                    self.processSysEx()
+                else:
+                    self.processMidi()
+                self.checkImport()
+            else:
+                QtWidgets.QMessageBox.critical(self, 
+                    'File content error', 
+                    'The selected file does not contain valid sound data.', 
+                    QtWidgets.QMessageBox.Ok)
+
+    def getValidName(self, filePath):
+        fileName = unidecode(QtCore.QFileInfo(filePath).completeBaseName())
+        newName = ''.join(c for c in fileName if c in chr2ord)[:32]
+        if not newName:
+            newName = 'New ' + QtCore.QDate.currentDate().toString('dd-MM-yy')
+        allCollections = [c.lower() for c in self.referenceModel.allCollections + factoryPresetsNamesDict.values()]
+        allCollections.append('main library')
+        if newName.lower() in allCollections:
+            suffix = 1
+            baseName = newName
+            newName += '1'
+            while newName.lower() in allCollections:
+                newName = baseName + str(suffix)
+        return newName
+
+    def exec_(self):
+        dialog = UnknownFileImport(self.parent())
+        res = dialog.exec_()
+        if res:
+            if dialog._selectedContent & dialog.SoundDump:
+                self.filePath = res
+                if dialog._selectedContent & dialog.SysExFile:
+                    self.processSysEx()
+                else:
+                    self.processMidi()
+                self.newEdit.setText(self.getValidName(res))
+                self.dumpModel.layoutChanged.emit()
+                self.dumpTable.scrollToTop()
+            else:
+                self._loadError = 'Invalid file content'
+            return BaseImportDialog.exec_(self)
+
+
+class BlofeldDumper(BaseImportDialog):
+    def __init__(self, parent, dumpBuffer=None):
+        BaseImportDialog.__init__(self, parent, dumpBuffer)
+        self.setWindowTitle('Dump receive')
+        self.importHeader.hide()
+
+    def midiEventReceived(self, event):
+        if event.type != SYSEX:
+            return
+        if event.sysex[4] != SNDD:
+            return
+        self.processData(event.sysex[5:390])
+
+    def processData(self, data):
+        BaseImportDialog.processData(self, data)
 
         if not self.isVisible():
             return
@@ -529,20 +862,10 @@ class BlofeldDumper(QtWidgets.QDialog):
         self.dumper.count = self.dumpModel.rowCount()
         self.timeout.start()
 
-    def midiEventReceived(self, event):
-        if event.type != SYSEX:
-            return
-        if event.sysex[4] != SNDD:
-            return
-        self.processData(event.sysex)
-
     def exec_(self):
-        self.valueTable.setSpan(0, 0, 1, 2)
         self.newEdit.setText('Dump ' + QtCore.QDate.currentDate().toString('dd-MM-yy'))
         QtCore.QTimer.singleShot(0, lambda: [self.dumper.start(self.tot), self.timeout.start()])
-        res = QtWidgets.QDialog.exec_(self)
-        return res
-
+        return BaseImportDialog.exec_(self)
 
 
 class SmallDumper(QtWidgets.QDialog):

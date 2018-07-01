@@ -1,5 +1,9 @@
 from Qt import QtCore, QtGui, QtWidgets
 
+from bigglesworth.utils import Enum
+from bigglesworth.const import IDW, IDE, SNDD
+from bigglesworth.libs import midifile
+
 #used for sidebar:
 #DisplayRole = EditRole = displayed name
 #DecorationRole = icon
@@ -30,16 +34,17 @@ class BaseFileDialog(QtWidgets.QFileDialog):
         Home: QtGui.QIcon.fromTheme('user-home'), 
         }
 
-    def __init__(self, parent=None, acceptMode=QtWidgets.QFileDialog.AcceptOpen):
+    def __init__(self, parent=None, acceptMode=QtWidgets.QFileDialog.AcceptOpen, openWritable=True):
         QtWidgets.QFileDialog.__init__(self, parent)
         self.defaultSuffixCheckBox = None
         self.canOverwrite = True
+        self.openWritable = openWritable
         self.directoryEntered.connect(self.dirCheck)
         self.systemUrls = self.Computer|self.Documents
         self.customUrls = []
         self.setAcceptMode(acceptMode)
         self.setOption(self.DontUseNativeDialog)
-        self.setNameFilters(['SQLite database (*.sqlite)', 'All files (*)'])
+#        self.setNameFilters(['SQLite database (*.sqlite)', 'All files (*)'])
         self.buttonBox = self.okBtn = self.cancelBtn = self.lineEdit = \
             self.splitter = self.splitterState = self.sidebar = self.lookInCombo = None
         for child in self.children():
@@ -95,7 +100,7 @@ class BaseFileDialog(QtWidgets.QFileDialog):
                 urls.append(self._locations[l])
                 if l == self.Program:
                     windowIcon = QtWidgets.QApplication.windowIcon()
-                    if not windowIcon.isNull:
+                    if not windowIcon.isNull():
                         icons[index] = windowIcon
                 elif l in self._icons:
                     icons[index] = self._icons[l]
@@ -147,15 +152,20 @@ class BaseFileDialog(QtWidgets.QFileDialog):
         path = self.selectedFiles()[0]
         info = QtCore.QFileInfo(path)
         if info.isFile():
-            if info.isWritable():
-                if self.canOverwrite and self.confirm(path):
-                    QtWidgets.QFileDialog.accept(self)
+            if self.openWritable:
+                if info.isWritable():
+                    if self.canOverwrite and self.confirm(path):
+                        QtWidgets.QFileDialog.accept(self)
+                    else:
+                        self.errorMessage(path)
                 else:
-                    self.errorMessage(path)
+                    QtWidgets.QMessageBox.warning(self, 'Read-only file', 
+                        '"{}" is read only and cannot be written onto.'.format(info.fileName()), 
+                        QtWidgets.QMessageBox.Ok)
+            elif self.confirm(path):
+                QtWidgets.QFileDialog.accept(self)
             else:
-                QtWidgets.QMessageBox.warning(self, 'Read-only file', 
-                    '"{}" is read only and cannot be written onto.'.format(info.fileName()), 
-                    QtWidgets.QMessageBox.Ok)
+                self.errorMessage(path)
         elif info.isDir():
             if info.isWritable():
                 QtWidgets.QFileDialog.accept(self)
@@ -173,4 +183,115 @@ class BaseFileDialog(QtWidgets.QFileDialog):
             return self.selectedFiles()[0]
         return 0
 
+
+class UnknownFileImport(BaseFileDialog):
+    SysExFile, MidiFile = Enum(1, 2)
+    FileTypeMask = 3
+    SoundDump, WaveTable = Enum(4, 8)
+
+    def __init__(self, parent, selectedFile=None):
+        BaseFileDialog.__init__(self, parent, BaseFileDialog.AcceptOpen, openWritable=False)
+        self.setWindowTitle('Import sound file')
+        self.setNameFilters(['Compatible files (*.mid *.syx)', 'MIDI file (*.mid)', 'SysEx file (*.syx)' 'All files (*)'])
+        self.selectedFile = selectedFile
+        if selectedFile:
+            selectedFileInfo = QtCore.QFileInfo(self.selectedFile)
+            if QtCore.QDir(selectedFileInfo.absolutePath()).exists():
+                self.setDirectory(selectedFileInfo.absolutePath())
+                self.selectFile(selectedFileInfo.fileName())
+            else:
+                self.setDirectory(self._locations[self.Home].toLocalFile())
+        else:
+            self.setDirectory(self._locations[self.Home].toLocalFile())
+        self.setSystemUrls(self.Desktop|self.Computer|self.Home|self.Documents|self.Music|self.Program)
+        self._selectedContent = None
+
+    def getContentType(self, data):
+        if data[:2] == [IDW, IDE] and data[3] == SNDD:
+            return self.SoundDump
+        return None
+
+    def checkGenericSysEx(self, path):
+        try:
+            with open(path, 'rb') as syx:
+                bytes = map(ord, syx.read(10))
+            content = self.getContentType(bytes[1:])
+            if content:
+                return self.SysExFile | content
+        except Exception as e:
+            print(e)
+        return False
+
+    def checkGenericMidi(self, path):
+        try:
+            mf = midifile.read_midifile(path)
+            for track in mf:
+                for event in track:
+                    if isinstance(event, midifile.SysexEvent) and event.data[:2] == [131, 7]:
+                        content = self.getContentType(event.data[2:])
+                        if content:
+                            return self.MidiFile | content
+            else:
+                return False
+        except:
+            return False
+
+    def errorMessage(self, path):
+        QtWidgets.QMessageBox.critical(self, 'Invalid file', 
+            'The contents of the file are not valid or file type cannot be recognized.', 
+            QtWidgets.QMessageBox.Ok)
+
+    def confirm(self, path):
+        self._selectedContent = self.checkGenericMidi(path)
+        if self._selectedContent:
+            return True
+        self._selectedContent = self.checkGenericSysEx(path)
+        if self._selectedContent:
+            return True
+        return False
+
+
+class SoundFileExport(BaseFileDialog):
+    filtersDesc = [
+        ('mid', 'MIDI file'), 
+        ('syx', 'SyxEx file'), 
+    ]
+    def __init__(self, parent, name=''):
+        BaseFileDialog.__init__(self, parent, BaseFileDialog.AcceptSave)
+        self.setWindowTitle('Export sound file')
+#        self.setNameFilters(['MIDI file (*.mid)', 'SysEx file (*.syx)' 'All files (*)'])
+        self.setNameFilters(['{} (*.{})'.format(desc, suffix) for suffix, desc in self.filtersDesc] + ['All files (*)'])
+        self.setDefaultSuffix('mid')
+        self.selectFile(name)
+        if QtCore.QFileInfo(name).isAbsolute():
+            self.selectFile(name)
+        else:
+            self.setDirectory(self._locations[self.Home].toLocalFile())
+        self.setSystemUrls(self.Desktop|self.Computer|self.Home|self.Documents|self.Music|self.Program)
+        self.filterSelected.connect(self.getSuffix)
+
+    def getSuffix(self, selected):
+        for (suffix, desc), filter in zip(self.filtersDesc, self.nameFilters()):
+            if filter == selected:
+                self.setDefaultSuffix(suffix)
+                break
+
+
+class SoundFileImport(UnknownFileImport):
+    SysExFile, MidiFile = Enum(1, 2)
+    FileTypeMask = 3
+    SoundDump, WaveTable = Enum(4, 8)
+    def confirm(self, path):
+        self._selectedContent = self.checkGenericMidi(path)
+        if self._selectedContent & self.SoundDump:
+            return True
+        self._selectedContent = self.checkGenericSysEx(path)
+        if self._selectedContent & self.SoundDump:
+            return True
+        return False
+
+    def errorMessage(self, path):
+        QtWidgets.QMessageBox.critical(self, 'File content error', 
+            'The selected file does not contain valid sound data.', 
+            QtWidgets.QMessageBox.Ok)
 

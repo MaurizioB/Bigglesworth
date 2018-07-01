@@ -329,8 +329,17 @@ class EditorMenu(QtWidgets.QMenuBar):
         randomCustomAction.triggered.connect(self.randomCustomRequest)
 
     def updatedumpMenu(self):
-        inConn, outConn = self.main.connections
-        self.dumpToSoundEditAction.setEnabled(any(outConn))
+        inConn, outConn = map(any, self.main.connections)
+
+        self.dumpFromSoundEditAction.setEnabled(inConn)
+        self.dumpFromCurrentIndexAction.setEnabled(inConn)
+        self.dumpFromAskIndexAction.setEnabled(inConn)
+        self.dumpFromMultiMenu.setEnabled(inConn)
+
+        self.dumpToSoundEditAction.setEnabled(outConn)
+        self.dumpToCurrentIndexAction.setEnabled(outConn)
+        self.dumpToAskIndexAction.setEnabled(outConn)
+        self.dumpToMultiMenu.setEnabled(outConn)
         try:
             self.dumpToCurrentIndexAction.triggered.disconnect()
         except:
@@ -342,7 +351,7 @@ class EditorMenu(QtWidgets.QMenuBar):
             self.dumpFromCurrentIndexAction.setText('Request from current location ({})'.format(location))
             self.dumpFromCurrentIndexAction.setVisible(True)
 
-            self.dumpToCurrentIndexAction.setText('Send to Blofeld at current location({}{:03}'.format(location))
+            self.dumpToCurrentIndexAction.setText('Send to Blofeld at current location({}'.format(location))
             index = (self.editorWindow.currentBank << 7) + self.editorWindow.currentProg
             self.dumpToCurrentIndexAction.triggered.connect(lambda: self.dumpToRequested.emit(None, index, False))
             self.dumpToCurrentIndexAction.setVisible(True)

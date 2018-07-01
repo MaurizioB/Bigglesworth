@@ -73,6 +73,9 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
+    <addaction name="importAction"/>
+    <addaction name="exportAction"/>
+    <addaction name="separator"/>
     <addaction name="quitAction"/>
    </widget>
    <widget class="QMenu" name="libraryMenu">
@@ -107,7 +110,7 @@
     <addaction name="aboutAction"/>
     <addaction name="aboutQtAction"/>
    </widget>
-   <widget class="QMenu" name="menuWindows">
+   <widget class="QMenu" name="windowsMenu">
     <property name="title">
      <string>&amp;Windows</string>
     </property>
@@ -119,7 +122,7 @@
    </widget>
    <addaction name="fileMenu"/>
    <addaction name="libraryMenu"/>
-   <addaction name="menuWindows"/>
+   <addaction name="windowsMenu"/>
    <addaction name="aboutMenu"/>
   </widget>
   <widget class="StatusBar" name="statusbar"/>
@@ -183,6 +186,9 @@
    <property name="text">
     <string>Sound &amp;editor</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+E</string>
+   </property>
   </action>
   <action name="showWavetableAction">
    <property name="enabled">
@@ -236,6 +242,27 @@
    </property>
    <property name="text">
     <string>Find &amp;duplicates...</string>
+   </property>
+  </action>
+  <action name="importAction">
+   <property name="icon">
+    <iconset theme="document-open">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Import file...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+I</string>
+   </property>
+  </action>
+  <action name="exportAction">
+   <property name="icon">
+    <iconset theme="document-save"/>
+   </property>
+   <property name="text">
+    <string>Export sounds...</string>
    </property>
   </action>
  </widget>

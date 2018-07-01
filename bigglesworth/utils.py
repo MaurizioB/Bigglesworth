@@ -146,13 +146,34 @@ class EnumClass(int):
 
 def _makeEnum(value=5):
     def getter(self):
-        for k, v in self.__class__.__dict__.items():
-            if v == propertyWrapper:
-                enum = EnumClass(value, k)
-                setattr(self.__class__, k, enum)
-                break
-        else:
-            raise BaseException('Enum not found!')
+        cls = self.__class__
+        found = False
+        while not found:
+            for k, v in cls.__dict__.items():
+                if v == propertyWrapper:
+                    enum = EnumClass(value, k)
+                    setattr(self.__class__, k, enum)
+                    found = True
+                    break
+            else:
+                cls = cls.__base__
+#        else:
+#            try:
+#                cls = self.__class__
+#                found = False
+#                while not found:
+#                    base = cls.__base__
+#                    for k, v in base.__dict__.items():
+#                        if v == propertyWrapper:
+#                            enum = EnumClass(value, k)
+#                            setattr(self.__class__, k, enum)
+#                            found = True
+#                            break
+##            return getter(self.__class__.__base__)
+#            except Exception as e:
+#                print('Enum not found!!!', e)
+#                print('base:', self.__class__.__base__)
+#                raise BaseException('Enum not found!')
         return enum
     propertyWrapper = property(getter, lambda v: None)
     return propertyWrapper

@@ -172,6 +172,7 @@ class BaseLibraryView(QtWidgets.QTableView):
     tagEditMultiRequested = QtCore.pyqtSignal(object)
     duplicateRequested = QtCore.pyqtSignal(str, int)
     findDuplicatesRequested = QtCore.pyqtSignal(str, object)
+    exportRequested = QtCore.pyqtSignal(object, object)
     deleteRequested = QtCore.pyqtSignal(object)
     #blofeld index/buffer, collection, index, multi
     dumpFromRequested = QtCore.pyqtSignal(object, object, int, bool)
@@ -219,6 +220,25 @@ class BaseLibraryView(QtWidgets.QTableView):
 
         self.doubleClicked.connect(self.soundDoubleClicked)
         self.cornerButton = None
+
+    def selectIndexes(self, uidList):
+        selection = QtCore.QItemSelection()
+        model = self.model()
+        indexes = []
+        for uid in uidList:
+            res = model.match(model.index(0, UidColumn), QtCore.Qt.DisplayRole, uid, flags=QtCore.Qt.MatchExactly)
+            if not res:
+                print('uid not found?!', uid)
+                continue
+            index = res[0]
+            indexes.append(index)
+            selection.select(index, index.sibling(index.row(), model.columnCount() - 1))
+#        model = self.model()
+#        for row in self.database.getIndexesFromUidList(uidList, self.collection):
+#            index = model.index(row, NameColumn)
+#            selection.select(index, index)
+        self.selectionModel().select(selection, QtCore.QItemSelectionModel.ClearAndSelect)
+        self.scrollTo(indexes[0])
 
     def sortMenu(self, *args):
 #        if isinstance(args, QtCore.QPoint):
@@ -509,6 +529,10 @@ class BaseLibraryView(QtWidgets.QTableView):
                         self.setCurrentIndex(firstIndex)
                         self.scrollTo(firstIndex)
                 return
+            elif event.matches(QtGui.QKeySequence.NextChild) or event.matches(QtGui.QKeySequence.PreviousChild) or \
+                (event.modifiers() == QtCore.Qt.ControlModifier and event.key() in (QtCore.Qt.Key_L, QtCore.Qt.Key_R)):
+                self.parent().keyPressEvent(event)
+                return
         QtWidgets.QTableView.keyPressEvent(self, event)
 
     def setSearch(self, text=None):
@@ -665,6 +689,9 @@ class BaseLibraryView(QtWidgets.QTableView):
                     deleteAction.setEnabled(False)
             duplicateAction.triggered.connect(lambda: self.duplicateRequested.emit(uid, index.row()))
             deleteAction.triggered.connect(lambda: self.deleteRequested.emit([uid]))
+            menu.addSeparator()
+            exportAction = menu.addAction(QtGui.QIcon.fromTheme('document-save'), 'Export...')
+            exportAction.triggered.connect(lambda: self.exportRequested.emit([uid], self.collection))
         else:
             uidList = [idx.sibling(idx.row(), UidColumn).data(QtCore.Qt.DisplayRole) for idx in selRows]
             menu.addSeparator().setText('{} sounds selected'.format(len(selRows)))
@@ -679,6 +706,9 @@ class BaseLibraryView(QtWidgets.QTableView):
                 deleteAction = menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 'Delete {} sounds'.format(len(selRows)))
                 deleteAction.setStatusTip('Delete the selected sounds from the library and any collection')
             deleteAction.triggered.connect(lambda: self.deleteRequested.emit(uidList))
+            menu.addSeparator()
+            exportAction = menu.addAction(QtGui.QIcon.fromTheme('document-save'), 'Export...')
+            exportAction.triggered.connect(lambda: self.exportRequested.emit(uidList, self.collection))
         return menu, index, name, uid
 
 class LibraryTableView(BaseLibraryView):
@@ -1233,6 +1263,7 @@ class CollectionTableView(BaseLibraryView):
 
 
 class BaseLibraryWidget(QtWidgets.QWidget):
+    exportRequested = QtCore.pyqtSignal(object, object)
     findDuplicatesRequested = QtCore.pyqtSignal(str, object)
     #blofeld index/buffer, collection, index, multi
     dumpFromRequested = QtCore.pyqtSignal(object, object, int, bool)
@@ -1273,9 +1304,14 @@ class BaseLibraryWidget(QtWidgets.QWidget):
         self.collectionView.duplicateRequested.connect(self.duplicateRequested)
         self.collectionView.findDuplicatesRequested.connect(self.findDuplicatesRequested)
         self.collectionView.deleteRequested.connect(self.deleteRequested)
+        self.collectionView.exportRequested.connect(self.exportRequested)
 
         self.collectionView.dumpToRequested.connect(self.dumpToRequested)
         self.collectionView.dumpFromRequested.connect(self.dumpFromRequested)
+
+    def selectUidList(self, uidList):
+        self.clearFilters()
+        self.collectionView.selectIndexes(uidList)
 
     def setTagFilter(self, tag):
         if not tag in self.filterTagsEdit.tags:

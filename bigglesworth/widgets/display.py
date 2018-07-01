@@ -873,7 +873,7 @@ class BlofeldDisplay(QtWidgets.QGraphicsView):
             self.collectionLabel.setEnabled(True)
             self.collectionLabel.setToolTip('This sound is part of these collections:<br/><br/>' + '<br/>'.join(collections))
             self.collectionLabel.setStatusTip('This sound is part of these collections: "' + '", "'.join(
-                factoryPresetsNamesDict.get(c, c) for c in collections)) + '"'
+                factoryPresetsNamesDict.get(c, c) for c in collections) + '"')
         self.bankWidget.setEnabled(state)
         self.progWidget.setEnabled(state)
         self.progSendWidget.setEnabled(state)

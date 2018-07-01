@@ -17,6 +17,7 @@ class MoveDbDialog(BaseFileDialog):
     def __init__(self, parent, currentDbFile, selectedFile=None):
         BaseFileDialog.__init__(self, parent, BaseFileDialog.AcceptSave)
         self.setWindowTitle('Move database location')
+        self.setNameFilters(['SQLite database (*.sqlite)', 'All files (*)'])
         self.currentDbFile = currentDbFile
         self.setDefaultSuffix('sqlite')
         self.setOverwrite(False)
@@ -39,6 +40,7 @@ class OpenDbDialog(BaseFileDialog):
     def __init__(self, parent, currentDbFile, selectedFile=None):
         BaseFileDialog.__init__(self, parent, BaseFileDialog.AcceptOpen)
         self.setWindowTitle('Open database location')
+        self.setNameFilters(['SQLite database (*.sqlite)', 'All files (*)'])
         self.currentDbFile = currentDbFile
         self.setDefaultSuffix('sqlite')
         self.selectedFile = selectedFile if selectedFile else currentDbFile
@@ -347,3 +349,12 @@ class SettingsDialog(QtWidgets.QDialog):
             if restart:
                 QtWidgets.QApplication.instance().restart()
         return res
+
+    def keyPressEvent(self, event):
+        if event.matches(QtGui.QKeySequence.NextChild):
+            self.tabWidget.setCurrentIndex(self.tabWidget.currentIndex() + 1)
+        elif event.matches(QtGui.QKeySequence.PreviousChild):
+            self.tabWidget.setCurrentIndex(self.tabWidget.currentIndex() - 1)
+        QtWidgets.QDialog.keyPressEvent(self, event)
+
+
