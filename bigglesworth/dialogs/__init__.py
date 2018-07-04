@@ -17,3 +17,4 @@ from bigglesworth.dialogs.dump import DumpReceiveDialog, DumpSendDialog, SmallDu
 from bigglesworth.dialogs.savesoundas import SaveSoundAs
 from bigglesworth.dialogs.duplicates import FindDuplicates
 from bigglesworth.dialogs.soundexport import SoundExport
+from bigglesworth.dialogs.soundlistexport import SoundListExport

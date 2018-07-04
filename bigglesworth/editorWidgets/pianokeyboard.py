@@ -17,8 +17,8 @@ except:
 
 #fix for cx_freeze import
 basePath = os.path.dirname(__file__)
-if basePath.endswith('library.zip'):
-    basePath = basePath.replace('\\library.zip', '').replace('/library.zip', '')
+if basePath.endswith('.zip'):
+    basePath = basePath.replace('\\library.zip', '').replace('/library.zip', '').replace('\\python27.zip', '')
 with open(os.path.join(basePath, 'pianokbmap.json'), 'r') as jsf:
     _localeData = json.loads(jsf.read())
 

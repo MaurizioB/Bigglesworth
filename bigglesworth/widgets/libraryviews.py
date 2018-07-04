@@ -709,6 +709,8 @@ class BaseLibraryView(QtWidgets.QTableView):
             menu.addSeparator()
             exportAction = menu.addAction(QtGui.QIcon.fromTheme('document-save'), 'Export...')
             exportAction.triggered.connect(lambda: self.exportRequested.emit(uidList, self.collection))
+            if len(uidList) > 1024:
+                exportAction.setEnabled(False)
         return menu, index, name, uid
 
 class LibraryTableView(BaseLibraryView):
@@ -716,6 +718,7 @@ class LibraryTableView(BaseLibraryView):
         BaseLibraryView.__init__(self, *args, **kwargs)
         self.verticalHeader().setVisible(False)
         self.layoutChangeBuffer = None
+        self.collection = None
 
     def restoreLayout(self):
         self.setColumnHidden(FactoryColumn, True)

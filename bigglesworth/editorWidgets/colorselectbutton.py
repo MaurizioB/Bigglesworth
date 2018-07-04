@@ -232,6 +232,7 @@ class ColorSelectButton(QtWidgets.QPushButton):
         self.customContextMenuRequested.connect(self.showPopup)
         self.colorMenu = ColorMenu()
         self.updateColor(QtGui.QColor(QtCore.Qt.white))
+        self._showText = True
 
     def showPopup(self, pos):
         res = self.colorMenu.exec_(self.mapToGlobal(pos), self._color)
@@ -279,6 +280,9 @@ class ColorSelectButton(QtWidgets.QPushButton):
         self.update()
         self.colorChanged.emit(self._color, oldColor)
 
+    def setColor(self, color):
+        self.color = color
+
     @QtCore.pyqtProperty(QtGui.QColor)
     def color(self):
         return self._color
@@ -291,6 +295,19 @@ class ColorSelectButton(QtWidgets.QPushButton):
         if newColor != oldColor:
             self.colorChanged.emit(newColor, oldColor)
 
+    @QtCore.pyqtProperty(bool)
+    def showText(self):
+        return self._showText
+
+    @showText.setter
+    def showText(self, show):
+        self._showText = show
+        if show:
+            self.setText('255 255 255 255')
+        else:
+            self.setText('')
+        self.update()
+
     def paintEvent(self, event):
         qp = QtWidgets.QStylePainter(self)
         qp.setRenderHints(qp.Antialiasing)
@@ -301,12 +318,17 @@ class ColorSelectButton(QtWidgets.QPushButton):
         rect = self.style().subElementRect(self.style().SE_PushButtonContents, option, self)
         iconSize = rect.height() * .7
         halfSize = iconSize / 2
-        qp.save()
-        qp.translate(halfSize, rect.center().y())
-        qp.setBrush(self._color)
-        qp.drawRect(0, -halfSize, iconSize, iconSize)
-        qp.restore()
-        self.labelPaintFunc(qp, option, iconSize + halfSize + 4)
+        if self._showText:
+            qp.save()
+            qp.translate(halfSize, rect.center().y())
+            qp.setBrush(self._color)
+            qp.drawRect(0, -halfSize, iconSize, iconSize)
+            qp.restore()
+            self.labelPaintFunc(qp, option, iconSize + halfSize + 4)
+        else:
+            qp.translate(rect.center())
+            qp.setBrush(self._color)
+            qp.drawRect(-halfSize, -halfSize, iconSize, iconSize)
 
     def labelPaintGlobal(self, qp, option, delta):
         qp.drawText(option.rect.adjusted(delta, 0, 0, 0), QtCore.Qt.AlignCenter, self.colorName)

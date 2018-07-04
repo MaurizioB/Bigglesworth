@@ -129,12 +129,37 @@ class SoundExport(QtWidgets.QDialog):
         self.exportView.horizontalHeader().setResizeMode(NameColumn, QtWidgets.QHeaderView.Stretch)
         self.exportView.horizontalHeader().setResizeMode(CatColumn, QtWidgets.QHeaderView.Fixed)
         self.exportView.horizontalHeader().setResizeMode(TagsColumn, QtWidgets.QHeaderView.Fixed)
+        self.exportView.verticalHeader().setResizeMode(QtWidgets.QHeaderView.Fixed)
         self.exportModel.dataChanged.connect(self.checkExport)
 
         self.sortBtn.clicked.connect(self.sort)
         self.sortCombo.currentIndexChanged.connect(self.checkSorting)
+        self.fixIndexBtn.clicked.connect(self.fixIndexes)
         self.sortMode = 0
         self.dataBuffer = {}
+
+        if uidList:
+            selection = QtCore.QItemSelection()
+            if uidList == -1:
+                self.sourceView.selectAll()
+            else:
+                start = self.proxyModel.index(0, UidColumn)
+                for uid in uidList:
+                    found = self.proxyModel.match(start, QtCore.Qt.DisplayRole, uid, flags=QtCore.Qt.MatchExactly)
+                    if found:
+                        index = found[0]
+                        selection.select(index, index.sibling(index.row(), TagsColumn))
+            self.sourceView.selectionModel().select(selection, QtCore.QItemSelectionModel.Select)
+            self.addItems()
+        self.shown = False
+
+    def showEvent(self, event):
+        if not self.shown:
+            self.shown = True
+            if self.sourceView.selectionModel().selectedRows(NameColumn):
+                self.sourceView.scrollTo(
+                    self.sourceView.selectionModel().selectedRows(NameColumn)[0], 
+                    self.sourceView.PositionAtTop)
 
     def setCollection(self, index):
         self.sourceView.verticalHeader().setVisible(index)
@@ -274,8 +299,13 @@ class SoundExport(QtWidgets.QDialog):
         self.exportModel.layoutChanged.emit()
 
     def sort(self):
+        try:
+            self.exportModel.dataChanged.disconnect(self.checkExport)
+        except:
+            pass
         selected = self.getSelected()
         if not selected:
+            self.exportModel.dataChanged.connect(self.checkExport)
             return
         if self.sortMode == self.SortSourceIndex:
             indexes = {}
@@ -379,8 +409,11 @@ class SoundExport(QtWidgets.QDialog):
                             break
                     else:
                         for bank, destItems in enumerate(tags.values()):
-                            for index, destItem in destItems:
+                            for index, destItem in enumerate(destItems):
                                 destItem.setData((bank << 7) + index, QtCore.Qt.DisplayRole)
+                        bank = (bank + 1) << 7
+                        for index, destItem in enumerate(orphans):
+                            destItem.setData(bank + index, QtCore.Qt.DisplayRole)
                         done = True
             if not done:
                 current = 0
@@ -388,7 +421,9 @@ class SoundExport(QtWidgets.QDialog):
                     for destItem in destItems:
                         destItem.setData(current, QtCore.Qt.DisplayRole)
                         current += 1
-
+                for current, destItem in enumerate(orphans, current):
+                    destItem.setData(current, QtCore.Qt.DisplayRole)
+        self.exportModel.dataChanged.connect(self.checkExport)
         self.exportView.sortByColumn(DestColumn, QtCore.Qt.AscendingOrder)
 
     def checkSorting(self, sortMode):
@@ -399,7 +434,80 @@ class SoundExport(QtWidgets.QDialog):
         else:
             self.distributeChk.setEnabled(False)
 
+    def fixIndexes(self):
+        try:
+            self.exportModel.dataChanged.disconnect(self.checkExport)
+        except:
+            pass
+        selected = self.getSelected()
+        if len(selected) > 1024:
+            self.exportModel.dataChanged.connect(self.checkExport)
+            return
+        indexes = OrderedDict((i, []) for i in range(1024))
+        done = []
+        for row, srcIndex, destItem in selected:
+            destIndex = destItem.data(QtCore.Qt.DisplayRole)
+            if destIndex < 0:
+                if srcIndex < 0:
+                    if not done:
+                        indexes[0].append(destItem)
+                    else:
+                        indexes[done[-1]].append(destItem)
+                else:
+                    indexes[srcIndex].append(destItem)
+            else:
+                indexes[destIndex].append(destItem)
+        if not any(len(i) > 1 for i in indexes.values()):
+            self.exportModel.dataChanged.connect(self.checkExport)
+            return
+        new = OrderedDict()
+        for index, items in indexes.items():
+            current = index
+            while current in new:
+                current += 1
+            if len(items) <= 1:
+                if items:
+                    new[current] = items[0]
+                continue
+            for item in items:
+                new[current] = item
+                while current in new:
+                    current += 1
+        maxIndex = max(new)
+        if maxIndex <= 1023:
+            for index, destItem in new.items():
+                destItem.setData(index, QtCore.Qt.DisplayRole)
+        else:
+            while maxIndex in new:
+                maxIndex -= 1
+            maxIndex -= len([index for index in new if index > 1023])
+            while maxIndex in new:
+                maxIndex -= 1
+            for index, destItem in new.items():
+                if index < maxIndex:
+                    destItem.setData(index, QtCore.Qt.DisplayRole)
+                else:
+                    destItem.setData(maxIndex, QtCore.Qt.DisplayRole)
+                    maxIndex += 1
+#        print('\n'.join(map(str, [(k, v.data(QtCore.Qt.DisplayRole)) for k, v in new.items() if v])))
+        self.exportModel.dataChanged.connect(self.checkExport)
+        self.exportView.sortByColumn(DestColumn, QtCore.Qt.AscendingOrder)
+
     def export(self):
+        selected = []
+        for row in range(self.exportModel.rowCount()):
+            item = self.exportModel.item(row, UidColumn)
+            if item.data(QtCore.Qt.CheckStateRole):
+                uid = item.data(QtCore.Qt.DisplayRole)
+                if uid in selected:
+                    if QtWidgets.QMessageBox.question(self, 'Duplicates found', 
+                        'Duplicate indexes has been found in the selected items.\nDo you want to proceed anyway?', 
+                        QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel) == QtWidgets.QMessageBox.Ok:
+                            break
+                    else:
+                        return
+                else:
+                    selected.append(uid)
         close = self.sender() == self.exportCloseBtn
         res = SoundFileExport(self, self.tempName.rstrip('.syx').rstrip('.mid')).exec_()
         if res:

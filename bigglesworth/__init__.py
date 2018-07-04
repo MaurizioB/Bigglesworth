@@ -70,7 +70,7 @@ from bigglesworth.mainwindow import MainWindow
 from bigglesworth.themes import ThemeCollection
 from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, GlobalsDialog, 
     DumpReceiveDialog, DumpSendDialog, WarningMessageBox, SmallDumper, FirstRunWizard, LogWindow, 
-    BlofeldDumper, FindDuplicates, SoundImport, SoundExport)
+    BlofeldDumper, FindDuplicates, SoundImport, SoundExport, SoundListExport)
 #from bigglesworth.utils import localPath
 from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR, LogInfo, factoryPresets, factoryPresetsNamesDict
 from bigglesworth.midiutils import SYSEX, CTRL, NOTEOFF, NOTEON, PROGRAM, SysExEvent
@@ -229,6 +229,10 @@ class Bigglesworth(QtWidgets.QApplication):
         self.mainWindow.leftTabWidget.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeld)
         self.mainWindow.rightTabWidget.fullDumpBlofeldToCollectionRequested.connect(self.fullDumpBlofeldToCollection)
         self.mainWindow.rightTabWidget.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeld)
+        self.mainWindow.leftTabWidget.exportRequested.connect(lambda uidList, collection: SoundExport(self.mainWindow, uidList, collection).exec_())
+        self.mainWindow.leftTabWidget.exportListRequested.connect(lambda collection: SoundListExport(self.mainWindow, collection).exec_())
+        self.mainWindow.rightTabWidget.exportRequested.connect(lambda uidList, collection: SoundExport(self.mainWindow, uidList, collection).exec_())
+        self.mainWindow.rightTabWidget.exportListRequested.connect(lambda collection: SoundListExport(self.mainWindow, collection).exec_())
         self.mainWindow.importRequested.connect(self.importRequested)
         self.mainWindow.exportRequested.connect(lambda uidList, collection: SoundExport(self.mainWindow, uidList, collection).exec_())
         self.mainWindow.dumpToRequested.connect(self.dumpTo)

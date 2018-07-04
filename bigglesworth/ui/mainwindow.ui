@@ -76,6 +76,8 @@
     <addaction name="importAction"/>
     <addaction name="exportAction"/>
     <addaction name="separator"/>
+    <addaction name="exportSoundListAction"/>
+    <addaction name="separator"/>
     <addaction name="quitAction"/>
    </widget>
    <widget class="QMenu" name="libraryMenu">
@@ -259,10 +261,20 @@
   </action>
   <action name="exportAction">
    <property name="icon">
-    <iconset theme="document-save"/>
+    <iconset theme="document-save">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>Export sounds...</string>
+   </property>
+  </action>
+  <action name="exportSoundListAction">
+   <property name="icon">
+    <iconset theme="document-print"/>
+   </property>
+   <property name="text">
+    <string>Save/print sound list...</string>
    </property>
   </action>
  </widget>

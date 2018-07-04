@@ -9,7 +9,7 @@ from bigglesworth.const import factoryPresetsNamesDict
 from bigglesworth.utils import loadUi, setBold
 #from bigglesworth.library import LibraryModel
 from bigglesworth.widgets import LibraryWidget, CollectionWidget
-from bigglesworth.dialogs import NewCollectionDialog, ManageCollectionsDialog, TagsDialog, AboutDialog
+from bigglesworth.dialogs import NewCollectionDialog, ManageCollectionsDialog, TagsDialog, AboutDialog, SoundListExport
 from bigglesworth.forcebwu import MayTheForce
 #import icons
 
@@ -90,6 +90,8 @@ class MainWindow(QtWidgets.QMainWindow):
 #            self.rightTabWidget.addTab(libraryWidget, 'Main library')
 
         self.splitter.moved.connect(self.checkSplitter)
+
+        self.exportSoundListAction.triggered.connect(lambda: SoundListExport(self, None).exec_())
 
         self.leftTabWidget.openCollection.connect(self.openCollection)
         self.leftTabWidget.newCollection.connect(self.newCollection)
