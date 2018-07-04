@@ -1658,7 +1658,6 @@ class SoundListExport(QtWidgets.QDialog):
     def setPrinter(self, index):
         self.currentPrinter = self.printerCombo.itemData(index, PrinterRole)
         self.currentPrinter.setOrientation(self.pdfOrientationCombo.currentIndex())
-        printerInfo = self.printerCombo.itemData(index, PrinterInfoRole)
 
         if self.paperCombo.count():
             currentPaperSize = self.paperCombo.itemData(self.paperCombo.currentIndex(), PrinterRole)
@@ -1666,7 +1665,11 @@ class SoundListExport(QtWidgets.QDialog):
             currentPaperSize = -1
         self.paperCombo.blockSignals(True)
         self.paperCombo.clear()
-        paperSizes = self.getPaperSizes(printerInfo.supportedPaperSizes())
+        if self.currentPrinter == self.pdfPrinter:
+            paperSizes = self.paperSizes.items()
+        else:
+            printerInfo = self.printerCombo.itemData(index, PrinterInfoRole)
+            paperSizes = self.getPaperSizes(printerInfo.supportedPaperSizes())
         sizes = [p for p, _ in paperSizes]
         if currentPaperSize not in sizes:
             currentPaperSize = min(sizes)
