@@ -1665,6 +1665,7 @@ class SoundListExport(QtWidgets.QDialog):
             currentPaperSize = -1
         self.paperCombo.blockSignals(True)
         self.paperCombo.clear()
+        #TODO: maybe just disable not accepted sizes, instead of rebuilding?
         if self.currentPrinter == self.pdfPrinter:
             paperSizes = self.paperSizes.items()
         else:

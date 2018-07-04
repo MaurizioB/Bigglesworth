@@ -13,6 +13,9 @@ QtCore.pyqtProperty = QtCore.Property
 from PyQt4.QtGui import QIdentityProxyModel as _QIdentityProxyModel
 QtCore.QIdentityProxyModel = _QIdentityProxyModel
 
+import bigglesworth.resources
+QtGui.QIcon.setThemeName('Bigglesworth')
+
 def topMostDumpDialog(instance):
     if instance._isDumpDialog:
         return instance
@@ -31,6 +34,7 @@ QtWidgets.QDialog._isDumpDialog = False
 QtWidgets.QDialog.topMostDumpDialog = topMostDumpDialog
 
 if sys.platform == 'win32':
+    #workaround for menu separators with labels on Windows
     class WinMenuSeparator(QtWidgets.QWidgetAction):
         def __init__(self, *args, **kwargs):
             QtWidgets.QWidgetAction.__init__(self, *args, **kwargs)
@@ -61,6 +65,33 @@ if sys.platform == 'win32':
     QtWidgets.QMenu.insertSeparator = QMenuInsertSeparator
     QtWidgets.QMenu.addSeparator = QMenuAddSeparator
 
+elif sys.platform == 'darwin':
+    #workaround for QIcon.fromTheme not properly working on OSX with cx_freeze
+    QtGui.QIcon._fromTheme = QtGui.QIcon.fromTheme
+    sizes = (64, 32, 24, 22, 16, 8)
+    iconCache = {}
+    iconDir = QtCore.QDir(':/icons/{}/'.format(QtGui.QIcon.themeName()))
+
+    @staticmethod
+    def fromTheme(name, fallback=None):
+        if fallback:
+            icon = QtGui.QIcon._fromTheme(name, fallback)
+            if not icon.isNull():
+                return icon
+        icon = iconCache.get(name)
+        if icon:
+            return icon
+        icon = QtGui.QIcon._fromTheme(name)
+        if icon.isNull():
+            for size in sizes:
+                path = '{s}x{s}/{n}.svg'.format(s=size, n=name)
+                if iconDir.exists(path):
+                    icon.addFile(iconDir.filePath(path), QtCore.QSize(size, size))
+        iconCache[name] = icon
+        return icon
+
+    QtGui.QIcon.fromTheme = fromTheme
+
 
 from bigglesworth.logger import Logger
 from bigglesworth.editor import EditorWindow
@@ -76,7 +107,6 @@ from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR, LogIn
 from bigglesworth.midiutils import SYSEX, CTRL, NOTEOFF, NOTEON, PROGRAM, SysExEvent
 
 from bigglesworth.mididevice import MidiDevice
-import bigglesworth.resources
 
 
 class Bigglesworth(QtWidgets.QApplication):
@@ -214,7 +244,6 @@ class Bigglesworth(QtWidgets.QApplication):
 #        print(QtGui.QIcon.themeSearchPaths(), os.path.abspath(__file__))
 #        QtGui.QIcon.setThemeSearchPaths([QtCore.QDir('C:/Python27/icons').absolutePath()])
 #        print(QtGui.QIcon.themeSearchPaths())
-        QtGui.QIcon.setThemeName('Bigglesworth')
 #        print(QtGui.QIcon.hasThemeIcon('application-exit'))
 
         self.mainWindow = MainWindow(self)

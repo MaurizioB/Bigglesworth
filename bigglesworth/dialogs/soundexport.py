@@ -260,11 +260,9 @@ class SoundExport(QtWidgets.QDialog):
         self.setAlert()
         if self.autoIndexRadio.isChecked():
             if hasValidIndexes:
-                print('ok')
                 for row, srcIndex, destItem in selected:
                     destItem.setData(srcIndex, QtCore.Qt.DisplayRole)
             elif hasDuplicates:
-                print('duplicates')
                 if count > 1024:
                     for row, srcIndex, destItem in selected:
                         destItem.setData(srcIndex, QtCore.Qt.DisplayRole)
@@ -281,7 +279,6 @@ class SoundExport(QtWidgets.QDialog):
                         done.append(srcIndex)
                         destItem.setData(srcIndex, QtCore.Qt.DisplayRole)
             elif unknownIndexes:
-                print('unknown')
                 if count > 1024:
                     for row, srcIndex, destItem in selected:
                         destItem.setData(srcIndex, QtCore.Qt.DisplayRole)
