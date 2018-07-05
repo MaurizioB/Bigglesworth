@@ -33,7 +33,7 @@ def topMostDialog(instance):
 QtWidgets.QDialog._isDumpDialog = False
 QtWidgets.QDialog.topMostDumpDialog = topMostDumpDialog
 
-if not 'linux' in sys.platform:
+if sys.platform == 'win32':
     #workaround for menu separators with labels on Windows and Mac
     class WinMenuSeparator(QtWidgets.QWidgetAction):
         def __init__(self, *args, **kwargs):
@@ -66,32 +66,32 @@ if not 'linux' in sys.platform:
     QtWidgets.QMenu.insertSeparator = QMenuInsertSeparator
     QtWidgets.QMenu.addSeparator = QMenuAddSeparator
 
-    if sys.platform == 'darwin':
-        #workaround for QIcon.fromTheme not properly working on OSX with cx_freeze
-        QtGui.QIcon._fromTheme = QtGui.QIcon.fromTheme
-        sizes = (64, 32, 24, 22, 16, 8)
-        iconCache = {}
-        iconDir = QtCore.QDir(':/icons/{}/'.format(QtGui.QIcon.themeName()))
+elif sys.platform == 'darwin':
+    #workaround for QIcon.fromTheme not properly working on OSX with cx_freeze
+    QtGui.QIcon._fromTheme = QtGui.QIcon.fromTheme
+    sizes = (64, 32, 24, 22, 16, 8)
+    iconCache = {}
+    iconDir = QtCore.QDir(':/icons/{}/'.format(QtGui.QIcon.themeName()))
 
-        @staticmethod
-        def fromTheme(name, fallback=None):
-            if fallback:
-                icon = QtGui.QIcon._fromTheme(name, fallback)
-                if not icon.isNull():
-                    return icon
-            icon = iconCache.get(name)
-            if icon:
+    @staticmethod
+    def fromTheme(name, fallback=None):
+        if fallback:
+            icon = QtGui.QIcon._fromTheme(name, fallback)
+            if not icon.isNull():
                 return icon
-            icon = QtGui.QIcon._fromTheme('')
-#            if icon.isNull():
-            for size in sizes:
-                path = '{s}x{s}/{n}.svg'.format(s=size, n=name)
-                if iconDir.exists(path):
-                    icon.addFile(iconDir.filePath(path), QtCore.QSize(size, size))
-            iconCache[name] = icon
+        icon = iconCache.get(name)
+        if icon:
             return icon
+        icon = QtGui.QIcon._fromTheme('')
+#        if icon.isNull():
+        for size in sizes:
+            path = '{s}x{s}/{n}.svg'.format(s=size, n=name)
+            if iconDir.exists(path):
+                icon.addFile(iconDir.filePath(path), QtCore.QSize(size, size))
+        iconCache[name] = icon
+        return icon
 
-        QtGui.QIcon.fromTheme = fromTheme
+    QtGui.QIcon.fromTheme = fromTheme
 
 
 from bigglesworth.logger import Logger
