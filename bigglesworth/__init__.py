@@ -39,6 +39,7 @@ if not 'linux' in sys.platform:
         def __init__(self, *args, **kwargs):
             QtWidgets.QWidgetAction.__init__(self, *args, **kwargs)
             self.label = QtWidgets.QLabel()
+            self.label.setAutoFillBackground(True)
             self.label.setFrameStyle(QtWidgets.QFrame.StyledPanel|QtWidgets.QFrame.Sunken)
             self.label.setAlignment(QtCore.Qt.AlignCenter)
             self.label.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum))
@@ -81,8 +82,7 @@ if not 'linux' in sys.platform:
             icon = iconCache.get(name)
             if icon:
                 return icon
-#            icon = QtGui.QIcon._fromTheme(name)
-            icon = QtGui.QIcon(name)
+            icon = QtGui.QIcon._fromTheme('')
 #            if icon.isNull():
             for size in sizes:
                 path = '{s}x{s}/{n}.svg'.format(s=size, n=name)
