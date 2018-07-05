@@ -161,7 +161,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if tagsView.exec_():
             for tabwidget in self.leftTabWidget, self.rightTabWidget:
                 for tab in range(tabwidget.count()):
-                    tabwidget.widget(tab).filterTagsEdit.setTags([])
+                    collWidget = tabwidget.widget(tab)
+                    collWidget.filterTagsEdit.setTags([])
+                    collWidget.collectionView.viewport().update()
         for collection in self.database.collections.values():
             collection.updated.emit()
 

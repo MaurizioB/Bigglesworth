@@ -8,26 +8,26 @@ from bigglesworth.utils import loadUi, getValidQColor
 from bigglesworth.const import nameRole, backgroundRole, foregroundRole
 
 
-class ShadowWidget(QtWidgets.QWidget):
-    def __init__(self, parent):
-        QtWidgets.QWidget.__init__(self, parent)
-        palette = self.palette()
-        palette.setColor(palette.Window, QtGui.QColor(255, 255, 255, 172))
-        self.setPalette(palette)
-        self.setAutoFillBackground(True)
-        layout = QtWidgets.QGridLayout()
-        self.setLayout(layout)
-        label = QtWidgets.QLabel('Updating database, please wait...')
-        layout.addWidget(label, 0, 0, 1, 1, QtCore.Qt.AlignCenter)
-        self.progress = QtWidgets.QProgressBar()
-        layout.addWidget(self.progress)
-        self.progress.setMinimum(0)
-
-    def showEvent(self, event):
-        self.progress.setMaximum(0)
-
-    def hideEvent(self, event):
-        self.progress.setMaximum(1)
+#class ShadowWidget(QtWidgets.QWidget):
+#    def __init__(self, parent):
+#        QtWidgets.QWidget.__init__(self, parent)
+#        palette = self.palette()
+#        palette.setColor(palette.Window, QtGui.QColor(255, 255, 255, 172))
+#        self.setPalette(palette)
+#        self.setAutoFillBackground(True)
+#        layout = QtWidgets.QGridLayout()
+#        self.setLayout(layout)
+#        label = QtWidgets.QLabel('Updating database, please wait...')
+#        layout.addWidget(label, 0, 0, 1, 1, QtCore.Qt.AlignCenter)
+#        self.progress = QtWidgets.QProgressBar()
+#        layout.addWidget(self.progress)
+#        self.progress.setMinimum(0)
+#
+#    def showEvent(self, event):
+#        self.progress.setMaximum(0)
+#
+#    def hideEvent(self, event):
+#        self.progress.setMaximum(1)
 
 
 class TagsDialog(QtWidgets.QDialog):
@@ -35,11 +35,11 @@ class TagsDialog(QtWidgets.QDialog):
         QtWidgets.QDialog.__init__(self, parent)
         loadUi('ui/tagsdialog.ui', self)
         self.changed = False
-        self.shadow = ShadowWidget(self)
-        self.shadow.hide()
-        self.layout().addWidget(self.shadow, 0, 0, self.layout().rowCount(), self.layout().columnCount())
-        self.tagsView.updateStart.connect(self.shadow.show)
-        self.tagsView.updateEnd.connect(self.shadow.hide)
+#        self.shadow = ShadowWidget(self)
+#        self.shadow.hide()
+#        self.layout().addWidget(self.shadow, 0, 0, self.layout().rowCount(), self.layout().columnCount())
+#        self.tagsView.updateStart.connect(self.shadow.show)
+#        self.tagsView.updateEnd.connect(self.shadow.hide)
 
         self.applyBtn = self.buttonBox.button(self.buttonBox.Apply)
         self.applyBtn.setEnabled(False)
@@ -571,307 +571,307 @@ class TagsTableView(QtWidgets.QTableView):
         self.scrollToBottom()
 
 
-class xTagsTableView(QtWidgets.QTableView):
-    updateStart = QtCore.pyqtSignal()
-    updateEnd = QtCore.pyqtSignal()
-
-    def __init__(self, *args, **kwargs):
-        QtWidgets.QTableView.__init__(self, *args, **kwargs)
-
-        model = QtGui.QStandardItemModel()
-        QtWidgets.QTableView.setModel(self, model)
-        self.query = QtSql.QSqlQuery()
-        
-#        tagNameDelegate = TagNameDelegate(self)
-#        self.setItemDelegateForColumn(1, tagNameDelegate)
-#        colorDelegate = ColorDelegate(self)
-#        self.setItemDelegateForColumn(2, colorDelegate)
-#        deleteDelegate = DeleteDelegate(self)
-#        self.setItemDelegateForColumn(4, deleteDelegate)
-
-        self.defaultForeground = QtGui.QColor(QtCore.Qt.white)
-        self.defaultBackground = QtGui.QColor(QtCore.Qt.darkGray)
-
-    def keyPressEvent(self, event):
-        if event.matches(QtGui.QKeySequence.Delete):
-            self.deleteTagsAsk(self.selectionModel().selectedRows())
-        else:
-            QtWidgets.QTableView.keyPressEvent(self, event)
-
-    def setDatabase(self, database):
-        self.database = database
-        self.tagsModel = database.tagsModel
-#        model.dataChanged.connect(lambda *args: self.updateModel())
-        self.updateModel()
-
-    def updateModel(self):
-        self.model().clear()
-        self.model().setHorizontalHeaderLabels(['', 'Tag name', 'Colors', 'Sounds', ''])
-        self.setColumnHidden(0, True)
-        self.launchQuery()
-
-    def launchQuery(self):
-        res = self.query.exec_('SELECT uid,tags FROM reference WHERE tags IS NOT NULL')
-        if not res:
-            print(self.query.lastError().databaseText())
-            self.query.finish()
-            QtCore.QTimer.singleShot(500, self.launchQuery)
-        else:
-            self.populate()
-
-    def populate(self):
-        self.tagsModel.select()
-        self.updateEnd.emit()
-        self.tagsDict = {}
-        self.revTagsDict = {}
-        while self.query.next():
-            uid = self.query.value(0)
-            tags = json.loads(self.query.value(1))
-            if tags:
-                self.revTagsDict[uid] = tags
-            for tag in tags:
-                if not tag in self.tagsDict:
-                    self.tagsDict[tag] = [uid]
-                    #add tags that do not appear in the table
-                    if not self.tagsModel.match(self.tagsModel.index(0, 0), QtCore.Qt.DisplayRole, tag, flags=QtCore.Qt.MatchExactly):
-                        row = self.tagsModel.rowCount()
-                        self.tagsModel.insertRow(row)
-                        self.tagsModel.setData(self.tagsModel.index(row, 0), tag)
-                        self.tagsModel.data(self.tagsModel.index(row, 0))
-                        self.tagsModel.submitAll()
-                        self.tagsModel.select()
-                else:
-                    self.tagsDict[tag].append(uid)
-
-        for row in range(self.tagsModel.rowCount()):
-            name = self.tagsModel.index(row, 0).data()
-            originalBackground = self.tagsModel.index(row, 1).data()
-            background = getValidQColor(originalBackground, backgroundRole)
-            originalForeground = self.tagsModel.index(row, 2).data()
-            foreground = getValidQColor(originalForeground, foregroundRole)
-            nameItem = QtGui.QStandardItem(name)
-            refItem = nameItem.clone()
-            colorItem = QtGui.QStandardItem(u'Edit...')
-            colorItem.setFlags(colorItem.flags() ^ QtCore.Qt.ItemIsEditable)
-            colorItem.setData(background, QtCore.Qt.BackgroundRole)
-            colorItem.setData(foreground, QtCore.Qt.ForegroundRole)
-            colorItem.setData(QtCore.Qt.AlignCenter, QtCore.Qt.TextAlignmentRole)
-            colorItem.setData(originalBackground, backgroundRole)
-            colorItem.setData(originalForeground, foregroundRole)
-            colorItem.setData(name, nameRole)
-            soundsItem = QtGui.QStandardItem()
-            soundsItem.setData(len(self.tagsDict.get(name, [])), QtCore.Qt.DisplayRole)
-            soundsItem.setFlags(soundsItem.flags() ^ QtCore.Qt.ItemIsEditable)
-            soundsItem.setData(QtCore.Qt.AlignCenter, QtCore.Qt.TextAlignmentRole)
-            deleteItem = QtGui.QStandardItem()
-#            deleteItem.setIcon(QtGui.QIcon.fromTheme('edit-delete'))
-            deleteItem.setFlags(deleteItem.flags() ^ QtCore.Qt.ItemIsEditable)
-            self.model().appendRow([refItem, nameItem, colorItem, soundsItem, deleteItem])
-        self.resizeColumnsToContents()
-        self.horizontalHeader().setResizeMode(1, QtWidgets.QHeaderView.Stretch)
-        for col in range(2, self.model().columnCount()):
-            self.horizontalHeader().setResizeMode(col, QtWidgets.QHeaderView.Fixed)
-
-    def mousePressEvent(self, event):
-        index = self.indexAt(event.pos())
-        if index.isValid():
-            if index.column() == 2:
-                dialog = ColorDialog(self, index)
-                res = dialog.exec_()
-                if not res:
-                    return
-                if dialog.backgroundColor:
-                    self.model().setData(index, dialog.backgroundColor, QtCore.Qt.BackgroundRole)
-                    self.model().setData(index, json.dumps(dialog.backgroundColor.getRgb()[:3]), backgroundRole)
-                else:
-                    self.model().setData(index, self.defaultBackground, QtCore.Qt.BackgroundRole)
-                    self.model().setData(index, None, backgroundRole)
-#                    self.tagsModel.setData(self.tagsModel.index(index.row(), 1), json.dumps(dialog.backgroundColor.getRgb()[:3]))
-                if dialog.foregroundColor:
-                    self.model().setData(index, dialog.foregroundColor, QtCore.Qt.ForegroundRole)
-                    self.model().setData(index, json.dumps(dialog.foregroundColor.getRgb()[:3]), foregroundRole)
-                else:
-                    self.model().setData(index, self.defaultForeground, QtCore.Qt.ForegroundRole)
-                    self.model().setData(index, None, foregroundRole)
-#                    self.tagsModel.setData(self.tagsModel.index(index.row(), 2), json.dumps(dialog.foregroundColor.getRgb()[:3]))
-            elif index.column() == 4:
-                self.deleteTagAsk(index)
-            else:
-                QtWidgets.QTableView.mousePressEvent(self, event)
-                return
-#            self.tagsModel.query().exec_()
-#            self.tagsModel.submitAll()
-        else:
-            QtWidgets.QTableView.mousePressEvent(self, event)
-
-    def deleteTagAsk(self, index):
-        sounds = index.sibling(index.row(), 3).data()
-        if not sounds:
-            self.deleteTag(index)
-            self.selectionModel().clear()
-            return
-        soundsStr = '<br/><br/>This action applies to {} sound{}.'.format(sounds, 's' if sounds > 1 else '')
-        tagName = index.sibling(index.row(), 0).data()
-        res = QtWidgets.QMessageBox.question(
-            self, 
-            'Delete tag?', 
-            'Do you want to delete the tag "<b>{}</b>"?{}'.format(tagName, soundsStr), 
-            QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No)
-        if res == QtWidgets.QMessageBox.Yes:
-            self.deleteTag(index)
-        self.selectionModel().clear()
-
-    def deleteTagsAsk(self, indexList):
-        if len(indexList) == 1:
-            self.deleteTagAsk(indexList[0])
-            return
-        tags = {}
-        for index in indexList:
-            tagName = index.sibling(index.row(), 1).data()
-            sounds = index.sibling(index.row(), 3).data()
-            tags[tagName] = sounds
-        if not sum(tags.values()):
-            [self.deleteTag(index) for index in indexList]
-            return
-        msgBox = DeleteTagsMessageBox(self, tags)
-        res = msgBox.exec_()
-        if res == msgBox.Yes:
-            [self.deleteTag(index) for index in indexList]
-            self.selectionModel().clear()
-
-    def deleteTag(self, index):
-        row = index.row()
-        for c in range(self.model().columnCount()):
-            item = self.model().item(row, c)
-            item.setFlags((index.flags() | QtCore.Qt.ItemIsEnabled) ^ QtCore.Qt.ItemIsEnabled)
-
-    def addTag(self):
-        name = 'New tag'
-        subStr = ''
-        i = 0
-        while True:
-            res = self.model().match(self.model().index(0, 1), QtCore.Qt.DisplayRole, name + subStr, hits=-1, flags=QtCore.Qt.MatchFixedString)
-            if res and any(res[x].flags() & QtCore.Qt.ItemIsEnabled for x in range(len(res))):
-                i += 1
-                subStr = ' {}'.format(i)
-            else:
-                break
-        nameItem = QtGui.QStandardItem(name + subStr)
-        refItem = QtGui.QStandardItem()
-        colorItem = QtGui.QStandardItem(u'Edit...')
-        colorItem.setFlags(colorItem.flags() ^ QtCore.Qt.ItemIsEditable)
-        colorItem.setData(self.defaultBackground, QtCore.Qt.BackgroundRole)
-        colorItem.setData(self.defaultForeground, QtCore.Qt.ForegroundRole)
-        colorItem.setData(QtCore.Qt.AlignCenter, QtCore.Qt.TextAlignmentRole)
-#        colorItem.setData(json.dumps(self.defaultBackground.getRgb()[:3]), backgroundRole)
-#        colorItem.setData(json.dumps(self.defaultForeground.getRgb()[:3]), foregroundRole)
-        colorItem.setData('New tag', nameRole)
-        soundsItem = QtGui.QStandardItem()
-        soundsItem.setData(0, QtCore.Qt.DisplayRole)
-        soundsItem.setFlags(soundsItem.flags() ^ QtCore.Qt.ItemIsEditable)
-        soundsItem.setData(QtCore.Qt.AlignCenter, QtCore.Qt.TextAlignmentRole)
-        deleteItem = QtGui.QStandardItem()
-        deleteItem.setFlags(deleteItem.flags() ^ QtCore.Qt.ItemIsEditable)
-        self.model().appendRow([refItem, nameItem, colorItem, soundsItem, deleteItem])
-        currentIndex = self.model().index(self.model().rowCount() - 1, 1)
-        self.setCurrentIndex(currentIndex)
-        self.edit(currentIndex)
-        self.scrollToBottom()
-
-    def apply(self):
-        self.updateStart.emit()
-        QtWidgets.QApplication.processEvents()
-        newTags = {}
-        renamed = {}
-        deleted = []
-        for row in range(self.model().rowCount()):
-            refItem = self.model().item(row, 0)
-            nameItem = self.model().item(row, 1)
-            if not refItem.flags() & QtCore.Qt.ItemIsEnabled:
-                sounds = self.model().item(row, 3).data(QtCore.Qt.DisplayRole)
-                if refItem.text() and sounds:
-                    deleted.append(refItem.text())
-                continue
-            colorItem = self.model().item(row, 2)
-            fg = colorItem.data(foregroundRole)
-            bg = colorItem.data(backgroundRole)
-            newTags[nameItem.text()] = bg, fg
-            if refItem.text() and refItem.text() != nameItem.text() and refItem.text() not in deleted:
-                renamed[refItem.text()] = nameItem.text()
-
-#        print(newTags, renamed, deleted)
-        totOrig = self.tagsModel.rowCount()
-        totNew = len(newTags)
-        if totOrig < totNew:
-            self.tagsModel.insertRows(totOrig, totNew - totOrig)
-        elif totOrig > totNew:
-            self.tagsModel.removeRows(totNew, totOrig - totNew)
-        oldStrategy = self.tagsModel.editStrategy()
-        self.tagsModel.setEditStrategy(self.tagsModel.OnManualSubmit)
-        self.database.sql.transaction()
-        for row, tag in enumerate(sorted(newTags.keys())):
-            self.tagsModel.setData(self.tagsModel.index(row, 0), tag)
-            bg, fg = newTags[tag]
-            self.tagsModel.setData(self.tagsModel.index(row, 1), bg)
-            self.tagsModel.setData(self.tagsModel.index(row, 2), fg)
-        print('submit', row, tag, self.tagsModel.submitAll())
-        print(self.tagsModel.lastError().text())
-        self.database.sql.commit()
-        self.tagsModel.setEditStrategy(oldStrategy)
-#        self.tagsModel.query().exec_()
-#        self.tagsModel.query().finish()
-#        self.query.finish()
-#        while self.tagsModel.query().next() and self.query.next():
-#            pass
-#        return
-
-        if renamed or deleted:
-            for uid, tags in self.revTagsDict.items():
-                #remove deleted tags
-                newTags = (set(tags) | set(deleted)) ^ set(deleted)
-                #update tags
-                newTags = [renamed.get(k, k) for k in newTags]
-                if set(tags) == set(newTags):
-                    continue
-                self.query.prepare('UPDATE reference SET tags=:tags WHERE uid=:uid')
-                self.query.bindValue(':tags', json.dumps(sorted(newTags)))
-                self.query.bindValue(':uid', uid)
-                res = self.query.exec_()
-                if not res:
-                    print(self.query.lastError().databaseText())
-
-#        self.query.exec_('SELECT * FROM reference')
-#        self.query.first()
-#        while self.tagsModel.query().next() and self.query.next():
-#            pass
-#        self.query.finish()
-
-#        self.database.sql.close()
-#        self.database.sql.open()
-        self.updateModel()
-        self.tagsModel.select()
-
-
-#    def dbdeleteTag(self, tagName, row):
-#        uidList = self.tagsDict.get(tagName)
-#        if uidList:
-#            uidDict = {}
-#            querySelStr = 'SELECT uid, tags FROM reference WHERE '
-#            querySetStr = 'UPDATE reference SET tags=:tags WHERE uid =:uid'
-#            queryWhere = []
-#            for uid in uidList:
-#    #            uidDict[uid] = []
-#                queryWhere.append('uid = "{}"'.format(uid))
-#            self.query.exec_(querySelStr + ' OR '.join(queryWhere))
-#            while self.query.next():
-#                tags = json.loads(self.query.value(1))
-#                tags.pop(tags.index(tagName))
-#                uidDict[self.query.value(0)] = tags
-#            self.query.prepare(querySetStr)
-#            for uid, tags in uidDict.items():
-#                self.query.bindValue(':tags', json.dumps(tags))
+#class xTagsTableView(QtWidgets.QTableView):
+#    updateStart = QtCore.pyqtSignal()
+#    updateEnd = QtCore.pyqtSignal()
+#
+#    def __init__(self, *args, **kwargs):
+#        QtWidgets.QTableView.__init__(self, *args, **kwargs)
+#
+#        model = QtGui.QStandardItemModel()
+#        QtWidgets.QTableView.setModel(self, model)
+#        self.query = QtSql.QSqlQuery()
+#        
+##        tagNameDelegate = TagNameDelegate(self)
+##        self.setItemDelegateForColumn(1, tagNameDelegate)
+##        colorDelegate = ColorDelegate(self)
+##        self.setItemDelegateForColumn(2, colorDelegate)
+##        deleteDelegate = DeleteDelegate(self)
+##        self.setItemDelegateForColumn(4, deleteDelegate)
+#
+#        self.defaultForeground = QtGui.QColor(QtCore.Qt.white)
+#        self.defaultBackground = QtGui.QColor(QtCore.Qt.darkGray)
+#
+#    def keyPressEvent(self, event):
+#        if event.matches(QtGui.QKeySequence.Delete):
+#            self.deleteTagsAsk(self.selectionModel().selectedRows())
+#        else:
+#            QtWidgets.QTableView.keyPressEvent(self, event)
+#
+#    def setDatabase(self, database):
+#        self.database = database
+#        self.tagsModel = database.tagsModel
+##        model.dataChanged.connect(lambda *args: self.updateModel())
+#        self.updateModel()
+#
+#    def updateModel(self):
+#        self.model().clear()
+#        self.model().setHorizontalHeaderLabels(['', 'Tag name', 'Colors', 'Sounds', ''])
+#        self.setColumnHidden(0, True)
+#        self.launchQuery()
+#
+#    def launchQuery(self):
+#        res = self.query.exec_('SELECT uid,tags FROM reference WHERE tags IS NOT NULL')
+#        if not res:
+#            print(self.query.lastError().databaseText())
+#            self.query.finish()
+#            QtCore.QTimer.singleShot(500, self.launchQuery)
+#        else:
+#            self.populate()
+#
+#    def populate(self):
+#        self.tagsModel.select()
+#        self.updateEnd.emit()
+#        self.tagsDict = {}
+#        self.revTagsDict = {}
+#        while self.query.next():
+#            uid = self.query.value(0)
+#            tags = json.loads(self.query.value(1))
+#            if tags:
+#                self.revTagsDict[uid] = tags
+#            for tag in tags:
+#                if not tag in self.tagsDict:
+#                    self.tagsDict[tag] = [uid]
+#                    #add tags that do not appear in the table
+#                    if not self.tagsModel.match(self.tagsModel.index(0, 0), QtCore.Qt.DisplayRole, tag, flags=QtCore.Qt.MatchExactly):
+#                        row = self.tagsModel.rowCount()
+#                        self.tagsModel.insertRow(row)
+#                        self.tagsModel.setData(self.tagsModel.index(row, 0), tag)
+#                        self.tagsModel.data(self.tagsModel.index(row, 0))
+#                        self.tagsModel.submitAll()
+#                        self.tagsModel.select()
+#                else:
+#                    self.tagsDict[tag].append(uid)
+#
+#        for row in range(self.tagsModel.rowCount()):
+#            name = self.tagsModel.index(row, 0).data()
+#            originalBackground = self.tagsModel.index(row, 1).data()
+#            background = getValidQColor(originalBackground, backgroundRole)
+#            originalForeground = self.tagsModel.index(row, 2).data()
+#            foreground = getValidQColor(originalForeground, foregroundRole)
+#            nameItem = QtGui.QStandardItem(name)
+#            refItem = nameItem.clone()
+#            colorItem = QtGui.QStandardItem(u'Edit...')
+#            colorItem.setFlags(colorItem.flags() ^ QtCore.Qt.ItemIsEditable)
+#            colorItem.setData(background, QtCore.Qt.BackgroundRole)
+#            colorItem.setData(foreground, QtCore.Qt.ForegroundRole)
+#            colorItem.setData(QtCore.Qt.AlignCenter, QtCore.Qt.TextAlignmentRole)
+#            colorItem.setData(originalBackground, backgroundRole)
+#            colorItem.setData(originalForeground, foregroundRole)
+#            colorItem.setData(name, nameRole)
+#            soundsItem = QtGui.QStandardItem()
+#            soundsItem.setData(len(self.tagsDict.get(name, [])), QtCore.Qt.DisplayRole)
+#            soundsItem.setFlags(soundsItem.flags() ^ QtCore.Qt.ItemIsEditable)
+#            soundsItem.setData(QtCore.Qt.AlignCenter, QtCore.Qt.TextAlignmentRole)
+#            deleteItem = QtGui.QStandardItem()
+##            deleteItem.setIcon(QtGui.QIcon.fromTheme('edit-delete'))
+#            deleteItem.setFlags(deleteItem.flags() ^ QtCore.Qt.ItemIsEditable)
+#            self.model().appendRow([refItem, nameItem, colorItem, soundsItem, deleteItem])
+#        self.resizeColumnsToContents()
+#        self.horizontalHeader().setResizeMode(1, QtWidgets.QHeaderView.Stretch)
+#        for col in range(2, self.model().columnCount()):
+#            self.horizontalHeader().setResizeMode(col, QtWidgets.QHeaderView.Fixed)
+#
+#    def mousePressEvent(self, event):
+#        index = self.indexAt(event.pos())
+#        if index.isValid():
+#            if index.column() == 2:
+#                dialog = ColorDialog(self, index)
+#                res = dialog.exec_()
+#                if not res:
+#                    return
+#                if dialog.backgroundColor:
+#                    self.model().setData(index, dialog.backgroundColor, QtCore.Qt.BackgroundRole)
+#                    self.model().setData(index, json.dumps(dialog.backgroundColor.getRgb()[:3]), backgroundRole)
+#                else:
+#                    self.model().setData(index, self.defaultBackground, QtCore.Qt.BackgroundRole)
+#                    self.model().setData(index, None, backgroundRole)
+##                    self.tagsModel.setData(self.tagsModel.index(index.row(), 1), json.dumps(dialog.backgroundColor.getRgb()[:3]))
+#                if dialog.foregroundColor:
+#                    self.model().setData(index, dialog.foregroundColor, QtCore.Qt.ForegroundRole)
+#                    self.model().setData(index, json.dumps(dialog.foregroundColor.getRgb()[:3]), foregroundRole)
+#                else:
+#                    self.model().setData(index, self.defaultForeground, QtCore.Qt.ForegroundRole)
+#                    self.model().setData(index, None, foregroundRole)
+##                    self.tagsModel.setData(self.tagsModel.index(index.row(), 2), json.dumps(dialog.foregroundColor.getRgb()[:3]))
+#            elif index.column() == 4:
+#                self.deleteTagAsk(index)
+#            else:
+#                QtWidgets.QTableView.mousePressEvent(self, event)
+#                return
+##            self.tagsModel.query().exec_()
+##            self.tagsModel.submitAll()
+#        else:
+#            QtWidgets.QTableView.mousePressEvent(self, event)
+#
+#    def deleteTagAsk(self, index):
+#        sounds = index.sibling(index.row(), 3).data()
+#        if not sounds:
+#            self.deleteTag(index)
+#            self.selectionModel().clear()
+#            return
+#        soundsStr = '<br/><br/>This action applies to {} sound{}.'.format(sounds, 's' if sounds > 1 else '')
+#        tagName = index.sibling(index.row(), 0).data()
+#        res = QtWidgets.QMessageBox.question(
+#            self, 
+#            'Delete tag?', 
+#            'Do you want to delete the tag "<b>{}</b>"?{}'.format(tagName, soundsStr), 
+#            QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No)
+#        if res == QtWidgets.QMessageBox.Yes:
+#            self.deleteTag(index)
+#        self.selectionModel().clear()
+#
+#    def deleteTagsAsk(self, indexList):
+#        if len(indexList) == 1:
+#            self.deleteTagAsk(indexList[0])
+#            return
+#        tags = {}
+#        for index in indexList:
+#            tagName = index.sibling(index.row(), 1).data()
+#            sounds = index.sibling(index.row(), 3).data()
+#            tags[tagName] = sounds
+#        if not sum(tags.values()):
+#            [self.deleteTag(index) for index in indexList]
+#            return
+#        msgBox = DeleteTagsMessageBox(self, tags)
+#        res = msgBox.exec_()
+#        if res == msgBox.Yes:
+#            [self.deleteTag(index) for index in indexList]
+#            self.selectionModel().clear()
+#
+#    def deleteTag(self, index):
+#        row = index.row()
+#        for c in range(self.model().columnCount()):
+#            item = self.model().item(row, c)
+#            item.setFlags((index.flags() | QtCore.Qt.ItemIsEnabled) ^ QtCore.Qt.ItemIsEnabled)
+#
+#    def addTag(self):
+#        name = 'New tag'
+#        subStr = ''
+#        i = 0
+#        while True:
+#            res = self.model().match(self.model().index(0, 1), QtCore.Qt.DisplayRole, name + subStr, hits=-1, flags=QtCore.Qt.MatchFixedString)
+#            if res and any(res[x].flags() & QtCore.Qt.ItemIsEnabled for x in range(len(res))):
+#                i += 1
+#                subStr = ' {}'.format(i)
+#            else:
+#                break
+#        nameItem = QtGui.QStandardItem(name + subStr)
+#        refItem = QtGui.QStandardItem()
+#        colorItem = QtGui.QStandardItem(u'Edit...')
+#        colorItem.setFlags(colorItem.flags() ^ QtCore.Qt.ItemIsEditable)
+#        colorItem.setData(self.defaultBackground, QtCore.Qt.BackgroundRole)
+#        colorItem.setData(self.defaultForeground, QtCore.Qt.ForegroundRole)
+#        colorItem.setData(QtCore.Qt.AlignCenter, QtCore.Qt.TextAlignmentRole)
+##        colorItem.setData(json.dumps(self.defaultBackground.getRgb()[:3]), backgroundRole)
+##        colorItem.setData(json.dumps(self.defaultForeground.getRgb()[:3]), foregroundRole)
+#        colorItem.setData('New tag', nameRole)
+#        soundsItem = QtGui.QStandardItem()
+#        soundsItem.setData(0, QtCore.Qt.DisplayRole)
+#        soundsItem.setFlags(soundsItem.flags() ^ QtCore.Qt.ItemIsEditable)
+#        soundsItem.setData(QtCore.Qt.AlignCenter, QtCore.Qt.TextAlignmentRole)
+#        deleteItem = QtGui.QStandardItem()
+#        deleteItem.setFlags(deleteItem.flags() ^ QtCore.Qt.ItemIsEditable)
+#        self.model().appendRow([refItem, nameItem, colorItem, soundsItem, deleteItem])
+#        currentIndex = self.model().index(self.model().rowCount() - 1, 1)
+#        self.setCurrentIndex(currentIndex)
+#        self.edit(currentIndex)
+#        self.scrollToBottom()
+#
+#    def apply(self):
+#        self.updateStart.emit()
+#        QtWidgets.QApplication.processEvents()
+#        newTags = {}
+#        renamed = {}
+#        deleted = []
+#        for row in range(self.model().rowCount()):
+#            refItem = self.model().item(row, 0)
+#            nameItem = self.model().item(row, 1)
+#            if not refItem.flags() & QtCore.Qt.ItemIsEnabled:
+#                sounds = self.model().item(row, 3).data(QtCore.Qt.DisplayRole)
+#                if refItem.text() and sounds:
+#                    deleted.append(refItem.text())
+#                continue
+#            colorItem = self.model().item(row, 2)
+#            fg = colorItem.data(foregroundRole)
+#            bg = colorItem.data(backgroundRole)
+#            newTags[nameItem.text()] = bg, fg
+#            if refItem.text() and refItem.text() != nameItem.text() and refItem.text() not in deleted:
+#                renamed[refItem.text()] = nameItem.text()
+#
+##        print(newTags, renamed, deleted)
+#        totOrig = self.tagsModel.rowCount()
+#        totNew = len(newTags)
+#        if totOrig < totNew:
+#            self.tagsModel.insertRows(totOrig, totNew - totOrig)
+#        elif totOrig > totNew:
+#            self.tagsModel.removeRows(totNew, totOrig - totNew)
+#        oldStrategy = self.tagsModel.editStrategy()
+#        self.tagsModel.setEditStrategy(self.tagsModel.OnManualSubmit)
+#        self.database.sql.transaction()
+#        for row, tag in enumerate(sorted(newTags.keys())):
+#            self.tagsModel.setData(self.tagsModel.index(row, 0), tag)
+#            bg, fg = newTags[tag]
+#            self.tagsModel.setData(self.tagsModel.index(row, 1), bg)
+#            self.tagsModel.setData(self.tagsModel.index(row, 2), fg)
+#        print('submit', row, tag, self.tagsModel.submitAll())
+#        print(self.tagsModel.lastError().text())
+#        self.database.sql.commit()
+#        self.tagsModel.setEditStrategy(oldStrategy)
+##        self.tagsModel.query().exec_()
+##        self.tagsModel.query().finish()
+##        self.query.finish()
+##        while self.tagsModel.query().next() and self.query.next():
+##            pass
+##        return
+#
+#        if renamed or deleted:
+#            for uid, tags in self.revTagsDict.items():
+#                #remove deleted tags
+#                newTags = (set(tags) | set(deleted)) ^ set(deleted)
+#                #update tags
+#                newTags = [renamed.get(k, k) for k in newTags]
+#                if set(tags) == set(newTags):
+#                    continue
+#                self.query.prepare('UPDATE reference SET tags=:tags WHERE uid=:uid')
+#                self.query.bindValue(':tags', json.dumps(sorted(newTags)))
 #                self.query.bindValue(':uid', uid)
-#                self.query.exec_()
-#        #we could wait for the Sql model to update, but it takes up to 2 seconds, let's remove it manually
-#        self.tagsModel.removeRow(row)
-#        self.model().removeRow(row)
+#                res = self.query.exec_()
+#                if not res:
+#                    print(self.query.lastError().databaseText())
+#
+##        self.query.exec_('SELECT * FROM reference')
+##        self.query.first()
+##        while self.tagsModel.query().next() and self.query.next():
+##            pass
+##        self.query.finish()
+#
+##        self.database.sql.close()
+##        self.database.sql.open()
+#        self.updateModel()
+#        self.tagsModel.select()
+#
+#
+##    def dbdeleteTag(self, tagName, row):
+##        uidList = self.tagsDict.get(tagName)
+##        if uidList:
+##            uidDict = {}
+##            querySelStr = 'SELECT uid, tags FROM reference WHERE '
+##            querySetStr = 'UPDATE reference SET tags=:tags WHERE uid =:uid'
+##            queryWhere = []
+##            for uid in uidList:
+##    #            uidDict[uid] = []
+##                queryWhere.append('uid = "{}"'.format(uid))
+##            self.query.exec_(querySelStr + ' OR '.join(queryWhere))
+##            while self.query.next():
+##                tags = json.loads(self.query.value(1))
+##                tags.pop(tags.index(tagName))
+##                uidDict[self.query.value(0)] = tags
+##            self.query.prepare(querySetStr)
+##            for uid, tags in uidDict.items():
+##                self.query.bindValue(':tags', json.dumps(tags))
+##                self.query.bindValue(':uid', uid)
+##                self.query.exec_()
+##        #we could wait for the Sql model to update, but it takes up to 2 seconds, let's remove it manually
+##        self.tagsModel.removeRow(row)
+##        self.model().removeRow(row)
