@@ -34,77 +34,7 @@ QtWidgets.QDialog._isDumpDialog = False
 QtWidgets.QDialog.topMostDumpDialog = topMostDumpDialog
 
 if not 'linux' in sys.platform:
-    #workaround for menu separators with labels on Windows and Mac
-    class WinMenuSeparator(QtWidgets.QWidgetAction):
-        def __init__(self, *args, **kwargs):
-            QtWidgets.QWidgetAction.__init__(self, *args, **kwargs)
-            self.label = QtWidgets.QLabel()
-            self.label.setFrameStyle(QtWidgets.QFrame.StyledPanel|QtWidgets.QFrame.Sunken)
-            self.label.setAlignment(QtCore.Qt.AlignCenter)
-            self.label.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum))
-            self.label.setMaximumHeight(self.label.frameWidth())
-            self.setDefaultWidget(self.label)
-
-        def setText(self, text):
-            self.label.setText(text)
-            if text:
-                self.label.setMaximumHeight(16777215)
-            else:
-                self.label.setMaximumHeight(self.label.frameWidth())
-
-    class MacMenuSeparator(WinMenuSeparator):
-        def __init__(self, *args, **kwargs):
-            WinMenuSeparator.__init__(self, *args, **kwargs)
-            self.label.setAutoFillBackground(True)
-            self.label.setStyleSheet('MacMenuSeparator { background: palette(window);}')
-
-    MenuSeparator = WinMenuSeparator if sys.platform == 'win32' else MacMenuSeparator
-
-    def QMenuInsertSeparator(self, before):
-#        if sys.platform == 'darwin' and isinstance(self.parent(), QtWidgets.QMenuBar):
-#            return self.__class__.insertSeparator(self)
-        action = MenuSeparator(self)
-        QtWidgets.QMenu.insertAction(self, before, action)
-        return action
-
-    def QMenuAddSeparator(self):
-#        if sys.platform == 'darwin' and isinstance(self.parent(), QtWidgets.QMenuBar):
-#            return self.__class__.addSeparator(self)
-        print(self.parent())
-        action = MenuSeparator(self)
-        QtWidgets.QMenu.addAction(self, action)
-        return action
-        
-    QtWidgets.QMenu.insertSeparator = QMenuInsertSeparator
-    QtWidgets.QMenu.addSeparator = QMenuAddSeparator
-
-    if sys.platform == 'darwin':
-        #workaround for QIcon.fromTheme not properly working on OSX with cx_freeze
-        QtGui.QIcon._fromTheme = QtGui.QIcon.fromTheme
-        sizes = (64, 32, 24, 22, 16, 8)
-        iconCache = {}
-        iconDir = QtCore.QDir(':/icons/{}/'.format(QtGui.QIcon.themeName()))
-
-        @staticmethod
-        def fromTheme(name, fallback=None):
-            if fallback:
-                icon = QtGui.QIcon._fromTheme(name, fallback)
-                if not icon.isNull():
-                    return icon
-            icon = iconCache.get(name)
-            if icon:
-                return icon
-            icon = QtGui.QIcon._fromTheme('')
-#            if icon.isNull():
-            for size in sizes:
-                path = '{s}x{s}/{n}.svg'.format(s=size, n=name)
-                if iconDir.exists(path):
-                    icon.addFile(iconDir.filePath(path), QtCore.QSize(size, size))
-            iconCache[name] = icon
-            return icon
-
-        QtGui.QIcon.fromTheme = fromTheme
-
+    from bigglesworth import compatibility
 
 from bigglesworth.logger import Logger
 from bigglesworth.editor import EditorWindow
