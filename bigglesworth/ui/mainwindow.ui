@@ -89,9 +89,10 @@
       <string>Open collection</string>
      </property>
      <property name="icon">
-      <iconset theme="document-open">
-       <normaloff/>
-      </iconset>
+      <iconset theme="document-open"/>
+     </property>
+     <property name="separatorsCollapsible">
+      <bool>false</bool>
      </property>
     </widget>
     <addaction name="createCollectionAction"/>
@@ -271,7 +272,9 @@
   </action>
   <action name="exportSoundListAction">
    <property name="icon">
-    <iconset theme="document-print"/>
+    <iconset theme="document-print">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>Save/print sound list...</string>

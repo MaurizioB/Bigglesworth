@@ -32,7 +32,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.main.midiConnChanged.connect(lambda inConn, outConn: self.showGlobalsAction.setEnabled(True if all((inConn, outConn)) else False))
         self.database = parent.database
         self.database.tagsModel.dataChanged.connect(self.checkTagFilters)
-        self.referenceModel = QtSql.QSqlTableModel()
+#        self.referenceModel = QtSql.QSqlTableModel()
+        self.referenceModel = self.database.referenceModel
         self.statusbar.setDatabase(parent.database)
 
         self.leftTabWidget.setSiblings(self.leftTabBar, self.rightTabWidget)
@@ -109,7 +110,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.editTagsAction.triggered.connect(self.editTags)
         self.manageCollectionsAction.triggered.connect(self.manageCollections)
         self.createCollectionAction.triggered.connect(self.newCollection)
-        self.libraryMenu.aboutToShow.connect(self.createOpenCollectionActions)
+        self.libraryMenu.aboutToShow.connect(self.updateCollectionMenu)
 #        self.openCollectionAction.triggered.connect(self.openCollection)
 
         self.importAction.triggered.connect(self.importRequested)
@@ -117,13 +118,46 @@ class MainWindow(QtWidgets.QMainWindow):
         self.aboutAction.triggered.connect(self.showAbout)
         self.aboutQtAction.triggered.connect(lambda: QtWidgets.QMessageBox.aboutQt(self, 'About Qt...'))
 
+        self.openCollectionMenu.addSeparator().setText('Personal collections')
+        blofeldAction = self.openCollectionMenu.addAction(QtGui.QIcon(':/images/bigglesworth_logo.svg'), 'Blofeld')
+        blofeldAction.triggered.connect(lambda: self.openCollection('Blofeld', self.leftTabWidget))
+
+        self.collections = {'Blofeld': blofeldAction}
+        for collection in self.referenceModel.collections[1:]:
+            action = self.openCollectionMenu.addAction(collection)
+            action.triggered.connect(lambda state, collection=collection: self.openCollection(collection, self.leftTabWidget))
+            self.collections[collection] = action
+
+        self.openCollectionMenu.addSeparator().setText('Factory presets')
+        for collection in self.referenceModel.factoryPresets:
+            action = self.openCollectionMenu.addAction(QtGui.QIcon(':/images/factory.svg'), factoryPresetsNamesDict[collection])
+            action.triggered.connect(lambda state, collection=collection: self.openCollection(collection, self.leftTabWidget))
+
+        self.openCollectionMenu.addSeparator()
+        action = self.openCollectionMenu.addAction(QtGui.QIcon.fromTheme('go-home'), 'Main library')
+        action.triggered.connect(lambda: self.openCollection.emit(''))
+
     @property
     def editorWindow(self):
         return QtWidgets.QApplication.instance().editorWindow
 
-    def createOpenCollectionActions(self):
-        self.openCollectionMenu.clear()
-        self.referenceModel.setTable('reference')
+    def updateCollectionMenu(self):
+#        self.openCollectionMenu.clear()
+#        self.referenceModel.setTable('reference')
+        exists = []
+        for collection in self.referenceModel.collections:
+            exists.append(collection)
+            if collection in self.collections:
+                continue
+            action = self.openCollectionMenu.addAction(collection)
+            action.triggered.connect(lambda state, collection=collection: self.openCollection(collection, self.leftTabWidget))
+            self.collections.append[collection] = action
+        for collection, action in self.collections.items():
+            if collection not in exists:
+                self.openCollectionMenu.removeAction(action)
+                self.collections.pop(collection)
+        return
+
 #        self.referenceModel.refresh()
         current = [self.leftTabWidget.tabText(t).lower() for t in range(self.leftTabWidget.count())] + \
             [self.rightTabWidget.tabText(t).lower() for t in range(self.rightTabWidget.count())]
