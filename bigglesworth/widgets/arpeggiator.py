@@ -188,6 +188,8 @@ class ArpSpinBox(QtWidgets.QSpinBox):
                 border-bottom-width: 0;
             }}
             '''
+    shown = False
+
     def __init__(self, step, valueList):
         QtWidgets.QSpinBox.__init__(self)
         self.step = step
@@ -206,8 +208,13 @@ class ArpSpinBox(QtWidgets.QSpinBox):
         self.setButtonSymbols(self.NoButtons)
 #        halfWidth = self.minWidth // 2
         self.setStyleSheet(self.baseStyleSheet.format(right=0, left=0))
-        self.valueChanged.connect(self.resetToolTip)
 #        print(8 + self.minWidth)
+
+    def showEvent(self, event):
+        if not self.shown:
+            self.shown = True
+            #avoid tooltip shown while loading
+            self.valueChanged.connect(self.resetToolTip)
 
     def resetToolTip(self, value):
         try:
