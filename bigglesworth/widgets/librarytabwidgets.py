@@ -118,8 +118,9 @@ class TabCornerWidget(QtWidgets.QWidget):
         if not 'linux' in sys.platform:
             if sys.platform == 'win32':
                 layout.setContentsMargins(8, 2, 8, 2)
-#            print(layout.getContentsMargins(), self.getContentsMargins())
-            self.setMinimumHeight(self.addBtn.minimumHeight() + 4)
+                self.setMinimumHeight(self.addBtn.minimumHeight() + 4)
+            else:
+                self.setMinimumHeight(layout.getContentsMargins()[3] + size)
 
 #    def minimumSizeHint(self):
 #        base = QtWidgets.QWidget.sizeHint(self)
