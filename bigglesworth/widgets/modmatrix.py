@@ -630,13 +630,13 @@ class MenuIcon(QtWidgets.QLabel):
 
 
 class Panel(QtWidgets.QWidget):
-    playIcons = QtGui.QIcon.fromTheme('media-playback-pause'), QtGui.QIcon.fromTheme('media-playback-start')
     def __init__(self, proxy):
         QtWidgets.QWidget.__init__(self)
 #        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred))
         self.setContentsMargins(0, 0, 0, 0)
         self.setMinimumWidth(20)
         self.shown = False
+        self.playIcons = QtGui.QIcon.fromTheme('media-playback-pause'), QtGui.QIcon.fromTheme('media-playback-start')
 
         layout = QtWidgets.QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)

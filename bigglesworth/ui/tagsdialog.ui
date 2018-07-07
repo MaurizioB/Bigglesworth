@@ -45,9 +45,7 @@
         <string>...</string>
        </property>
        <property name="icon">
-        <iconset theme="list-add">
-         <normaloff/>
-        </iconset>
+        <iconset theme="list-add"/>
        </property>
       </widget>
      </item>
@@ -68,7 +66,8 @@
        </property>
        <property name="icon">
         <iconset theme="edit-delete">
-         <normaloff>../../../../../</normaloff>../../../../../</iconset>
+         <normaloff/>
+        </iconset>
        </property>
       </widget>
      </item>

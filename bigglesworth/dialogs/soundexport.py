@@ -43,7 +43,6 @@ class ExportModel(QtGui.QStandardItemModel):
 
 class SoundExport(QtWidgets.QDialog):
     readOnlyFlags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsDropEnabled
-    toolBtnIcons = QtGui.QIcon.fromTheme('arrow-down'), QtGui.QIcon.fromTheme('arrow-up')
     SortSourceIndex, SortInserted, SortAlpha, SortCategory, SortTags = Enum(5)
     DuplicatesMaximum, UnknownMaximum = Enum(1, 2)
 
@@ -59,6 +58,7 @@ class SoundExport(QtWidgets.QDialog):
         self.database = self.main.database
         self.allCollections = self.database.referenceModel.allCollections
 
+        self.toolBtnIcons = QtGui.QIcon.fromTheme('arrow-down'), QtGui.QIcon.fromTheme('arrow-up')
         self.exportBtn = self.buttonBox.button(self.buttonBox.Save)
         self.exportBtn.setText('Export')
         self.exportBtn.setEnabled(False)

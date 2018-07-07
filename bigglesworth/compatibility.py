@@ -11,7 +11,7 @@ class MenuSection(QtWidgets.QWidgetAction):
 #        self.label.setMaximumHeight(self.label.frameWidth())
         self.label.setFrameStyle(QtWidgets.QFrame.StyledPanel|QtWidgets.QFrame.Sunken)
         if sys.platform == 'darwin':
-            self.setContentsMargins(4, 2, 4, 2)
+            self.label.setContentsMargins(4, 2, 4, 2)
             if self.parent():
                 self.parent().aboutToShow.connect(self.setMenuFont)
         self.setDefaultWidget(self.label)

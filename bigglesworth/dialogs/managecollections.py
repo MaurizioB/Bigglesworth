@@ -38,7 +38,9 @@ class NameDelegate(QtWidgets.QStyledItemDelegate):
 
 
 class DeleteDelegate(QtWidgets.QStyledItemDelegate):
-    delIcon = QtGui.QIcon.fromTheme('edit-delete')
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QStyledItemDelegate.__init__(self, *args, **kwargs)
+        self.delIcon = QtGui.QIcon.fromTheme('edit-delete')
 
     def displayText(self, *args):
         return ''

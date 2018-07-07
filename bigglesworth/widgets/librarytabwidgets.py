@@ -1,3 +1,4 @@
+import sys
 from Qt import QtCore, QtGui, QtWidgets, QtSql
 
 from bigglesworth.const import factoryPresetsNamesDict, NameColumn
@@ -108,12 +109,14 @@ class TabCornerWidget(QtWidgets.QWidget):
         self.addBtn = QtWidgets.QToolButton()
         self.addBtn.setText('+')
         self.addBtn.setToolTip('Open collections menu')
-        size = max(self.fontMetrics().width('+'), self.fontMetrics().height())
-        self.addBtn.setMinimumHeight(size + 4)
+        height = max(self.fontMetrics().width('+'), self.fontMetrics().height())
+        self.addBtn.setMinimumHeight(height + 4)
         layout.addWidget(self.addBtn, alignment=QtCore.Qt.AlignLeft)
         self.minimizeBtn = LeftCornerBtn() if direction == Left else RightCornerBtn()
         self.minimizeBtn.setToolTip('Collapse to window side')
         layout.addWidget(self.minimizeBtn)
+        if not 'linux' in sys.platform:
+            self.setMinimumHeight(self.addBtn.minimumHeight())
 
 #    def minimumSizeHint(self):
 #        base = QtWidgets.QWidget.sizeHint(self)

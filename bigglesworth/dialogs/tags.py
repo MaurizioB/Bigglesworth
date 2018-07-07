@@ -285,7 +285,10 @@ class ColorDialog(QtWidgets.QDialog):
 
 
 class DeleteDelegate(QtWidgets.QStyledItemDelegate):
-    delIcon = QtGui.QIcon.fromTheme('edit-delete')
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QStyledItemDelegate.__init__(self, *args, **kwargs)
+        self.delIcon = QtGui.QIcon.fromTheme('edit-delete')
+
     def paint(self, qp, option, index):
         self.initStyleOption(option, index)
         iconSize = option.decorationSize.width()
