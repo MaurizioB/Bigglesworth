@@ -234,6 +234,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.database.soundNameChanged.connect(self.editorWindow.nameChangedFromDatabase)
         self.editorWindow.soundNameChanged.connect(self.refreshCollections)
         self.editorWindow.closed.connect(self.checkClose)
+        self.editorWindow.importRequested.connect(self.importRequested)
         self.editorWindow.openLibrarianRequested.connect(lambda: [self.mainWindow.show(), self.mainWindow.activateWindow()])
         self.editorWindow.midiEvent.connect(self.sendMidiEvent)
         self.editorWindow.midiConnect.connect(self.midiConnect)
@@ -528,9 +529,9 @@ class Bigglesworth(QtWidgets.QApplication):
                     rtmidi_event = event.get_binary()
                     port.send_message(rtmidi_event)
 
-    def importRequested(self):
-        dialog = SoundImport(self.mainWindow)
-        if dialog.exec_():
+    def importRequested(self, uriList, collection):
+        dialog = SoundImport(self.sender())
+        if dialog.exec_(uriList, collection):
             self.processImport(dialog)
 
     def processImport(self, dialog):

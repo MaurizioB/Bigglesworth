@@ -401,6 +401,7 @@ class EditorWindow(QtWidgets.QMainWindow):
     Clean, Saved, Modified = Enum(3)
 
     closed = QtCore.pyqtSignal()
+    importRequested = QtCore.pyqtSignal(object, object)
     openLibrarianRequested = QtCore.pyqtSignal()
     midiEvent = QtCore.pyqtSignal(object)
     midiConnect = QtCore.pyqtSignal(object, int, bool)
@@ -429,7 +430,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         inConn, outConn = self.main.connections
         self.editorMenuBar = EditorMenu(self)
         self.editorMenuBar.openSoundRequested.connect(self.openSoundFromMenu)
-        self.editorMenuBar.importRequested.connect(self.importSound)
+        self.editorMenuBar.importRequested.connect(lambda: self.importRequested.emit(None, None))
         self.editorMenuBar.randomAllRequest.connect(self.randomizeAll)
         self.editorMenuBar.randomCustomRequest.connect(self.randomizeCustom)
         self.editorMenuBar.dumpMenu.setEnabled(True if (any(inConn) or any(outConn)) else False)
@@ -1290,9 +1291,6 @@ class EditorWindow(QtWidgets.QMainWindow):
 
     def updateParameter(self, value):
         setattr(self.parameters, self.sender().objectName(), value)
-
-    def importSound(self):
-        print('show import dialog')
 
     def openSoundFromBankProg(self, bank=None, prog=None, collection=None):
         if not collection:

@@ -8,7 +8,7 @@ from bigglesworth.widgets import NameEdit, ContextMenu, CategoryDelegate, TagsDe
 from bigglesworth.utils import loadUi, getSysExContents, sanitize
 from bigglesworth.const import (TagsRole, UidColumn, LocationColumn, 
     NameColumn, CatColumn, TagsColumn, FactoryColumn, chr2ord, factoryPresets)
-from bigglesworth.library import CleanLibraryProxy, BankProxy, CatProxy, NameProxy, TagsProxy, FactoryProxy
+from bigglesworth.library import CleanLibraryProxy, BankProxy, CatProxy, NameProxy, TagsProxy, MainLibraryProxy
 from bigglesworth.dialogs import SoundTagsEditDialog, MultiSoundTagsEditDialog, DeleteSoundsMessageBox, DropDuplicatesMessageBox
 from bigglesworth.libs import midifile
 
@@ -172,6 +172,7 @@ class BaseLibraryView(QtWidgets.QTableView):
     tagEditMultiRequested = QtCore.pyqtSignal(object)
     duplicateRequested = QtCore.pyqtSignal(str, int)
     findDuplicatesRequested = QtCore.pyqtSignal(str, object)
+    importRequested = QtCore.pyqtSignal(object)
     exportRequested = QtCore.pyqtSignal(object, object)
     deleteRequested = QtCore.pyqtSignal(object)
     #blofeld index/buffer, collection, index, multi
@@ -355,10 +356,13 @@ class BaseLibraryView(QtWidgets.QTableView):
 
     def dragEnterEvent(self, event):
         self.dropSelectionIndexes = None
-        if event.mimeData().hasFormat('text/uri-list'):
+        if not self.editable:
+            event.ignore()
+        elif event.mimeData().hasFormat('text/uri-list'):
             data = event.mimeData().data('text/uri-list')
             urilist = unicode(data).replace('\r', '').strip().split('\n')
-            if len(urilist) != 1 or urilist[0][-4:] not in ('.syx', '.mid'):
+#            if len(urilist) != 1 or urilist[0][-4:] not in ('.syx', '.mid'):
+            if urilist[0][-4:] not in ('.syx', '.mid'):
                 event.ignore()
                 return
             sysex = getSysExContents(urilist[0])
@@ -742,10 +746,17 @@ class LibraryTableView(BaseLibraryView):
         if isinstance(event.source(), BaseLibraryView):
             event.ignore()
         elif self.externalFileDropContents:
-            rows = self.externalFileDropContents
-            print(rows)
+#            rows = self.externalFileDropContents
+#            print(rows)
             event.accept()
 #            BaseLibraryView.dragMoveEvent(self, event)
+
+    def dropEvent(self, event):
+        if self.externalFileDropContents:
+            data = event.mimeData().data('text/uri-list')
+            uriList = unicode(data).replace('\r', '').strip().split('\n')
+            self.importRequested.emit(uriList)
+        BaseLibraryView.dropEvent(self, event)
 
 
 class CollectionTableView(BaseLibraryView):
@@ -986,6 +997,11 @@ class CollectionTableView(BaseLibraryView):
                 self.database.swapSounds(uidList, self.collection, targetRows)
             else:
                 self.database.insertSounds(uidList, self.collection, self.getDragRows(event), self.dropSelectionIndexes[0].row())
+
+        elif self.externalFileDropContents:
+            data = event.mimeData().data('text/uri-list')
+            uriList = unicode(data).replace('\r', '').strip().split('\n')
+            self.importRequested.emit(uriList)
         event.acceptProposedAction()
         QtWidgets.QTableView.dropEvent(self, event)
 #        self.externalFileDropContents = None
@@ -1274,6 +1290,7 @@ class CollectionTableView(BaseLibraryView):
 
 
 class BaseLibraryWidget(QtWidgets.QWidget):
+    importRequested = QtCore.pyqtSignal(object, object)
     exportRequested = QtCore.pyqtSignal(object, object)
     findDuplicatesRequested = QtCore.pyqtSignal(str, object)
     #blofeld index/buffer, collection, index, multi
@@ -1290,6 +1307,7 @@ class BaseLibraryWidget(QtWidgets.QWidget):
         self.filterTagsEdit.setAutoPopup(True)
         self.filterNameEdit.setMinimumWidth(self.fontMetrics().width('AAAAAAAAAAAAAAAA'))
         self.collectionView.tagsDelegate.tagClicked.connect(self.setTagFilter)
+        self.collectionView.importRequested.connect(lambda uriList: self.importRequested.emit(uriList, self.collection))
 
         self.model = self.database.openCollection(collection)
         while self.model.canFetchMore():
@@ -1564,11 +1582,12 @@ class LibraryWidget(BaseLibraryWidget):
         self.collection = None
         self.editModeBtn.toggled.connect(self.setEditMode)
 
-        self.factoryProxy = FactoryProxy()
-        self.factoryProxy.setSourceModel(self.model)
-        self.factoryProxy.invalidated.connect(self.filtersInvalidated)
-        self.nameProxy.setSourceModel(self.factoryProxy)
-        self.hideFactoryChk.toggled.connect(self.factoryProxy.setFilter)
+        self.mainLibraryProxy = MainLibraryProxy()
+        self.mainLibraryProxy.setSourceModel(self.model)
+        self.mainLibraryProxy.invalidated.connect(self.filtersInvalidated)
+        self.nameProxy.setSourceModel(self.mainLibraryProxy)
+        self.locationCombo.currentIndexChanged.connect(self.mainLibraryProxy.setFilter)
+#        self.hideFactoryChk.toggled.connect(self.mainLibraryProxy.setFilter)
 
 #        self.model = self.database.openCollection()
 #        while self.model.canFetchMore():

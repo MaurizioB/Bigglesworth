@@ -78,11 +78,15 @@ class SoundsMenu(FactoryMenu):
 
     def checkAge(self):
         if isinstance(self.parent(), QtWidgets.QMenuBar) and not self.openLibrarianAction:
+            first = self.actions()[0]
             self.openLibrarianAction = QtWidgets.QAction('Open &librarian', self)
 #            self.openLibrarianAction.setShortcut(QtGui.QKeySequence('Ctrl+Alt+L'))
             self.openLibrarianAction.triggered.connect(self.parent().window().openLibrarianRequested)
-            self.insertAction(self.locationsMenu.menuAction(), self.openLibrarianAction)
-            self.insertSeparator(self.locationsMenu.menuAction())
+            self.insertAction(first, self.openLibrarianAction)
+            self.importAction = QtWidgets.QAction('&Import sound', self)
+            self.importAction.triggered.connect(lambda: self.parent().importRequested.emit())
+            self.insertAction(first, self.importAction)
+            self.insertSeparator(first)
         if not self.done or self.lastShownTimer.hasExpired(10000):
             self.populate()
         self.tagsMenu.setEnabled(True if self.tags else False)

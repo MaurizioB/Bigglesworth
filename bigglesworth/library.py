@@ -353,6 +353,19 @@ class FactoryProxy(BaseLibraryProxy):
         return True
 
 
+class MainLibraryProxy(BaseLibraryProxy):
+    filter = 0
+
+    def customFilter(self, row, parent):
+        index = self.sourceModel().index(row, LocationColumn)
+        if self.filter == 1 and index.data() & 7:
+            return False
+        elif self.filter == 2 and index.data() <= 7:
+            return False
+        elif self.filter == 3 and index.data():
+            return False
+        return True
+
 class BankProxy(BaseLibraryProxy):
     filter = -1
 

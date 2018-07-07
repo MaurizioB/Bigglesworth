@@ -233,6 +233,8 @@ class BaseTabWidget(QtWidgets.QTabWidget):
     def addTab(self, widget, name):
         self.sideTabBar.addTab(name)
         index = QtWidgets.QTabWidget.addTab(self, widget, name)
+        if sys.platform == 'darwin':
+            self.setTabToolTip(index, 'ctrl+click or right click for menu')
         if widget.collection is None:
             self.setTabIcon(index, QtGui.QIcon.fromTheme('go-home'))
         elif widget.collection == 'Blofeld':

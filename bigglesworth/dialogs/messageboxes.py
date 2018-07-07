@@ -29,7 +29,7 @@ class DeleteSoundsMessageBox(MessageBoxDetailedHtml):
         MessageBoxDetailedHtml.__init__(self, parent)
         self.setIcon(self.Warning)
         self.setWindowTitle('Delete sounds from library')
-        self.setInformativeText('<b>NOTE</b>: The operation <u>cannot</u> be undone!')
+        self.setInformativeText('<b>NOTE</b>: This operation <u>cannot</u> be undone!')
         if len(nameList) == 1:
             self.setText('Do you want to delete "{}" from the library?'.format(nameList[0].strip()))
         else:

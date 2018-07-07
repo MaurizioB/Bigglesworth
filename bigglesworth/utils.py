@@ -14,7 +14,7 @@ def readMidContents(filePath, check=False):
         sysex = []
         for event in track:
             if isinstance(event, midifile.SysexEvent):
-                sysex.append(event.data)
+                sysex.append(event.data[2:-1])
         if not check:
             return sysex
     except:
@@ -35,7 +35,7 @@ def readSyxContents(filePath, check=False):
         buffer = []
         for value in data:
             if value == 0xf7:
-                sysex.append(buffer)
+                sysex.append(buffer[1:-1])
                 buffer = []
                 continue
             buffer.append(value)

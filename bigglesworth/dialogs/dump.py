@@ -578,9 +578,9 @@ class BaseImportDialog(QtWidgets.QDialog):
 
         self.dumpModel.dataChanged.disconnect(self.checkImport)
         if not self.mode & self.NewImport:
-            print('CollectionImport')
+#            print('CollectionImport')
             if self.mode & self.Overwrite:
-                print('overwrite')
+#                print('overwrite')
                 if self.mode & self.AutoIndex:
                     if len(collIndexes) + count < 1024:
                         current = 0
@@ -603,9 +603,9 @@ class BaseImportDialog(QtWidgets.QDialog):
                             srcIndex += 1024
                         self.dumpModel.item(row, DestColumn).setData(srcIndex, QtCore.Qt.DisplayRole)
             else:
-                print('no overwrite')
+#                print('no overwrite')
                 if self.mode & self.AutoIndex:
-                    print('AutoIndex')
+#                    print('AutoIndex')
                     current = 0
                     for row, srcIndex in selected:
                         while current in collIndexes:
@@ -618,13 +618,13 @@ class BaseImportDialog(QtWidgets.QDialog):
                             srcIndex += 2048
                         self.dumpModel.item(row, DestColumn).setData(srcIndex, QtCore.Qt.DisplayRole)
         elif self.mode & self.NewImport:
-            print('NewImport')
+#            print('NewImport')
             if self.mode & self.AutoIndex:
-                print('AutoIndex')
+#                print('AutoIndex')
                 for current, (row, srcIndex) in enumerate(selected):
                     self.dumpModel.item(row, DestColumn).setData(current, QtCore.Qt.DisplayRole)
             else:
-                print('SourceIndex')
+#                print('SourceIndex')
                 done = {}
                 invalid = []
                 for row, srcIndex in selected:
@@ -820,10 +820,37 @@ class SoundImport(BaseImportDialog):
                 newName = baseName + str(suffix)
         return newName
 
-    def exec_(self):
-        dialog = UnknownFileImport(self.parent())
-        res = dialog.exec_()
-        if res:
+    def exec_(self, uriList=None, collection=None):
+        if uriList:
+            validPaths = []
+            for uri in uriList:
+                uri = QtCore.QUrl(uri)
+                if not uri.isLocalFile():
+                    continue
+                path = uri.toLocalFile()
+                self.filePath = path
+                if not self.processMidi():
+                    if self.processSysEx():
+                        validPaths.append(path)
+                        self._loadError = None
+                else:
+                    validPaths.append(path)
+                    self._loadError = None
+            if collection:
+                self.collectionCombo.setCurrentIndex(self.referenceModel.collections.index(collection) + 1)
+                self.importCombo.setCurrentIndex(1)
+            if validPaths:
+                if len(validPaths) == 1:
+                    self.newEdit.setText(self.getValidName(validPaths[0]))
+                else:
+                    self.newEdit.setText('Imported ' + QtCore.QDate.currentDate().toString('dd-MM-yy'))
+                self.dumpTable.selectAll()
+                self.checkAll()
+        else:
+            dialog = UnknownFileImport(self.parent())
+            res = dialog.exec_()
+            if not res:
+                return
             if dialog._selectedContent & dialog.SoundDump:
                 self.filePath = res
                 if dialog._selectedContent & dialog.SysExFile:
@@ -835,7 +862,7 @@ class SoundImport(BaseImportDialog):
                 self.dumpTable.scrollToTop()
             else:
                 self._loadError = 'Invalid file content'
-            return BaseImportDialog.exec_(self)
+        return BaseImportDialog.exec_(self)
 
 
 class BlofeldDumper(BaseImportDialog):

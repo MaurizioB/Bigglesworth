@@ -17,7 +17,7 @@ class MainWindow(QtWidgets.QMainWindow):
     closed = QtCore.pyqtSignal()
     findDuplicatesRequested = QtCore.pyqtSignal(str, object)
     exportRequested = QtCore.pyqtSignal(object, object)
-    importRequested = QtCore.pyqtSignal()
+    importRequested = QtCore.pyqtSignal(object, object)
     soundEditRequested = QtCore.pyqtSignal(str, str)
     #blofeld index/buffer, collection, index, multi
     dumpFromRequested = QtCore.pyqtSignal(object, object, int, bool)
@@ -113,7 +113,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.libraryMenu.aboutToShow.connect(self.updateCollectionMenu)
 #        self.openCollectionAction.triggered.connect(self.openCollection)
 
-        self.importAction.triggered.connect(self.importRequested)
+        self.importAction.triggered.connect(lambda: self.importRequested.emit(None, None))
         self.exportAction.triggered.connect(lambda: self.exportRequested.emit([], None))
         self.aboutAction.triggered.connect(self.showAbout)
         self.aboutQtAction.triggered.connect(lambda: QtWidgets.QMessageBox.aboutQt(self, 'About Qt...'))
@@ -221,6 +221,7 @@ class MainWindow(QtWidgets.QMainWindow):
         colWidget.dumpFromRequested.connect(self.dumpFromRequested)
         colWidget.dumpToRequested.connect(self.dumpToRequested)
         colWidget.findDuplicatesRequested.connect(self.findDuplicatesRequested)
+        colWidget.importRequested.connect(self.importRequested)
         colWidget.exportRequested.connect(self.exportRequested)
         index = dest.addTab(colWidget, name)
         dest.setCurrentIndex(index)
