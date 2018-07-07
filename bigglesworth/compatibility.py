@@ -24,6 +24,7 @@ class MenuSection(QtWidgets.QWidgetAction):
             if self.parent():
                 self.parent().aboutToShow.connect(self.setMenuFont)
         self.setDefaultWidget(self.label)
+        self.setText = self.label.setText
 
     def setMenuFont(self):
         #menu item font sizes has to be forced to float (at least for osx 10.5)
@@ -31,15 +32,15 @@ class MenuSection(QtWidgets.QWidgetAction):
         menu.aboutToShow.disconnect(self.setMenuFont)
         for action in menu.actions():
             if not isinstance(action, QtWidgets.QWidgetAction):
-                option = QtWidgets.QStyleOptionMenuItem()
-                menu.initStyleOption(option, action)
-                labelFont = self.label.font()
-                labelFont.setPointSizeF(option.font.pointSizeF())
-                self.label.setFont(labelFont)
+                if action.isSeparator():
+                    continue
+                itemFont = action.font()
+                itemFont.setPointSizeF(itemFont.pointSizeF())
+                self.label.setFont(itemFont)
                 break
 
-    def setText(self, text):
-        self.label.setText(text)
+#    def setText(self, text):
+#        self.label.setText(text)
 #        if text:
 #            self.label.setMaximumHeight(16777215)
 #        else:
