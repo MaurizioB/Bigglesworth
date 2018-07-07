@@ -271,6 +271,8 @@ class BaseLibraryView(QtWidgets.QTableView):
             self.sortByColumn(*res.data())
 
     def sortByColumn(self, column, order=QtCore.Qt.AscendingOrder):
+        if self.model().size() <= 0:
+            return
         header = self.horizontalHeader()
         if column <= 0:
             if self.model().sortRole() == QtCore.Qt.InitialSortOrderRole:
@@ -299,6 +301,8 @@ class BaseLibraryView(QtWidgets.QTableView):
 #        self.highlightHeader(column, order)
 
     def highlightHeader(self, index, order):
+        if self.model().size() <= 0:
+            return
         normalFont = self.font()
         highlightFont = self.font()
         highlightFont.setBold(True)
@@ -550,6 +554,9 @@ class BaseLibraryView(QtWidgets.QTableView):
             self.searchString = ''
 
     def setModel(self, model):
+        self.sourceModel = model
+        while isinstance(self.sourceModel, QtCore.QSortFilterProxyModel):
+            self.sourceModel = self.sourceModel.sourceModel()
         QtWidgets.QTableView.setModel(self, model)
         model.layoutChanged.connect(self.restoreLayout)
         self.restoreLayout()
