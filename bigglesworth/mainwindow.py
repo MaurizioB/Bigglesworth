@@ -118,7 +118,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.aboutAction.triggered.connect(self.showAbout)
         self.aboutQtAction.triggered.connect(lambda: QtWidgets.QMessageBox.aboutQt(self, 'About Qt...'))
 
-        self.openCollectionMenu.addSeparator().setText('Personal collections')
+        self.openCollectionMenu.addSection('Personal collections')
         blofeldAction = self.openCollectionMenu.addAction(QtGui.QIcon(':/images/bigglesworth_logo.svg'), 'Blofeld')
         blofeldAction.triggered.connect(lambda: self.openCollection('Blofeld', self.leftTabWidget))
 
@@ -128,7 +128,7 @@ class MainWindow(QtWidgets.QMainWindow):
             action.triggered.connect(lambda state, collection=collection: self.openCollection(collection, self.leftTabWidget))
             self.collections[collection] = action
 
-        self.openCollectionMenu.addSeparator().setText('Factory presets')
+        self.openCollectionMenu.addSection('Factory presets')
         for collection in self.referenceModel.factoryPresets:
             action = self.openCollectionMenu.addAction(QtGui.QIcon(':/images/factory.svg'), factoryPresetsNamesDict[collection])
             action.triggered.connect(lambda state, collection=collection: self.openCollection(collection, self.leftTabWidget))

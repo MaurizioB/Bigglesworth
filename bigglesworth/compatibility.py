@@ -2,20 +2,20 @@ import sys
 from Qt import QtCore, QtGui, QtWidgets
 
 #workarounds for menu separators with labels on Windows and Mac
-class MenuSeparator(QtWidgets.QWidgetAction):
-    def __init__(self, *args, **kwargs):
-        QtWidgets.QWidgetAction.__init__(self, *args, **kwargs)
-        self.label = QtWidgets.QLabel()
+class MenuSection(QtWidgets.QWidgetAction):
+    def __init__(self, parent, text=''):
+        QtWidgets.QWidgetAction.__init__(self, parent)
+        self.label = QtWidgets.QLabel(text)
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         self.label.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum))
-        self.label.setMaximumHeight(self.label.frameWidth())
-        self.setDefaultWidget(self.label)
+#        self.label.setMaximumHeight(self.label.frameWidth())
         if sys.platform == 'win32':
             self.label.setFrameStyle(QtWidgets.QFrame.StyledPanel|QtWidgets.QFrame.Sunken)
         else:
             self.label.setStyleSheet('''
                 QLabel {
                     border: 1px solid lightgray;
+                    border-style: inset
                     margin: 2px;
                     padding-left: {l}px;
                     padding-right: {r}px;
@@ -23,6 +23,7 @@ class MenuSeparator(QtWidgets.QWidgetAction):
             ''')
             if self.parent():
                 self.parent().aboutToShow.connect(self.setMenuFont)
+        self.setDefaultWidget(self.label)
 
     def setMenuFont(self):
         #menu item font sizes has to be forced to float (at least for osx 10.5)
@@ -39,13 +40,13 @@ class MenuSeparator(QtWidgets.QWidgetAction):
 
     def setText(self, text):
         self.label.setText(text)
-        if text:
-            self.label.setMaximumHeight(16777215)
-        else:
-            self.label.setMaximumHeight(self.label.frameWidth())
+#        if text:
+#            self.label.setMaximumHeight(16777215)
+#        else:
+#            self.label.setMaximumHeight(self.label.frameWidth())
 
 
-class MacSeparatorLabel(QtWidgets.QLabel):
+class MacMenuSectionLabel(QtWidgets.QLabel):
     done = False
     def __init__(self, parentMenu, text=''):
         QtWidgets.QLabel.__init__(self, text)
@@ -74,8 +75,9 @@ class MacSeparatorLabel(QtWidgets.QLabel):
             parent.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
             self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
             parent.setStyleSheet('''
-            MacSeparatorLabel {{
+            MacMenuSectionLabel {{
                 border: 1px solid lightgray;
+                border-style: inset;
                 margin: 2px;
                 padding-left: {l}px;
                 padding-right: {r}px;
@@ -90,7 +92,7 @@ class MacSeparatorLabel(QtWidgets.QLabel):
         for action in self.parentMenu.actions():
             if isinstance(action, QtWidgets.QWidgetAction):
                 widget = action.defaultWidget()
-                if widget != self and isinstance(widget, MacSeparatorLabel):
+                if widget != self and isinstance(widget, MacMenuSectionLabel):
                     maxWidth = max(maxWidth, widget.fontMetrics().width(widget.text()))
                 continue
             self.parentMenu.initStyleOption(option, action)
@@ -124,27 +126,23 @@ class MacSeparatorLabel(QtWidgets.QLabel):
         qp.drawRect(self.parent().rect())
 
 
-class MacMenuBarSeparator(QtWidgets.QWidgetAction):
-    def __init__(self, *args, **kwargs):
-        QtWidgets.QWidgetAction.__init__(self, *args, **kwargs)
-        self.setSeparator(True)
-        self.label = MacSeparatorLabel(self.parent())
+class MacMenuBarSection(QtWidgets.QWidgetAction):
+    def __init__(self, parent, text=''):
+        QtWidgets.QWidgetAction.__init__(self, parent)
+        self.label = MacMenuSectionLabel(self.parent())
         self.setDefaultWidget(self.label)
-
-    def setText(self, text):
-        self.setSeparator(False if text else True)
-        self.label.setText(text)
+        self.setText = self.label.setText
 
 
 if sys.platform == 'win32':
 
-    def addSeparator(self):
-        action = MenuSeparator(self)
+    def addSection(self, text=''):
+        action = MenuSection(self, text)
         QtWidgets.QMenu.addAction(self, action)
         return action
 
-    def insertSeparator(self, before):
-        action = MenuSeparator(self)
+    def insertSection(self, before, text=''):
+        action = MenuSection(self, text)
         QtWidgets.QMenu.insertAction(self, before, action)
         return action
 
@@ -153,30 +151,30 @@ else:
     #QWidgetAction in a QMenuBar don't draw the backgrounds, this hack
     #ensures that the QMacNativeWidget (which is created as a parent of the 
     #defaultWidget) is correctly layed out and stylized.
-    def addSeparator(self):
+    def addSection(self, text=''):
         parent = self.parent()
         while isinstance(parent, QtWidgets.QMenu):
             parent = parent.parent()
         if isinstance(parent, QtWidgets.QMenuBar):
-            action = MacMenuBarSeparator(self)
+            action = MacMenuBarSection(self, text)
         else:
-            action = MenuSeparator(self)
+            action = MenuSection(self, text)
         self.addAction(action)
         return action
 
-    def insertSeparator(self, before):
+    def insertSection(self, before, text=''):
         parent = self.parent()
         while isinstance(parent, QtWidgets.QMenu):
             parent = parent.parent()
         if isinstance(parent, QtWidgets.QMenuBar):
-            action = MacMenuBarSeparator(self)
+            action = MacMenuBarSection(self, text)
         else:
-            action = MenuSeparator(self)
+            action = MenuSection(self, text)
         self.insertAction(before, action)
         return action
     
-QtWidgets.QMenu.insertSeparator = insertSeparator
-QtWidgets.QMenu.addSeparator = addSeparator
+#QtWidgets.QMenu.insertSeparator = insertSeparator
+#QtWidgets.QMenu.addSeparator = addSeparator
 
 
 if sys.platform == 'darwin':

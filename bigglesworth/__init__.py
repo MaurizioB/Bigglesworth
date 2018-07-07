@@ -33,8 +33,21 @@ def topMostDialog(instance):
 QtWidgets.QDialog._isDumpDialog = False
 QtWidgets.QDialog.topMostDumpDialog = topMostDumpDialog
 
-if not 'linux' in sys.platform:
-    from bigglesworth import compatibility
+if 'linux' in sys.platform:
+    def addSection(self, text=''):
+        action = self.addSeparator()
+        action.setText(text)
+        return action
+
+    def insertSection(self, before, text=''):
+        action = self.insertSeparator(before)
+        action.setText(text)
+        return action
+else:
+    from bigglesworth.compatibility import addSection, insertSection
+
+QtWidgets.QMenu.addSection = addSection
+QtWidgets.QMenu.insertSection = insertSection
 
 from bigglesworth.logger import Logger
 from bigglesworth.editor import EditorWindow
