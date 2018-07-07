@@ -270,12 +270,12 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         if collection and collection not in factoryPresetsNamesDict:
             dumpMenu = self.menu.addMenu(QtGui.QIcon(':/images/dump.svg'), 'Dump "{}"'.format(collection))
             dumpMenu.setSeparatorsCollapsible(False)
-            dumpMenu.addSeparator().setText('Receive')
+            dumpMenu.addSection('Receive')
             self.dumpFromAllAction = dumpMenu.addAction('Dump all sounds FROM Blofeld')
             self.dumpFromAllAction.triggered.connect(lambda: self.fullDumpBlofeldToCollectionRequested.emit(collection, True))
             dumpFromPromptAction = dumpMenu.addAction('Dump sounds FROM Blofeld...')
             dumpFromPromptAction.triggered.connect(lambda: self.fullDumpBlofeldToCollectionRequested.emit(collection, False))
-            dumpMenu.addSeparator().setText('Send')
+            dumpMenu.addSection('Send')
             dumpToAllAction = dumpMenu.addAction('Dump all sounds TO Blofeld')
             dumpToAllAction.triggered.connect(lambda: self.fullDumpCollectionToBlofeldRequested.emit(collection, True))
 
@@ -299,7 +299,7 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         opened = self.collections + self.siblingTabWidget.collections
         menu = QtWidgets.QMenu('Open collection', self)
         menu.setSeparatorsCollapsible(False)
-        menu.addSeparator().setText('Custom collections')
+        menu.addSection('Custom collections')
         for collection in self.referenceModel.collections:
             action = menu.addAction(factoryPresetsNamesDict.get(collection, collection))
             action.triggered.connect(lambda state, collection=collection: self.openCollection.emit(collection))
@@ -308,7 +308,7 @@ class BaseTabWidget(QtWidgets.QTabWidget):
             if collection == 'Blofeld':
                 setBold(action)
                 action.setIcon(QtGui.QIcon(':/images/bigglesworth_logo.svg'))
-        menu.addSeparator().setText('Factory presets')
+        menu.addSection('Factory presets')
         for factory in self.referenceModel.factoryPresets:
             action = menu.addAction(QtGui.QIcon(':/images/factory.svg'), factoryPresetsNamesDict[factory])
             action.triggered.connect(lambda state, collection=factory: self.openCollection.emit(collection))

@@ -176,7 +176,10 @@ class ColorMenu(QtWidgets.QMenu):
         self.svgMenu = self.addMenu('SVG colors')
         for color, name in _svgColorsByRgb:
             self.svgMenu.addAction(self.createItem(color, name))
-        self.addSeparator().setText('Base colors')
+        try:
+            self.addSection('Base colors')
+        except:
+            self.addSeparator().setText('Base colors')
         for color, name in _baseColorsByRgb:
             self.addAction(self.createItem(color, name))
 

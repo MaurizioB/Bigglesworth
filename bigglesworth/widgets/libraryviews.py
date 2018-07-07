@@ -595,7 +595,7 @@ class BaseLibraryView(QtWidgets.QTableView):
 
         if not selRows or not valid:
             pos = '{}{:03}'.format(uppercase[index.row() >> 7], (index.row() & 127) + 1)
-            menu.addSeparator().setText('Empty slot ' + pos)
+            menu.addSection('Empty slot ' + pos)
             initAction = menu.addAction('INIT this slot')
             initAction.triggered.connect(lambda: self.database.initSound(index.row(), self.collection))
             menu.addSeparator()
@@ -603,7 +603,7 @@ class BaseLibraryView(QtWidgets.QTableView):
             if not all((inConn, outConn)):
                 dumpMenu.setEnabled(False)
             dumpMenu.setSeparatorsCollapsible(False)
-            dumpMenu.addSeparator().setText('Receive')
+            dumpMenu.addSection('Receive')
             dumpFromSoundBuffer = dumpMenu.addAction('Dump from Sound Edit Buffer')
             dumpFromSoundBuffer.triggered.connect(lambda: self.dumpFromRequested.emit(None, self.collection, index.row(), False))
             dumpFromIndex = dumpMenu.addAction('Dump from {}'.format(pos))
@@ -616,7 +616,7 @@ class BaseLibraryView(QtWidgets.QTableView):
         elif len(selRows) == 1:
             if selRows[0].row() != index.row():
                 index = selRows[0]
-            menu.addSeparator().setText(name)
+            menu.addSection(name)
             soundEditAction = menu.addAction('Open in the sound editor')
             soundEditAction.triggered.connect(lambda _, uid=uid: self.window().soundEditRequested.emit(uid, self.collection))
 
@@ -624,8 +624,7 @@ class BaseLibraryView(QtWidgets.QTableView):
             if not outConn:
                 dumpMenu.setEnabled(False)
             dumpMenu.setSeparatorsCollapsible(False)
-            sendSep = dumpMenu.addSeparator()
-            sendSep.setText('Send')
+            sendSection = dumpMenu.addSection('Send')
 
             editTagsAction = menu.addAction(QtGui.QIcon.fromTheme('tag'), 'Edit tags...')
             editTagsAction.triggered.connect(lambda _, index=index: self.tagEditRequested.emit(index))
@@ -635,16 +634,15 @@ class BaseLibraryView(QtWidgets.QTableView):
 
             if isinstance(self, CollectionTableView):
                 findDuplicatesAction.triggered.connect(lambda: self.findDuplicatesRequested.emit(uid, self.collection))
-                recSep = dumpMenu.insertSeparator(sendSep)
-                recSep.setText('Receive')
+                receiveSection = dumpMenu.insertSection(sendSection, 'Receive')
                 dumpFromSoundBuffer = QtWidgets.QAction('Dump from Sound Edit Buffer', dumpMenu)
                 dumpFromSoundBuffer.triggered.connect(lambda: self.dumpFromRequested.emit(None, self.collection, index.row(), False))
                 pos = '{}{:03}'.format(uppercase[index.row() >> 7], (index.row() & 127) + 1)
                 dumpFromIndex = QtWidgets.QAction('Dump from {}'.format(pos), dumpMenu)
                 dumpFromIndex.triggered.connect(lambda: self.dumpFromRequested.emit(index.row(), self.collection, index.row(), False))
-                dumpMenu.insertActions(sendSep, [dumpFromSoundBuffer, dumpFromIndex])
+                dumpMenu.insertActions(sendSection, [dumpFromSoundBuffer, dumpFromIndex])
                 dumpFromMultiMenu = QtWidgets.QMenu('Dump from Multi Edit Buffer', dumpMenu)
-                dumpMenu.insertMenu(sendSep, dumpFromMultiMenu)
+                dumpMenu.insertMenu(sendSection, dumpFromMultiMenu)
 
                 dumpToSoundBuffer = dumpMenu.addAction('Dump to Sound Edit Buffer')
                 dumpToSoundBuffer.triggered.connect(lambda: self.dumpToRequested.emit(uid, None, False))
@@ -659,7 +657,7 @@ class BaseLibraryView(QtWidgets.QTableView):
                     dumpToMultiAction.triggered.connect(lambda _, part=part: self.dumpToRequested.emit(uid, part, True))
 
                 if not inConn:
-                    for w in (recSep, dumpFromSoundBuffer, dumpFromIndex, dumpFromMultiMenu):
+                    for w in (receiveSection, dumpFromSoundBuffer, dumpFromIndex, dumpFromMultiMenu):
                         w.setEnabled(False)
 
                 menu.addSeparator()
@@ -694,7 +692,7 @@ class BaseLibraryView(QtWidgets.QTableView):
             exportAction.triggered.connect(lambda: self.exportRequested.emit([uid], self.collection))
         else:
             uidList = [idx.sibling(idx.row(), UidColumn).data(QtCore.Qt.DisplayRole) for idx in selRows]
-            menu.addSeparator().setText('{} sounds selected'.format(len(selRows)))
+            menu.addSection('{} sounds selected'.format(len(selRows)))
             editTagsMultiAction = menu.addAction(QtGui.QIcon.fromTheme('tag'), 'Edit tags...')
             editTagsMultiAction.triggered.connect(lambda: self.tagEditMultiRequested.emit(selRows))
             if isinstance(self, CollectionTableView):

@@ -129,7 +129,7 @@ class MacMenuSectionLabel(QtWidgets.QLabel):
 class MacMenuBarSection(QtWidgets.QWidgetAction):
     def __init__(self, parent, text=''):
         QtWidgets.QWidgetAction.__init__(self, parent)
-        self.label = MacMenuSectionLabel(self.parent())
+        self.label = MacMenuSectionLabel(parent, text)
         self.setDefaultWidget(self.label)
         self.setText = self.label.setText
 

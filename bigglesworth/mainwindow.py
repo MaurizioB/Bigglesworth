@@ -159,36 +159,36 @@ class MainWindow(QtWidgets.QMainWindow):
         return
 
 #        self.referenceModel.refresh()
-        current = [self.leftTabWidget.tabText(t).lower() for t in range(self.leftTabWidget.count())] + \
-            [self.rightTabWidget.tabText(t).lower() for t in range(self.rightTabWidget.count())]
-        self.openCollectionMenu.setSeparatorsCollapsible(False)
-        sep = self.openCollectionMenu.addSeparator()
-        sep.setText('Custom collections')
-        for c in range(5, self.referenceModel.columnCount()):
-            collection = self.referenceModel.headerData(c, QtCore.Qt.Horizontal)
-            if collection.lower() in current:
-                continue
-            action = self.openCollectionMenu.addAction(collection)
-            action.triggered.connect(lambda state, collection=collection: self.openCollection(collection, self.leftTabWidget))
-            if collection == 'Blofeld':
-                setBold(action)
-                action.setIcon(QtGui.QIcon.fromTheme('go-home'))
-        if len(self.openCollectionMenu.actions()) <= 1:
-            sep.setVisible(False)
-        sep = self.openCollectionMenu.addSeparator()
-        sep.setText('Factory presets')
-        for c in range(2, 5):
-            collection = self.referenceModel.headerData(c, QtCore.Qt.Horizontal)
-            if collection.lower() in current:
-                continue
-            action = self.openCollectionMenu.addAction(factoryPresetsNamesDict[collection])
-            action.triggered.connect(lambda state, collection=collection: self.openCollection.emit(collection))
-        if len(self.openCollectionMenu.actions()) <= 1:
-            sep.setVisible(False)
-        if not 'main library' in current:
-            self.openCollectionMenu.addSeparator()
-            action = self.openCollectionMenu.addAction(QtGui.QIcon.fromTheme('go-home'), 'Main library')
-            action.triggered.connect(lambda: self.openCollection.emit(''))
+#        current = [self.leftTabWidget.tabText(t).lower() for t in range(self.leftTabWidget.count())] + \
+#            [self.rightTabWidget.tabText(t).lower() for t in range(self.rightTabWidget.count())]
+#        self.openCollectionMenu.setSeparatorsCollapsible(False)
+#        sep = self.openCollectionMenu.addSeparator()
+#        sep.setText('Custom collections')
+#        for c in range(5, self.referenceModel.columnCount()):
+#            collection = self.referenceModel.headerData(c, QtCore.Qt.Horizontal)
+#            if collection.lower() in current:
+#                continue
+#            action = self.openCollectionMenu.addAction(collection)
+#            action.triggered.connect(lambda state, collection=collection: self.openCollection(collection, self.leftTabWidget))
+#            if collection == 'Blofeld':
+#                setBold(action)
+#                action.setIcon(QtGui.QIcon.fromTheme('go-home'))
+#        if len(self.openCollectionMenu.actions()) <= 1:
+#            sep.setVisible(False)
+#        sep = self.openCollectionMenu.addSeparator()
+#        sep.setText('Factory presets')
+#        for c in range(2, 5):
+#            collection = self.referenceModel.headerData(c, QtCore.Qt.Horizontal)
+#            if collection.lower() in current:
+#                continue
+#            action = self.openCollectionMenu.addAction(factoryPresetsNamesDict[collection])
+#            action.triggered.connect(lambda state, collection=collection: self.openCollection.emit(collection))
+#        if len(self.openCollectionMenu.actions()) <= 1:
+#            sep.setVisible(False)
+#        if not 'main library' in current:
+#            self.openCollectionMenu.addSeparator()
+#            action = self.openCollectionMenu.addAction(QtGui.QIcon.fromTheme('go-home'), 'Main library')
+#            action.triggered.connect(lambda: self.openCollection.emit(''))
 
     def editTags(self):
         tagsView = TagsDialog(self)

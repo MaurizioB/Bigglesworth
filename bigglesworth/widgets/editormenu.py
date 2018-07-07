@@ -295,7 +295,7 @@ class EditorMenu(QtWidgets.QMenuBar):
         self.dumpMenu = self.addMenu('&Dump')
         self.dumpMenu.aboutToShow.connect(self.updatedumpMenu)
         self.dumpMenu.setSeparatorsCollapsible(False)
-        self.dumpMenu.addSeparator().setText('Receive')
+        self.dumpMenu.addSection('Receive')
         self.dumpFromSoundEditAction = self.dumpMenu.addAction('Request from Sound Edit buffer')
         self.dumpFromSoundEditAction.triggered.connect(lambda: self.dumpFromRequested.emit(None, None, None, False))
         self.dumpFromCurrentIndexAction = self.dumpMenu.addAction('')
@@ -306,7 +306,7 @@ class EditorMenu(QtWidgets.QMenuBar):
         dumpFromMultiAction = self.dumpFromMultiMenu.addAction('Request all Multi parts')
         dumpFromMultiAction.setEnabled(False)
 
-        self.dumpMenu.addSeparator().setText('Send')
+        self.dumpMenu.addSection('Send')
         self.dumpToSoundEditAction = self.dumpMenu.addAction('Send to Blofeld Sound Edit Buffer')
         self.dumpToSoundEditAction.triggered.connect(lambda: self.dumpToRequested.emit(None, None, False))
         self.dumpToCurrentIndexAction = self.dumpMenu.addAction('')

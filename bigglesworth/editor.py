@@ -820,7 +820,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         direction = MidiOut if self.sender() == self.midiOutWidget else MidiIn
         menu = QtWidgets.QMenu()
         menu.setSeparatorsCollapsible(False)
-        menu.addSeparator().setText('MIDI out' if direction == MidiOut else 'MIDI in')
+        menu.addSection('MIDI out' if direction == MidiOut else 'MIDI in')
 
         if direction == MidiOut:
             ctrlAction = menu.addAction('Send MIDI events')
@@ -894,7 +894,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         templates = self.database.getTemplatesByGroups(groupList)
         menu = QtWidgets.QMenu()
         menu.setSeparatorsCollapsible(False)
-        menu.addSeparator().setText('Templates')
+        menu.addSection('Templates')
         if single:
             singleMenu = menu.addMenu('Single {}'.format(single.fullName))
             for name in sorted(templates):
@@ -1432,7 +1432,7 @@ class EditorWindow(QtWidgets.QMainWindow):
                 actions = menu.getCollectionMenu(self.currentCollection).actions()
                 menu = QtWidgets.QMenu()
                 menu.setSeparatorsCollapsible(False)
-                menu.addSeparator().setText(self.currentCollection)
+                menu.addSection(self.currentCollection)
                 menu.addActions(actions)
         menu.hovered.connect(lambda action: self.statusbar.showMessage(action.statusTip()))
         res = menu.exec_(self.display.viewport().mapToGlobal(pos))
