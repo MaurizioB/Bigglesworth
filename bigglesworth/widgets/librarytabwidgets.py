@@ -109,14 +109,17 @@ class TabCornerWidget(QtWidgets.QWidget):
         self.addBtn = QtWidgets.QToolButton()
         self.addBtn.setText('+')
         self.addBtn.setToolTip('Open collections menu')
-        height = max(self.fontMetrics().width('+'), self.fontMetrics().height())
-        self.addBtn.setMinimumHeight(height + 4)
+        size = self.fontMetrics().width('+') + self.fontMetrics().descent() + 4
+        self.addBtn.setFixedHeight(size)
         layout.addWidget(self.addBtn, alignment=QtCore.Qt.AlignLeft)
         self.minimizeBtn = LeftCornerBtn() if direction == Left else RightCornerBtn()
         self.minimizeBtn.setToolTip('Collapse to window side')
         layout.addWidget(self.minimizeBtn)
         if not 'linux' in sys.platform:
-            self.setMinimumHeight(self.addBtn.minimumHeight())
+            if sys.platform == 'win32':
+                layout.setContentsMargins(8, 2, 8, 2)
+#            print(layout.getContentsMargins(), self.getContentsMargins())
+            self.setMinimumHeight(self.addBtn.minimumHeight() + 4)
 
 #    def minimumSizeHint(self):
 #        base = QtWidgets.QWidget.sizeHint(self)
