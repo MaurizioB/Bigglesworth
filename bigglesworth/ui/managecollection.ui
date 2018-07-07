@@ -41,9 +41,6 @@
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <widget class="QToolButton" name="addBtn">
-       <property name="text">
-        <string>...</string>
-       </property>
        <property name="icon">
         <iconset theme="list-add">
          <normaloff/>

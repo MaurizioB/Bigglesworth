@@ -759,6 +759,7 @@ class CollectionTableView(BaseLibraryView):
         self.cornerButton.customContextMenuRequested.connect(self.sortMenu)
         self.cornerButton.clicked.connect(lambda: self.sortByColumn(-1))
         cornerLayout = QtWidgets.QHBoxLayout()
+        cornerLayout.setContentsMargins(0, 0, 0, 0)
         self.cornerButton.setLayout(cornerLayout)
         self.cornerLbl = QtWidgets.QLabel('Index')
         self.cornerLbl.setAlignment(QtCore.Qt.AlignCenter)
