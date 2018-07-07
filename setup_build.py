@@ -99,9 +99,6 @@ includes = ['atexit', 'PyQt4.QtSql',
     'stackedwidget', 
     ]
 
-buildOptions = dict(packages = [], excludes = [], includes = includes, include_files = files)
-macbuildOptions = {'iconfile': 'resources/bigglesworth_icon.icns', 'bundle_name': 'Bigglesworth'}
-dmgOptions = {'applications_shortcut': True}
 
 if platform == WIN:
     base = 'Win32GUI'
@@ -115,11 +112,16 @@ if platform == WIN:
 else:
     base = None
 
+    files.append(('/opt/local/libexec/qt4/share/plugins/sqldrivers', 'sqldrivers'))
+
     executables = [
-        Executable('Bigglesworth.py', base=base, targetName = 'BigglesworthApp'), 
+        Executable('Bigglesworth.py', base=base, targetName = 'Bigglesworth'), 
         Executable('Bigglesworth.py', base='Console', targetName='BigglesworthDebug')
     ]
 
+buildOptions = dict(packages = [], excludes = [], includes = includes, include_files = files)
+macbuildOptions = {'iconfile': 'resources/bigglesworth_icon.icns', 'bundle_name': 'BigglesworthBeta'}
+dmgOptions = {'applications_shortcut': True}
 
 setup(name='Bigglesworth',
       version = versionDot,
