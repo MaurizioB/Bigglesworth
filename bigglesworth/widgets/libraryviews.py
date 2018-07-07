@@ -266,6 +266,8 @@ class BaseLibraryView(QtWidgets.QTableView):
         sortTagDescAction = tagMenu.addAction(QtGui.QIcon.fromTheme('arrow-up-double'), 'Descending')
         sortTagDescAction.setData((TagsColumn, QtCore.Qt.DescendingOrder))
 
+        if self.model().size() <= 0:
+            [a.setEnabled(False) for a in menu.actions()]
         res = menu.exec_(QtGui.QCursor.pos())
         if res and res.data():
             self.sortByColumn(*res.data())
@@ -1442,6 +1444,7 @@ class CollectionWidget(BaseLibraryWidget):
 #        self.collectionView.deleteRequested.connect(self.deleteRequested)
 
         self.updateFilterCombos()
+        self.filterGroupBox.setEnabled(True if self.model.size() > 0 else False)
 
     def clearFilters(self):
         self.bankCombo.setCurrentIndex(0)
@@ -1487,6 +1490,7 @@ class CollectionWidget(BaseLibraryWidget):
             self.collectionView.scrollTo(newIndex)
 
     def checkFilters(self, *args):
+        self.filterGroupBox.setEnabled(True if self.model.size() > 0 else False)
         if self.collectionView.horizontalHeader().isSortIndicatorShown() or \
             self.bankCombo.currentIndex() != 0 or \
             self.catCombo.currentIndex() != 0 or \

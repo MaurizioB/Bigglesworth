@@ -214,13 +214,14 @@ class BaseTabWidget(QtWidgets.QTabWidget):
                     return
             elif event.key() == QtCore.Qt.Key_O:
                 self.openCollectionMenu()
-        elif event.key() == QtCore.Qt.Key_F2 and self.focusWidget() != self.currentWidget().collectionView:
-            startEdit = not self.currentWidget().editModeBtn.isChecked()
-            self.currentWidget().editModeBtn.setChecked(startEdit)
-            if not self.currentWidget().collectionView.currentIndex().isValid():
-                self.currentWidget().collectionView.setCurrentIndex(self.currentWidget().collectionView.model().index(0, NameColumn))
-                if startEdit:
-                    self.currentWidget().collectionView.setFocus()
+        elif event.key() == QtCore.Qt.Key_F2 and self.focusWidget() != self.currentWidget().collectionView and \
+            self.currentWidget().editable:
+                startEdit = not self.currentWidget().editModeBtn.isChecked()
+                self.currentWidget().editModeBtn.setChecked(startEdit)
+                if not self.currentWidget().collectionView.currentIndex().isValid():
+                    self.currentWidget().collectionView.setCurrentIndex(self.currentWidget().collectionView.model().index(0, NameColumn))
+                    if startEdit:
+                        self.currentWidget().collectionView.setFocus()
         QtWidgets.QTabWidget.keyPressEvent(self, event)
 
     def setSiblings(self, tabBar, tabWidget):

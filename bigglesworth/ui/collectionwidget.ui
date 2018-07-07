@@ -25,6 +25,9 @@
      <property name="horizontalScrollMode">
       <enum>QAbstractItemView::ScrollPerPixel</enum>
      </property>
+     <property name="cornerButtonEnabled">
+      <bool>true</bool>
+     </property>
      <attribute name="horizontalHeaderHighlightSections">
       <bool>false</bool>
      </attribute>
