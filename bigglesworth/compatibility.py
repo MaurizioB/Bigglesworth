@@ -9,18 +9,9 @@ class MenuSection(QtWidgets.QWidgetAction):
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         self.label.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum))
 #        self.label.setMaximumHeight(self.label.frameWidth())
-        if sys.platform == 'win32':
-            self.label.setFrameStyle(QtWidgets.QFrame.StyledPanel|QtWidgets.QFrame.Sunken)
-        else:
-            self.label.setStyleSheet('''
-                QLabel {
-                    border: 1px solid lightgray;
-                    border-style: inset
-                    margin: 2px;
-                    padding-left: {l}px;
-                    padding-right: {r}px;
-                }
-            ''')
+        self.label.setFrameStyle(QtWidgets.QFrame.StyledPanel|QtWidgets.QFrame.Sunken)
+        if sys.platform == 'darwin':
+            self.setContentsMargins(4, 2, 4, 2)
             if self.parent():
                 self.parent().aboutToShow.connect(self.setMenuFont)
         self.setDefaultWidget(self.label)
@@ -28,6 +19,7 @@ class MenuSection(QtWidgets.QWidgetAction):
 
     def setMenuFont(self):
         #menu item font sizes has to be forced to float (at least for osx 10.5)
+        #also, they seem to be slightly bigger than they say...
         menu = self.parent()
         menu.aboutToShow.disconnect(self.setMenuFont)
         for action in menu.actions():
@@ -35,7 +27,7 @@ class MenuSection(QtWidgets.QWidgetAction):
                 if action.isSeparator():
                     continue
                 itemFont = action.font()
-                itemFont.setPointSizeF(itemFont.pointSizeF())
+                itemFont.setPointSizeF(itemFont.pointSizeF() + 1)
                 self.label.setFont(itemFont)
                 break
 
