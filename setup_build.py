@@ -115,7 +115,7 @@ else:
     files.append(('/opt/local/libexec/qt4/share/plugins/sqldrivers', 'sqldrivers'))
 
     executables = [
-        Executable('Bigglesworth.py', base=base, targetName = 'Bigglesworth'), 
+        Executable('Bigglesworth.py', base=base, targetName = 'BigglesworthApp'), 
         Executable('Bigglesworth.py', base='Console', targetName='BigglesworthDebug')
     ]
 
