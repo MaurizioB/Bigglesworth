@@ -1,4 +1,5 @@
 import os, sys
+import codecs
 from time import sleep
 
 from Qt import QtCore
@@ -45,16 +46,53 @@ class RtMidiSequencer(QtCore.QObject):
         self.out_graph_dict = {}
         self.client_dict = {}
         self.knownPorts = None
+        self.inPortCacheRaw = None
+        self.inPortCacheDecoded = []
+        self.outPortCacheRaw = None
+        self.outPortCacheDecoded = []
 
     def getInPorts(self):
-        return map(lambda p: p.decode('utf-8'), self.listener_in.get_ports(None))
+#        return map(lambda p: p.decode('utf-8'), self.listener_in.get_ports(None))
+        ports = self.listener_in.get_ports(None)
+        if ports == self.inPortCacheRaw:
+            return self.inPortCacheDecoded
+        self.inPortCacheRaw = ports
+        self.inPortCacheDecoded = []
+        for i, port in enumerate(ports):
+            try:
+                self.inPortCacheDecoded.append(port.decode('utf-8'))
+            except:
+                try:
+                    self.inPortCacheDecoded.append(codecs.decode(port, 'cp1251').encode('utf-8').decode('utf-8'))
+                    print('cp1251 decode successful')
+                except:
+                    print('decode unsuccessful')
+                    self.inPortCacheDecoded.append('Unknown port {}'.format(i))
+        return self.inPortCacheDecoded
 
     def getOutPorts(self):
-        return map(lambda p: p.decode('utf-8'), self.listener_out.get_ports(None))
+#        return map(lambda p: p.decode('utf-8'), self.listener_out.get_ports(None))
+        ports = self.listener_out.get_ports(None)
+        if ports == self.outPortCacheRaw:
+            return ports
+        self.outPortCacheRaw = ports
+        self.outPortCacheDecoded = []
+        for i, port in enumerate(ports):
+            try:
+                self.outPortCacheDecoded.append(port.decode('utf-8'))
+            except:
+                try:
+                    self.outPortCacheDecoded.append(codecs.decode(port, 'cp1251').encode('utf-8').decode('utf-8'))
+                    print('cp1251 decode successful')
+                except:
+                    print('decode unsuccessful')
+                    self.outPortCacheDecoded.append('Unknown port {}'.format(i))
+        return self.outPortCacheDecoded
 
     def getPorts(self):
-        return (map(lambda p: p.decode('utf-8'), self.listener_in.get_ports(None)), 
-            map(lambda p: p.decode('utf-8'), self.listener_out.get_ports(None)))
+#        return (map(lambda p: p.decode('utf-8'), self.listener_in.get_ports(None)), 
+#            map(lambda p: p.decode('utf-8'), self.listener_out.get_ports(None)))
+        return (self.getInPorts(), self.getOutPorts())
 
     def update_graph(self):
         currentPorts = self.getPorts()

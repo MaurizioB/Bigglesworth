@@ -2,6 +2,7 @@
 # *-* coding: utf-8 *-*
 
 import struct
+import codecs
 from threading import Lock
 from const import *
 try:
@@ -775,7 +776,13 @@ class Port(QtCore.QObject):
         self.info_dict = self.seq.get_port_info(self.id, self.client.id)
         self.name = self.info_dict['name']
         if self.graph.backend == ALSA:
-            self.name = self.name.decode('utf-8')
+            try:
+                self.name = self.name.decode('utf-8')
+            except:
+                try:
+                    self.name = codecs.decode(self.name, 'cp1251').encode('utf-8').decode('utf-8')
+                except:
+                    self.name = 'Unknown port {}:{}'.format(*self.addr)
             self.caps = get_port_caps(self.info_dict['capability'])
             self.type = get_port_type(self.info_dict['type'])
             if not len(self.type) or alsaseq.SEQ_PORT_CAP_NO_EXPORT in self.caps:
@@ -915,7 +922,13 @@ class Client(QtCore.QObject):
             setattr(self, s, self.info_dict[s])
         self._name = self.info_dict['name']
         if graph.backend != RTMIDI:
-            self._name = self._name.decode('utf-8')
+            try:
+                self._name = self._name.decode('utf-8')
+            except:
+                try:
+                    self._name = codecs.decode(self._name, 'cp1251').encode('utf-8').decode('utf-8')
+                except:
+                    self._name = 'Unknown client {}'.format(client_id)
         self.port_n = self.info_dict['num_ports']
         self.port_dict = {}
 
