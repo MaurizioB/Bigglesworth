@@ -870,11 +870,15 @@ class Bigglesworth(QtWidgets.QApplication):
 
     def notify(self, receiver, event):
         if event.type() in (QtCore.QEvent.KeyPress, QtCore.QEvent.KeyRelease):
-            if self.editorWindow.isActiveWindow() and event.key() == QtCore.Qt.Key_F1 and not event.isAutoRepeat():
-                self.editorWindow.showValues(True if event.type() == QtCore.QEvent.KeyPress else False)
+            try:
+                if self.editorWindow.isActiveWindow() and event.key() == QtCore.Qt.Key_F1 and not event.isAutoRepeat():
+                    self.editorWindow.showValues(True if event.type() == QtCore.QEvent.KeyPress else False)
+            except:
+                pass
         return QtWidgets.QApplication.notify(self, receiver, event)
 
     def restart(self):
+#        self.database.sql.close()
         QtWidgets.QApplication.quit()
         QtCore.QProcess.startDetached(self._arguments[0], self._arguments)
 

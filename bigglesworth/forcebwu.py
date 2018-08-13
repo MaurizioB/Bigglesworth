@@ -183,7 +183,7 @@ class MayTheForce(QtWidgets.QDialog):
             'Evading the dreaded competition, a group of freedom fighters has ' \
             'established their confidence, sure that the beloved program was still alive.\n\n' \
             'Created by Maurizio Berti.\n\n' \
-            'Thanks to: Fabio "Faber" Vescarelli, Benedetto Schiavone, Nick Sherman, ' \
+            'Thanks to: Fabio "Faber" Vescarelli, Benedetto Schiavone, Nick Sherman, Piet Wagner' \
             'the people at Synth Cafe, and all the users around the galaxy!\n\n' \
             'May the patch be with us__dots__'
 
@@ -197,7 +197,7 @@ class MayTheForce(QtWidgets.QDialog):
 
         self.buildText()
 
-        self.midiMoon = QtGui.QPixmap(':/images/midi.svg')
+        self.midiMoon = QtGui.QPixmap(':/images/midimoon.svg')
 
         self._headerScale = 1
         self.headerScaleAnimation = QtCore.QPropertyAnimation(self, b'headerScale')

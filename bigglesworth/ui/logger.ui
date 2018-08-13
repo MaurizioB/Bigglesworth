@@ -111,6 +111,9 @@
    </item>
    <item row="1" column="0" colspan="8">
     <widget class="QTableView" name="logView">
+     <property name="contextMenuPolicy">
+      <enum>Qt::CustomContextMenu</enum>
+     </property>
      <property name="editTriggers">
       <set>QAbstractItemView::NoEditTriggers</set>
      </property>

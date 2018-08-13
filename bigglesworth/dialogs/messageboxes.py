@@ -24,6 +24,22 @@ class MessageBoxDetailedHtml(QtWidgets.QMessageBox):
         self.textEdit.setHtml(text)
 
 
+class RemoveSoundsMessageBox(MessageBoxDetailedHtml):
+    def __init__(self, parent, collection, nameList):
+        MessageBoxDetailedHtml.__init__(self, parent)
+        self.setIcon(self.Question)
+        self.setWindowTitle('Remove sounds from collection')
+        if len(nameList) == 1:
+            self.setText('Do you want to remove "{}" from the collection "{}"?'.format(nameList[0].strip(), collection))
+        else:
+            self.setText('Do you want to remove {} sounds from the collection "{}"?'.format(len(nameList), collection))
+            self.setDetailedText(', '.join('"<b>{}</b>"'.format(name.strip()) for name in nameList))
+        self.setStandardButtons(self.Ok|self.Cancel)
+
+    def exec_(self):
+        return True if QtWidgets.QMessageBox.exec_(self) == self.Ok else False
+
+
 class DeleteSoundsMessageBox(MessageBoxDetailedHtml):
     def __init__(self, parent, nameList):
         MessageBoxDetailedHtml.__init__(self, parent)

@@ -9,7 +9,7 @@ from bigglesworth.const import factoryPresetsNamesDict
 from bigglesworth.utils import loadUi, setBold
 #from bigglesworth.library import LibraryModel
 from bigglesworth.widgets import LibraryWidget, CollectionWidget
-from bigglesworth.dialogs import NewCollectionDialog, ManageCollectionsDialog, TagsDialog, AboutDialog, SoundListExport
+from bigglesworth.dialogs import NewCollectionDialog, ManageCollectionsDialog, TagsDialog, AboutDialog, SoundListExport, MidiChartDialog
 from bigglesworth.forcebwu import MayTheForce
 #import icons
 
@@ -115,6 +115,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.importAction.triggered.connect(lambda: self.importRequested.emit(None, None))
         self.exportAction.triggered.connect(lambda: self.exportRequested.emit([], None))
+        self.showMidiChartAction.triggered.connect(lambda: MidiChartDialog(self).exec_())
         self.aboutAction.triggered.connect(self.showAbout)
         self.aboutQtAction.triggered.connect(lambda: QtWidgets.QMessageBox.aboutQt(self, 'About Qt...'))
 
@@ -151,7 +152,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 continue
             action = self.openCollectionMenu.addAction(collection)
             action.triggered.connect(lambda state, collection=collection: self.openCollection(collection, self.leftTabWidget))
-            self.collections.append[collection] = action
+            self.collections[collection] = action
         for collection, action in self.collections.items():
             if collection not in exists:
                 self.openCollectionMenu.removeAction(action)

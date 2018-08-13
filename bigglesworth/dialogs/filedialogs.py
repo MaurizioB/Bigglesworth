@@ -192,7 +192,7 @@ class UnknownFileImport(BaseFileDialog):
     def __init__(self, parent, selectedFile=None):
         BaseFileDialog.__init__(self, parent, BaseFileDialog.AcceptOpen, openWritable=False)
         self.setWindowTitle('Import sound file')
-        self.setNameFilters(['Compatible files (*.mid *.syx)', 'MIDI file (*.mid)', 'SysEx file (*.syx)' 'All files (*)'])
+        self.setNameFilters(['Compatible files (*.mid *.syx)', 'MIDI file (*.mid)', 'SysEx file (*.syx)', 'All files (*)'])
         self.selectedFile = selectedFile
         if selectedFile:
             selectedFileInfo = QtCore.QFileInfo(self.selectedFile)

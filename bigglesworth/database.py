@@ -30,7 +30,7 @@ templateDef = soundsDef + 'name varchar, groups varchar)'
 soundsColumns.append('uid')
 soundsDef += 'uid varchar primary key)'
 referenceColumns = ['uid', 'tags', 'blofeld_fact_200801', 'blofeld_fact_200802', 'blofeld_fact_201200', 'Blofeld']
-referenceDef = '(uid varchar primary key, tags varchar, blofeld_fact_201200 int, blofeld_fact_200801 int, blofeld_fact_200802 int, Blofeld int)'
+referenceDef = '(uid varchar primary key, tags varchar, blofeld_fact_200801 int, blofeld_fact_200802 int, blofeld_fact_201200 int, Blofeld int)'
 
 
 class BlofeldDB(QtCore.QObject):
@@ -254,8 +254,10 @@ class BlofeldDB(QtCore.QObject):
                 self.query.exec_('SAVEPOINT refRename')
                 try:
                     assert self.query.exec_('ALTER TABLE reference RENAME TO reference_old')
-                    newLayout = ', '.join(referenceColumns + newColumns)
-                    assert self.query.exec_('CREATE TABLE reference({})'.format(newLayout))
+                    newLayout = ', '.join('"{}"'.format(c) for c in referenceColumns + newColumns)
+                    newLayoutDef = 'uid varchar primary key, tags varchar, {}'.format(
+                        ', '.join('"{}" int'.format(col) for col in referenceColumns[2:] + newColumns[:]))
+                    assert self.query.exec_('CREATE TABLE reference({})'.format(newLayoutDef))
                     reordered = referenceColumns[:]
                     if 'blofeld' in baseColumns:
                         reordered.pop(reordered.index('Blofeld'))
@@ -264,6 +266,7 @@ class BlofeldDB(QtCore.QObject):
                         newLayout, ', '.join(reordered + newColumns)))
                     assert self.query.exec_('DROP TABLE reference_old')
                 except:
+                    print(self.query.lastError().databaseText())
                     self.logger.append(LogCritical, 'Failed to reorder reference table')
                     self.query.exec_('ROLLBACK TO refRename')
                     self.lastError = self.TableFormatError
@@ -395,7 +398,7 @@ class BlofeldDB(QtCore.QObject):
         if name:
             queryStr += ' WHERE name="{}"'.format(name)
         if not self.query.exec_(queryStr):
-            self.dbErrorLog('Error getting template', name)
+            self.dbErrorLog('Error getting template', extMessage=name)
             return templates
         while self.query.next():
             values = [self.query.value(v) for v in range(383)]
@@ -405,7 +408,7 @@ class BlofeldDB(QtCore.QObject):
     def getTemplatesByGroups(self, groups):
         templates = {}
         if not self.query.exec_('SELECT * FROM templates WHERE groups IS NOT NULL'):
-            self.dbErrorLog('Error getting template groups', groups)
+            self.dbErrorLog('Error getting template groups', extMessage=groups)
             return templates
         while self.query.next():
             templateGroups = json.loads(self.query.value(384))
@@ -447,7 +450,7 @@ class BlofeldDB(QtCore.QObject):
         self.query.bindValue(':name', name)
         self.query.bindValue(':groups', json.dumps(groups))
         if not self.query.exec_():
-            self.dbErrorLog('Error creating template', name)
+            self.dbErrorLog('Error creating template', extMessage=name)
             return False
         return True
 
@@ -582,7 +585,7 @@ class BlofeldDB(QtCore.QObject):
             self.query.bindValue(':' + p.attr, p.range.sanitize(int(d)))
         self.query.bindValue(':uid', uid)
         if not self.query.exec_():
-            self.dbErrorLog('Error importing sound to library', (collection, index, targetUid))
+            self.dbErrorLog('Error importing sound to library', extMessage=(collection, index, targetUid))
             return False
 #        print('targetUid', targetUid)
         if not isinstance(targetUid, (str, unicode)):
@@ -613,7 +616,7 @@ class BlofeldDB(QtCore.QObject):
         if not self.query.exec_('SELECT uid FROM reference WHERE uid="{uid}" AND ({f})'.format(
             f = ' OR '.join('"{}" IS NOT NULL'.format(f) for f in factoryPresets), 
             uid = uid)):
-                self.dbErrorLog('Error querying for writable uid', uid)
+                self.dbErrorLog('Error querying for writable uid', extMessage=uid)
                 return
 #        print(self.query.lastQuery())
         self.query.first()
@@ -626,7 +629,7 @@ class BlofeldDB(QtCore.QObject):
     def getSoundDataFromUid(self, uid):
 #        print(uid)
         if not self.query.exec_('SELECT {} FROM sounds WHERE uid = "{}"'.format(','.join(Parameters.parameterList), uid)):
-            self.dbErrorLog('Error getting sound data from uid', uid)
+            self.dbErrorLog('Error getting sound data from uid', extMessage=uid)
             return False
         self.query.first()
         if not isinstance(self.query.value(0), (int, long)):
@@ -636,7 +639,7 @@ class BlofeldDB(QtCore.QObject):
     def getIndexesFromUidList(self, uidList, collection):
         if not self.query.exec_('SELECT "{}" FROM reference WHERE {}'.format(
             collection, ' OR '.join('uid="{}"'.format(uid) for uid in uidList))):
-                self.dbErrorLog('Error getting indexes for collection', collection)
+                self.dbErrorLog('Error getting indexes for collection', extMessage=collection)
                 return None
         indexes = []
         while self.query.next():
@@ -646,7 +649,7 @@ class BlofeldDB(QtCore.QObject):
     def getIndexForUid(self, uid, collection):
         if not self.query.exec_('SELECT "{}" FROM reference WHERE uid="{}"'.format(
             collection, uid)):
-                self.dbErrorLog('Error getting indexes for collection', collection)
+                self.dbErrorLog('Error getting indexes for collection', extMessage=collection)
                 return None
         self.query.first()
         if self.query.record().isNull(0):
@@ -658,7 +661,7 @@ class BlofeldDB(QtCore.QObject):
 
     def getIndexesForCollection(self, collection):
         if not self.query.exec_('SELECT "{}" FROM reference'.format(collection)):
-            self.dbErrorLog('Error getting indexes for collection', collection)
+            self.dbErrorLog('Error getting indexes for collection', extMessage=collection)
             return False
         indexes = []
         while self.query.next():
@@ -672,7 +675,7 @@ class BlofeldDB(QtCore.QObject):
     def getUidFromCollection(self, bank, prog, collection):
         index = (bank << 7) + prog
         if not self.query.exec_('SELECT uid FROM reference WHERE "{}" = {}'.format(collection, index)):
-            self.dbErrorLog('Error getting uid from collection', (bank, prog, collection))
+            self.dbErrorLog('Error getting uid from collection', extMessage=(bank, prog, collection))
             return False
         self.query.first()
         return self.query.value(0)
@@ -692,7 +695,7 @@ class BlofeldDB(QtCore.QObject):
             'WHERE sounds.uid = reference.uid AND reference.uid = :uid')
         self.query.bindValue(':uid', uid)
         if not self.query.exec_():
-            self.dbErrorLog('Error getting name from uid', uid)
+            self.dbErrorLog('Error getting name from uid', extMessage=uid)
             return ''
         self.query.next()
         return self.query.value(0)
@@ -761,7 +764,7 @@ class BlofeldDB(QtCore.QObject):
 
     def getCollectionsFromUid(self, uid, ignorePresets=True):
         if not self.query.exec_('SELECT * FROM reference WHERE uid == "{}"'.format(uid)):
-            self.dbErrorLog('Error getting collections for uid', (uid, ignorePresets))
+            self.dbErrorLog('Error getting collections for uid', extMessage=(uid, ignorePresets))
             return False
         self.query.first()
         collections = []
@@ -775,24 +778,29 @@ class BlofeldDB(QtCore.QObject):
         
 
     def getNamesFromUidList(self, uidList):
-        res = self.query.exec_('SELECT c00.char||c01.char||c02.char||c03.char||c04.char||c05.char||c06.char||c07.char||' \
-            'c08.char||c09.char||c10.char||c11.char||c12.char||c13.char||c14.char||c15.char' \
-            ' FROM reference,sounds JOIN ascii AS c00 ON sounds.nameChar00 = c00.id' \
-            ' JOIN ascii AS c01 ON sounds.nameChar01 = c01.id JOIN ascii AS c02 ON sounds.nameChar02 = c02.id' \
-            ' JOIN ascii AS c03 ON sounds.nameChar03 = c03.id JOIN ascii AS c04 ON sounds.nameChar04 = c04.id' \
-            ' JOIN ascii AS c05 ON sounds.nameChar05 = c05.id JOIN ascii AS c06 ON sounds.nameChar06 = c06.id' \
-            ' JOIN ascii AS c07 ON sounds.nameChar07 = c07.id JOIN ascii AS c08 ON sounds.nameChar08 = c08.id' \
-            ' JOIN ascii AS c09 ON sounds.nameChar09 = c09.id JOIN ascii AS c10 ON sounds.nameChar10 = c10.id' \
-            ' JOIN ascii AS c11 ON sounds.nameChar11 = c11.id JOIN ascii AS c12 ON sounds.nameChar12 = c12.id' \
-            ' JOIN ascii AS c13 ON sounds.nameChar13 = c13.id JOIN ascii AS c14 ON sounds.nameChar14 = c14.id' \
-            ' JOIN ascii AS c15 ON sounds.nameChar15 = c15.id WHERE (sounds.uid = reference.uid) AND (' + \
-            ' OR '.join('(reference.uid == "{}")'.format(uid) for uid in uidList) + ')')
-        if not res:
-            self.dbErrorLog('Error getting names from list of uid', uidList)
-            return
         nameList = []
-        while self.query.next():
-            nameList.append(self.query.value(0))
+        splitted = uidList[:500]
+        delta = 0
+        while splitted:
+            res = self.query.exec_('SELECT c00.char||c01.char||c02.char||c03.char||c04.char||c05.char||c06.char||c07.char||' \
+                'c08.char||c09.char||c10.char||c11.char||c12.char||c13.char||c14.char||c15.char' \
+                ' FROM reference,sounds JOIN ascii AS c00 ON sounds.nameChar00 = c00.id' \
+                ' JOIN ascii AS c01 ON sounds.nameChar01 = c01.id JOIN ascii AS c02 ON sounds.nameChar02 = c02.id' \
+                ' JOIN ascii AS c03 ON sounds.nameChar03 = c03.id JOIN ascii AS c04 ON sounds.nameChar04 = c04.id' \
+                ' JOIN ascii AS c05 ON sounds.nameChar05 = c05.id JOIN ascii AS c06 ON sounds.nameChar06 = c06.id' \
+                ' JOIN ascii AS c07 ON sounds.nameChar07 = c07.id JOIN ascii AS c08 ON sounds.nameChar08 = c08.id' \
+                ' JOIN ascii AS c09 ON sounds.nameChar09 = c09.id JOIN ascii AS c10 ON sounds.nameChar10 = c10.id' \
+                ' JOIN ascii AS c11 ON sounds.nameChar11 = c11.id JOIN ascii AS c12 ON sounds.nameChar12 = c12.id' \
+                ' JOIN ascii AS c13 ON sounds.nameChar13 = c13.id JOIN ascii AS c14 ON sounds.nameChar14 = c14.id' \
+                ' JOIN ascii AS c15 ON sounds.nameChar15 = c15.id WHERE (sounds.uid = reference.uid) AND (' + \
+                ' OR '.join('(reference.uid == "{}")'.format(uid) for uid in splitted) + ')')
+            if not res:
+                self.dbErrorLog('Error getting names from list of uid', extMessage=splitted)
+                return
+            while self.query.next():
+                nameList.append(self.query.value(0))
+            delta += 1
+            splitted = uidList[500 * delta: 500 * (delta + 1)]
         return nameList
 
     def updateSoundValue(self, uid, paramId, value):
@@ -800,7 +808,7 @@ class BlofeldDB(QtCore.QObject):
             attr=Parameters.parameterData[paramId].attr, 
             value=int(value), 
             uid=uid)):
-                self.dbErrorLog('Error updating value for sound', (uid, paramId, value))
+                self.dbErrorLog('Error updating value for sound', extMessage=(uid, paramId, value))
                 return False
         return True
 
@@ -810,29 +818,84 @@ class BlofeldDB(QtCore.QObject):
         for p, value in zip(_parameterList, parameters):
             self.query.bindValue(':{}'.format(p), int(value))
         if not self.query.exec_():
-            self.dbErrorLog('Error updating sound values', uid)
+            self.dbErrorLog('Error updating sound values', extMessage=uid)
             return False
         return True
 
     def checkDuplicates(self, uidList, collection):
-        where = ' OR '.join('reference.uid = "{}"'.format(uid) for uid in uidList)
-        res = self.query.exec_('SELECT reference.uid FROM reference WHERE reference.{} IS NOT NULL AND ({})'.format(collection, where))
-        if not res:
-            self.dbErrorLog('Error checking for duplicates in collection', (uidList, collection))
-        else:
-            duplicates = []
-            while self.query.next():
-                duplicates.append(self.query.value(0))
-            return duplicates
+        duplicates = []
+        splitted = uidList[:250]
+        delta = 0
+        while splitted:
+            where = ' OR '.join('reference.uid = "{}"'.format(uid) for uid in splitted)
+            res = self.query.exec_('SELECT reference.uid FROM reference WHERE reference."{}" IS NOT NULL AND ({})'.format(collection, where))
+            if not res:
+                self.dbErrorLog('Error checking for duplicates in collection', extMessage=(splitted, collection))
+                break
+            else:
+                while self.query.next():
+                    duplicates.append(self.query.value(0))
+            delta += 1
+            splitted = uidList[250 * delta: 250 * (delta + 1)]
+        return duplicates
 
     def createCollection(self, name, source=None):
         if not self.query.exec_(u'ALTER TABLE reference ADD COLUMN "{}" int'.format(name)):
-            self.dbErrorLog('Error creating collection', (name))
+            self.dbErrorLog('Error creating collection', extMessage=(name))
             return False
         if source:
-            if not self.query.exec_(u'UPDATE reference SET "{}" = "{}"'.format(name, source)):
-                self.dbErrorLog('Error creating collection from source', name, source)
-                return False
+            if source not in factoryPresets:
+                if not self.query.exec_(u'UPDATE reference SET "{}" = "{}"'.format(name, source)):
+                    self.dbErrorLog('Error creating collection from source', extMessage=(name, source))
+                    return False
+            else:
+                self.query.exec_(u'SELECT uid FROM reference WHERE {0} IS NOT NULL ORDER BY {0} ASC'.format(source))
+                uidList = []
+                while self.query.next():
+                    uidList.append(self.query.value(0))
+                self.sql.transaction()
+                self.dbErrorLog('Creating duplicates from factory', LogDebug, extMessage=source)
+
+                fieldList = [':{}'.format(p) for p in _parameterList]
+                prepareStr = 'SELECT {}, reference.tags FROM sounds,reference WHERE sounds.uid=:uid AND reference.uid=:uid2'.format(', '.join('sounds.' + p for p in _parameterList))
+                reader = QtSql.QSqlQuery()
+                reader.prepare(prepareStr)
+                insertPrepare = 'INSERT INTO sounds({}, uid) VALUES({}, :uid)'.format(', '.join(_parameterList), ', '.join(fieldList))
+
+                for index, uid in enumerate(uidList):
+                    reader.prepare(prepareStr)
+                    reader.bindValue(':uid', uid)
+                    reader.bindValue(':uid2', uid)
+                    reader.exec_()
+                    reader.first()
+                    values = [reader.value(i) for i in range(383)]
+                    tags = reader.value(383)
+
+                    self.query.prepare(insertPrepare)
+                    for p, value in zip(fieldList, values):
+                        self.query.bindValue(p, value)
+                    newUid = str(uuid.uuid4())
+                    self.query.bindValue(':uid', newUid)
+                    if not self.query.exec_():
+                        self.dbErrorLog('Error creating duplicate', extMessage=(uid, newUid))
+                        self.sql.rollback()
+                        self.referenceModel.refresh()
+                        return False
+
+                    self.query.prepare('INSERT INTO reference(uid, tags, "{}") VALUES(:uid, :tags, :target)'.format(name))
+                    self.query.bindValue(':uid', newUid)
+                    self.query.bindValue(':tags', tags)
+                    self.query.bindValue(':target', index)
+                    if not self.query.exec_():
+                        self.dbErrorLog('Error updating data for duplicate', extMessage=(uid, newUid))
+                        self.sql.rollback()
+                        self.referenceModel.refresh()
+                        return False
+                    if not index % 32:
+                        print(index)
+                self.sql.commit()
+                self.dbErrorLog('Factory cloned successfully', LogDebug)
+        self.referenceModel.refresh()
         return True
 
     def initSound(self, index, collection):
@@ -876,7 +939,7 @@ class BlofeldDB(QtCore.QObject):
         self.query.bindValue(':uid', uid)
         self.query.bindValue(':uid2', uid)
         if not self.query.exec_():
-            self.dbErrorLog('Error duplicating sound', (uid, collection, target, rename))
+            self.dbErrorLog('Error duplicating sound', extMessage=(uid, collection, target, rename))
             return False
         self.query.first()
         values = [self.query.value(i) for i in range(383)]
@@ -891,7 +954,7 @@ class BlofeldDB(QtCore.QObject):
         newUid = str(uuid.uuid4())
         self.query.bindValue(':uid', newUid)
         if not self.query.exec_():
-            self.dbErrorLog('Error inserting values for duplicate sound', (uid, collection, target, rename))
+            self.dbErrorLog('Error inserting values for duplicate sound', extMessage=(uid, collection, target, rename))
             return False
         if collection:
             self.query.prepare('INSERT INTO reference(uid, tags, "{}") VALUES(:uid, :tags, :target)'.format(collection))
@@ -899,14 +962,14 @@ class BlofeldDB(QtCore.QObject):
             self.query.bindValue(':tags', tags)
             self.query.bindValue(':target', target)
             if not self.query.exec_():
-                self.dbErrorLog('Error adding reference to collection for duplicate sound', (uid, collection, target, rename))
+                self.dbErrorLog('Error adding reference to collection for duplicate sound', extMessage=(uid, collection, target, rename))
                 return False
         else:
             self.query.prepare('INSERT INTO reference(uid, tags) VALUES(:uid, :tags)')
             self.query.bindValue(':uid', newUid)
             self.query.bindValue(':tags', tags)
             if not self.query.exec_():
-                self.dbErrorLog('Error adding reference for duplicate sound', (uid, newUid))
+                self.dbErrorLog('Error adding reference for duplicate sound', extMessage=(uid, newUid))
                 return False
         self.libraryModel.setQuery()
         while self.libraryModel.canFetchMore():
@@ -915,63 +978,125 @@ class BlofeldDB(QtCore.QObject):
         return newUid
 
     def addSoundsToCollection(self, uidMap, collection):
-        queryStr = 'UPDATE reference SET "{}" = NULL WHERE '.format(collection)
-        queryStr += ' OR '.join('"{}" = {}'.format(collection, target) for _, target in uidMap)
-        self.sql.transaction()
-        self.query.exec_(queryStr)
-        for uid, target in uidMap:
-            #preset sounds have to be duplicated before adding to collection
-            if not self.query.exec_('SELECT blofeld_fact_200801,blofeld_fact_200802,blofeld_fact_201200 FROM reference WHERE uid = "{}"'.format(uid)):
-                self.dbErrorLog('Error adding sounds to collection', (uidMap, collection))
-                self.sql.rollback()
-                return False
-            self.query.first()
-            if isinstance(self.query.value(0), (int, long)) or \
-                isinstance(self.query.value(1), (int, long)) or \
-                isinstance(self.query.value(2), (int, long)):
-                    uid = self.duplicateSound(uid, rename=False)
-            if not self.query.exec_('UPDATE reference SET "{}" = {} WHERE uid = "{}"'.format(
-                collection, 
-                target, 
-                uid
-                )):
-                    self.dbErrorLog('Error updating reference while adding sounds to collection', (uidMap, collection))
+        fieldList = [':{}'.format(p) for p in _parameterList]
+        prepareStr = 'SELECT {}, reference.tags FROM sounds,reference WHERE sounds.uid=:uid AND reference.uid=:uid2'.format(', '.join('sounds.' + p for p in _parameterList))
+        reader = QtSql.QSqlQuery()
+        reader.prepare(prepareStr)
+        insertPrepare = 'INSERT INTO sounds({}, uid) VALUES({}, :uid)'.format(', '.join(_parameterList), ', '.join(fieldList))
+
+        splitted = uidMap[:500]
+        delta = 0
+        while splitted:
+            queryStr = 'UPDATE reference SET "{}" = NULL WHERE '.format(collection)
+            queryStr += ' OR '.join('"{}" = {}'.format(collection, target) for _, target in uidMap)
+            self.sql.transaction()
+            self.query.exec_(queryStr)
+            print('inizio', splitted)
+            for pos, (uid, target) in enumerate(splitted):
+                #preset sounds have to be duplicated before adding to collection
+                if not self.query.exec_('SELECT blofeld_fact_200801,blofeld_fact_200802,blofeld_fact_201200 FROM reference WHERE uid = "{}"'.format(uid)):
+                    self.dbErrorLog('Error adding sounds to collection', extMessage=(splitted, collection))
                     self.sql.rollback()
                     return False
+                self.query.first()
+                if isinstance(self.query.value(0), (int, long)) or \
+                    isinstance(self.query.value(1), (int, long)) or \
+                    isinstance(self.query.value(2), (int, long)):
+                        #manual duplicate for performance
+    #                    uid = self.duplicateSound(uid, rename=False)
+                        reader.prepare(prepareStr)
+                        reader.bindValue(':uid', uid)
+                        reader.bindValue(':uid2', uid)
+                        reader.exec_()
+                        reader.first()
+                        values = [reader.value(i) for i in range(383)]
+                        tags = reader.value(383)
+
+                        self.query.prepare(insertPrepare)
+                        for p, value in zip(fieldList, values):
+                            self.query.bindValue(p, value)
+                        newUid = str(uuid.uuid4())
+                        self.query.bindValue(':uid', newUid)
+                        if not self.query.exec_():
+                            self.dbErrorLog('Error creating duplicate', extMessage=(uid, newUid))
+                            self.sql.rollback()
+                            self.referenceModel.refresh()
+                            return False
+
+                        self.query.prepare('INSERT INTO reference(uid, tags, "{}") VALUES(:uid, :tags, :target)'.format(collection))
+                        self.query.bindValue(':uid', newUid)
+                        self.query.bindValue(':tags', tags)
+                        self.query.bindValue(':target', target)
+                        if not self.query.exec_():
+                            self.dbErrorLog('Error updating data for duplicate', extMessage=(uid, newUid))
+                            self.sql.rollback()
+                            self.referenceModel.refresh()
+                            return False
+                elif not self.query.exec_('UPDATE reference SET "{}" = {} WHERE uid = "{}"'.format(
+                    collection, 
+                    target, 
+                    uid
+                    )):
+                        self.dbErrorLog('Error updating reference while adding sounds to collection', extMessage=(uidMap, collection))
+                        self.sql.rollback()
+                        return False
+                if not pos % 50:
+                    print(pos)
+            delta += 1
+            splitted = uidMap[500 * delta: 500 * (delta + 1)]
+
         self.sql.commit()
         self.collections[collection].query().exec_()
         self.collections[collection].updated.emit()
+
+        self.libraryModel.setQuery()
+        while self.libraryModel.canFetchMore():
+            self.libraryModel.fetchMore()
+        self.libraryModel.updated.emit()
+
         return True
 
     def removeSounds(self, uidList, collection):
-        where = ' OR '.join('uid = "{}"'.format(uid) for uid in uidList)
-        if not self.query.exec_('UPDATE reference SET "{}" = NULL WHERE {}'.format(collection, where)):
-            self.dbErrorLog('Error removing sound from collection', (uidList, collection))
-            return False
+        splitted = uidList[:500]
+        delta = 0
+        while splitted:
+            where = ' OR '.join('uid = "{}"'.format(uid) for uid in splitted)
+            if not self.query.exec_('UPDATE reference SET "{}" = NULL WHERE {}'.format(collection, where)):
+                self.dbErrorLog('Error removing sound from collection', extMessage=(splitted, collection))
+                return False
+            delta += 1
+            splitted = uidList[500 * delta: 500 * (delta + 1)]
         self.collections[collection].query().exec_()
         self.collections[collection].updated.emit()
         return True
 
     def deleteSounds(self, uidList):
-        where = ' OR '.join('uid = "{}"'.format(uid) for uid in uidList)
+        splitted = uidList[:500]
+        delta = 0
         collections = self.referenceModel.collections
         reference = set()
-        if not self.query.exec_('SELECT {} FROM reference WHERE {}'.format(', '.join('"{}"'.format(c) for c in collections), where)):
-            self.dbErrorLog('Error deleting sounds from main library', uidList)
-            return False
-        while self.query.next():
-            for colId, collection in enumerate(collections):
-                try:
-                    int(self.query.value(colId))
-                    reference.add(collection)
-                except:
-                    pass
-        if not self.query.exec_('DELETE FROM reference WHERE {}'.format(where)):
-            self.dbErrorLog('Error deleting reference while deleting sound', uidList)
-        if not self.query.exec_('DELETE FROM sounds WHERE {}'.format(where)):
-            self.dbErrorLog('Error deleting sound data while deleting sound', uidList)
+        while splitted:
+            where = ' OR '.join('uid = "{}"'.format(uid) for uid in splitted)
+            if not self.query.exec_('SELECT {} FROM reference WHERE {}'.format(', '.join('"{}"'.format(c) for c in collections), where)):
+                self.dbErrorLog('Error deleting sounds from main library', extMessage=splitted)
+                return False
+            while self.query.next():
+                for colId, collection in enumerate(collections):
+                    try:
+                        int(self.query.value(colId))
+                        reference.add(collection)
+                    except:
+                        pass
+            if not self.query.exec_('DELETE FROM reference WHERE {}'.format(where)):
+                self.dbErrorLog('Error deleting reference while deleting sound', extMessage=splitted)
+            if not self.query.exec_('DELETE FROM sounds WHERE {}'.format(where)):
+                self.dbErrorLog('Error deleting sound data while deleting sound', extMessage=splitted)
+            delta += 1
+            splitted = uidList[500 * delta: 500 * (delta + 1)]
+
         for collection in reference:
-            self.collections[collection].updated.emit()
+            if collection in self.collections:
+                self.collections[collection].updated.emit()
         self.libraryModel.setQuery()
         while self.libraryModel.canFetchMore():
             self.libraryModel.fetchMore()
@@ -980,14 +1105,14 @@ class BlofeldDB(QtCore.QObject):
     def duplicateAndInsert(self, uidList, collection, target):
         totRows = len(uidList)
         self.query.exec_('SELECT "{}" as location, uid FROM reference WHERE location IS NOT NULL'.format(collection))
-        map = {l:None for l in range(1024)}
+        dataMap = {l:None for l in range(1024)}
         while self.query.next():
-            map[self.query.value(0)] = self.query.value(1)
+            dataMap[self.query.value(0)] = self.query.value(1)
         last = pos = target
         found = []
         delta = 1
         while True:
-            while map[pos] is not None:
+            while dataMap[pos] is not None:
                 pos += delta
                 if pos > 1023:
                     pos = target
@@ -999,23 +1124,38 @@ class BlofeldDB(QtCore.QObject):
             if pos > 1023:
                 pos = target
                 delta = -1
+
+        self.sql.transaction()
         newUidList = [self.duplicateSound(uid) for uid in uidList]
         first = min(found + [target])
         last = max(found + [target - 1])
-        oldUidList = {k:v for k, v in map.items() if first <= k <= last and v is not None}
+        oldUidList = {k:v for k, v in dataMap.items() if first <= k <= last and v is not None}
         if target <= first:
             for pos, uid in enumerate(newUidList, target):
-                self.query.exec_('UPDATE reference SET "{}" = {} WHERE uid = "{}"'.format(collection, pos, uid))
+                if not self.query.exec_('UPDATE reference SET "{}" = {} WHERE uid = "{}"'.format(collection, pos, uid)):
+                    self.dbErrorLog('Error updating reference', extMessage=(collection, pos, uid))
+                    self.sql.rollback()
+                    return
             for p in sorted(oldUidList.keys()):
                 pos += 1
-                self.query.exec_('UPDATE reference SET "{}" = {} WHERE uid = "{}"'.format(collection, pos, oldUidList[p]))
+                if not self.query.exec_('UPDATE reference SET "{}" = {} WHERE uid = "{}"'.format(collection, pos, oldUidList[p])):
+                    self.dbErrorLog('Error updating reference', extMessage=(collection, pos, oldUidList[p]))
+                    self.sql.rollback()
+                    return
         else:
             pos = first
             for p in sorted(oldUidList.keys()):
-                self.query.exec_('UPDATE reference SET "{}" = {} WHERE uid = "{}"'.format(collection, pos, oldUidList[p]))
+                if not self.query.exec_('UPDATE reference SET "{}" = {} WHERE uid = "{}"'.format(collection, pos, oldUidList[p])):
+                    self.dbErrorLog('Error updating reference', extMessage=(collection, pos, oldUidList[p]))
+                    self.sql.rollback()
+                    return
                 pos += 1
             for pos, uid in enumerate(newUidList, pos):
-                self.query.exec_('UPDATE reference SET "{}" = {} WHERE uid = "{}"'.format(collection, pos, uid))
+                if not self.query.exec_('UPDATE reference SET "{}" = {} WHERE uid = "{}"'.format(collection, pos, uid)):
+                    self.dbErrorLog('Error updating reference', extMessage=(collection, pos, uid))
+                    self.sql.rollback()
+                    return
+        self.sql.commit()
         self.collections[collection].query().exec_()
         self.collections[collection].updated.emit()
 
@@ -1031,8 +1171,12 @@ class BlofeldDB(QtCore.QObject):
             ))
         while self.query.next():
             existing.append(self.query.value(0))
-        self.query.exec_('UPDATE reference SET "{c}" = NULL WHERE "{c}" BETWEEN {s} AND {e}'.format(
-            c=collection, s=first, e=last))
+        self.sql.transaction()
+        if not self.query.exec_('UPDATE reference SET "{c}" = NULL WHERE "{c}" BETWEEN {s} AND {e}'.format(
+            c=collection, s=first, e=last)):
+                self.dbErrorLog('Error clearing reference', extMessage=(collection, first, last))
+                self.sql.rollback()
+                return
         uidMap = []
         for uid, target in zip(uidList, targetRows):
             if uid in existing:
@@ -1040,6 +1184,7 @@ class BlofeldDB(QtCore.QObject):
             else:
                 newUid = self.duplicateSound(uid)
                 uidMap.append((newUid, target))
+        self.sql.commit()
         self.addSoundsToCollection(uidMap, collection)
 
     def swapSounds(self, uidList, collection, targetRows):
@@ -1072,14 +1217,17 @@ class BlofeldDB(QtCore.QObject):
                     nextOld = iterSourceRows.next()
                 finalLayout[nextOld] = moving[s]
 
+            self.sql.transaction()
             for l, uid in finalLayout.items():
-                res = self.query.exec_('UPDATE reference SET "{c}" = {l} WHERE uid = "{u}"'.format(
+                if not self.query.exec_('UPDATE reference SET "{c}" = {l} WHERE uid = "{u}"'.format(
                     c=collection, 
                     l=l, 
                     u=uid, 
-                    ))
-                if not res:
-                    print(self.query.lastError().databaseText())
+                    )):
+                        self.dbErrorLog('Error swapping sound', extMessage=(collection, uid, l))
+                        self.sql.rollback()
+                        return
+            self.sql.commit()
         else:
             print(sourceRows.keys())
             print(targetRows)
@@ -1142,16 +1290,19 @@ class BlofeldDB(QtCore.QObject):
             target = firstSource + delta
             for t in range(target, target + len(uidList)):
                 finalLayout[t] = iterUid.next()
+        self.sql.transaction()
         for l, uid in finalLayout.items():
             if not uid:
                 continue
-            res = self.query.exec_('UPDATE reference SET "{c}" = {l} WHERE uid = "{u}"'.format(
+            if not self.query.exec_('UPDATE reference SET "{c}" = {l} WHERE uid = "{u}"'.format(
                 c=collection, 
                 l=l, 
                 u=uid, 
-                ))
-            if not res:
-                print(self.query.lastError().databaseText())
+                )):
+                    self.dbErrorLog('Error inserting sounds', extMessage=(collection, uid, l))
+                    self.sql.rollback()
+                    return
+        self.sql.commit()
         self.collections[collection].query().exec_()
         self.collections[collection].updated.emit()
 
@@ -1206,10 +1357,10 @@ class BlofeldDB(QtCore.QObject):
 class CollectionManagerModel(QtSql.QSqlTableModel):
     def __init__(self):
         QtSql.QSqlTableModel.__init__(self)
-        self.setTable('reference')
         self.refresh()
 
     def refresh(self):
+        self.setTable('reference')
         self.select()
         while self.canFetchMore():
             self.fetchMore()

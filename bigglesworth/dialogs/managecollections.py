@@ -284,11 +284,11 @@ class ManageCollectionsDialog(QtWidgets.QDialog):
             for c in new:
                 self.database.createCollection(c)
         else:
-            createStr = 'CREATE TABLE _temp(uid varchar primary key, tags varchar, blofeld_fact_201200 int, blofeld_fact_200801 int, blofeld_fact_200802 int, Blofeld int, '
+            createStr = 'CREATE TABLE _temp(uid varchar primary key, tags varchar, blofeld_fact_200801 int, blofeld_fact_200802 int, blofeld_fact_201200 int, '
 
-            schemaStr = []
-            insertStr = []
-            selectStr = []
+            schemaStr = ['"Blofeld" int']
+            insertStr = ['"Blofeld"']
+            selectStr = ['"Blofeld"']
 #            self.database.sql.transaction()
             self.query.exec_('ALTER TABLE reference RENAME TO _oldreference')
             for k in newSchema:
@@ -301,7 +301,7 @@ class ManageCollectionsDialog(QtWidgets.QDialog):
                 else:
                     selectStr.append('"{}"'.format(k))
             createStr += ', '.join(schemaStr) + ')'
-            commitStr = 'INSERT INTO _temp (uid, tags, blofeld_fact_201200, blofeld_fact_200801, blofeld_fact_200802, {}) SELECT uid, tags, blofeld_fact_201200, blofeld_fact_200801, blofeld_fact_200802, {} FROM _oldreference'.format(', '.join(insertStr), ', '.join(selectStr))
+            commitStr = 'INSERT INTO _temp (uid, tags, blofeld_fact_200801, blofeld_fact_200802, blofeld_fact_201200, {}) SELECT uid, tags, blofeld_fact_200801, blofeld_fact_200802, blofeld_fact_201200, {} FROM _oldreference'.format(', '.join(insertStr), ', '.join(selectStr))
             res = self.query.exec_(createStr)
 #            self.database.sql.commit()
             if not res:
@@ -314,7 +314,7 @@ class ManageCollectionsDialog(QtWidgets.QDialog):
                 else:
                     #we need to do a couple of queries, close and open the connection to avoid locking...
                     self.query.finish()
-                    self.query.exec_('SELECT {} FROM _temp'.format(newSchema[-1]))
+                    self.query.exec_('SELECT "Blofeld" FROM _temp')
                     while self.query.next():
                         pass
                     self.query.finish()

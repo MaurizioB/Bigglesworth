@@ -30,7 +30,7 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <property name="spacing">
-       <number>0</number>
+       <number>2</number>
       </property>
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -69,29 +69,6 @@
         </item>
         <item>
          <widget class="FilterTagsEdit" name="filterTagsEdit"/>
-        </item>
-        <item>
-         <widget class="QPushButton" name="editModeBtn">
-          <property name="mouseTracking">
-           <bool>true</bool>
-          </property>
-          <property name="contextMenuPolicy">
-           <enum>Qt::CustomContextMenu</enum>
-          </property>
-          <property name="toolTip">
-           <string>Toggle to enable/disable name and category editing</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset theme="edit-rename">
-            <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-         </widget>
         </item>
        </layout>
       </item>
@@ -155,11 +132,17 @@
    </item>
    <item row="1" column="0">
     <widget class="LibraryTableView" name="collectionView">
+     <property name="verticalScrollBarPolicy">
+      <enum>Qt::ScrollBarAlwaysOn</enum>
+     </property>
      <property name="editTriggers">
       <set>QAbstractItemView::NoEditTriggers</set>
      </property>
      <property name="horizontalScrollMode">
       <enum>QAbstractItemView::ScrollPerPixel</enum>
+     </property>
+     <property name="cornerButtonEnabled">
+      <bool>true</bool>
      </property>
      <attribute name="horizontalHeaderHighlightSections">
       <bool>false</bool>

@@ -83,6 +83,29 @@ class LogWindow(QtWidgets.QDialog):
         self.logView.horizontalHeader().setResizeMode(3, QtWidgets.QHeaderView.Interactive)
 
         self.levelCombo.currentIndexChanged.connect(self.setFilter)
+        self.logView.customContextMenuRequested.connect(self.logMenu)
+
+    def logMenu(self, pos):
+        index = self.logView.indexAt(pos)
+        if index.isValid():
+            menu = QtWidgets.QMenu()
+            if index.data():
+                copyCellAction = menu.addAction(QtGui.QIcon.fromTheme('edit-copy'), 'Copy cell')
+            else:
+                copyCellAction = False
+            copyRowAction = menu.addAction(QtGui.QIcon.fromTheme('edit-copy'), 'Copy row')
+            res = menu.exec_(QtGui.QCursor.pos())
+            if not res:
+                return
+            if res == copyCellAction:
+                content = [index.data()]
+            elif res == copyRowAction:
+                content = []
+                for column in range(self.model.columnCount()):
+                    data = self.model.data(column, QtCore.Qt.DisplayRole)
+                    if data:
+                        content.append()
+            QtWidgets.QApplication.clipboard().setText('\n'.join(content))
 
     def setFilter(self, logLevel):
         self.proxy.logLevel = logLevel
@@ -101,6 +124,7 @@ class LogWindow(QtWidgets.QDialog):
         QtWidgets.QDialog.hide(self)
 
     def appendRow(self, timestamp, logLevel, message, extMessage):
+#        print(timestamp, logLevel, message, extMessage, self.sender())
         timeItem = QtGui.QStandardItem()
         timeItem.setData(timestamp, QtCore.Qt.DisplayRole)
         logLevelItem = QtGui.QStandardItem()

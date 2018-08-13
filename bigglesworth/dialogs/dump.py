@@ -13,6 +13,7 @@ from bigglesworth.dialogs import UnknownFileImport, SoundFileImport, QuestionMes
 from bigglesworth.libs import midifile
 
 IndexesRole = QtCore.Qt.UserRole + 32
+CollectionRole = IndexesRole + 1
 CheckColumn = UidColumn
 DupColumn = TagsColumn
 DestColumn = FactoryColumn
@@ -144,6 +145,37 @@ class LocationDelegate(QtWidgets.QStyledItemDelegate):
         QtWidgets.QApplication.style().drawControl(QtWidgets.QStyle.CE_ItemViewItem, option, qp)
 
 
+class ImportWaiter(QtWidgets.QDialog):
+    shown = False
+    def __init__(self, parent):
+        QtWidgets.QDialog.__init__(self, parent)
+        l = QtWidgets.QHBoxLayout()
+        self.setLayout(l)
+        l.addWidget(QtWidgets.QLabel('Loading content, please wait...'))
+
+    def showEvent(self, event):
+        if not self.shown:
+            self.shown = True
+            parent = self.parent()
+            while parent and not parent.isVisible():
+                parent = parent.parent()
+            center = parent.geometry().center()
+            self.move(center.x() - self.width() / 2, center.y() - self.height() / 2)
+
+    def hide(self):
+        QtWidgets.QDialog.hide(self)
+        self.shown = False
+
+    def closeEvent(self, event):
+        event.ignore()
+
+    def accept(self):
+        return
+
+    def reject(self):
+        return
+
+
 class BaseImportDialog(QtWidgets.QDialog):
     shown = False
     headerLabels = ['', '', 'Name', 'Category', 'Duplicates', 'Dest']
@@ -153,6 +185,7 @@ class BaseImportDialog(QtWidgets.QDialog):
     def __init__(self, parent, dumpBuffer=None):
         QtWidgets.QDialog.__init__(self, parent)
         loadUi(localPath('ui/soundimport.ui'), self)
+        self.waiter = ImportWaiter(self)
         self._isDumpDialog = True
         self.main = QtWidgets.QApplication.instance()
         self.database = self.main.database
@@ -275,6 +308,11 @@ class BaseImportDialog(QtWidgets.QDialog):
         self.paramTree.expand(self.paramModel.index(0, 0))
         self.mode = 0
 
+        self.queueTimer = QtCore.QTimer()
+        self.queueTimer.setSingleShot(True)
+        self.queueTimer.setInterval(8)
+        self.queueTimer.timeout.connect(self.checkImport)
+
     def openSound(self):
         self.mode |= self.OpenSound
         self.accept()
@@ -366,6 +404,8 @@ class BaseImportDialog(QtWidgets.QDialog):
         self.dumpTable.resizeRowsToContents()
         self.dumpTable.scrollToBottom()
         self.dumpModel.dataChanged.connect(self.checkImport)
+        if self.isVisible():
+            self.waiter.hide()
 
     def showValues(self, index):
         if self.sender() == self.dumpTable.selectionModel():
@@ -476,6 +516,11 @@ class BaseImportDialog(QtWidgets.QDialog):
         return data
 
     def checkImport(self):
+        #if dumpModel is the sender, "queue" the update to avoid unnecessary
+        #checks for multiple dataChanged signals
+        if self.sender() == self.dumpModel:
+            self.queueTimer.start()
+            return
         if self.sender() == self.dumper and self.dumpModel.rowCount() == 1:
             self.dumpModel.blockSignals(True)
             self.dumpModel.item(0, CheckColumn).setCheckState(True)
@@ -513,7 +558,7 @@ class BaseImportDialog(QtWidgets.QDialog):
                     return
                 self.collImportModeWidget.setEnabled(True)
                 self.mode |= self.CollectionImport
-                collection = self.collectionCombo.currentText()
+                collection = self.collectionCombo.itemData(self.collectionCombo.currentIndex(), CollectionRole)
                 collIndexes = self.collectionBuffer.get(collection)
                 if not collIndexes:
                     collIndexes = self.collectionBuffer.setdefault(collection, self.database.getIndexesForCollection(collection))
@@ -708,16 +753,19 @@ class SoundImport(BaseImportDialog):
     def showEvent(self, event):
         if not self.shown:
             self.shown = True
+            self.waiter.hide()
             if self._loadError:
                 QtCore.QTimer.singleShot(0, lambda: QtWidgets.QMessageBox.critical(self, 
                     'File error', 
-                    'An problem occurred while loading the file:\n{}'.format(self._loadError), 
+                    'A problem occurred while loading the file:\n{}'.format(self._loadError), 
                     QtWidgets.QMessageBox.Ok))
+            QtCore.QTimer.singleShot(0, self.dumpModel.layoutChanged.emit)
 
     def processSysEx(self):
         try:
             with open(self.filePath, 'rb') as syx:
                 full = iter(map(ord, syx.read()))
+            self.waiter.show()
             while True:
                 init = full.next()
                 if init != INIT:
@@ -746,6 +794,8 @@ class SoundImport(BaseImportDialog):
     def processMidi(self):
         try:
             content = midifile.read_midifile(self.filePath)
+            self.waiter.show()
+            QtWidgets.QApplication.processEvents()
             for track in content:
                 for event in track:
                     if isinstance(event, midifile.SysexEvent) and \
@@ -822,6 +872,8 @@ class SoundImport(BaseImportDialog):
 
     def exec_(self, uriList=None, collection=None):
         if uriList:
+            self.waiter.show()
+            QtWidgets.QApplication.processEvents()
             validPaths = []
             for uri in uriList:
                 uri = QtCore.QUrl(uri)
@@ -1070,6 +1122,9 @@ class DumpDialog(QtWidgets.QDialog):
         self.collectionTable.setItemDelegateForColumn(3, self.tagsDelegate)
         self.collectionTable.customContextMenuRequested.connect(self.tableMenu)
 
+        #required to avoid font override of the popup, see setCollection()
+        self.collectionComboView = QtWidgets.QListView()
+        self.collectionCombo.setView(self.collectionComboView)
         self.collectionCombo.currentIndexChanged.connect(self.setCollection)
         self.sourceModel = self.selectedCollection = self.tableModel = None
         self.banksWidget.itemsChanged.connect(self.bankSelect)
@@ -1286,13 +1341,17 @@ class DumpDialog(QtWidgets.QDialog):
                 else:
                     banks.add(bank)
             else:
+                count = 0
                 for row in range(128):
-                    if row not in self.soundsDict:
+                    current = row + shiftBank
+                    if current not in self.soundsDict:
                         continue
-                    if not self.tableModel.item(row + shiftBank, 0).data(QtCore.Qt.CheckStateRole):
+                    count += 1
+                    if not self.tableModel.item(current, 0).data(QtCore.Qt.CheckStateRole):
                         break
                 else:
-                    banks.add(bank)
+                    if count:
+                        banks.add(bank)
         if currentSet != banks:
             self.banksWidget.blockSignals(True)
             self.banksWidget.setItems(banks)
@@ -1300,12 +1359,20 @@ class DumpDialog(QtWidgets.QDialog):
         self.computeEta()
 
     def setCollection(self, index):
-        font = self.collectionCombo.font()
-        font.setBold(self.collectionCombo.itemText(index) == self.selectedCollection)
-        self.collectionCombo.setFont(font)
+        if self.collectionCombo.itemData(index, CollectionRole) == self.selectedCollection:
+            self.collectionCombo.setStyleSheet('''
+                QComboBox {
+                    font-weight: bold;
+                }
+                QComboBox QAbstractItemView {
+                    font-weight: normal;
+                }
+            ''')
+        else:
+            self.collectionCombo.setStyleSheet('')
         data = self.collectionCombo.itemData(index)
         if not data:
-            sourceModel = self.database.openCollection(self.collectionCombo.itemText(index))
+            sourceModel = self.database.openCollection(self.collectionCombo.itemData(index, CollectionRole))
             self.setModel(sourceModel)
             self.collectionCombo.setItemData(index, (self.sourceModel, self.collectionTable.model(), self.soundsDict))
         else:
@@ -1320,13 +1387,29 @@ class DumpDialog(QtWidgets.QDialog):
         self.shown = False
         self.selectedCollection = collection
         self.collectionCombo.blockSignals(True)
-        collections = self.database.referenceModel.collections
-        self.collectionCombo.addItems(collections)
-        self.collectionCombo.setItemData(0, QtGui.QIcon.fromTheme('go-home'), QtCore.Qt.DecorationRole)
+        if isinstance(self, DumpSendDialog):
+            collections = self.database.referenceModel.allCollections
+        else:
+            collections = self.database.referenceModel.collections
+
         collectionIndex = collections.index(collection)
-        font = self.collectionCombo.font()
-        font.setBold(True)
-        self.collectionCombo.setItemData(collectionIndex, font, QtCore.Qt.FontRole)
+        for i, coll in enumerate(collections):
+            self.collectionCombo.addItem(factoryPresetsNamesDict.get(coll, coll))
+            self.collectionCombo.setItemData(i, coll, CollectionRole)
+            if coll in factoryPresetsNamesDict:
+                self.collectionCombo.setItemData(i, QtGui.QIcon(':/images/factory.svg'), QtCore.Qt.DecorationRole)
+            elif coll == 'Blofeld':
+                self.collectionCombo.setItemData(i, QtGui.QIcon(':/images/bigglesworth_logo.svg'), QtCore.Qt.DecorationRole)
+            if i == collectionIndex:
+                font = QtWidgets.QApplication.font()
+                font.setBold(True)
+                self.collectionCombo.setItemData(i, font, QtCore.Qt.FontRole)
+#        collections = self.database.referenceModel.collections
+#        self.collectionCombo.addItems(collections)
+#        self.collectionCombo.setItemData(0, QtGui.QIcon.fromTheme('go-home'), QtCore.Qt.DecorationRole)
+#        font = self.collectionCombo.font()
+#        font.setBold(True)
+#        self.collectionCombo.setItemData(collectionIndex, font, QtCore.Qt.FontRole)
         self.collectionCombo.setCurrentIndex(collectionIndex)
         self.collectionCombo.blockSignals(False)
         self.setCollection(collectionIndex)
@@ -1655,9 +1738,10 @@ class DumpSendDialog(DumpDialog):
         for bank in range(8):
             shiftBank = bank << 7
             for row in range(128):
-                if row not in self.soundsDict:
+                current = row + shiftBank
+                if current not in self.soundsDict:
                     continue
-                if not self.tableModel.item(row + shiftBank, 0).data(QtCore.Qt.CheckStateRole):
+                if not self.tableModel.item(current, 0).data(QtCore.Qt.CheckStateRole):
                     banks.discard(bank)
                     break
                 else:

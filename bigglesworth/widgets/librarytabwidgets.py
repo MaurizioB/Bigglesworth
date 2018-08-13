@@ -277,14 +277,15 @@ class BaseTabWidget(QtWidgets.QTabWidget):
             moveTabAction.setEnabled(False)
 
         collection = self.widget(index).collection
-        if collection and collection not in factoryPresetsNamesDict:
+        if collection:
             dumpMenu = self.menu.addMenu(QtGui.QIcon(':/images/dump.svg'), 'Dump "{}"'.format(collection))
             dumpMenu.setSeparatorsCollapsible(False)
-            dumpMenu.addSection('Receive')
-            self.dumpFromAllAction = dumpMenu.addAction('Dump all sounds FROM Blofeld')
-            self.dumpFromAllAction.triggered.connect(lambda: self.fullDumpBlofeldToCollectionRequested.emit(collection, True))
-            dumpFromPromptAction = dumpMenu.addAction('Dump sounds FROM Blofeld...')
-            dumpFromPromptAction.triggered.connect(lambda: self.fullDumpBlofeldToCollectionRequested.emit(collection, False))
+            if collection not in factoryPresetsNamesDict:
+                dumpMenu.addSection('Receive')
+                self.dumpFromAllAction = dumpMenu.addAction('Dump all sounds FROM Blofeld')
+                self.dumpFromAllAction.triggered.connect(lambda: self.fullDumpBlofeldToCollectionRequested.emit(collection, True))
+                dumpFromPromptAction = dumpMenu.addAction('Dump sounds FROM Blofeld...')
+                dumpFromPromptAction.triggered.connect(lambda: self.fullDumpBlofeldToCollectionRequested.emit(collection, False))
             dumpMenu.addSection('Send')
             dumpToAllAction = dumpMenu.addAction('Dump all sounds TO Blofeld')
             dumpToAllAction.triggered.connect(lambda: self.fullDumpCollectionToBlofeldRequested.emit(collection, True))

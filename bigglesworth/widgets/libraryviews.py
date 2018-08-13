@@ -9,7 +9,7 @@ from bigglesworth.utils import loadUi, getSysExContents, sanitize
 from bigglesworth.const import (TagsRole, UidColumn, LocationColumn, 
     NameColumn, CatColumn, TagsColumn, FactoryColumn, chr2ord, factoryPresets)
 from bigglesworth.library import CleanLibraryProxy, BankProxy, CatProxy, NameProxy, TagsProxy, MainLibraryProxy
-from bigglesworth.dialogs import SoundTagsEditDialog, MultiSoundTagsEditDialog, DeleteSoundsMessageBox, DropDuplicatesMessageBox
+from bigglesworth.dialogs import SoundTagsEditDialog, MultiSoundTagsEditDialog, RemoveSoundsMessageBox, DeleteSoundsMessageBox, DropDuplicatesMessageBox
 from bigglesworth.libs import midifile
 
 
@@ -453,9 +453,38 @@ class BaseLibraryView(QtWidgets.QTableView):
         if event.text() in chr2ord:
             self.setSearch(event.text())
             return
-        #TODO: fix for scoll page/home/end
-        elif self.verticalScrollBar().isVisible():
-            if event.matches(QtGui.QKeySequence.MoveToNextPage):
+        elif event.matches(QtGui.QKeySequence.Delete) and self.selectionModel().hasSelection() and self.editable:
+            uidList = [index.data() for index in self.selectionModel().selectedRows()]
+            if isinstance(self, LibraryTableView):
+                uidList = [uid for uid in uidList if self.database.isUidWritable(uid)]
+            if uidList:
+                self.deleteRequested.emit(uidList)
+#        elif self.verticalScrollBar().isVisible():
+        elif self.verticalScrollBar().maximum():
+            #fixes for various scroll functions when items are not valid
+            if event.key() in (QtCore.Qt.Key_Up, QtCore.Qt.Key_Down):
+                if event.modifiers() == QtCore.Qt.ControlModifier:
+                    delta = 1 if event.key() == QtCore.Qt.Key_Down else -1
+                    self.verticalScrollBar().setValue(self.verticalScrollBar().value() + delta)
+                else:
+                    QtWidgets.QTableView.keyPressEvent(self, event)
+                    self.scrollTo(self.currentIndex())
+                return
+            elif event.modifiers() == QtCore.Qt.ControlModifier and event.key() in (QtCore.Qt.Key_PageUp, QtCore.Qt.Key_PageDown):
+                sign = 1 if event.key() == QtCore.Qt.Key_PageDown else -1
+                self.verticalScrollBar().setValue(self.verticalScrollBar().value() + self.verticalScrollBar().pageStep() * sign)
+                return
+            elif event.modifiers() == QtCore.Qt.ControlModifier and event.key() in (QtCore.Qt.Key_Home, QtCore.Qt.Key_End):
+                if event.key() == QtCore.Qt.Key_Home:
+                    self.scrollToTop()
+                else:
+                    self.scrollToBottom()
+                return
+            elif event.modifiers() == QtCore.Qt.ControlModifier|QtCore.Qt.ShiftModifier and event.key() == QtCore.Qt.Key_Home:
+                self.scrollTo(self.currentIndex())
+                return
+            elif event.matches(QtGui.QKeySequence.MoveToNextPage) or event.matches(QtGui.QKeySequence.SelectNextPage):
+                updateSelection = event.matches(QtGui.QKeySequence.SelectNextPage)
                 pre = self.verticalScrollBar().value()
                 QtWidgets.QTableView.keyPressEvent(self, event)
                 post = self.verticalScrollBar().value()
@@ -469,11 +498,17 @@ class BaseLibraryView(QtWidgets.QTableView):
                     if endRow < 0:
                         endRow = self.model().rowCount() - 1
                     pageSize = endRow - startRow - 1
-                    nextIndex = self.model().index(self.currentIndex().row() + pageSize, 2)
+                    nextRow = min(self.model().rowCount() - 1, self.currentIndex().row() + pageSize)
+                    nextIndex = self.model().index(nextRow, 2)
                 while nextIndex.row() < self.model().rowCount() - 1:
                     nextIndex = self.model().index(nextIndex.row() + 1, 2)
                     if nextIndex.flags() & QtCore.Qt.ItemIsEnabled:
-                        self.setCurrentIndex(nextIndex)
+                        if updateSelection and self.currentIndex().isValid():
+                            selection = QtCore.QItemSelection(self.selectionModel().selectedRows()[0], nextIndex)
+                            self.selectionModel().select(selection, QtCore.QItemSelectionModel.Rows|QtCore.QItemSelectionModel.ClearAndSelect)
+                            self.selectionModel().setCurrentIndex(nextIndex, QtCore.QItemSelectionModel.NoUpdate)
+                        else:
+                            self.setCurrentIndex(nextIndex)
                         self.scrollTo(nextIndex)
                         self.scrollTo(nextIndex)
                         return
@@ -481,15 +516,21 @@ class BaseLibraryView(QtWidgets.QTableView):
                     lastIndex = self.model().index(self.model().rowCount() - 1, 2)
                     while not lastIndex.flags() & QtCore.Qt.ItemIsEnabled:
                         lastIndex = self.model().index(lastIndex.row() - 1, 2)
-                    self.setCurrentIndex(lastIndex)
+                    if updateSelection and self.currentIndex().isValid():
+                        selection = QtCore.QItemSelection(self.selectionModel().selectedRows()[0], lastIndex)
+                        self.selectionModel().select(selection, QtCore.QItemSelectionModel.Rows|QtCore.QItemSelectionModel.ClearAndSelect)
+                        self.selectionModel().setCurrentIndex(lastIndex, QtCore.QItemSelectionModel.NoUpdate)
+                    else:
+                        self.setCurrentIndex(lastIndex)
                     self.scrollTo(lastIndex)
                     return
-            elif event.matches(QtGui.QKeySequence.MoveToPreviousPage):
-                pre = self.verticalScrollBar().value()
-                QtWidgets.QTableView.keyPressEvent(self, event)
-                post = self.verticalScrollBar().value()
-                if pre != post:
-                    return
+            elif event.matches(QtGui.QKeySequence.MoveToPreviousPage) or event.matches(QtGui.QKeySequence.SelectPreviousPage):
+                updateSelection = event.matches(QtGui.QKeySequence.SelectPreviousPage)
+#                pre = self.verticalScrollBar().value()
+#                QtWidgets.QTableView.keyPressEvent(self, event)
+#                post = self.verticalScrollBar().value()
+#                if pre != post:
+#                    return
                 if not self.currentIndex().isValid():
                     nextIndex = self.model().index(self.model().rowCount() - 1, 2)
                 else:
@@ -502,47 +543,83 @@ class BaseLibraryView(QtWidgets.QTableView):
                 while nextIndex.row() > 0:
                     nextIndex = self.model().index(nextIndex.row() - 1, 2)
                     if nextIndex.flags() & QtCore.Qt.ItemIsEnabled:
-                        self.setCurrentIndex(nextIndex)
+                        if updateSelection and self.currentIndex().isValid():
+                            selection = QtCore.QItemSelection(self.selectionModel().selectedRows()[0], nextIndex)
+                            self.selectionModel().select(selection, QtCore.QItemSelectionModel.Rows|QtCore.QItemSelectionModel.ClearAndSelect)
+                            self.selectionModel().setCurrentIndex(nextIndex, QtCore.QItemSelectionModel.NoUpdate)
+                        else:
+                            self.setCurrentIndex(nextIndex)
+                        self.scrollTo(nextIndex)
                         return
                 else:
-                    lastIndex = self.model().index(self.model().rowCount() + 1, 2)
-                    while not lastIndex.flags() & QtCore.Qt.ItemIsEnabled:
-                        lastIndex = self.model().index(lastIndex.row() + 1, 2)
-                    self.setCurrentIndex(lastIndex)
-                    self.scrollTo(lastIndex)
+                    firstIndex = self.model().index(0, 2)
+                    while not firstIndex.flags() & QtCore.Qt.ItemIsEnabled:
+                        firstIndex = self.model().index(firstIndex.row() + 1, 2)
+                    if updateSelection and self.currentIndex().isValid():
+                        selection = QtCore.QItemSelection(firstIndex, self.selectionModel().selectedRows()[-1])
+                        self.selectionModel().select(selection, QtCore.QItemSelectionModel.Rows|QtCore.QItemSelectionModel.ClearAndSelect)
+                        self.selectionModel().setCurrentIndex(firstIndex, QtCore.QItemSelectionModel.NoUpdate)
+                    else:
+                        self.setCurrentIndex(firstIndex)
+                    self.scrollTo(firstIndex)
                     return
-            elif event.matches(QtGui.QKeySequence.MoveToEndOfLine):
+            elif event.matches(QtGui.QKeySequence.MoveToEndOfLine) or event.matches(QtGui.QKeySequence.SelectEndOfLine):
+                updateSelection = event.matches(QtGui.QKeySequence.SelectEndOfLine)
                 lastIndex = self.model().index(self.model().rowCount() - 1, 2)
                 while not lastIndex.flags() & QtCore.Qt.ItemIsEnabled:
                     lastIndex = self.model().index(lastIndex.row() - 1, 2)
                 if not self.currentIndex().isValid() or self.currentIndex().row() != lastIndex.row():
-                    self.setCurrentIndex(lastIndex)
+                    if updateSelection and self.currentIndex().isValid():
+                        selection = QtCore.QItemSelection(self.selectionModel().selectedRows()[0], lastIndex)
+                        self.selectionModel().select(selection, QtCore.QItemSelectionModel.Rows|QtCore.QItemSelectionModel.ClearAndSelect)
+                        self.selectionModel().setCurrentIndex(lastIndex, QtCore.QItemSelectionModel.NoUpdate)
+                    else:
+                        self.setCurrentIndex(lastIndex)
                     self.scrollTo(lastIndex)
                 else:
                     if self.verticalScrollBar().value() < self.verticalScrollBar().maximum():
                         self.scrollToBottom()
                     else:
-                        self.setCurrentIndex(lastIndex)
+                        if updateSelection:
+                            if self.currentIndex().row() != lastIndex.row():
+                                selection = QtCore.QItemSelection(self.selectionModel().selectedRows()[0], lastIndex)
+                                self.selectionModel().select(selection, QtCore.QItemSelectionModel.Rows|QtCore.QItemSelectionModel.ClearAndSelect)
+                                self.selectionModel().setCurrentIndex(lastIndex, QtCore.QItemSelectionModel.NoUpdate)
+                        else:
+                            self.setCurrentIndex(lastIndex)
                         self.scrollTo(lastIndex)
                 return
-            elif event.matches(QtGui.QKeySequence.MoveToStartOfLine):
+            elif event.matches(QtGui.QKeySequence.MoveToStartOfLine) or event.matches(QtGui.QKeySequence.SelectStartOfLine):
+                updateSelection = event.matches(QtGui.QKeySequence.SelectStartOfLine)
                 firstIndex = self.model().index(0, 2)
                 while not firstIndex.flags() & QtCore.Qt.ItemIsEnabled:
                     firstIndex = self.model().index(firstIndex.row() + 1, 2)
                 if not self.currentIndex().isValid() or self.currentIndex().row() != firstIndex.row():
-                    self.setCurrentIndex(firstIndex)
+                    if updateSelection and self.currentIndex().isValid():
+                        selection = QtCore.QItemSelection(self.selectionModel().selectedRows()[-1], firstIndex)
+                        self.selectionModel().select(selection, QtCore.QItemSelectionModel.Rows|QtCore.QItemSelectionModel.ClearAndSelect)
+                        self.selectionModel().setCurrentIndex(firstIndex, QtCore.QItemSelectionModel.NoUpdate)
+                    else:
+                        self.setCurrentIndex(firstIndex)
                     self.scrollTo(firstIndex)
                 else:
                     if self.verticalScrollBar().value() > 0:
                         self.scrollToTop()
                     else:
-                        self.setCurrentIndex(firstIndex)
+                        if updateSelection:
+                            if self.currentIndex().row() != firstIndex.row():
+                                selection = QtCore.QItemSelection(self.selectionModel().selectedRows()[-1], firstIndex)
+                                self.selectionModel().select(selection, QtCore.QItemSelectionModel.Rows|QtCore.QItemSelectionModel.ClearAndSelect)
+                                self.selectionModel().setCurrentIndex(firstIndex, QtCore.QItemSelectionModel.NoUpdate)
+                        else:
+                            self.setCurrentIndex(firstIndex)
                         self.scrollTo(firstIndex)
                 return
             elif event.matches(QtGui.QKeySequence.NextChild) or event.matches(QtGui.QKeySequence.PreviousChild) or \
                 (event.modifiers() == QtCore.Qt.ControlModifier and event.key() in (QtCore.Qt.Key_L, QtCore.Qt.Key_R)):
-                self.parent().keyPressEvent(event)
-                return
+                    #ctrl+tab navigation
+                    self.parent().keyPressEvent(event)
+                    return
         QtWidgets.QTableView.keyPressEvent(self, event)
 
     def setSearch(self, text=None):
@@ -711,12 +788,19 @@ class BaseLibraryView(QtWidgets.QTableView):
             if isinstance(self, CollectionTableView):
                 deleteAction = menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 'Remove from "{}"'.format(self.collection))
                 deleteAction.setStatusTip('Remove the selected sounds from the current collection only')
-                if not self.editable:
+                if self.editable:
+                    deletable = uidList[:]
+                else:
+                    deletable = []
                     deleteAction.setEnabled(False)
             else:
-                deleteAction = menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 'Delete {} sounds'.format(len(selRows)))
+                deletable = [_uid for _uid in uidList if self.database.isUidWritable(_uid)]
+                deleteAction = menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 'Delete {} sounds'.format(len(deletable)))
                 deleteAction.setStatusTip('Delete the selected sounds from the library and any collection')
-            deleteAction.triggered.connect(lambda: self.deleteRequested.emit(uidList))
+            if not deletable:
+                deleteAction.setText('Sounds not deletable')
+                deleteAction.setEnabled(False)
+            deleteAction.triggered.connect(lambda: self.deleteRequested.emit(deletable))
             menu.addSeparator()
             exportAction = menu.addAction(QtGui.QIcon.fromTheme('document-save'), 'Export...')
             exportAction.triggered.connect(lambda: self.exportRequested.emit(uidList, self.collection))
@@ -851,6 +935,7 @@ class CollectionTableView(BaseLibraryView):
                 self.viewport().update()
                 return
             self.dropIndicatorPosition = self.OnItem
+#            print(len(rows), self.model().size())
             if len(rows) + self.model().size() > 1024:
                 self.showStatusBarMessage('Cannot add sounds as the collection is full!')
                 event.ignore()
@@ -1009,6 +1094,7 @@ class CollectionTableView(BaseLibraryView):
         BaseLibraryView.dropEvent(self, event)
 
     def dropFromLibrary(self, uidList, targetRows, overwrite):
+        scrollPos = self.verticalScrollBar().value()
         self.dropEventSignal.emit()
         duplicates = self.database.checkDuplicates(uidList, self.collection)
         if overwrite:
@@ -1050,8 +1136,13 @@ class CollectionTableView(BaseLibraryView):
             print('adding duplicate-free')
             self.database.addSoundsToCollection(zip(uidList, [idx.row() for idx in self.dropSelectionIndexes]), self.collection)
             print('done!')
+
         self.dropSelectionIndexes = None
-#            for d in duplicates:
+        selection = QtCore.QItemSelection(self.model().index(min(targetRows), 2), self.model().index(max(targetRows), 2))
+        self.selectionModel().select(selection, QtCore.QItemSelectionModel.Rows|QtCore.QItemSelectionModel.ClearAndSelect)
+        self.selectionModel().setCurrentIndex(selection.indexes()[0], QtCore.QItemSelectionModel.NoUpdate)
+        self.verticalScrollBar().setValue(scrollPos)
+
 
     def createDropIndexesEmptySlots(self, firstIndex, rowCount):
 #        if self.dropSelectionIndexes and self.dropSelectionIndexes[0].row() == firstIndex.row():
@@ -1308,6 +1399,9 @@ class BaseLibraryWidget(QtWidgets.QWidget):
         self.filterNameEdit.setMinimumWidth(self.fontMetrics().width('AAAAAAAAAAAAAAAA'))
         self.collectionView.tagsDelegate.tagClicked.connect(self.setTagFilter)
         self.collectionView.importRequested.connect(lambda uriList: self.importRequested.emit(uriList, self.collection))
+        self.editModeBtn = QtWidgets.QPushButton(QtGui.QIcon.fromTheme('edit-rename'), '')
+        self.editModeBtn.setCheckable(True)
+        self.collectionView.setCornerWidget(self.editModeBtn)
 
         self.model = self.database.openCollection(collection)
         while self.model.canFetchMore():
@@ -1479,7 +1573,8 @@ class CollectionWidget(BaseLibraryWidget):
         self.collectionView.scrollTo(index)
 
     def deleteRequested(self, uidList):
-        self.database.removeSounds(uidList, self.collection)
+        if RemoveSoundsMessageBox(self, self.collection, self.database.getNamesFromUidList(uidList)).exec_():
+            self.database.removeSounds(uidList, self.collection)
 
     def duplicateRequested(self, uid, sourceRow):
         if self.model.size() >= 1024:
@@ -1508,6 +1603,7 @@ class CollectionWidget(BaseLibraryWidget):
             self.collectionView.scrollTo(newIndex)
 
     def checkFilters(self, *args):
+        print('cambio filtri', self.collection, self.model.size(), self.model)
         self.filterGroupBox.setEnabled(True if self.model.size() > 0 else False)
         if self.collectionView.horizontalHeader().isSortIndicatorShown() or \
             self.bankCombo.currentIndex() != 0 or \

@@ -21,7 +21,7 @@
         <file>bigglesworth_textonly_gray.svg</file>
         <file>bigglesworth_splash.svg</file>
         <file>bigglesworth_splash_transparent.svg</file>
-        <file>midi.svg</file>
+        <file>midimoon.svg</file>
     </qresource>
     <qresource prefix="icons/Bigglesworth">
         <file alias="index.theme">icons/Bigglesworth/index.theme</file>

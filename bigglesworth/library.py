@@ -28,7 +28,7 @@ class BaseLibraryModel(QtSql.QSqlQueryModel):
         self.scheduledQueryUpdate = False
         self.logger = None
 
-    def dbErrorLog(self, message, logLevel=LogCritical, extMessage='', query=None):
+    def dbErrorLog(self, message, extMessage='', query=None):
         print('Db error:', message)
         if not query:
             query = self.query()
@@ -40,7 +40,7 @@ class BaseLibraryModel(QtSql.QSqlQueryModel):
             text = '{}\n{}'.format(dbText, driverText)
             if extMessage:
                 text = '{}\n{}'.format(extMessage, text)
-            self.logger.append(logLevel, message, text)
+            self.logger.append(LogCritical, message, text)
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if role == HoverRole:
@@ -51,7 +51,7 @@ class BaseLibraryModel(QtSql.QSqlQueryModel):
         if role == CatRole:
             uid = index.sibling(index.row(), 0).data()
             if not self.updateQuery.exec_('UPDATE sounds SET category = {} WHERE uid="{}"'.format(value, uid)):
-                self.dbErrorLog('Error updating tags', (uid, value))
+                self.dbErrorLog('Error updating tags', (uid, value), self.updateQuery)
             if not self.query().exec_():
                 self.dbErrorLog('Error setting category', (uid, value))
             self.updated.emit()
@@ -68,7 +68,7 @@ class BaseLibraryModel(QtSql.QSqlQueryModel):
                 updateStr += ', nameChar{:02} = {}'.format(i, l)
             updateStr += ' WHERE uid = "{}"'.format(uid)
             if not self.updateQuery.exec_(updateStr):
-                self.dbErrorLog('Error updating tags', (uid, value))
+                self.dbErrorLog('Error updating tags', (uid, value), self.updateQuery)
             if not self.query().exec_():
                 self.dbErrorLog('Error refreshing model', uid)
             self.soundNameChanged.emit(uid, value)
@@ -79,7 +79,7 @@ class BaseLibraryModel(QtSql.QSqlQueryModel):
             self.updateQuery.bindValue(':tags', value)
             self.updateQuery.bindValue(':uid', uid)
             if not self.updateQuery.exec_():
-                self.dbErrorLog('Error updating tags', (uid, value))
+                self.dbErrorLog('Error updating tags', (uid, value), self.updateQuery)
             if not self.query().exec_():
                 self.dbErrorLog('Error refreshing model', uid, value)
             self.updated.emit()
@@ -231,7 +231,7 @@ class CollectionModel(BaseLibraryModel):
         self.setQuery(queryPre + ' AS Name,sounds.category AS Category,reference.tags as Tags FROM sounds,reference' + nameCharStr + ' WHERE (sounds.uid = reference.uid)) as result ON fake_reference.id = result.location')
 
     def size(self):
-        res = self.updateQuery.exec_('SELECT * FROM reference WHERE reference.{} IS NOT NULL'.format(self.collection))
+        res = self.updateQuery.exec_('SELECT uid FROM reference WHERE reference."{}" IS NOT NULL'.format(self.collection))
         if res:
             self.updateQuery.last()
             size = self.updateQuery.at() + 1
