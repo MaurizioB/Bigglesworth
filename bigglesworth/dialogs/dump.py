@@ -221,6 +221,8 @@ class BaseImportDialog(QtWidgets.QDialog):
         self.dumpModel.dataChanged.connect(self.checkImport)
         self.dumpTable.setModel(self.dumpModel)
         self.resetModel()
+        self.dumpTable.verticalHeader().setResizeMode(QtWidgets.QHeaderView.Fixed)
+        self.dumpTable.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() * 1.5)
         self.dumpTable.horizontalHeader().setResizeMode(QtWidgets.QHeaderView.Fixed)
         self.dumpTable.horizontalHeader().setResizeMode(DupColumn, QtWidgets.QHeaderView.Stretch)
         self.dumpTable.clicked.connect(self.showValues)
@@ -313,6 +315,11 @@ class BaseImportDialog(QtWidgets.QDialog):
         self.queueTimer.setInterval(8)
         self.queueTimer.timeout.connect(self.checkImport)
 
+        self.adjustTimer = QtCore.QTimer()
+        self.adjustTimer.setSingleShot(True)
+        self.adjustTimer.setInterval(50)
+        self.adjustTimer.timeout.connect(self.adjustTableContents)
+
     def openSound(self):
         self.mode |= self.OpenSound
         self.accept()
@@ -401,11 +408,16 @@ class BaseImportDialog(QtWidgets.QDialog):
         self.dumpModel.setHeaderData(self.dumpModel.rowCount() - 1, QtCore.Qt.Vertical, index, QtCore.Qt.DisplayRole)
         if bank == 0x7f and prog > 1 and self.dumpModel.rowCount() > 1:
             self.dumpModel.setHeaderData(0, QtCore.Qt.Vertical, 'M01', QtCore.Qt.DisplayRole)
-        self.dumpTable.resizeRowsToContents()
-        self.dumpTable.scrollToBottom()
         self.dumpModel.dataChanged.connect(self.checkImport)
         if self.isVisible():
             self.waiter.hide()
+        self.adjustTimer.start()
+
+    def adjustTableContents(self):
+        if self.shown:
+            self.dumpTable.scrollToBottom()
+        else:
+            self.adjustTimer.start()
 
     def showValues(self, index):
         if self.sender() == self.dumpTable.selectionModel():
