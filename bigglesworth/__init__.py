@@ -466,6 +466,7 @@ class Bigglesworth(QtWidgets.QApplication):
                 port.disconnect(self.input)
 
     def midiEventReceived(self, event):
+        print('midi event received', event, 'source:', event.source, self.graph.port_id_dict[event.source[0]][event.source[1]])
         if event.source[0] == self.midiDevice.output.client.id:
             return
         if self.globalsBlock:
@@ -501,9 +502,8 @@ class Bigglesworth(QtWidgets.QApplication):
 #            elif len(event.sysex) == 15 and event.sysex[3:5] == [6, 2]:
 #                self.device_event.emit(event.sysex)
             return
-        elif event.type in (CTRL, NOTEON, NOTEOFF):
+        elif event.type in (CTRL, NOTEON, NOTEOFF, PROGRAM):
             self.editorWindow.midiEventReceived(event)
-        print('midi event received', event, 'source:', event.source, self.graph.port_id_dict[event.source[0]][event.source[1]])
 
     def sendMidiEvent(self, event):
 #        if self.debug_sysex and event.type == SYSEX:

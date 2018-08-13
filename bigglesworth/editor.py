@@ -1223,9 +1223,10 @@ class EditorWindow(QtWidgets.QMainWindow):
     def midiEventReceived(self, event):
         if event.type == PROGRAM:
             if self.main.progReceiveState and event.channel in self.main.chanReceive:
-                if self.bankBuffer is not None:
+                if self.bankBuffer is not None and not QtWidgets.QApplication.activeModalWidget():
                     self.midiInWidget.activate()
-                    print('prog change - bank', self.bankBuffer, 'prog', event.program)
+#                    print('prog change - bank', self.bankBuffer, 'prog', event.program)
+                    self.openSoundFromBankProg(prog=event.program)
             self.bankBuffer = None
             return
         if event.type == NOTEON:
@@ -1307,8 +1308,8 @@ class EditorWindow(QtWidgets.QMainWindow):
             return
 #        print('cambio a', bank, prog, collection)
         self.openSoundFromUid(self.database.getUidFromCollection(bank, prog, collection), collection)
-        if self.main.connections[1] and self.main.progSendState:
-            self.sendProgramChange()
+#        if self.main.connections[1] and self.main.progSendState:
+#            self.sendProgramChange()
 #        self.currentBank = bank
 #        self.currentProg = prog
 
@@ -1323,6 +1324,7 @@ class EditorWindow(QtWidgets.QMainWindow):
 
     def openSoundFromUid(self, uid, fromCollection=None):
 #        self.saveFrame.setEnabled(True)
+        self.show()
         if self._editStatus == self.Modified or self.setFromDump:
             if self._editStatus == self.Modified:
                 title = 'Sound modified'
@@ -1330,6 +1332,8 @@ class EditorWindow(QtWidgets.QMainWindow):
             else:
                 title = 'Sound dumped'
                 message = 'The current sound has been dumped from the Blofeld.\nWhat do you want to do?'
+            if self.sender() == self.main.midiDevice:
+                title = 'Program change requested - ' + title
             res = QtWidgets.QMessageBox.question(self, title, message, 
                 buttons=QtWidgets.QMessageBox.Save|QtWidgets.QMessageBox.Ignore|QtWidgets.QMessageBox.Cancel)
             if res == QtWidgets.QMessageBox.Cancel:
@@ -1342,8 +1346,8 @@ class EditorWindow(QtWidgets.QMainWindow):
                     QtWidgets.QMessageBox.Ok)
         self.saveBtn.setSwitchable(False)
         self.saveBtn.setSwitched(False)
-        self.show()
-        self.activateWindow()
+        if self.sender() != self.main.midiDevice:
+            self.activateWindow()
         data = self.database.getSoundDataFromUid(uid)
         if not data:
             return
@@ -1380,6 +1384,8 @@ class EditorWindow(QtWidgets.QMainWindow):
 #            return
         self.currentCollections = collections if collections else None
         self.currentCollection, self.currentBank, self.currentProg = self.display.setCollections(collections, uid, fromCollection)
+        if self.currentBank is not None and self.currentProg is not None and self.main.connections[1] and self.main.progSendState:
+            self.sendProgramChange()
 
     def openOrphanSound(self, data, fromDump=True):
         if self._editStatus == self.Modified or self.setFromDump:

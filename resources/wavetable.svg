@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="217.53455"
+   height="217.53455"
+   viewBox="0 0 217.53454 217.53455"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="wavetable.svg">
+  <defs
+     id="defs4">
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4150"
+       is_visible="true" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4138"
+       is_visible="true" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4138-3"
+       is_visible="true" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4150-3"
+       is_visible="true" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.8711538"
+     inkscape:cx="95.787126"
+     inkscape:cy="114.7568"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     fit-margin-top="4"
+     fit-margin-left="4"
+     fit-margin-right="4"
+     fit-margin-bottom="4"
+     units="px"
+     inkscape:window-width="1440"
+     inkscape:window-height="852"
+     inkscape:window-x="1280"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Livello 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-1.3252317,-323.31978)">
+    <g
+       id="g4170"
+       style="stroke:#208681;stroke-width:16.41500092;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       transform="matrix(1.0960444,0,0,1.0970718,-10.464637,-41.944051)">
+      <path
+         sodipodi:nodetypes="czzc"
+         inkscape:connector-curvature="0"
+         inkscape:original-d="m 27.661824,399.62646 c 20.842755,5.61152 46.786935,-31.10732 63.142864,-30.8987 16.355942,0.20861 12.269382,53.69407 38.831722,53.26092 26.56234,-0.43315 63.96581,-22.36222 63.96581,-22.36222"
+         inkscape:path-effect="#path-effect4150"
+         id="path4148"
+         d="m 27.661824,399.62646 c 0.05535,-7.25388 2.169912,-14.48082 6.033438,-20.62045 3.863526,-6.13963 9.464053,-11.17294 15.979841,-14.36141 6.515787,-3.18847 13.926668,-4.52225 21.145275,-3.80561 7.218608,0.71663 14.222599,3.48144 19.98431,7.88877 8.793932,6.72678 14.307152,16.77361 19.524522,26.53894 5.21738,9.76534 10.6305,19.84465 19.3072,26.72198 5.2714,4.17822 11.61026,6.99827 18.24319,8.11608 6.63293,1.1178 13.54592,0.531 19.89555,-1.6888 6.34962,-2.21981 12.12246,-6.06793 16.6142,-11.07488 4.49173,-5.00695 7.69288,-11.16215 9.21287,-17.71462"
+         style="fill:none;fill-rule:evenodd;stroke:#208681;stroke-width:16.41500092;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+      <path
+         sodipodi:nodetypes="czzc"
+         inkscape:connector-curvature="0"
+         inkscape:original-d="m 26.59571,472.49335 c 20.842755,5.61152 46.786935,-31.10732 63.142867,-30.8987 16.355943,0.20861 12.269383,53.69407 38.831723,53.26092 26.56234,-0.43315 63.96581,-22.36222 63.96581,-22.36222"
+         inkscape:path-effect="#path-effect4150-3"
+         id="path4148-6"
+         d="m 26.59571,472.49335 c 0.05535,-7.25388 2.169912,-14.48082 6.033439,-20.62045 3.863526,-6.13963 9.464053,-11.17294 15.979841,-14.36141 6.515788,-3.18848 13.926669,-4.52225 21.145277,-3.80561 7.218608,0.71663 14.222599,3.48144 19.98431,7.88877 8.793932,6.72678 14.307153,16.77361 19.524523,26.53894 5.21738,9.76534 10.6305,19.84465 19.3072,26.72198 5.2714,4.17822 11.61026,6.99827 18.24319,8.11608 6.63293,1.1178 13.54592,0.531 19.89555,-1.6888 6.34962,-2.21981 12.12246,-6.06793 16.6142,-11.07488 4.49173,-5.00695 7.69288,-11.16215 9.21287,-17.71462"
+         style="fill:none;fill-rule:evenodd;stroke:#208681;stroke-width:16.41500092;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    </g>
+  </g>
+</svg>

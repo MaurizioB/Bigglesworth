@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1089</width>
-    <height>704</height>
+    <height>708</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -1744,7 +1744,7 @@
           <property name="label" stdset="0">
            <string>Filter Env.</string>
           </property>
-          <layout class="QGridLayout" name="gridLayout_38">
+          <layout class="QGridLayout" name="gridLayout_38" columnstretch="15,20,20,20,20">
            <property name="margin">
             <number>4</number>
            </property>
@@ -1843,7 +1843,7 @@
           <property name="label" stdset="0">
            <string>Amp Env.</string>
           </property>
-          <layout class="QGridLayout" name="gridLayout_39">
+          <layout class="QGridLayout" name="gridLayout_39" columnstretch="15,20,20,20,20">
            <property name="margin">
             <number>4</number>
            </property>
@@ -1945,7 +1945,7 @@
           <property name="label" stdset="0">
            <string>Envelope 3</string>
           </property>
-          <layout class="QGridLayout" name="gridLayout_40">
+          <layout class="QGridLayout" name="gridLayout_40" columnstretch="15,20,20,20,20">
            <property name="margin">
             <number>4</number>
            </property>
@@ -2044,7 +2044,7 @@
           <property name="label" stdset="0">
            <string>Envelope 4</string>
           </property>
-          <layout class="QGridLayout" name="gridLayout_41">
+          <layout class="QGridLayout" name="gridLayout_41" columnstretch="15,20,20,20,20">
            <property name="margin">
             <number>4</number>
            </property>
@@ -3233,6 +3233,9 @@
                    <height>16</height>
                   </size>
                  </property>
+                 <property name="switchable" stdset="0">
+                  <bool>true</bool>
+                 </property>
                 </widget>
                </item>
               </layout>
@@ -3419,14 +3422,14 @@
    <header>dial</header>
   </customwidget>
   <customwidget>
-   <class>Section</class>
-   <extends>QWidget</extends>
+   <class>Frame</class>
+   <extends>QFrame</extends>
    <header>frame</header>
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>Frame</class>
-   <extends>QFrame</extends>
+   <class>Section</class>
+   <extends>QWidget</extends>
    <header>frame</header>
    <container>1</container>
   </customwidget>

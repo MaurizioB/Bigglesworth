@@ -113,9 +113,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.libraryMenu.aboutToShow.connect(self.updateCollectionMenu)
 #        self.openCollectionAction.triggered.connect(self.openCollection)
 
+        self.showEditorAction.setIcon(QtGui.QIcon(':/images/dial.svg'))
+        self.showWavetableAction.setIcon(QtGui.QIcon(':/images/wavetable.svg'))
         self.importAction.triggered.connect(lambda: self.importRequested.emit(None, None))
         self.exportAction.triggered.connect(lambda: self.exportRequested.emit([], None))
+        self.showGlobalsAction.setIcon(QtGui.QIcon(':/images/circuit.svg'))
         self.showMidiChartAction.triggered.connect(lambda: MidiChartDialog(self).exec_())
+        self.showMidiChartAction.setIcon(QtGui.QIcon(':/images/midiicon.svg'))
         self.aboutAction.triggered.connect(self.showAbout)
         self.aboutQtAction.triggered.connect(lambda: QtWidgets.QMessageBox.aboutQt(self, 'About Qt...'))
 

@@ -184,6 +184,9 @@
    </property>
   </action>
   <action name="aboutAction">
+   <property name="icon">
+    <iconset theme="help-about"/>
+   </property>
    <property name="text">
     <string>About &amp;Bigglesworth...</string>
    </property>
@@ -223,6 +226,9 @@
    </property>
   </action>
   <action name="aboutQtAction">
+   <property name="icon">
+    <iconset theme="qtcreator"/>
+   </property>
    <property name="text">
     <string>About &amp;Qt...</string>
    </property>
@@ -236,6 +242,9 @@
    </property>
   </action>
   <action name="showLogAction">
+   <property name="icon">
+    <iconset theme="text-x-log"/>
+   </property>
    <property name="text">
     <string>Show log</string>
    </property>

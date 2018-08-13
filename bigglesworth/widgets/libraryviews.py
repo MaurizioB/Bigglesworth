@@ -256,7 +256,7 @@ class BaseLibraryView(QtWidgets.QTableView):
         sortNameAscAction.setData((NameColumn, ))
         sortNameDescAction = alphaMenu.addAction(QtGui.QIcon.fromTheme('arrow-up-double'), 'Descending')
         sortNameDescAction.setData((NameColumn, QtCore.Qt.DescendingOrder))
-        catMenu = menu.addMenu(QtGui.QIcon.fromTheme('document-open'), 'By category')
+        catMenu = menu.addMenu(QtGui.QIcon.fromTheme('bookmarks'), 'By category')
         sortCatAscAction = catMenu.addAction(QtGui.QIcon.fromTheme('arrow-down-double'), 'Ascending')
         sortCatAscAction.setData((CatColumn, ))
         sortCatDescAction = catMenu.addAction(QtGui.QIcon.fromTheme('arrow-up-double'), 'Descending')

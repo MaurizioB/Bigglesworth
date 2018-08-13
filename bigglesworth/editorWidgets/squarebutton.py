@@ -67,35 +67,52 @@ class _Button(QtWidgets.QPushButton):
         backgroundNormalLight = backgroundBase
         backgroundPressed = backgroundBase.darker(110)
         backgroundPressedLight = backgroundBase.lighter(125)
+
+#        backgroundDisabled = backgroundBase.darker(200)
+        backgroundDisabledLight = backgroundBase.darker(140)
+        backgroundDisabledPressed = backgroundBase.darker(160)
+#                border-top: 1px solid {light};
+#                border-right: 1px solid {dark};
+#                border-bottom: 1px solid {dark};
+#                border-left: 1px solid {light};
+#                border-radius: 2px;
+#                border-top: 1px solid {dark};
+#                border-right: 1px solid {light};
+#                border-bottom: 1px solid {light};
+#                border-left: 1px solid {dark};
+#                border-radius: 2px;
         self.setStyleSheet('''
             QPushButton {{
                 padding: 1px;
                 background: qradialgradient(cx:0.4, cy:0.4, radius: 1, fx:0.5, fy:0.5, 
                     stop:0 {backgroundNormalLight},
                     stop:1 {backgroundNormal});
-                border-top: 1px solid {light};
-                border-right: 1px solid {dark};
-                border-bottom: 1px solid {dark};
-                border-left: 1px solid {light};
+                border-style: outset;
                 border-radius: 2px;
+                border-width: 1px;
+                border-color: {backgroundNormal};
             }}
             QPushButton:pressed {{
                 background: qradialgradient(cx:0.4, cy:0.4, radius: 1, fx:0.5, fy:0.5, 
                     stop:0 {backgroundPressedLight},
                     stop:1 {backgroundPressed});
-                border-top: 1px solid {dark};
-                border-right: 1px solid {light};
-                border-bottom: 1px solid {light};
-                border-left: 1px solid {dark};
-                border-radius: 2px;
+                border-style: inset;
+            }}
+            QPushButton:disabled {{
+                background: qradialgradient(cx:0.4, cy:0.4, radius: 1, fx:0.5, fy:0.5, 
+                    stop:0 {backgroundDisabledLight},
+                    stop:1 {backgroundDisabledPressed});
+                    border-color: {dark};
             }}
             '''.format(
-                light=_getCssQColorStr(backgroundBase.lighter(150)), 
+#                light=_getCssQColorStr(backgroundBase.lighter(150)), 
                 dark=_getCssQColorStr(backgroundBase.darker()), 
                 backgroundNormal=_getCssQColorStr(backgroundNormal), 
                 backgroundNormalLight=_getCssQColorStr(backgroundNormalLight), 
                 backgroundPressed=_getCssQColorStr(backgroundPressed), 
                 backgroundPressedLight=_getCssQColorStr(backgroundPressedLight), 
+                backgroundDisabledLight=_getCssQColorStr(backgroundDisabledLight), 
+                backgroundDisabledPressed=_getCssQColorStr(backgroundDisabledPressed), 
 #                font=_getCssQFontStr(self.font()), 
                 )
             )

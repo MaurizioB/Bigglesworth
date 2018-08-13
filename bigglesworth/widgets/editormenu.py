@@ -56,17 +56,21 @@ class SoundsMenu(FactoryMenu):
         self.libraryModel = parent.libraryModel
         self.referenceModel = parent.referenceModel
         self.locationsMenu = self.addMenu('By collection')
+        self.locationsMenu.menuAction().setIcon(QtGui.QIcon.fromTheme('document-open'))
         self.locationsMenu.aboutToShow.connect(self.loadLocations)
         self.alphaMenu = self.addMenu('Alphabetical')
+        self.alphaMenu.menuAction().setIcon(QtGui.QIcon.fromTheme('view-sort-ascending'))
         self.alphaMenu.aboutToShow.connect(self.loadAlpha)
         self.tagsMenu = self.addMenu('By tag')
+        self.tagsMenu.menuAction().setIcon(QtGui.QIcon.fromTheme('tag'))
         self.tagsMenu.aboutToShow.connect(self.loadTags)
         self.catsMenu = self.addMenu('By category')
+        self.catsMenu.menuAction().setIcon(QtGui.QIcon.fromTheme('bookmarks'))
         self.catsMenu.aboutToShow.connect(self.loadCats)
         self.addSeparator()
-        self.initNewAction = self.addAction('New INIT sound')
+        self.initNewAction = self.addAction(QtGui.QIcon.fromTheme('document-new'), 'New INIT sound')
         self.initNewAction.triggered.connect(self.parent().window().initNew)
-        self.initCurrentAction = self.addAction('re-INIT the current sound')
+        self.initCurrentAction = self.addAction(QtGui.QIcon.fromTheme('document-new-from-template'), 're-INIT the current sound')
         self.initCurrentAction.triggered.connect(self.parent().window().initCurrent)
 
         self.lastShownTimer = QtCore.QElapsedTimer()
@@ -79,14 +83,14 @@ class SoundsMenu(FactoryMenu):
     def checkAge(self):
         if isinstance(self.parent(), QtWidgets.QMenuBar) and not self.openLibrarianAction:
             first = self.actions()[0]
-            self.openLibrarianAction = QtWidgets.QAction('Open &librarian', self)
+            self.openLibrarianAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('view-list-details'), 'Open &librarian', self)
 #            self.openLibrarianAction.setShortcut(QtGui.QKeySequence('Ctrl+Alt+L'))
             self.openLibrarianAction.triggered.connect(self.parent().window().openLibrarianRequested)
             self.insertAction(first, self.openLibrarianAction)
-            self.importAction = QtWidgets.QAction('&Import sound', self)
+            self.importAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('document-open'), '&Import sound', self)
             self.importAction.triggered.connect(lambda: self.parent().importRequested.emit())
             self.insertAction(first, self.importAction)
-            self.insertSeparator(first)
+            self.insertSeparator(first).setText('Open sound')
         if not self.done or self.lastShownTimer.hasExpired(10000):
             self.populate()
         self.tagsMenu.setEnabled(True if self.tags else False)
