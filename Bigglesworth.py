@@ -19,6 +19,7 @@ def process_args():
 #    parser.add_argument('-w', '--wavetable', metavar='WTFILE', nargs='?', const=True, help='Open Wavetable editor (with optional WTFILE)')
     parser.add_argument('--log', help='Show log dialog on startup', action='store_true')
     parser.add_argument('-L', '--librarian', metavar='COLLECTION', nargs='?', const=True, help='Show the librarian, selecting the optional COLLECTION')
+    parser.add_argument('-W', '--wavetables', help='Show Wavetable editor', action='store_true')
     parser.add_argument('-E', '--editor', nargs=argparse.REMAINDER, 
         help='Show the Sound Editor, with optional arguments [[COLLECTION] BXXX]\nIf no argument is given, the editor will show the INIT sound.\n' \
             'If no COLLECTION is given, the sound will be opened from the internal "Blofeld" collection.\nThe index tries to open ' \

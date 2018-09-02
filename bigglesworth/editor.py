@@ -395,6 +395,146 @@ class NameEditMask(QtWidgets.QGraphicsView):
         self.setMask(bmp)
 
 
+class OscShapeWidget(QtWidgets.QWidget):
+    cache = {}
+    initialized = False
+
+    wavePen = QtGui.QPen(QtGui.QColor(64, 192, 216), 1.2, cap=QtCore.Qt.RoundCap)
+    wavePen.setCosmetic(True)
+    pulsePath = QtGui.QPainterPath()
+    pulsePath.moveTo(1, 35)
+    pulsePath.lineTo(1, 4)
+    pulsePath.lineTo(64, 4)
+    pulsePath.lineTo(64, 68)
+    pulsePath.lineTo(127, 68)
+    pulsePath.lineTo(127, 35)
+    pulseTop = 4
+    pulseBottom = 68
+    oldSize = None
+
+    def __init__(self, parent, combo, pwmDial):
+        QtWidgets.QWidget.__init__(self, parent)
+        self.hide()
+        self.combo = combo
+        self.pwmDial = pwmDial
+        self.model = combo.model
+        if not self.initialized:
+            self.__class__.initialized = True
+            self.model.dataChanged.connect(self.updateCacheFromModel)
+        self.combo.enterEvent = self.comboEnterEvent
+        self.combo.leaveEvent = self.comboLeaveEvent
+        self.comboView = self.combo.combo.view()
+        self.comboView.installEventFilter(self)
+        self.combo.currentIndexChanged.connect(self.checkPixmap)
+        self.comboView.selectionModel().currentChanged.connect(self.checkPixmapHighlight)
+        self.pixmap = None
+        self.cacheTimer = QtCore.QTimer()
+        self.cacheTimer.setSingleShot(True)
+        self.cacheTimer.setInterval(50)
+        self.cacheTimer.timeout.connect(self.updateCacheFromCombo)
+
+    def checkPixmapHighlight(self, current, previous):
+        self.checkPixmap(current.row())
+
+    def shouldHide(self):
+        return not self.window().isActiveWindow() or self.mapFromGlobal(QtGui.QCursor().pos()) not in self.rect().adjusted(0, 0, 0, 2 + self.combo.height())
+
+    def eventFilter(self, source, event):
+        if event.type() == QtCore.QEvent.Hide:
+            self.hide()
+        return QtWidgets.QWidget.eventFilter(self, source, event)
+
+    def show(self):
+        if self.pixmap:
+            QtWidgets.QWidget.show(self)
+
+    def checkPixmap(self, index):
+#        if index < 86:
+#            self.hide()
+#            return
+        self.currentIndex = index
+        self.pixmap = self.cache.get(index)
+        if self.pixmap is None:
+            self.cacheTimer.start()
+        elif self.pixmap:
+            if not self.shouldHide() or self.comboView.isVisible():
+                self.show()
+            self.update()
+        else:
+            self.hide()
+
+    def updateCacheFromCombo(self):
+        index = self.comboView.currentIndex().row() if self.comboView.isVisible() else self.combo.currentIndex
+        data = self.model.index(index, 5).data()
+        if data:
+            pixmap = QtGui.QPixmap()
+            pixmap.loadFromData(data, 'PNG')
+            self.pixmap = pixmap.scaledToWidth(self.width(), QtCore.Qt.SmoothTransformation)
+            self.cache[index] = self.pixmap
+            self.show()
+        else:
+            self.cache[index] = False
+            self.pixmap = None
+            self.hide()
+
+    def updateCacheFromModel(self, first, last):
+        rows = set([first.row(), last.row()])
+        for index in range(min(rows), max(rows) + 1):
+            data = self.model.index(index, 5).data()
+            if data:
+                pixmap = QtGui.QPixmap()
+                pixmap.loadFromData(data, 'PNG')
+                pixmap = pixmap.scaledToWidth(self.width(), QtCore.Qt.SmoothTransformation)
+                self.cache[index] = pixmap
+            else:
+                self.cache[index] = False
+                pixmap = None
+            if self.combo.currentIndex == index:
+                self.pixmap = pixmap
+
+    def leaveEvent(self, event):
+        if self.shouldHide():
+            self.hide()
+
+    def comboEnterEvent(self, event):
+        self.setFixedSize(self.combo.width(), self.combo.width() * .5625)
+        self.move(self.window().mapFromGlobal(self.combo.mapToGlobal(QtCore.QPoint(0, -self.height() - 2))))
+        self.show()
+
+    def comboLeaveEvent(self, event):
+        if not self.comboView.isVisible():
+            if self.shouldHide():
+                self.hide()
+
+    def showEvent(self, event):
+        if self.oldSize != self.size():
+            halfHeight = self.height() / 2
+            self.pulseTop = halfHeight / 7
+            self.pulseBottom = self.height() - self.pulseTop
+            self.pulsePath = QtGui.QPainterPath()
+            self.pulsePath.moveTo(1, halfHeight)
+            self.pulsePath.lineTo(1, halfHeight / 7)
+            self.pulsePath.lineTo(self.pwmDial.value, self.pulseTop)
+            self.pulsePath.lineTo(self.pwmDial.value, self.pulseBottom)
+            self.pulsePath.lineTo(self.width() - 1, self.pulseBottom)
+            self.pulsePath.lineTo(self.width() - 1, halfHeight)
+            self.oldSize = self.size()
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter(self)
+        qp.setRenderHints(qp.Antialiasing)
+        qp.setBrush(QtCore.Qt.black)
+        qp.drawRect(self.rect())
+        if self.currentIndex == 1:
+#            qp.translate(self.pwmDial.value * .5, 0)
+            qp.setPen(self.wavePen)
+            x = self.pwmDial.value * .5 / 128 * self.width()
+            print(x)
+            self.pulsePath.setElementPositionAt(2, x, self.pulseTop)
+            self.pulsePath.setElementPositionAt(3, x, self.pulseBottom)
+            qp.drawPath(self.pulsePath)
+        elif self.pixmap:
+            qp.drawPixmap(self.rect(), self.pixmap)
 
 
 class EditorWindow(QtWidgets.QMainWindow):
@@ -689,6 +829,20 @@ class EditorWindow(QtWidgets.QMainWindow):
                     for child in stackedWidget.children():
                         if isinstance(child, QtWidgets.QWidget):
                             stackedWidget.addWidget(child)
+
+        try:
+#            self.oscShapeModel = QtSql.QSqlTableModel()
+#            self.oscShapeModel.setTable('dumpedwt')
+#            self.oscShapeModel.select()
+            self.osc1Shape.setModel(self.oscShapeModel)
+            self.osc1Shape.setModelColumn(1)
+            self.osc2Shape.setModel(self.oscShapeModel)
+            self.osc2Shape.setModelColumn(1)
+        except Exception as e:
+            print(e)
+
+        self.osc1ShapeWidget = OscShapeWidget(self, self.osc1Shape, self.osc1Pulsewidth)
+        self.osc2ShapeWidget = OscShapeWidget(self, self.osc2Shape, self.osc2Pulsewidth)
 
         self.modMatrixBtn.clicked.connect(self.showModMatrix)
         self.modMatrixView = None
@@ -1160,8 +1314,12 @@ class EditorWindow(QtWidgets.QMainWindow):
             else:
 #                print(param.attr, param.range, param.values, newValue - param.range[0])
 #                strValue = param.values[newValue - param.range[0]]
-                oldValueStr = param.values[(oldValue - param.range.minimum) / param.range.step]
-                strValue = param.values[(newValue - param.range.minimum) / param.range.step]
+                if param.id in (8, 24):
+                    oldValueStr = self.osc1Shape.itemText((oldValue - param.range.minimum) / param.range.step)
+                    strValue = self.osc1Shape.itemText((newValue - param.range.minimum) / param.range.step)
+                else:
+                    oldValueStr = param.values[(oldValue - param.range.minimum) / param.range.step]
+                    strValue = param.values[(newValue - param.range.minimum) / param.range.step]
         undo = ValueUndo(self.parameters, param.attr, id, childId, newValue, oldValue, strValue, oldValueStr)
         self.display.setStatusText(undo.text())
         self.undoStack.push(undo)

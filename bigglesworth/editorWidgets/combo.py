@@ -15,6 +15,9 @@ class _Combo(QtWidgets.QComboBox):
     _minHeight = 8
     _minimumSizeHint = QtCore.QSize(_minWidth, _minHeight)
     _minimumDataWidth = _dataWidth = 16
+    indexBeforeChange = -1
+    resetting = False
+
     def __init__(self, parent, valueList=None):
         QtWidgets.QComboBox.__init__(self, parent)
         self.setMinimumSize(self._minimumSizeHint)
@@ -164,29 +167,50 @@ class _Combo(QtWidgets.QComboBox):
         self._updateDataWidth()
 
     def _updateDataWidth(self, *args):
-        if self.model().rowCount():
-            self._dataWidth = max([max(self.fontMetrics().width(self.model().item(i).text()) for i in range(self.model().rowCount()))] + [self._minimumDataWidth + 16 + self.padding * 2])
+        model = self.model()
+        if model.rowCount():
+            count = model.rowCount()
+            self._dataWidth = max([max(self.fontMetrics().width(model.index(i, self.modelColumn()).data()) for i in range(count))] + [self._minimumDataWidth + 16 + self.padding * 2])
         else:
             self._dataWidth = self._minimumDataWidth
         self.applyStyleSheet()
 #        self.setStyleSheet(self.styleSheet() + 'QListView {{min-width: {width};}}'.format(width=self._dataWidth + 30))
 
     def _setModelSignals(self):
-        self.model().columnsInserted.connect(self._updateDataWidth)
-        self.model().columnsRemoved.connect(self._updateDataWidth)
-        self.model().rowsInserted.connect(self._updateDataWidth)
-        self.model().rowsRemoved.connect(self._updateDataWidth)
+        if self.model():
+            self.model().columnsInserted.connect(self._updateDataWidth)
+            self.model().columnsRemoved.connect(self._updateDataWidth)
+            self.model().rowsInserted.connect(self._updateDataWidth)
+            self.model().rowsRemoved.connect(self._updateDataWidth)
+            self.model().layoutChanged.connect(self._updateDataWidth)
+            self.model().modelAboutToBeReset.connect(self.updateIndexBeforeChange)
+            self.model().modelReset.connect(self.modelReset)
 
     def setModel(self, model):
-        try:
+        if self.model():
             self.model().columnsInserted.disconnect(self._updateDataWidth)
             self.model().columnsRemoved.disconnect(self._updateDataWidth)
             self.model().rowsInserted.disconnect(self._updateDataWidth)
             self.model().rowsRemoved.disconnect(self._updateDataWidth)
-        except:
-            pass
+            self.model().layoutChanged.disconnect(self._updateDataWidth)
+            self.model().modelAboutToBeReset.disconnect(self.updateIndexBeforeChange)
+            self.model().modelReset.disconnect(self.modelReset)
         QtWidgets.QComboBox.setModel(self, model)
         self._setModelSignals()
+
+    def updateIndexBeforeChange(self):
+        self.blockSignals(True)
+        self.indexBeforeChange = self.currentIndex()
+        self.resetting = True
+
+    def modelReset(self):
+        if self.resetting:
+            self.setCurrentIndex(self.indexBeforeChange)
+        self.blockSignals(False)
+        if self.resetting and self.currentIndex() != self.indexBeforeChange:
+            self.currentIndexChanged.emit(self.currentIndex())
+        self.resetting = False
+
 
 class Combo(BaseWidget):
 #    labelMargin = 2
@@ -214,11 +238,18 @@ class Combo(BaseWidget):
         self.combo.currentIndexChanged.connect(self.currentIndexChanged)
         self.valueList = valueList if valueList is not None else []
         self.setWidget(self.combo)
-        self.model = self.combo.model()
+#        self.model = self.combo.model()
 #        self.setFont(QtGui.QFont('Droid Sans', 9, QtGui.QFont.Bold))
         self._paletteChanged(self.palette())
+        self.setModel = self.combo.setModel
+        self.setModelColumn = self.combo.setModelColumn
+        self.itemText = self.combo.itemText
 
     opaque = makeQtChildProperty(bool, 'opaque', '_setOpaque')
+
+    @property
+    def model(self):
+        return self.combo.model()
 
     @property
     def valueListStr(self):
@@ -242,6 +273,12 @@ class Combo(BaseWidget):
     @currentIndex.setter
     def currentIndex(self, index):
         self.combo.setCurrentIndex(index)
+
+    def enterEvent(self, event):
+        pass
+
+    def leaveEvent(self, event):
+        pass
 
     def setDisabledItems(self, items):
         if not isinstance(items, (range, list, tuple)):

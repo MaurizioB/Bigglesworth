@@ -81,6 +81,8 @@ _whiteKeys = (0, 2, 4, 5, 7, 9, 11)
 _noteNumberToName = {}
 _noteNameToNumber = {}
 
+sanitize = lambda m, v, M: max(m, min(v, M))
+
 for _noteId in range(128):
     _octave, _note = divmod(_noteId, 12)
     _noteName = _noteNames[_note]
@@ -122,11 +124,11 @@ class MetaKey(QtWidgets.QGraphicsItem):
         self.shortcutPaintFunc = self.shortcutPaint if shortcut else lambda *args: None
 
     def emitNoteEvent(self, velocity, state):
-        if velocity < 0:
-            velocity = 0
-        elif velocity > 127:
-            velocity = 127
-        self.scene().noteEvent.emit(state, self.note, velocity)
+#        if velocity < 0:
+#            velocity = 0
+#        elif velocity > 127:
+#            velocity = 127
+        self.scene().noteEvent.emit(state, self.note, sanitize(0, velocity, 127))
 
     def mousePressEvent(self, event):
         self.emitNoteEvent(int(round(event.pos().y() * 127 / self.height, 0)), True)
@@ -469,6 +471,8 @@ class PianoKeyboard(QtWidgets.QGraphicsView):
         self._noteOffset = 1
         self._showShortcuts = True
         self._defaultVelocity = 127
+        self._polyphonic = True
+        self.polyNote = None
         self.setKeyboard()
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
@@ -522,12 +526,12 @@ class PianoKeyboard(QtWidgets.QGraphicsView):
 
     @blackKeyRatio.setter
     def blackKeyRatio(self, ratio):
-        if ratio < 30:
-            ratio = 30
-        elif ratio > 100:
-            ratio = 100
-        self._blackKeyRatio = ratio
-        BlackKey.setRatio(ratio / 100)
+#        if ratio < 30:
+#            ratio = 30
+#        elif ratio > 100:
+#            ratio = 100
+        self._blackKeyRatio = sanitize(30, ratio, 100)
+        BlackKey.setRatio(self._blackKeyRatio / 100)
 #        BlackKey.height = WhiteKey.height * ratio
         self.updateScene(self.pianoScene.sceneRect())
 
@@ -539,10 +543,11 @@ class PianoKeyboard(QtWidgets.QGraphicsView):
     def firstNote(self, firstNote):
         if not _isWhiteKey(firstNote):
             firstNote -= 1
-        if firstNote < 0:
-            firstNote = 0
-        elif firstNote > 127:
-            firstNote = 127
+#        if firstNote < 0:
+#            firstNote = 0
+#        elif firstNote > 127:
+#            firstNote = 127
+        firstNote = sanitize(0, firstNote, 127)
         #TODO: check consistency!
         while firstNote + self._octaves * 12 + self._noteOffset > 127:
             if self._octaves > 0:
@@ -563,10 +568,11 @@ class PianoKeyboard(QtWidgets.QGraphicsView):
 
     @octaves.setter
     def octaves(self, octaves):
-        if octaves < 0:
-            octaves = 0
-        elif octaves > 10:
-            octaves = 10
+#        if octaves < 0:
+#            octaves = 0
+#        elif octaves > 10:
+#            octaves = 10
+        octaves = sanitize(0, octaves, 10)
         lastNote = self._firstNote + octaves * 12 + self._noteOffset
         noteOffset = self._noteOffset
         while lastNote > 127:
@@ -585,10 +591,11 @@ class PianoKeyboard(QtWidgets.QGraphicsView):
 
     @noteOffset.setter
     def noteOffset(self, noteOffset):
-        if noteOffset > 11:
-            noteOffset = 11
-        elif noteOffset < -10:
-            noteOffset = -10
+#        if noteOffset > 11:
+#            noteOffset = 11
+#        elif noteOffset < -10:
+#            noteOffset = -10
+        noteOffset = sanitize(-10, noteOffset, 11)
         lastNote = self._firstNote + self._octaves * 12 - 1 + noteOffset
         if not _isWhiteKey(lastNote):
             #TODO: valuta un baseOffset?
@@ -612,11 +619,39 @@ class PianoKeyboard(QtWidgets.QGraphicsView):
 
     @defaultVelocity.setter
     def defaultVelocity(self, velocity):
-        if velocity < 0:
-            velocity = 0
-        elif velocity > 127:
-            velocity = 127
-        self._defaultVelocity = velocity
+#        if velocity < 0:
+#            velocity = 0
+#        elif velocity > 127:
+#            velocity = 127
+        self._defaultVelocity = sanitize(0, velocity, 127)
+
+    @QtCore.pyqtProperty(bool)
+    def polyphonic(self):
+        return self._polyphonic
+
+    @polyphonic.setter
+    def polyphonic(self, state):
+        self._polyphonic = state
+        if not state:
+            self.pianoScene.noteEvent.disconnect(self.noteEvent)
+            self.pianoScene.noteEvent.connect(self.checkPolyphony)
+        else:
+            self.pianoScene.noteEvent.disconnect(self.checkPolyphony)
+            self.pianoScene.noteEvent.connect(self.noteEvent)
+
+    def checkPolyphony(self, eventType, note, velocity):
+        #velocity == 0 is note off!
+        if not eventType or not velocity:
+            self.noteEvent.emit(eventType, note, velocity)
+            self.polyNote = None
+        elif self.polyNote is not None:
+            if self.polyNote != note:
+                self.noteEvent.emit(False, self.polyNote, 0)
+                self.noteEvent.emit(True, note, velocity)
+                self.polyNote = note
+        else:
+            self.noteEvent.emit(eventType, note,  velocity)
+            self.polyNote = note
 
     def setKeyboard(self):
         self.keys = {}

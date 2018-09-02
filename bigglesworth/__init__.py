@@ -6,7 +6,7 @@ from string import uppercase
 sys.path.append(os.path.join(os.path.dirname(__file__), 'bigglesworth/editorWidgets'))
 os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
 
-from Qt import QtCore, QtGui, QtWidgets
+from Qt import QtCore, QtGui, QtWidgets, QtSql
 QtCore.pyqtSlot = QtCore.Slot
 QtCore.pyqtSignal = QtCore.Signal
 QtCore.pyqtProperty = QtCore.Property
@@ -63,6 +63,16 @@ from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR, LogIn
 from bigglesworth.midiutils import SYSEX, CTRL, NOTEOFF, NOTEON, PROGRAM, SysExEvent
 
 from bigglesworth.mididevice import MidiDevice
+
+from bigglesworth.wavetables import WaveTableWindow, UidColumn, NameColumn, SlotColumn, DataColumn, EditedColumn
+
+
+class SqlTableModelFix(QtSql.QSqlTableModel):
+    def submitAll(self):
+        self.modelAboutToBeReset.emit()
+        res = QtSql.QSqlTableModel.submitAll(self)
+        self.modelReset.emit()
+        return res
 
 
 class Bigglesworth(QtWidgets.QApplication):
@@ -139,6 +149,26 @@ class Bigglesworth(QtWidgets.QApplication):
                     print('porcozzio', self.database.lastError)
             else:
                 print(self.database.lastError)
+
+        try:
+            WaveTableWindow.waveTableModel = QtSql.QSqlTableModel()
+            WaveTableWindow.waveTableModel.setTable('wavetables')
+            WaveTableWindow.waveTableModel.select()
+            WaveTableWindow.waveTableModel.setHeaderData(UidColumn, QtCore.Qt.Horizontal, 'D')
+            WaveTableWindow.waveTableModel.setHeaderData(NameColumn, QtCore.Qt.Horizontal, 'Name')
+            WaveTableWindow.waveTableModel.setHeaderData(SlotColumn, QtCore.Qt.Horizontal, 'Slot')
+            WaveTableWindow.waveTableModel.setHeaderData(DataColumn, QtCore.Qt.Horizontal, 'Waves')
+            WaveTableWindow.waveTableModel.setHeaderData(EditedColumn, QtCore.Qt.Horizontal, 'Last modified')
+
+            WaveTableWindow.dumpModel = SqlTableModelFix()
+            WaveTableWindow.dumpModel.setTable('dumpedwt')
+            WaveTableWindow.dumpModel.select()
+            WaveTableWindow.dumpModel.setHeaderData(UidColumn, QtCore.Qt.Horizontal, 'D')
+            WaveTableWindow.dumpModel.setHeaderData(NameColumn, QtCore.Qt.Horizontal, 'Name')
+            WaveTableWindow.dumpModel.setHeaderData(EditedColumn, QtCore.Qt.Horizontal, 'Last modified')
+            EditorWindow.oscShapeModel = WaveTableWindow.dumpModel
+        except Exception as e:
+            print('init', e)
 
         self.splash.showMessage('Starting MIDI engine', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .5)
 
@@ -241,6 +271,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.editorWindow.editorMenuBar.dumpFromRequested.connect(self.dumpFrom)
         self.editorWindow.editorMenuBar.dumpToRequested.connect(self.dumpTo)
         self.mainWindow.showEditorAction.triggered.connect(self.editorWindow.show)
+        self.mainWindow.showWavetableAction.triggered.connect(self.showWavetable)
         self.mainWindow.soundEditRequested.connect(self.editorWindow.openSoundFromUid)
 #        self.editorWindow.midiInWidget.setConnections(len([conn for conn in self.midiDevice.input.connections.input if not conn.hidden]))
 #        self.editorWindow.midiOutWidget.setConnections(len([conn for conn in self.midiDevice.output.connections.output if not conn.hidden]))
@@ -806,8 +837,6 @@ class Bigglesworth(QtWidgets.QApplication):
             self.firstRunWizard.autoconnectPage.midiEvent.disconnect(self.sendMidiEvent)
             self.firstRunWizard.autoconnectPage.midiConnect.disconnect(self.midiConnect)
             if res:
-                pass
-#                self.settings.setValue('FirstRunShown', True)
                 self.mainWindow.show()
                 from bigglesworth.firstrun import FirstRunObject
                 self.firstRunObject = FirstRunObject(self)
@@ -820,8 +849,28 @@ class Bigglesworth(QtWidgets.QApplication):
             index = self.getSoundIndexFromCommandLine(self.argparse.editor)
             if index:
                 self.editorWindow.openSoundFromBankProg(*index)
+        if self.argparse.wavetables:
+            if self.argparse.librarian:
+                self.mainWindow.show()
+            self.showWavetable()
         else:
             self.mainWindow.show()
+
+    def showWavetable(self):
+        if WaveTableWindow.openedWindows:
+#            wtWindow = WaveTableWindow.openedWindows[-1]
+            if WaveTableWindow.lastActive:
+                wtWindow = WaveTableWindow.lastActive[-1]
+            else:
+                wtWindow = WaveTableWindow.openedWindows[-1].createNewWindow()
+        else:
+            wtWindow = WaveTableWindow()
+            wtWindow.midiEvent.connect(self.sendMidiEvent)
+#        wtWindow.midiConnect.connect(self.midiConnect)
+#        self.graph.conn_register.connect(wtWindow.midiConnEvent)
+        self.midiConnChanged.connect(wtWindow.midiConnChanged)
+        wtWindow.show()
+        wtWindow.activateWindow()
 
     def showSettings(self):
         self.globalsBlock = True

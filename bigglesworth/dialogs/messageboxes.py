@@ -85,18 +85,36 @@ class DatabaseCorruptionMessageBox(MessageBoxDetailedHtml):
 
 
 class AdvancedMessageBox(MessageBoxDetailedHtml):
-    def __init__(self, parent, title, message, detailed='', buttons=QtWidgets.QMessageBox.Ok):
+    def __init__(self, parent, title, message, detailed='', buttons=QtWidgets.QMessageBox.Ok, icon=None):
         MessageBoxDetailedHtml.__init__(self, parent)
+        if icon:
+            if isinstance(icon, MessageBoxDetailedHtml.Icon):
+                self.setIcon(icon)
+            else:
+                self.setIcon(MessageBoxDetailedHtml.Question)
+                if isinstance(icon, QtGui.QPixmap):
+                    self.setIconPixmap(icon.scaled(self.iconPixmap().size(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation))
+                else:
+                    self.setIconPixmap(icon.pixmap(self.iconPixmap().size()))
         self.setWindowTitle(title)
         self.setText(message)
         if detailed:
             self.setDetailedText(detailed)
-        if isinstance(buttons, self.StandardButtons):
+        if isinstance(buttons, (self.StandardButtons, self.StandardButton)):
             self.setStandardButtons(buttons)
         else:
-            for standardButton, data in buttons.items():
-                button = self.addButton(standardButton)
-                setButtonData(button, data)
+            if isinstance(buttons, dict):
+                for standardButton, data in buttons.items():
+                    button = self.addButton(standardButton)
+                    setButtonData(button, data)
+            else:
+                for b in buttons:
+                    if isinstance(b, self.StandardButtons):
+                        self.addButton(b)
+                    else:
+                        button = self.addButton(b[0])
+                        if len(b) > 1:
+                            setButtonData(button, b[1:])
 
 
 class QuestionMessageBox(AdvancedMessageBox):

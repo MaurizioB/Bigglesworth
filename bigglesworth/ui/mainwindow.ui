@@ -185,7 +185,9 @@
   </action>
   <action name="aboutAction">
    <property name="icon">
-    <iconset theme="help-about"/>
+    <iconset theme="help-about">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>About &amp;Bigglesworth...</string>
@@ -200,9 +202,6 @@
    </property>
   </action>
   <action name="showWavetableAction">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
    <property name="text">
     <string>&amp;Wavetable editor</string>
    </property>
@@ -227,7 +226,9 @@
   </action>
   <action name="aboutQtAction">
    <property name="icon">
-    <iconset theme="qtcreator"/>
+    <iconset theme="qtcreator">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>About &amp;Qt...</string>
@@ -243,7 +244,9 @@
   </action>
   <action name="showLogAction">
    <property name="icon">
-    <iconset theme="text-x-log"/>
+    <iconset theme="text-x-log">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>Show log</string>

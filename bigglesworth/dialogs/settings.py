@@ -102,6 +102,8 @@ class SettingsDialog(QtWidgets.QDialog):
         self.dbPathEdit.text = lambda: QtCore.QDir.fromNativeSeparators(QtWidgets.QLineEdit.text(self.dbPathEdit))
         if not 'linux' in sys.platform:
             self.alsaBackendRadio.setEnabled(False)
+        else:
+            self.alsaBackendRadio.setText(self.alsaBackendRadio.text() + ' (recommended)')
         self.backendGroup.setId(self.alsaBackendRadio, 0)
         self.backendGroup.setId(self.rtmidiBackendRadio, 1)
 

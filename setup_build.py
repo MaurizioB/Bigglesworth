@@ -88,6 +88,12 @@ files = zip(files, files)
 files.append(('bigglesworth/editorWidgets/pianokbmap.json', 'pianokbmap.json'))
 
 includes = ['atexit', 'PyQt4.QtSql', 
+#    required by soundfile
+    'enum', 
+    'cffi', 
+#   numpy...
+    'numpy.core._methods', 
+    'numpy.lib.format', 
 #   custom widgets
     'colorselectbutton', 
     'combo', 
@@ -101,11 +107,21 @@ includes = ['atexit', 'PyQt4.QtSql',
 
 
 if platform == WIN:
-    base = 'Win32GUI'
+    #fix for wine not finding win32 (thus excluding soundfile and samplerate)
+    pkgDir = os.path.join(os.path.dirname(sys.executable), 'Lib\\site-packages\\')
+
+    files.extend([
+        (os.path.join(pkgDir, '_soundfile_data'), '_soundfile_data'), 
+        (os.path.join(pkgDir, '_soundfile.py')), 
+        (os.path.join(pkgDir, 'soundfile.py')), 
+        (os.path.join(pkgDir, '_soundfile.pyc')), 
+        (os.path.join(pkgDir, 'soundfile.pyc')), 
+        (os.path.join(pkgDir, 'samplerate'), 'samplerate'), 
+    ])
 
     executables = [
 #        Executable('Bigglesworth.py', base=base, icon='resources/bigglesworth_icon.ico')
-        Executable('Bigglesworth.py', base=base), 
+        Executable('Bigglesworth.py', base='Win32GUI'), 
         Executable('Bigglesworth.py', base='Console', targetName='BigglesworthDebug.exe')
     ]
 
@@ -119,7 +135,8 @@ else:
         Executable('Bigglesworth.py', base='Console', targetName='BigglesworthDebug')
     ]
 
-buildOptions = dict(packages = [], excludes = [], includes = includes, include_files = files)
+buildOptions = dict(packages = [], includes = includes, include_files = files, 
+    excludes = ['soundfile', 'samplerate'], bin_excludes = ['libsndfile32bit.dll', 'libsamplerate-32bit.dll'])
 macbuildOptions = {'iconfile': 'resources/bigglesworth_icon.icns', 'bundle_name': 'BigglesworthBeta'}
 dmgOptions = {'applications_shortcut': True}
 

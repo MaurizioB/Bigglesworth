@@ -251,27 +251,46 @@ class BlofeldDB(QtCore.QObject):
             baseColumns = columns[:len(referenceColumns)]
             if baseColumns != referenceColumns:
                 self.logger.append(LogCritical, 'Reference table column mismatch, deep checking', extMessage=columns)
-                self.query.exec_('SAVEPOINT refRename')
+#                self.query.exec_('SAVEPOINT refRename')
                 try:
-                    assert self.query.exec_('ALTER TABLE reference RENAME TO reference_old')
+                    self.sql.transaction()
+                    assert self.query.exec_('ALTER TABLE reference RENAME TO reference_old'), 1
+                    self.sql.commit()
                     newLayout = ', '.join('"{}"'.format(c) for c in referenceColumns + newColumns)
                     newLayoutDef = 'uid varchar primary key, tags varchar, {}'.format(
                         ', '.join('"{}" int'.format(col) for col in referenceColumns[2:] + newColumns[:]))
-                    assert self.query.exec_('CREATE TABLE reference({})'.format(newLayoutDef))
+                    self.sql.transaction()
+                    assert self.query.exec_('CREATE TABLE reference({})'.format(newLayoutDef)), 2
+                    self.sql.commit()
                     reordered = referenceColumns[:]
                     if 'blofeld' in baseColumns:
                         reordered.pop(reordered.index('Blofeld'))
                         reordered.insert(referenceColumns.index('Blofeld'), 'blofeld')
+                    self.sql.transaction()
                     assert self.query.exec_('INSERT INTO reference({}) SELECT {} FROM reference_old'.format(
-                        newLayout, ', '.join(reordered + newColumns)))
-                    assert self.query.exec_('DROP TABLE reference_old')
-                except:
-                    print(self.query.lastError().databaseText())
-                    self.logger.append(LogCritical, 'Failed to reorder reference table')
-                    self.query.exec_('ROLLBACK TO refRename')
+                        newLayout, ', '.join(reordered + newColumns))), 3
+                    self.sql.commit()
+                except Exception as e:
+                    self.sql.rollback()
+#                    print(self.query.lastError().databaseText(), self.query.lastError().driverText())
+                    if e == 1:
+                        extMessage = 'Source not renamed'
+                    elif e >= 2:
+                        if e == 3:
+                            self.query.exec_('DROP TABLE reference')
+                            extMessage = 'Data not inserted'
+                        else:
+                            extMessage = 'New table not created'
+                        self.query.exec_('ALTER TABLE reference_old RENAME TO reference')
+                    self.logger.append(LogCritical, 'Failed to reorder reference table', extMessage)
+#                    self.query.exec_('ROLLBACK TO refRename')
                     self.lastError = self.TableFormatError
                     return False
-                self.query.exec_('COMMIT')
+#                self.query.exec_('COMMIT')
+                self.sql.transaction()
+                if not self.query.exec_('DROP TABLE reference_old'):
+                    self.logger.append(LogWarning, 'Old reference not removed')
+                self.sql.commit()
                 self.logger.append(LogDebug, 'Reference table successfully reordered')
 
         self.logger.append(LogDebug, 'Checking templates table')
