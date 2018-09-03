@@ -40,6 +40,7 @@ from bigglesworth.midiutils import SysExEvent
 from bigglesworth.const import INIT, END, CHK, IDW, IDE, WTBD
 from bigglesworth.parameters import oscShapes
 from bigglesworth.dialogs.messageboxes import AdvancedMessageBox
+from bigglesworth.widgets import MidiStatusBarWidget
 
 #from bigglesworth.wavetables.utils import baseSineValues, sineValues, noteFrequency
 
@@ -683,7 +684,6 @@ class TestMidiDevice(QtCore.QObject):
 
 class WaveTableWindow(QtWidgets.QMainWindow):
     midiDevice = None
-    midiEvent = QtCore.pyqtSignal(object)
     shown = False
     isClosing = False
     waveTableModel = None
@@ -691,9 +691,16 @@ class WaveTableWindow(QtWidgets.QMainWindow):
     openedWindows = []
     lastActive = []
 
+    midiEvent = QtCore.pyqtSignal(object)
+    midiConnect = QtCore.pyqtSignal(object, int, bool)
+
     def __init__(self, waveTable=None):
         QtWidgets.QMainWindow.__init__(self)
         loadUi('ui/wavetables.ui', self)
+        self.midiWidget = MidiStatusBarWidget(self, 2, True)
+        self.statusbar.addPermanentWidget(self.midiWidget)
+        self.midiEvent.connect(self.midiWidget.midiOutputEvent)
+
         self.uuid = uuid4()
         self._isClean = True
         self.openedWindows.append(self)
@@ -709,10 +716,18 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 self.midiEvent.connect(self.openedWindows[0].midiEvent)
 #                self.midiEvent.connect(self.midiDevice.outputEvent)
         else:
-            self.midiDevice = QtWidgets.QApplication.instance().midiDevice
+            self.main = QtWidgets.QApplication.instance()
+#            self.main.midiConnChanged.connect(self.midiConnChanged)
+            self.midiDevice = self.main.midiDevice
+            self.graph = self.midiDevice.graph
+            self.midiWidget.setMidiDevice(self.midiDevice)
+            self.midiWidget.midiConnect.connect(self.midiConnect)
+            self.main.midiConnChanged.connect(self.midiWidget.midiConnChanged)
+            self.midiWidget.midiConnChanged(*self.main.connections)
             #signal cannot be shared between two instances?
             if self.openedWindows[0] != self:
                 self.midiEvent.connect(self.openedWindows[0].midiEvent)
+                self.midiConnect.connect(self.openedWindows[0].midiConnect)
 
         self.dumper = Dumper(self)
         self.dumper.stopRequested.connect(self.stopRequested)
@@ -1020,11 +1035,10 @@ class WaveTableWindow(QtWidgets.QMainWindow):
     def isClean(self):
         return self.undoStack.isClean() and self._isClean
 
-    @property
     def canDump(self):
         if isinstance(self.midiDevice, TestMidiDevice):
             return True
-        return bool(len(QtWidgets.QApplication.instance().connections[1]))
+        return bool(len([c for c in self.main.connections[1] if not c.hidden]))
 
     @property
     def currentWaveTableName(self):
@@ -1144,8 +1158,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.player.setSampleRateConversion(conversion)
 
     def midiConnChanged(self, input, output):
-        if not output:
-            pass
+        self.midiWidget.midiOutputConnChanged(output)
 
     def applyHarmonics(self):
         self.waveScene.applyHarmonics()
@@ -1848,24 +1861,19 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             return found.sibling(found.row(), NameColumn).data()
 
     def saveAndDump(self):
-        slot = self.slotSpin.value()
-#        sameSlotUid = self.blofeldProxy.mapFromSource(self.dumpModel.index(slot, UidColumn)).data()
-#        if sameSlotUid:
-#            if self.currentWaveTable and self.blofeldProxy.match(
-#                self.blofeldProxy.index(0, UidColumn), QtCore.Qt.DisplayRole, self.currentWaveTable):
-#                    print('wavetable salvata e dumpata altrove')
-#            elif
-#        elif self.currentWaveTable:
-#            sameUid = self.blofeldProxy.match(self.blofeldProxy.index(0, UidColumn), QtCore.Qt.DisplayRole, self.currentWaveTable)
-#            if sameUid and sameUid[0].sibling(sameUid[0].row(), SlotColumn).data() != slot:
-#                print('uid trovato in slot differente')
-##                sameUid = sameUid[0]
-##                sameUidName = sameUid.sibling(sameUid.row(), NameColumn)
-##                sameUidSlot = sameUid.sibling(sameUid.row(), SlotColumn)
-##                QtWidgets.QMessageBox.warning(self, )
-#            else:
-#                print('vabbene')
+        self.settings.beginGroup('MessageBoxes')
+        if not self.canDump() and self.settings.value('WaveTableNoMidiDump', True, bool):
+            msgBox = AdvancedMessageBox(self, 'No MIDI connection', 
+                'No MIDI device is connected! The wavetable will only be saved in the dump list.<br/><br/>' \
+                'Undumped wavetables can be sent later from the "Blofeld" tab in the "Wavetable library" panel.', 
+                icon=AdvancedMessageBox.Warning, checkBox=True)
+            msgBox.exec_()
+            if msgBox.isChecked():
+                self.settings.setValue('WaveTableNoMidiDump', False)
+        self.settings.endGroup()
+        return
 
+        slot = self.slotSpin.value()
         sameUid = sameUidSlot = None
         if self.currentWaveTable:
             sameUid = self.blofeldProxy.match(self.blofeldProxy.index(0, UidColumn), QtCore.Qt.DisplayRole, 
@@ -1876,7 +1884,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         sameSlotIndex = self.dumpModel.index(slot + 6, UidColumn)
 #        sameSlotUid = self.blofeldProxy.mapFromSource(sameSlotIndex).data()
         sameSlotUid = sameSlotIndex.data()
-        print(sameUidSlot, sameSlotUid)
+#        print(sameUidSlot, sameSlotUid)
         if sameUid and sameUidSlot == slot:
             #uid and slot match, just save and dump
             pass
@@ -1958,7 +1966,8 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.dumpModel.setData(self.dumpModel.index(slotRow, PreviewColumn), preview)
         self.dumpModel.setData(self.dumpModel.index(slotRow, DumpedColumn), 0)
         self.dumpModel.submitAll()
-        self.initializeDump()
+        if self.canDump():
+            self.initializeDump()
 
     def initializeDump(self, *args):
         slotToSave = []
@@ -2250,6 +2259,31 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 #            self.applyBtn.setEnabled(False)
 #        self.dumpAllBtn.setEnabled(hasContents)
 
+    def showMidiMenu(self):
+        menu = QtWidgets.QMenu()
+        connected = [conn.dest for conn in QtWidgets.QApplication.instance().connections[1]]
+        if not isinstance(self.midiDevice, TestMidiDevice):
+            for clientId in sorted(self.graph.client_id_dict.keys()):
+                client = self.graph.client_id_dict[clientId]
+                if client == self.midiDevice.input.client:
+                    continue
+                portDict = self.graph.port_id_dict[clientId]
+                ports = []
+                for portId in sorted(portDict.keys()):
+                    port = portDict[portId]
+                    if not port.hidden and port.is_input:
+                        ports.append(port)
+                if ports:
+                    menu.addSection(client.name)
+                    for port in ports:
+                        portAction = menu.addAction(port.name)
+                        portAction.setCheckable(True)
+                        portAction.setChecked(port in connected)
+                        portAction.setData(port)
+        res = menu.exec_(QtGui.QCursor.pos())
+        if res:
+            self.midiConnect.emit(res.data(), True, res.isChecked())
+
     def showLocalMenu(self, pos):
         pass
 
@@ -2384,18 +2418,26 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.settings.beginGroup('WaveTables')
         self.settings.setValue('Dock', [self.waveTableDock.isVisible(), self.waveTableDock.isFloating(), self.waveTableDock.dockedWidth, self.waveTableDock.floatingWidth, self.waveTableDock.geometry()])
         self.settings.endGroup()
-        if self.isDumpClean() == 1 and not any(w.isVisible() for w in self.openedWindows if w != self):
-            res = AdvancedMessageBox(self, 'Wavetables not dumped', 
-                '{} wavetables in the dump list have not been updated yet with your Blofeld.'.format(self.undumpedCount()), 
-                buttons=[
-                    (QtWidgets.QMessageBox.Apply, 'Update'), 
-                    (QtWidgets.QMessageBox.Ignore, 'Later', QtGui.QIcon.fromTheme('clock')), 
-                    (QtWidgets.QMessageBox.Cancel, )], 
-                icon=AdvancedMessageBox.Question).exec_()
-            if res == QtWidgets.QMessageBox.Apply:
-                self.dumpUpdated()
-            elif res != QtWidgets.QMessageBox.Ignore:
-                return event.ignore()
+        self.settings.beginGroup('MessageBoxes')
+        if self.settings.value('WaveTableAskUndumpedOnClose', True, bool) and \
+            self.isDumpClean() == 1 and not any(w.isVisible() for w in self.openedWindows if w != self):
+                msgBox = AdvancedMessageBox(self, 'Wavetables not dumped', 
+                    '{} wavetables in the dump list have not been updated with your Blofeld yet.'.format(self.undumpedCount()), 
+                    buttons=[
+                        (QtWidgets.QMessageBox.Apply, 'Update'), 
+                        (QtWidgets.QMessageBox.Ignore, 'Later', QtGui.QIcon.fromTheme('clock')), 
+                        (QtWidgets.QMessageBox.Cancel, )], 
+                    checkBox='Always close without asking', 
+                    icon=AdvancedMessageBox.Question)
+                res = msgBox.exec_()
+                if res == QtWidgets.QMessageBox.Apply:
+                    self.dumpUpdated()
+                elif res != QtWidgets.QMessageBox.Ignore:
+                    self.settings.endGroup()
+                    return event.ignore()
+                if msgBox.isChecked():
+                    self.settings.setValue('WaveTableAskUndumpedOnClose', False)
+        self.settings.endGroup()
         self.settings.setValue('defaultVolume', AudioImportTab.defaultVolume)
         self.isClosing = True
         if not self.currentWaveTable:

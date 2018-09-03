@@ -8,13 +8,14 @@ from Qt import QtCore, QtGui, QtWidgets, QtSql
 from bigglesworth.const import factoryPresetsNamesDict
 from bigglesworth.utils import loadUi, setBold
 #from bigglesworth.library import LibraryModel
-from bigglesworth.widgets import LibraryWidget, CollectionWidget
+from bigglesworth.widgets import LibraryWidget, CollectionWidget, MidiStatusBarWidget
 from bigglesworth.dialogs import NewCollectionDialog, ManageCollectionsDialog, TagsDialog, AboutDialog, SoundListExport, MidiChartDialog
 from bigglesworth.forcebwu import MayTheForce
 #import icons
 
 class MainWindow(QtWidgets.QMainWindow):
     closed = QtCore.pyqtSignal()
+    midiConnect = QtCore.pyqtSignal(object, int, bool)
     findDuplicatesRequested = QtCore.pyqtSignal(str, object)
     exportRequested = QtCore.pyqtSignal(object, object)
     importRequested = QtCore.pyqtSignal(object, object)
@@ -34,6 +35,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.database.tagsModel.dataChanged.connect(self.checkTagFilters)
 #        self.referenceModel = QtSql.QSqlTableModel()
         self.referenceModel = self.database.referenceModel
+        self.midiWidget = MidiStatusBarWidget(self, menu=True)
+        self.midiWidget.setMidiDevice(self.main.midiDevice)
+        self.main.midiConnChanged.connect(self.midiWidget.midiConnChanged)
+        self.main.midiEventSent.connect(self.midiWidget.midiEventSent)
+        self.midiWidget.midiConnChanged(*self.main.connections)
+        self.midiWidget.midiConnect.connect(self.midiConnect)
+        self.statusbar.addPermanentWidget(self.midiWidget)
         self.statusbar.setDatabase(parent.database)
 
         self.leftTabWidget.setSiblings(self.leftTabBar, self.rightTabWidget)

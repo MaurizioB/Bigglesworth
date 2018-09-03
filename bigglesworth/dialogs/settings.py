@@ -277,6 +277,10 @@ class SettingsDialog(QtWidgets.QDialog):
         if self.showFirstRunChk.isChecked():
             self.firstRunSkipBlofeldDetectChk.setChecked(not self.settings.value('FirstRunAutoDetect', True, bool))
 
+        self.settings.beginGroup('MessageBoxes')
+        self.restoreMsgBoxBtn.setEnabled(len(self.settings.childKeys()))
+        self.settings.endGroup()
+
         self.settings.beginGroup('MIDI')
         if not 'linux' in sys.platform:
             self.rtmidiBackendRadio.setChecked(True)
@@ -314,6 +318,9 @@ class SettingsDialog(QtWidgets.QDialog):
         res = QtWidgets.QDialog.exec_(self)
         if res:
             restart = False
+
+            if self.restoreMsgBoxBtn.isChecked():
+                self.settings.remove('MessageBoxes')
 
             self.settings.setValue('startupSessionMode', self.startupSessionCombo.currentIndex())
 #            self.settings.setValue('theme', self.themes.current.name)

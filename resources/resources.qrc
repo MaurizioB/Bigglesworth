@@ -22,6 +22,12 @@
         <file>bigglesworth_splash.svg</file>
         <file>bigglesworth_splash_transparent.svg</file>
         <file>midiicon.svg</file>
+        <file>midiiconinput.svg</file>
+        <file>midiiconinputdisabled.svg</file>
+        <file>midiiconinputactive.svg</file>
+        <file>midiiconoutput.svg</file>
+        <file>midiiconoutputdisabled.svg</file>
+        <file>midiiconoutputactive.svg</file>
         <file>midimoon.svg</file>
         <file>circuit.svg</file>
         <file>dial.svg</file>

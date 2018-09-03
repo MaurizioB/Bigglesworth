@@ -81,6 +81,7 @@ class Bigglesworth(QtWidgets.QApplication):
     progReceiveToggled = QtCore.pyqtSignal(bool)
     ctrlReceiveToggled = QtCore.pyqtSignal(bool)
     midiConnChanged = QtCore.pyqtSignal(object, object)
+    midiEventSent = QtCore.pyqtSignal(object)
 
     def __init__(self, argparse, args):
         QtWidgets.QApplication.__init__(self, ['Bigglesworth'] + args)
@@ -236,6 +237,7 @@ class Bigglesworth(QtWidgets.QApplication):
 #        self.mainWindow.quitAction.setIcon(QtGui.QIcon(':/icons/Bigglesworth/16x16/dialog-information.svg'))
         self.mainWindow.closed.connect(self.checkClose)
         self.mainWindow.quitAction.triggered.connect(self.quit)
+        self.mainWindow.midiConnect.connect(self.midiConnect)
         self.mainWindow.showLogAction.triggered.connect(self.loggerWindow.show)
         self.mainWindow.showSettingsAction.triggered.connect(self.showSettings)
         self.mainWindow.showGlobalsAction.triggered.connect(self.showGlobals)
@@ -559,6 +561,7 @@ class Bigglesworth(QtWidgets.QApplication):
                 else:
                     rtmidi_event = event.get_binary()
                     port.send_message(rtmidi_event)
+        self.midiEventSent.emit(event)
 
     def importRequested(self, uriList, collection):
         dialog = SoundImport(self.sender())
@@ -866,9 +869,8 @@ class Bigglesworth(QtWidgets.QApplication):
         else:
             wtWindow = WaveTableWindow()
             wtWindow.midiEvent.connect(self.sendMidiEvent)
-#        wtWindow.midiConnect.connect(self.midiConnect)
+            wtWindow.midiConnect.connect(self.midiConnect)
 #        self.graph.conn_register.connect(wtWindow.midiConnEvent)
-        self.midiConnChanged.connect(wtWindow.midiConnChanged)
         wtWindow.show()
         wtWindow.activateWindow()
 

@@ -85,7 +85,7 @@ class DatabaseCorruptionMessageBox(MessageBoxDetailedHtml):
 
 
 class AdvancedMessageBox(MessageBoxDetailedHtml):
-    def __init__(self, parent, title, message, detailed='', buttons=QtWidgets.QMessageBox.Ok, icon=None):
+    def __init__(self, parent, title, message, detailed='', buttons=QtWidgets.QMessageBox.Ok, icon=None, checkBox=None):
         MessageBoxDetailedHtml.__init__(self, parent)
         if icon:
             if isinstance(icon, MessageBoxDetailedHtml.Icon):
@@ -115,6 +115,15 @@ class AdvancedMessageBox(MessageBoxDetailedHtml):
                         button = self.addButton(b[0])
                         if len(b) > 1:
                             setButtonData(button, b[1:])
+        if checkBox:
+            text = checkBox if isinstance(checkBox, (str, unicode)) else 'Do not show again this message'
+            self.checkBox = QtWidgets.QCheckBox(text)
+            self.layout().addWidget(self.checkBox, self.layout().rowCount(), 0, 1, self.layout().columnCount())
+        else:
+            self.checkBox = None
+
+    def isChecked(self):
+        return self.checkBox.isChecked() if self.checkBox else False
 
 
 class QuestionMessageBox(AdvancedMessageBox):

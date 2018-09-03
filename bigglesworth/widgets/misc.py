@@ -133,6 +133,169 @@ class LedOutWidget(LedWidget):
     connPath.lineTo(9, 4)
 
 
+class MidiStatusBarWidget(QtWidgets.QWidget):
+    midiConnect = QtCore.pyqtSignal(object, int, bool)
+
+    def __init__(self, parent, directions=3, menu=False):
+        QtWidgets.QWidget.__init__(self, parent)
+        layout = QtWidgets.QHBoxLayout()
+        self.setLayout(layout)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.widgets = []
+        if directions & 1:
+            self.inputWidget = MidiStatusBarIcon('input')
+            layout.addWidget(self.inputWidget)
+            self.inputWidget.customContextMenuRequested.connect(lambda: self.showMenu(0))
+            self.widgets.append(self.inputWidget)
+        else:
+            self.inputWidget = None
+            self.midiInputEvent = self.midiInputConnChanged = lambda *args: None
+        if directions & 2:
+            self.outputWidget = MidiStatusBarIcon('output')
+            layout.addWidget(self.outputWidget)
+            self.outputWidget.customContextMenuRequested.connect(lambda: self.showMenu(1))
+            self.widgets.append(self.outputWidget)
+            self.midiEventSent = self.outputWidget.activate
+        else:
+            self.outputWidget = None
+            self.midiOutputEvent = self.midiOutputConnChanged = self.midiEventSent = lambda *args: None
+        self.menuEnabled = menu
+        self.midiDevice = None
+
+    def setMenuEnabled(self, enable):
+        self.menuEnabled = enable
+
+    def setMidiDevice(self, midiDevice):
+        self.midiDevice = midiDevice
+        self.graph = midiDevice.graph
+        signals = self.graph.client_start, self.graph.client_exit, self.graph.port_start, self.graph.port_exit
+        for widget in self.widgets:
+            for signal in signals:
+                signal.connect(widget.graphChanged)
+        if self.inputWidget:
+            midiDevice.midi_event.connect(self.inputWidget.activate)
+
+    def getPortCount(self, direction):
+        if not self.midiDevice:
+            return 0
+        count = 0
+        direction = int(direction == 'output')
+        for portDict in self.graph.port_id_dict.values():
+            for port in portDict.values():
+                if port.hidden or port.client in (self.midiDevice.input.client, self.midiDevice.output.client):
+                    continue
+                elif (direction and not port.is_input) or (not direction and not port.is_output):
+                    continue
+                count += 1
+        return count
+
+    def showMenu(self, direction):
+        if not self.menuEnabled:
+            return
+        menu = QtWidgets.QMenu()
+        if direction:
+            connected = [conn.dest for conn in QtWidgets.QApplication.instance().connections[1]]
+        else:
+            connected = [conn.src for conn in QtWidgets.QApplication.instance().connections[0]]
+        for clientId in sorted(self.graph.client_id_dict.keys()):
+            client = self.graph.client_id_dict[clientId]
+            if client in (self.midiDevice.input.client, self.midiDevice.output.client):
+                continue
+            portDict = self.graph.port_id_dict[clientId]
+            ports = []
+            for portId in sorted(portDict.keys()):
+                port = portDict[portId]
+                if not port.hidden and ((direction and port.is_input) or (not direction and port.is_output)):
+                    ports.append(port)
+            if ports:
+                menu.addSection(client.name)
+                for port in ports:
+                    portAction = menu.addAction(port.name)
+                    portAction.setCheckable(True)
+                    portAction.setChecked(port in connected)
+                    portAction.setData(port)
+        res = menu.exec_(QtGui.QCursor.pos())
+        if res:
+            self.midiConnect.emit(res.data(), direction, res.isChecked())
+
+    def midiConnChanged(self, input, output):
+        self.midiInputConnChanged(input)
+        self.midiOutputConnChanged(output)
+
+    def midiInputEvent(self):
+        self.inputWidget.activate()
+
+    def midiInputConnChanged(self, conn):
+        self.inputWidget.setConn(conn)
+
+    def midiOutputEvent(self):
+        self.outputWidget.activate()
+
+    def midiOutputConnChanged(self, conn):
+        self.outputWidget.setConn(conn)
+
+
+class MidiStatusBarIcon(QtWidgets.QLabel):
+    shown = False
+
+    def __init__(self, dirText):
+        QtWidgets.QLabel.__init__(self)
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.dirText = dirText
+        self.icon = self.normalIcon = QtGui.QIcon(':/images/midiicon{}.svg'.format(dirText))
+        self.disabledIcon = QtGui.QIcon(':/images/midiicon{}disabled.svg'.format(dirText))
+        self.activeIcon = QtGui.QIcon(':/images/midiicon{}active.svg'.format(dirText))
+        self.icons = {
+            -1: self.disabledIcon, 
+            0: self.normalIcon, 
+            1: self.activeIcon
+        }
+        self.timer = QtCore.QTimer()
+        self.timer.setSingleShot(True)
+        self.timer.setInterval(150)
+        self.timer.timeout.connect(lambda: self.setState(0))
+        self.count = 0
+        self.ports = 0
+
+    def activate(self):
+        self.setState(1)
+        self.timer.start()
+
+    def setIcon(self):
+        if self.shown:
+            self.setPixmap(self.icon.pixmap(self.height()))
+            self.update()
+
+    def graphChanged(self):
+        self.ports = self.parent().getPortCount(self.dirText)
+        self.updateToolTip()
+
+    def updateToolTip(self):
+        toolTip = '{} {} connection{}'.format(self.count, self.dirText, '' if self.count == 1 else 's')
+        if self.parent().midiDevice:
+            toolTip += ' ({} available)'.format(self.ports)
+        if self.parent().menuEnabled:
+            toolTip += '\nRight click for menu'
+        self.setToolTip(toolTip)
+
+    def setConn(self, conn):
+        self.count = len([c for c in conn if not c.hidden])
+        self.updateToolTip()
+        self.setState(0 if conn else -1)
+
+    def setState(self, state):
+        self.icon = self.icons[state]
+        self.setIcon()
+
+    def showEvent(self, event):
+        if not self.shown:
+            self.shown = True
+            self.setIcon()
+
+    def resizeEvent(self, event):
+        self.setIcon()
+
+
 class MidiToolBox(QtWidgets.QWidget):
     offState = 180, 180, 180
     onState = 60, 255, 60
@@ -239,6 +402,7 @@ class MidiWidget(QtWidgets.QFrame):
         self.setCtrlState = self.toolBox.setCtrlState
 
     def setConnections(self, count):
+        self.count = count
         self.label.setText('{} ({})'.format('OUT' if self.direction else 'IN', int(count)))
         self.label.setEnabled(False if count else True)
         self.toolBox.setEnabled(True if count else False)

@@ -1404,6 +1404,7 @@ class EditorWindow(QtWidgets.QMainWindow):
                 self.modSlider.blockSignals(True)
                 self.modSlider.setValue(event.value)
                 self.modSlider.blockSignals(False)
+                self.midiInWidget.activate()
             elif event.param in ctrl2sysex:
                 self.midiInWidget.activate()
                 index = ctrl2sysex[event.param]
