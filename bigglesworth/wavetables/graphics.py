@@ -167,6 +167,7 @@ class LoadItem(QtWidgets.QGraphicsItem):
         self.fontMetrics = QtGui.QFontMetricsF(self.font)
 #        self._rect = self.fontMetrics.boundingRect(self.text).adjusted(-20, -20, 20, 20)
         self._rect = self.fontMetrics.boundingRect(self.text)
+        self._rect.moveTopLeft(QtCore.QPointF(0, 0))
 
     def boundingRect(self):
         return self._rect
@@ -175,6 +176,9 @@ class LoadItem(QtWidgets.QGraphicsItem):
         qp.setPen(self.pen)
         qp.drawText(self._rect, QtCore.Qt.AlignCenter, self.text)
 
+
+class SilentItem(LoadItem):
+    text = 'This file is silent'
 
 class InvalidItem(LoadItem):
     text = 'Invalid file'

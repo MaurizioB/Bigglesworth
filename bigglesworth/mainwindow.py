@@ -36,6 +36,7 @@ class MainWindow(QtWidgets.QMainWindow):
 #        self.referenceModel = QtSql.QSqlTableModel()
         self.referenceModel = self.database.referenceModel
         self.midiWidget = MidiStatusBarWidget(self, menu=True)
+        self.midiWidget.setFrameStyle(self.midiWidget.StyledPanel|self.midiWidget.Sunken)
         self.midiWidget.setMidiDevice(self.main.midiDevice)
         self.main.midiConnChanged.connect(self.midiWidget.midiConnChanged)
         self.main.midiEventSent.connect(self.midiWidget.midiEventSent)
@@ -149,6 +150,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.openCollectionMenu.addSeparator()
         action = self.openCollectionMenu.addAction(QtGui.QIcon.fromTheme('go-home'), 'Main library')
         action.triggered.connect(lambda: self.openCollection.emit(''))
+
+    def activate(self):
+        self.show()
+        self.activateWindow()
 
     @property
     def editorWindow(self):

@@ -133,11 +133,11 @@ class LedOutWidget(LedWidget):
     connPath.lineTo(9, 4)
 
 
-class MidiStatusBarWidget(QtWidgets.QWidget):
+class MidiStatusBarWidget(QtWidgets.QFrame):
     midiConnect = QtCore.pyqtSignal(object, int, bool)
 
     def __init__(self, parent, directions=3, menu=False):
-        QtWidgets.QWidget.__init__(self, parent)
+        QtWidgets.QFrame.__init__(self, parent)
         layout = QtWidgets.QHBoxLayout()
         self.setLayout(layout)
         layout.setContentsMargins(0, 0, 0, 0)

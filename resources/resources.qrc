@@ -353,6 +353,10 @@
         <file alias="16x16/edit-redo.svg">icons/Bigglesworth/16x16/edit-redo.svg</file>
         <file alias="22x22/edit-redo.svg">icons/Bigglesworth/22x22/edit-redo.svg</file>
         <file alias="24x24/edit-redo.svg">icons/Bigglesworth/24x24/edit-redo.svg</file>
+        <file alias="32x32/window-close-disabled.svg">icons/Bigglesworth/32x32/window-close-disabled.svg</file>
+        <file alias="24x24/audio-volume-max.svg">icons/Bigglesworth/24x24/audio-volume-max.svg</file>
+        <file alias="22x22/audio-volume-max.svg">icons/Bigglesworth/22x22/audio-volume-max.svg</file>
         <file alias="16x16/emblem-warning.svg">icons/Bigglesworth/16x16/emblem-warning.svg</file>
+        <file alias="16x16/audio-volume-max.svg">icons/Bigglesworth/16x16/audio-volume-max.svg</file>
     </qresource>
 </RCC>

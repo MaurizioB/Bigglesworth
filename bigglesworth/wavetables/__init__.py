@@ -34,7 +34,7 @@ except:
 
 from bigglesworth.libs import midifile
 #from bigglesworth.mididevice import MidiDevice
-from bigglesworth.utils import loadUi
+from bigglesworth.utils import loadUi, setItalic
 from bigglesworth.midiutils import SysExEvent
 
 from bigglesworth.const import INIT, END, CHK, IDW, IDE, WTBD
@@ -697,6 +697,13 @@ class WaveTableWindow(QtWidgets.QMainWindow):
     def __init__(self, waveTable=None):
         QtWidgets.QMainWindow.__init__(self)
         loadUi('ui/wavetables.ui', self)
+        self.showLibrarianAction.setIcon(QtGui.QIcon(':/images/bigglesworth_logo.svg'))
+        self.showEditorAction.setIcon(QtGui.QIcon(':/images/dial.svg'))
+
+        self.windowsActionGroup = QtWidgets.QActionGroup(self.windowsMenu)
+        self.newWindowSeparator = self.windowsMenu.insertSeparator(self.newWindowAction)
+        self.windowsMenu.aboutToShow.connect(self.checkWindowsMenu)
+
         self.midiWidget = MidiStatusBarWidget(self, 2, True)
         self.statusbar.addPermanentWidget(self.midiWidget)
         self.midiEvent.connect(self.midiWidget.midiOutputEvent)
@@ -706,6 +713,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.openedWindows.append(self)
 
         if __name__ == '__main__':
+            self.midiWidget.setMenuEnabled(False)
             if not self.midiDevice:
                 self.__class__.midiDevice = TestMidiDevice(self)
                 self.midiThread = QtCore.QThread()
@@ -1043,6 +1051,45 @@ class WaveTableWindow(QtWidgets.QMainWindow):
     @property
     def currentWaveTableName(self):
         return self.nameEdit.text()
+
+    def checkWindowsMenu(self):
+        windows = [w for w in self.openedWindows if w.isVisible()]
+        for action in self.windowsActionGroup.actions():
+            if action.data() not in windows:
+                self.windowsMenu.removeAction(action)
+                self.windowsActionGroup.removeAction(action)
+            else:
+                window = action.data()
+                windows.remove(window)
+                if window.isClean():
+                    text = window.nameEdit.text()
+                    icon = QtGui.QIcon.fromTheme('checkbox')
+                    italic = False
+                else:
+                    text = '(*) ' + window.nameEdit.text()
+                    icon = QtGui.QIcon.fromTheme('document-edit')
+                    italic = True
+                action.setText(text)
+                action.setIcon(icon)
+                setItalic(action, italic)
+                action.setChecked(window == self)
+        for window in windows:
+            text = window.nameEdit.text()
+            if window.isClean():
+                icon = QtGui.QIcon.fromTheme('checkbox')
+                italic = False
+            else:
+                icon = QtGui.QIcon.fromTheme('document-edit')
+                italic = True
+                text = '(*) ' + text
+            action = QtWidgets.QAction(icon, text, self.windowsMenu)
+            self.windowsMenu.insertAction(self.newWindowSeparator, action)
+            self.windowsActionGroup.addAction(action)
+            action.setData(window)
+            action.setCheckable(True)
+            setItalic(action, italic)
+            action.setChecked(window == self)
+            action.triggered.connect(window.activateWindow)
 
     def checkDatabase(self):
         print('creo database?!')

@@ -261,13 +261,16 @@ class VolumeIcon(QtWidgets.QLabel):
     iconSize = 16
 
     def setVolume(self, value):
-        if value <= 50:
+        if value <= 25:
             themeIcon = 'audio-volume-low'
-        elif value <= 150:
+        elif value <= 75:
             themeIcon = 'audio-volume-medium'
-        else:
+        elif value <= 150:
             themeIcon = 'audio-volume-high'
+        else:
+            themeIcon = 'audio-volume-max'
         self.setPixmap(QtGui.QIcon.fromTheme(themeIcon).pixmap(self.iconSize))
+        self.setToolTip('{}%'.format(value))
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.MiddleButton:
@@ -688,6 +691,9 @@ class MainTabWidget(QtWidgets.QTabWidget):
                 QTabBar::close-button {{
                     image: url(:/icons/Bigglesworth/32x32/window-close.svg);
                     border: {1px} solid transparent;
+                }}
+                QTabBar::close-button:disabled {{
+                    image: url(:/icons/Bigglesworth/32x32/window-close-disabled.svg);
                 }}
                 QTabBar::close-button:hover {{
                     border: {1px} solid palette(mid);

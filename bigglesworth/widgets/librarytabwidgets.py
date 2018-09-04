@@ -173,6 +173,9 @@ class BaseTabWidget(QtWidgets.QTabWidget):
                     image: url(:/icons/Bigglesworth/32x32/window-close.svg);
                     border: {1px} solid transparent;
                 }}
+                QTabBar::close-button:disabled {{
+                    image: url(:/icons/Bigglesworth/32x32/window-close-disabled.svg);
+                }}
                 QTabBar::close-button:hover {{
                     border: {1px} solid palette(mid);
                     border-radius: {2px};

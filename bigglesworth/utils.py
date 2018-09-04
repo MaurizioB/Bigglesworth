@@ -106,6 +106,12 @@ def setItalic(item, italic=True):
     font.setItalic(italic)
     item.setFont(font)
 
+def setBoldItalic(item, bold=True, italic=True):
+    font = item.font()
+    font.setBold(bold)
+    font.setItalic(italic)
+    item.setFont(font)
+
 def sanitize(minimum, value, maximum):
     return max(minimum, min(maximum, value))
 

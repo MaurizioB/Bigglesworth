@@ -1,106 +1,144 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>GroupBox</class>
- <widget class="QGroupBox" name="GroupBox">
-  <property name="enabled">
-   <bool>false</bool>
-  </property>
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>238</width>
-    <height>420</height>
+    <width>256</width>
+    <height>491</height>
    </rect>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>256</width>
+    <height>0</height>
+   </size>
+  </property>
   <property name="windowTitle">
-   <string>GroupBox</string>
+   <string>Form</string>
   </property>
-  <property name="title">
-   <string>Audio preview</string>
-  </property>
-  <layout class="QGridLayout" name="gridLayout">
-   <item row="1" column="0">
-    <widget class="QTableView" name="waveInfoView">
-     <property name="verticalScrollBarPolicy">
-      <enum>Qt::ScrollBarAlwaysOff</enum>
-     </property>
-     <property name="editTriggers">
-      <set>QAbstractItemView::NoEditTriggers</set>
-     </property>
-     <property name="horizontalScrollMode">
-      <enum>QAbstractItemView::ScrollPerPixel</enum>
-     </property>
-     <attribute name="horizontalHeaderVisible">
-      <bool>false</bool>
-     </attribute>
-     <attribute name="verticalHeaderVisible">
-      <bool>false</bool>
-     </attribute>
-    </widget>
-   </item>
-   <item row="2" column="0">
-    <widget class="QWidget" name="playerPanel" native="true">
+  <layout class="QVBoxLayout" name="verticalLayout_2">
+   <item>
+    <widget class="QGroupBox" name="previewBox">
      <property name="enabled">
       <bool>false</bool>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout">
+     <property name="title">
+      <string>Audio preview</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
       <item>
-       <widget class="QPushButton" name="playBtn">
-        <property name="icon">
-         <iconset theme="media-playback-start"/>
+       <widget class="WaveSourcePreview" name="waveView">
+        <property name="verticalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
-        <property name="checkable">
-         <bool>true</bool>
+        <property name="horizontalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="backgroundBrush">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </property>
+        <property name="interactive">
+         <bool>false</bool>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="stopBtn">
-        <property name="icon">
-         <iconset theme="media-playback-stop"/>
+       <widget class="QTableView" name="waveInfoView">
+        <property name="verticalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
+        <property name="editTriggers">
+         <set>QAbstractItemView::NoEditTriggers</set>
+        </property>
+        <property name="horizontalScrollMode">
+         <enum>QAbstractItemView::ScrollPerPixel</enum>
+        </property>
+        <attribute name="horizontalHeaderVisible">
+         <bool>false</bool>
+        </attribute>
+        <attribute name="verticalHeaderVisible">
+         <bool>false</bool>
+        </attribute>
        </widget>
       </item>
       <item>
-       <spacer name="horizontalSpacer">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+       <widget class="QWidget" name="playerPanel" native="true">
+        <property name="enabled">
+         <bool>false</bool>
         </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <item>
+          <widget class="QPushButton" name="playBtn">
+           <property name="icon">
+            <iconset theme="media-playback-start">
+             <normaloff/>
+            </iconset>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="stopBtn">
+           <property name="icon">
+            <iconset theme="media-playback-stop">
+             <normaloff/>
+            </iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="VolumeIcon" name="volumeIcon"/>
+         </item>
+         <item>
+          <widget class="VolumeSlider" name="volumeSlider">
+           <property name="minimumSize">
+            <size>
+             <width>100</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="minimum">
+            <number>1</number>
+           </property>
+           <property name="maximum">
+            <number>200</number>
+           </property>
+           <property name="singleStep">
+            <number>5</number>
+           </property>
+           <property name="value">
+            <number>100</number>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </item>
      </layout>
     </widget>
    </item>
-   <item row="0" column="0">
-    <widget class="WaveSourcePreview" name="waveView">
-     <property name="verticalScrollBarPolicy">
-      <enum>Qt::ScrollBarAlwaysOff</enum>
-     </property>
-     <property name="horizontalScrollBarPolicy">
-      <enum>Qt::ScrollBarAlwaysOff</enum>
-     </property>
-     <property name="backgroundBrush">
-      <brush brushstyle="SolidPattern">
-       <color alpha="255">
-        <red>0</red>
-        <green>0</green>
-        <blue>0</blue>
-       </color>
-      </brush>
-     </property>
-     <property name="interactive">
-      <bool>false</bool>
+   <item>
+    <widget class="QCheckBox" name="autoPlayChk">
+     <property name="text">
+      <string>Autoplay on selection change</string>
      </property>
     </widget>
    </item>
-   <item row="3" column="0">
+   <item>
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
@@ -108,7 +146,7 @@
      <property name="sizeHint" stdset="0">
       <size>
        <width>20</width>
-       <height>40</height>
+       <height>1</height>
       </size>
      </property>
     </spacer>
@@ -120,6 +158,16 @@
    <class>WaveSourcePreview</class>
    <extends>QGraphicsView</extends>
    <header>bigglesworth.wavetables.audioimport</header>
+  </customwidget>
+  <customwidget>
+   <class>VolumeSlider</class>
+   <extends>QSlider</extends>
+   <header>bigglesworth.wavetables.widgets</header>
+  </customwidget>
+  <customwidget>
+   <class>VolumeIcon</class>
+   <extends>QLabel</extends>
+   <header>bigglesworth.wavetables.widgets</header>
   </customwidget>
  </customwidgets>
  <resources/>

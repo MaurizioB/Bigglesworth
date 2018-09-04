@@ -93,7 +93,7 @@
        <bool>true</bool>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <property name="elideMode">
        <enum>Qt::ElideMiddle</enum>
@@ -205,6 +205,9 @@
              </property>
              <property name="polyphonic" stdset="0">
               <bool>false</bool>
+             </property>
+             <property name="showFrequency" stdset="0">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -659,6 +662,9 @@
              </property>
              <property name="polyphonic" stdset="0">
               <bool>false</bool>
+             </property>
+             <property name="showFrequency" stdset="0">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -1302,12 +1308,20 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
-    <addaction name="newWindowAction"/>
-    <addaction name="separator"/>
     <addaction name="importAction"/>
     <addaction name="exportAction"/>
    </widget>
+   <widget class="QMenu" name="windowsMenu">
+    <property name="title">
+     <string>Windows</string>
+    </property>
+    <addaction name="showLibrarianAction"/>
+    <addaction name="showEditorAction"/>
+    <addaction name="separator"/>
+    <addaction name="newWindowAction"/>
+   </widget>
    <addaction name="fileMenu"/>
+   <addaction name="windowsMenu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="WaveTableDock" name="waveTableDock">
@@ -1542,7 +1556,7 @@
      <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
    </property>
    <property name="text">
-    <string>New window</string>
+    <string>New wavetable window</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+N</string>
@@ -1557,7 +1571,7 @@
     <string>Import...</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+I</string>
+    <string>Ctrl+Shift+I</string>
    </property>
   </action>
   <action name="exportAction">
@@ -1569,7 +1583,17 @@
     <string>Export...</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+E</string>
+    <string>Ctrl+Shift+E</string>
+   </property>
+  </action>
+  <action name="showLibrarianAction">
+   <property name="text">
+    <string>Librarian</string>
+   </property>
+  </action>
+  <action name="showEditorAction">
+   <property name="text">
+    <string>Sound editor</string>
    </property>
   </action>
  </widget>

@@ -18,7 +18,7 @@ import soundfile
 from dial import _Dial
 from bigglesworth.wavetables.utils import balanceFuncs, balanceSqrt, ActivateDrag, parseTime
 from bigglesworth.wavetables.widgets import DefaultSlider
-from bigglesworth.wavetables.graphics import ChunkItem, LoadItem, InvalidItem
+from bigglesworth.wavetables.graphics import ChunkItem, LoadItem, InvalidItem, SilentItem
 from bigglesworth.wavetables.dialogs import Loader
 from bigglesworth.utils import sanitize, setBold, loadUi
 
@@ -57,6 +57,12 @@ class AudioImportDialogPreview(QtWidgets.QGroupBox):
         self.playerPanel.setVisible(QTMULTIMEDIA)
 #        self.waveView.setFixedSize(self.waveView.sizeHint())
 #        self.waveView
+
+        self.volumeIcon.iconSize = self.playBtn.iconSize()
+        self.volumeIcon.setVolume(self.volumeSlider.value())
+        self.volumeIcon.step.connect(lambda step: self.volumeSlider.setValue(self.volumeSlider.value() + self.volumeSlider.pageStep() * step))
+        self.volumeIcon.reset.connect(self.volumeSlider.reset)
+        self.volumeSlider.valueChanged.connect(self.volumeIcon.setVolume)
 
         self.waveInfoModel = WaveInfoModel()
         self.waveInfoView.setModel(self.waveInfoModel)
@@ -104,25 +110,42 @@ class OpenAudioFileDialog(QtWidgets.QFileDialog):
         hint.setWidth(hint.width() + self.preview.sizeHint().width())
         self.resize(hint)
 
+        self.previewBox = self.preview.previewBox
         self.waveInfoModel = self.preview.waveInfoModel
         self.waveInfoView = self.preview.waveInfoView
         self.waveView = self.preview.waveView
         self.playerPanel = self.preview.playerPanel
         self.playBtn = self.preview.playBtn
         self.stopBtn = self.preview.stopBtn
+        self.autoPlayChk = self.preview.autoPlayChk
+        self.volumeSlider = self.preview.volumeSlider
+
+        self.volumeSlider.setValue(AudioImportTab.defaultVolume)
+        self.settings = QtCore.QSettings()
+        self.settings.beginGroup('WaveTables')
+        self.autoPlayChk.setChecked(self.settings.value('AutoPlayFileImport', False, bool))
+        self.settings.endGroup()
 
         self.loader = Loader(self)
         self.waveScene = WaveSourceScene(self.waveView)
-        self.waveScene.loaded.connect(self.playerPanel.setEnabled)
+#        self.waveScene.loaded.connect(self.playerPanel.setEnabled)
         self.waveScene.loadingStarted.connect(self.loader.start)
         self.waveScene.loading.connect(self.loader.refresh)
-        self.waveScene.loaded.connect(self.loader.accept)
+#        self.waveScene.loaded.connect(self.loader.accept)
+        self.waveScene.loaded.connect(self.loaded)
         self.waveView.setScene(self.waveScene)
 
         self.currentChanged.connect(self.checkFile)
         self.playBtn.toggled.connect(self.play)
         self.stopBtn.clicked.connect(self.player.stop)
         self.isValid = False
+
+    def loaded(self, loaded):
+        self.playerPanel.setEnabled(loaded)
+        if loaded:
+            self.loader.accept()
+            if self.autoPlayChk.isChecked() and not self.player.isActive():
+                self.playBtn.setChecked(True)
 
     def checkFile(self, filePath):
         self.player.stop()
@@ -140,15 +163,17 @@ class OpenAudioFileDialog(QtWidgets.QFileDialog):
             self.waveInfoModel.item(4, 1).setText('{}kHz'.format(info.samplerate * .001))
             self.waveInfoModel.item(4, 3).setText(str(info.frames))
 #            self.currentPreviewFile = filePath
-            self.preview.setEnabled(True)
+            self.previewBox.setEnabled(True)
 #            self.currentData, self.currentSampling = soundfile.read(self.currentPreviewFile, always_2d=True, dtype='float32')
             self.currentData, sampling = soundfile.read(filePath, always_2d=True, dtype='float32')
             self.playerPanel.setEnabled(
                 self.waveScene.setPreviewData(self.currentData, info))
             self.isValid = True
+#            if self.autoPlayChk.isChecked() and self.playerPanel.isEnabled():
+#                self.playBtn.setChecked(True)
         except Exception as e:
             print(e)
-            self.preview.setEnabled(False)
+            self.previewBox.setEnabled(False)
             for row, col in [(0, 1), (1, 1), (2, 1), (3, 1), (3, 3), (4, 1), (4, 3)]:
                 self.waveInfoModel.item(row, col).setText('')
 #            self.waveInfoView.setEnabled(False)
@@ -193,8 +218,12 @@ class OpenAudioFileDialog(QtWidgets.QFileDialog):
         self.player.notify.connect(self.movePlayhead)
         self.player.stopped.connect(self.stopped)
         res = QtWidgets.QFileDialog.exec_(self)
+        self.player.stop()
         self.player.stopped.disconnect(self.stopped)
         self.player.notify.disconnect(self.movePlayhead)
+        self.settings.beginGroup('WaveTables')
+        self.settings.setValue('AutoPlayFileImport', self.autoPlayChk.isChecked())
+        self.settings.endGroup()
         if res:
             return self.selectedFiles()[0]
 
@@ -737,8 +766,11 @@ class AudioImportTab(QtWidgets.QWidget):
 
     def openFileDialog(self):
         self.player.stop()
-        self.player.notify.disconnect(self.movePlayhead)
-        self.player.stopped.disconnect(self.stopped)
+        try:
+            self.player.notify.disconnect(self.movePlayhead)
+            self.player.stopped.disconnect(self.stopped)
+        except:
+            pass
         path = OpenAudioFileDialog(self).exec_()
         if path:
             self.fileSelected(self.fileSystemModel.index(path), True)
@@ -1607,6 +1639,13 @@ class WaveSourceScene(QtWidgets.QGraphicsScene):
         self.view.fitInView(rect)
         self.loaded.emit(True)
 #        self.view.centerOn(rect.center())
+
+        if waveItem.boundingRect().isNull():
+            silentItem = SilentItem()
+            self.addItem(silentItem)
+            #sceneBoundingRect of item that ignores transformations is wrong!
+            silentItem.setX(rect.center().x() - silentItem.boundingRect().width() / self.view.transform().m11() * .5)
+            silentItem.setY(rect.center().y() - silentItem.boundingRect().height() / self.view.transform().m22() * .5)
 
     def importCurrent(self, mixer):
 #        self.clear()

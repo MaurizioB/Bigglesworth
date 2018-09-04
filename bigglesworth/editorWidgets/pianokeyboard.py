@@ -98,6 +98,18 @@ for _noteId in range(128):
 def _isWhiteKey(noteId):
     return True if noteId % 12 in _whiteKeys else False
 
+noteFreqs = {}
+def noteFrequency(note, tuning=440):
+    try:
+        return noteFreqs[tuning][note]
+    except:
+        f = '{:.03f}'.format(2 ** ((note - 69) / 12.) * tuning).rstrip('0').rstrip('.')
+        try:
+            noteFreqs[tuning][note] = f
+        except:
+            noteFreqs[tuning] = {}
+            noteFreqs[tuning][note] = f
+        return f
 
 class MetaKey(QtWidgets.QGraphicsItem):
     x = 0
@@ -106,13 +118,13 @@ class MetaKey(QtWidgets.QGraphicsItem):
     pressed = 0
     keyBrush = QtCore.Qt.white
 
-    def __init__(self, note):
+    def __init__(self, note, showFrequency=False, tuning=440):
         QtWidgets.QGraphicsItem.__init__(self, parent=None)
         self.note = note
         self.noteName = _noteNumberToName[note]
-        self.setToolTip(self.noteName.upper())
         self._shortcut = ''
         self.shortcutPaintFunc = lambda *args: None
+        self.showFrequency(showFrequency, tuning)
 
     @property
     def shortcut(self):
@@ -122,6 +134,12 @@ class MetaKey(QtWidgets.QGraphicsItem):
     def shortcut(self, shortcut):
         self._shortcut = shortcut
         self.shortcutPaintFunc = self.shortcutPaint if shortcut else lambda *args: None
+
+    def showFrequency(self, showFrequency=False, tuning=440):
+        if showFrequency:
+            self.setToolTip('{} ({}Hz)'.format(self.noteName.upper(), noteFrequency(self.note, tuning)))
+        else:
+            self.setToolTip(self.noteName.upper())
 
     def emitNoteEvent(self, velocity, state):
 #        if velocity < 0:
@@ -472,6 +490,8 @@ class PianoKeyboard(QtWidgets.QGraphicsView):
         self._showShortcuts = True
         self._defaultVelocity = 127
         self._polyphonic = True
+        self._showFrequency = False
+        self._tuning = 440
         self.polyNote = None
         self.setKeyboard()
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
@@ -639,6 +659,27 @@ class PianoKeyboard(QtWidgets.QGraphicsView):
             self.pianoScene.noteEvent.disconnect(self.checkPolyphony)
             self.pianoScene.noteEvent.connect(self.noteEvent)
 
+    @QtCore.pyqtProperty(bool)
+    def showFrequency(self):
+        return self._showFrequency
+
+    @showFrequency.setter
+    def showFrequency(self, show):
+        self._showFrequency = show
+        for key in self.keys.values():
+            key.showFrequency(show, self._tuning)
+
+    @QtCore.pyqtProperty(int)
+    def tuning(self):
+        return self._tuning
+
+    @tuning.setter
+    def tuning(self, tuning):
+        self._tuning = max(410, min(tuning, 460))
+        for key in self.keys.values():
+            key.showFrequency(self._showFrequency, self._tuning)
+
+
     def checkPolyphony(self, eventType, note, velocity):
         #velocity == 0 is note off!
         if not eventType or not velocity:
@@ -661,7 +702,7 @@ class PianoKeyboard(QtWidgets.QGraphicsView):
         self._keyRange = range(self._firstNote, self._lastNote + 1)
         for k in self._keyRange:
             if _isWhiteKey(k):
-                key = WhiteKey(k)
+                key = WhiteKey(k, self._showFrequency, self._tuning)
                 self.pianoScene.addItem(key)
                 key.setPos(whiteKeysWidth * MetaKey.width, 0)
                 whiteKeysWidth += 1
@@ -684,7 +725,7 @@ class PianoKeyboard(QtWidgets.QGraphicsView):
                     shift = -2
                 elif keyDelta in (3, 10):
                     shift = +2
-                key = BlackKey(k)
+                key = BlackKey(k, self._showFrequency, self._tuning)
                 self.pianoScene.addItem(key)
                 key.setZValue(2)
                 key.setPos(whiteKeysWidth * MetaKey.width - BlackKey.width * .5 + shift, 0)
@@ -803,6 +844,8 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     piano = PianoKeyboard()
     piano.noteEvent.connect(printEvent)
+    piano.showFrequency = True
+    piano.tuning = 430
 #    piano.aspectRatio = QtCore.Qt.KeepAspectRatio
     piano.show()
     sys.exit(app.exec_())

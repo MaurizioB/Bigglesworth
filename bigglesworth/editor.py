@@ -848,6 +848,10 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.modMatrixView = None
 #        self.showModMatrix()
 
+    def activate(self):
+        self.show()
+        self.activateWindow()
+
     def showModMatrix(self):
         if not self.modMatrixView:
             self.buildModMatrix()
@@ -1506,7 +1510,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.saveBtn.setSwitchable(False)
         self.saveBtn.setSwitched(False)
         if self.sender() != self.main.midiDevice:
-            self.activateWindow()
+            self.activate()
         data = self.database.getSoundDataFromUid(uid)
         if not data:
             return
@@ -1566,8 +1570,7 @@ class EditorWindow(QtWidgets.QMainWindow):
                     QtWidgets.QMessageBox.Ok)
         self.currentBank = self.currentProg = self.currentUid = None
         self.setValues(data, fromDump=fromDump, resetIndex=True)
-        self.show()
-        self.activateWindow()
+        self.activate()
 
     def setValues(self, data=None, fromDump=False, resetIndex=True):
         self.setFromDump = fromDump

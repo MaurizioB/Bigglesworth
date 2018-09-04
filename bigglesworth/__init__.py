@@ -267,7 +267,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.editorWindow.soundNameChanged.connect(self.refreshCollections)
         self.editorWindow.closed.connect(self.checkClose)
         self.editorWindow.importRequested.connect(self.importRequested)
-        self.editorWindow.openLibrarianRequested.connect(lambda: [self.mainWindow.show(), self.mainWindow.activateWindow()])
+        self.editorWindow.openLibrarianRequested.connect(self.mainWindow.activate)
         self.editorWindow.midiEvent.connect(self.sendMidiEvent)
         self.editorWindow.midiConnect.connect(self.midiConnect)
         self.editorWindow.editorMenuBar.dumpFromRequested.connect(self.dumpFrom)
@@ -870,7 +870,8 @@ class Bigglesworth(QtWidgets.QApplication):
             wtWindow = WaveTableWindow()
             wtWindow.midiEvent.connect(self.sendMidiEvent)
             wtWindow.midiConnect.connect(self.midiConnect)
-#        self.graph.conn_register.connect(wtWindow.midiConnEvent)
+        wtWindow.showLibrarianAction.triggered.connect(self.mainWindow.activate)
+        wtWindow.showEditorAction.triggered.connect(self.editorWindow.activate)
         wtWindow.show()
         wtWindow.activateWindow()
 

@@ -394,7 +394,7 @@
          <item>
           <widget class="QPushButton" name="importBtn">
            <property name="text">
-            <string>Open</string>
+            <string>Open for import</string>
            </property>
           </widget>
          </item>
