@@ -198,7 +198,7 @@ class OpenAudioFileDialog(QtWidgets.QFileDialog):
         elif state:
             self.waveScene.playhead.setX(0)
             self.waveScene.playhead.setVisible(True)
-            self.player.playWaveFile(self.currentData, self.currentInfo, 1)
+            self.player.playWaveFile(self.currentData, self.currentInfo, self.volumeSlider.value() * .01)
 
     def stopped(self):
         self.waveScene.playhead.setVisible(False)
