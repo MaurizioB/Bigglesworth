@@ -410,6 +410,7 @@ class BlofeldDB(QtCore.QObject):
                         self.factoryStatus.emit(preset, data[0])
                         print('starting bank ' + bank)
         self.query.exec_('PRAGMA journal_mode=DELETE')
+        self.referenceModel.refresh()
 
     def getTemplatesByName(self, name=None):
         templates = {}
