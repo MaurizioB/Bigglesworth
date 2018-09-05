@@ -1487,6 +1487,7 @@ class WaveSourceView(QtWidgets.QGraphicsView):
     def resizeEvent(self, event):
         if self.previewMode:
             self.fitInView(self.sceneRect())
+            self.centerOn(self.sceneRect().center())
         else:
             oldTransform = self.transform()
             sceneRect = self.sceneRect()
@@ -1643,9 +1644,7 @@ class WaveSourceScene(QtWidgets.QGraphicsScene):
         if waveItem.boundingRect().isNull():
             silentItem = SilentItem()
             self.addItem(silentItem)
-            #sceneBoundingRect of item that ignores transformations is wrong!
-            silentItem.setX(rect.center().x() - silentItem.boundingRect().width() / self.view.transform().m11() * .5)
-            silentItem.setY(rect.center().y() - silentItem.boundingRect().height() / self.view.transform().m22() * .5)
+            silentItem.setPos(rect.center())
 
     def importCurrent(self, mixer):
 #        self.clear()

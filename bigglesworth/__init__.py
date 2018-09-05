@@ -537,6 +537,8 @@ class Bigglesworth(QtWidgets.QApplication):
             return
         elif event.type in (CTRL, NOTEON, NOTEOFF, PROGRAM):
             self.editorWindow.midiEventReceived(event)
+            if WaveTableWindow.openedWindows:
+                WaveTableWindow.openedWindows[0].midiEventReceived(event)
 
     def sendMidiEvent(self, event):
 #        if self.debug_sysex and event.type == SYSEX:

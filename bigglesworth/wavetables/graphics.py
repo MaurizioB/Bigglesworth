@@ -167,7 +167,7 @@ class LoadItem(QtWidgets.QGraphicsItem):
         self.fontMetrics = QtGui.QFontMetricsF(self.font)
 #        self._rect = self.fontMetrics.boundingRect(self.text).adjusted(-20, -20, 20, 20)
         self._rect = self.fontMetrics.boundingRect(self.text)
-        self._rect.moveTopLeft(QtCore.QPointF(0, 0))
+        self._rect.moveCenter(QtCore.QPointF(0, 0))
 
     def boundingRect(self):
         return self._rect
@@ -525,6 +525,7 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
     copyTransform = QtCore.pyqtSignal()
     pasteTransform = QtCore.pyqtSignal()
     changed = QtCore.pyqtSignal()
+    pressed = QtCore.pyqtSignal(bool)
 
 #    noneRect = QtCore.QRectF(0, 0, 5, 60)
     noneRect = QtCore.QRectF(0, 0, 0, 60)
@@ -539,7 +540,7 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
     modeLabels = {
         Const: 'CONST', 
         LinMorph: 'LINEAR\nMORPH', 
-        SpecMorph: 'SPECTRAL\nMORPH', 
+        SpecMorph: 'TRANSL\nMORPH', 
         }
 
     normalTransformPath = QtGui.QPainterPath()
@@ -590,7 +591,7 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
         linMorphAction = QtWidgets.QAction('Linear morph', self)
         linMorphAction.setData(self.LinMorph)
         linMorphAction.triggered.connect(lambda: self.setMode(self.LinMorph))
-        specMorphAction = QtWidgets.QAction('Spectral morph', self)
+        specMorphAction = QtWidgets.QAction('Translate morph', self)
         specMorphAction.setData(self.SpecMorph)
         specMorphAction.triggered.connect(lambda: self.setMode(self.SpecMorph))
         self.morphActions = [constAction, linMorphAction, specMorphAction]
@@ -806,6 +807,10 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
                 value.transformAdded(self)
         return QtWidgets.QGraphicsWidget.itemChange(self, change, value)
 
+    def mouseDoubleClickEvent(self, event):
+        self.pressed.emit(True)
+        QtWidgets.QGraphicsWidget.mouseDoubleClickEvent(self, event)
+
     def paint(self, qp, option, widget):
         if self.isValid() and self.isContiguous():
             return
@@ -976,6 +981,7 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
     waveDrop = QtCore.pyqtSignal(object, object, object)
     setIndexRequested = QtCore.pyqtSignal(object)
     highlight = QtCore.pyqtSignal(object, bool)
+    transformSelected = QtCore.pyqtSignal(object, bool)
     changed = QtCore.pyqtSignal()
 
     BeforeItem, OnItem, AfterItem = -1, 0, 1
@@ -1020,6 +1026,7 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
         transform.deleteRequested.connect(lambda t=transform: self.deleteRequested.emit(transform))
         transform.copyTransform.connect(self.copyTransform)
         transform.pasteTransform.connect(self.pasteTransform)
+        transform.pressed.connect(lambda doubleClicked: self.transformSelected.emit(transform, doubleClicked))
         transform.geometryChanged.connect(lambda: self.keyFrameContainer.layout().invalidate())
 #        self.changed.emit()
 
@@ -1077,6 +1084,8 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
                     underMouse.setSelected(True)
                 else:
                     self.clearSelection()
+                    if isinstance(underMouse, WaveTransformItem):
+                        self.transformSelected.emit(underMouse, False)
             elif isinstance(underMouse, SampleItem):
                 if underMouse not in self.selectedItems():
                     self.clearSelection()
@@ -1138,10 +1147,18 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
             underMouse.setMaximized(True)
             menu.addSeparator()
         elif selected:
+            bounceAction = menu.addAction(QtGui.QIcon.fromTheme('timeline-insert'), 'Create intermediate waves')
+            indexes = [i.index for i in selected]
+            if max(indexes) - min(indexes) < 2:
+                bounceAction.setEnabled(False)
             joinMorphAction = menu.addAction(QtGui.QIcon.fromTheme('curve-connector'), 'Join and morph')
+            if len(selected) <= 2:
+                joinMorphAction.setEnabled(False)
             deleteSelectedAction = menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 'Remove selected items')
             if set(selected) == set(self.keyFrames):
                 deleteSelectedAction.setEnabled(False)
+        if not menu.actions()[-1].isSeparator():
+            menu.addSeparator()
         if self.maximized:
             minimizeAction = menu.addAction(QtGui.QIcon.fromTheme('zoom-out'), 'Minimize all items')
         else:
@@ -2530,7 +2547,8 @@ class WaveScene(QtWidgets.QGraphicsScene):
             array = np.array((0, ) * 128)
         for id, ratio in enumerate(harmonics, 1):
             if ratio:
-                array += np.array(waveFunction[waveType](id)) * pow19 * ratio * .5 / id
+#                array += np.array(waveFunction[waveType](id)) * pow19 * ratio * .5 / id
+                np.add(array, np.array(waveFunction[waveType](id)) * pow19 * ratio * .5 / id, out=array, casting='unsafe')
         path = self.currentWavePath.path()
         for sample in range(128):
             value = sanitize(0, pow20 - array[sample], pow21)

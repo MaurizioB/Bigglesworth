@@ -101,6 +101,8 @@
         <file alias="16x16/edit-paste.svg">icons/Bigglesworth/16x16/edit-paste.svg</file>
         <file alias="22x22/edit-paste.svg">icons/Bigglesworth/22x22/edit-paste.svg</file>
         <file alias="24x24/edit-paste.svg">icons/Bigglesworth/24x24/edit-paste.svg</file>
+        <file alias="22x22/exchange-positions.svg">icons/Bigglesworth/22x22/exchange-positions.svg</file>
+        <file alias="24x24/exchange-positions.svg">icons/Bigglesworth/24x24/exchange-positions.svg</file>
         <file alias="32x32/application-exit.svg">icons/Bigglesworth/32x32/application-exit.svg</file>
         <file alias="16x16/application-exit.svg">icons/Bigglesworth/16x16/application-exit.svg</file>
         <file alias="22x22/application-exit.svg">icons/Bigglesworth/22x22/application-exit.svg</file>
@@ -273,6 +275,7 @@
         <file alias="16x16/view-sort-ascending.svg">icons/Bigglesworth/16x16/view-sort-ascending.svg</file>
         <file alias="22x22/view-sort-ascending.svg">icons/Bigglesworth/22x22/view-sort-ascending.svg</file>
         <file alias="24x24/view-sort-ascending.svg">icons/Bigglesworth/24x24/view-sort-ascending.svg</file>
+        <file alias="22x22/timeline-insert.svg">icons/Bigglesworth/22x22/timeline-insert.svg</file>
         <file alias="16x16/format-text-underline.svg">icons/Bigglesworth/16x16/format-text-underline.svg</file>
         <file alias="22x22/format-text-underline.svg">icons/Bigglesworth/22x22/format-text-underline.svg</file>
         <file alias="24x24/format-text-underline.svg">icons/Bigglesworth/24x24/format-text-underline.svg</file>
@@ -353,6 +356,7 @@
         <file alias="16x16/edit-redo.svg">icons/Bigglesworth/16x16/edit-redo.svg</file>
         <file alias="22x22/edit-redo.svg">icons/Bigglesworth/22x22/edit-redo.svg</file>
         <file alias="24x24/edit-redo.svg">icons/Bigglesworth/24x24/edit-redo.svg</file>
+        <file alias="32x32/pianoicon.svg">icons/Bigglesworth/32x32/pianoicon.svg</file>
         <file alias="32x32/window-close-disabled.svg">icons/Bigglesworth/32x32/window-close-disabled.svg</file>
         <file alias="24x24/audio-volume-max.svg">icons/Bigglesworth/24x24/audio-volume-max.svg</file>
         <file alias="22x22/audio-volume-max.svg">icons/Bigglesworth/22x22/audio-volume-max.svg</file>

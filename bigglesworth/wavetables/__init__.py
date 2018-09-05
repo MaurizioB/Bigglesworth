@@ -6,6 +6,7 @@ from itertools import chain
 from xml.etree import ElementTree as ET
 from uuid import uuid4
 
+import numpy as np
 from unidecode import unidecode
 os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
 
@@ -35,7 +36,7 @@ except:
 from bigglesworth.libs import midifile
 #from bigglesworth.mididevice import MidiDevice
 from bigglesworth.utils import loadUi, setItalic
-from bigglesworth.midiutils import SysExEvent
+from bigglesworth.midiutils import SysExEvent, NoteOnEvent, NoteOffEvent, NOTEOFF, NOTEON
 
 from bigglesworth.const import INIT, END, CHK, IDW, IDE, WTBD
 from bigglesworth.parameters import oscShapes
@@ -665,17 +666,28 @@ class NameValidator(QtGui.QValidator):
 
 
 class TestMidiDevice(QtCore.QObject):
+    midiEvent = QtCore.pyqtSignal(object)
     def __init__(self, main):
         QtCore.QObject.__init__(self)
         self.main = main
+        self.backend = -1
         self.main.midiEvent.connect(self.outputEvent)
         config(
             client_name='Bigglesworth', 
-            in_ports=['Input'], 
+            in_ports=[('Input', 'Virtual.*')], 
             out_ports=[('Output', 'Blofeld.*', 'aseqdump.*')])
 
     def start(self):
-        run(Print())
+        run(Filter(mdNOTE) >> Call(self.inputEvent))
+
+    def inputEvent(self, event):
+        if event.type == mdNOTEON:
+            newEvent = NoteOnEvent(event.port, event.channel, event.note, event.velocity)
+        elif event.type == mdNOTEOFF:
+            newEvent = NoteOffEvent(event.port, event.channel, event.note, event.velocity)
+        else:
+            return
+        self.midiEvent.emit(newEvent)
 
     def outputEvent(self, event):
 #        print(event)
@@ -704,7 +716,10 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.newWindowSeparator = self.windowsMenu.insertSeparator(self.newWindowAction)
         self.windowsMenu.aboutToShow.connect(self.checkWindowsMenu)
 
-        self.midiWidget = MidiStatusBarWidget(self, 2, True)
+        self.pianoIcon = PianoStatusWidget()
+        self.statusbar.addPermanentWidget(self.pianoIcon)
+
+        self.midiWidget = MidiStatusBarWidget(self, 3, True)
         self.statusbar.addPermanentWidget(self.midiWidget)
         self.midiEvent.connect(self.midiWidget.midiOutputEvent)
 
@@ -713,29 +728,35 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.openedWindows.append(self)
 
         if __name__ == '__main__':
-            self.midiWidget.setMenuEnabled(False)
+#            self.midiWidget.setMenuEnabled(False)
             if not self.midiDevice:
                 self.__class__.midiDevice = TestMidiDevice(self)
                 self.midiThread = QtCore.QThread()
                 self.midiDevice.moveToThread(self.midiThread)
                 self.midiThread.started.connect(self.midiDevice.start)
                 self.midiThread.start()
+                self.midiDevice.midiEvent.connect(self.midiEventReceived)
             else:
                 self.midiEvent.connect(self.openedWindows[0].midiEvent)
 #                self.midiEvent.connect(self.midiDevice.outputEvent)
         else:
             self.main = QtWidgets.QApplication.instance()
-#            self.main.midiConnChanged.connect(self.midiConnChanged)
+            self.main.midiConnChanged.connect(self.midiConnChanged)
             self.midiDevice = self.main.midiDevice
             self.graph = self.midiDevice.graph
             self.midiWidget.setMidiDevice(self.midiDevice)
             self.midiWidget.midiConnect.connect(self.midiConnect)
-            self.main.midiConnChanged.connect(self.midiWidget.midiConnChanged)
-            self.midiWidget.midiConnChanged(*self.main.connections)
+#            self.main.midiConnChanged.connect(self.midiWidget.midiConnChanged)
+            inConn, outConn = self.main.connections
+            self.midiConnChanged(inConn, outConn, True)
             #signal cannot be shared between two instances?
             if self.openedWindows[0] != self:
                 self.midiEvent.connect(self.openedWindows[0].midiEvent)
                 self.midiConnect.connect(self.openedWindows[0].midiConnect)
+
+        if self.openedWindows[0] != self:
+            self.pianoIcon.stateChanged.connect(self.openedWindows[0].pianoIcon.setState)
+            self.openedWindows[0].pianoIcon.stateChanged.connect(self.pianoIcon.setState)
 
         self.dumper = Dumper(self)
         self.dumper.stopRequested.connect(self.stopRequested)
@@ -750,6 +771,10 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.player = Player(self, self.settings.value('AudioDevice'), self.settings.value('SampleRateConversion', 2))
 
         self.settings.beginGroup('WaveTables')
+        if self.openedWindows[0] == self:
+            self.pianoIcon.setState(self.settings.value('AcceptMidiNotes', True, bool))
+        else:
+            self.pianoIcon.setState(self.openedWindows[0].pianoIcon.state)
 
         if self.settings.contains('Dock'):
             visible, floating, dockedWidth, floatingWidth, geometry = self.settings.value('Dock', [])
@@ -771,25 +796,26 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             self.waveTableDock.setFloating(False)
         self.settings.endGroup()
 
-        self.checkDatabase()
-        if not self.waveTableModel:
-            self.__class__.waveTableModel = QtSql.QSqlTableModel()
-            self.waveTableModel.setTable('wavetables')
-            self.waveTableModel.select()
-            self.waveTableModel.setHeaderData(UidColumn, QtCore.Qt.Horizontal, 'D')
-            self.waveTableModel.setHeaderData(NameColumn, QtCore.Qt.Horizontal, 'Name')
-            self.waveTableModel.setHeaderData(SlotColumn, QtCore.Qt.Horizontal, 'Slot')
-            self.waveTableModel.setHeaderData(DataColumn, QtCore.Qt.Horizontal, 'Waves')
-            self.waveTableModel.setHeaderData(EditedColumn, QtCore.Qt.Horizontal, 'Last modified')
+        if __name__ == '__main__':
+            self.checkDatabase()
+            if not self.waveTableModel:
+                self.__class__.waveTableModel = QtSql.QSqlTableModel()
+                self.waveTableModel.setTable('wavetables')
+                self.waveTableModel.select()
+                self.waveTableModel.setHeaderData(UidColumn, QtCore.Qt.Horizontal, 'D')
+                self.waveTableModel.setHeaderData(NameColumn, QtCore.Qt.Horizontal, 'Name')
+                self.waveTableModel.setHeaderData(SlotColumn, QtCore.Qt.Horizontal, 'Slot')
+                self.waveTableModel.setHeaderData(DataColumn, QtCore.Qt.Horizontal, 'Waves')
+                self.waveTableModel.setHeaderData(EditedColumn, QtCore.Qt.Horizontal, 'Last modified')
 
-            self.__class__.dumpModel = QtSql.QSqlTableModel()
-            self.dumpModel.setTable('dumpedwt')
-            self.dumpModel.select()
-            self.dumpModel.setHeaderData(UidColumn, QtCore.Qt.Horizontal, 'D')
-            self.dumpModel.setHeaderData(NameColumn, QtCore.Qt.Horizontal, 'Name')
-            self.dumpModel.setHeaderData(EditedColumn, QtCore.Qt.Horizontal, 'Last modified')
+                self.__class__.dumpModel = QtSql.QSqlTableModel()
+                self.dumpModel.setTable('dumpedwt')
+                self.dumpModel.select()
+                self.dumpModel.setHeaderData(UidColumn, QtCore.Qt.Horizontal, 'D')
+                self.dumpModel.setHeaderData(NameColumn, QtCore.Qt.Horizontal, 'Name')
+                self.dumpModel.setHeaderData(EditedColumn, QtCore.Qt.Horizontal, 'Last modified')
 
-            self.__class__.initialized = True
+#                self.__class__.initialized = True
 
         self.waveTableModel.beforeDelete.connect(self.checkRemoval)
         self.localProxy = LocalProxyModel(self.waveTableModel, self.dumpModel)
@@ -888,6 +914,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.keyFrameView.setScene(self.keyFrameScene)
         self.keyFrameScene.setIndexRequested.connect(self.setKeyFrameIndex)
         self.keyFrameScene.highlight.connect(self.setCurrentKeyFrame)
+#        self.keyFrameScene.transformSelected.connect(self.selectTransform)
         self.keyFrameScene.deleteRequested.connect(self.deleteRequested)
         self.keyFrameScene.mergeRequested.connect(self.mergeRequested)
         self.keyFrameScene.pasteTransformRequested.connect(self.pasteTransform)
@@ -895,6 +922,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.keyFrameScene.externalDrop.connect(self.keyFrameSceneExternalDrop)
         self.keyFrameScene.waveDrop.connect(self.keyFrameSceneWaveDrop)
         self.keyFrames = self.keyFrameScene.keyFrames
+        self.keyFrames.changed.connect(self.checkCurrentTransform)
 
         self.nameValidator = NameValidator()
         self.nameEdit.setValidator(self.nameValidator)
@@ -980,6 +1008,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.mouseModeGroup.addButton(self.noMouseModeBtn)
         self.mouseModeGroup.setId(self.noMouseModeBtn, 0)
         self.harmonicsBtn.toggled.connect(lambda state: [self.harmonicsPanel.setVisible(state), self.harmonicsWidget.reset() if not state else None])
+        self.discardHarmonicsBtn.clicked.connect(lambda: [self.noMouseModeBtn.setChecked(True), self.waveScene.setMouseMode(0)])
 
         self.showCrosshairChk.toggled.connect(self.waveScene.setCrosshair)
         self.snapCombo.currentIndexChanged.connect(self.waveScene.setSnapMode)
@@ -999,6 +1028,10 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.mainTabWidget.tabCloseRequested.connect(self.tabCloseRequested)
         self.mainTabBar = self.mainTabWidget.tabBar()
         self.mainTabBar.setTabIcon(1, QtGui.QIcon(':/images/wavetable.svg'))
+
+#        self.transformEditor = TransformEditor(self)
+#        self.mainTabWidget.setHidden(self.mainTabWidget.addTab(self.transformEditor, QtGui.QIcon.fromTheme('exchange-positions'), 'Transform edit'), True)
+#        self.mainTabWidget.setHidden(2, True)
 #        self.mainTabBar = MainTabBar(self)
 #        self.mainTabBar.setTabsClosable(True)
 #        self.mainTabWidget.setTabBar(self.mainTabBar)
@@ -1012,7 +1045,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 self.mainTabBar.tabButton(tabId, self.mainTabBar.LeftSide, None)
             self.tabCloseButtonSide = self.mainTabBar.LeftSide
         self.addAudioImportTab()
-        self.mainTabWidget.setCurrentIndex(self.mainTabWidget.count() - 1)
+#        self.mainTabWidget.setCurrentIndex(self.mainTabWidget.count() - 1)
 
         self.waveTablePlayerPanel.contentName = 'play controls'
         self.pianoKeyboard.noteEvent.connect(self.playFullTableNote)
@@ -1092,22 +1125,18 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             action.triggered.connect(window.activateWindow)
 
     def checkDatabase(self):
+        db = QtSql.QSqlDatabase.database()
         print('creo database?!')
         query = QtSql.QSqlQuery()
-        if not query.exec_('PRAGMA table_info(wavetables)'):
-            print(query.lastError().databaseText())
-        if not query.next():
+        if not 'wavetables' in db.tables():
             if not query.exec_('CREATE TABLE wavetables(uid varchar primary key, name varchar(14), slot int, edited int, data blob, preview blob)'):
                 print(query.lastError().databaseText())
-        else:
-            query.seek(-1)
-            columns = []
-            while query.next():
-                columns.append(query.value(1))
+#        else:
+#            record = db.record('wavetables')
+#            columns = [record.fieldName(i) for i in range(record.count())]
+#            print(columns)
 
-        if not query.exec_('PRAGMA table_info(dumpedwt)'):
-            print(query.lastError().databaseText())
-        if not query.next():
+        if not 'dumpedwt' in db.tables():
 #            if not query.exec_('CREATE TABLE dumpedwt(slot int primary key, uid varchar, name varchar(14), edited int)'):
             if not query.exec_('CREATE TABLE dumpedwt(uid varchar, name varchar(14), slot int primary key, edited int, data blob, preview blob, dumped int)'):
                 print(query.lastError().databaseText())
@@ -1204,8 +1233,23 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             self.player.setAudioDevice(device)
         self.player.setSampleRateConversion(conversion)
 
-    def midiConnChanged(self, input, output):
-        self.midiWidget.midiOutputConnChanged(output)
+    def midiEventReceived(self, event):
+        if not event.type in (NOTEOFF, NOTEON) or not self.pianoIcon.state:
+            return
+        print([w for w in QtWidgets.QApplication.topLevelWidgets() if w.isVisible() and isinstance(w, QtWidgets.QMainWindow)])
+        for window in reversed(self.openedWindows + self.lastActive):
+            if window.isVisible():
+                break
+        else:
+            return
+
+        keyboard = window.wavePianoKeyboard if window.mainTabWidget.currentIndex() == 1 else window.pianoKeyboard
+        keyboard.triggerNoteEvent(event.type == NOTEON, event.note, event.velocity)
+
+    def midiConnChanged(self, input, output, update=False):
+        self.midiWidget.midiConnChanged(input, output, update)
+        self.checkDumps(bool(len(output)))
+        self.pianoIcon.setEnabled(bool(len(input)))
 
     def applyHarmonics(self):
         self.waveScene.applyHarmonics()
@@ -1295,9 +1339,16 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             pass
         self.player.stop()
         if state:
-            self.player.playData(
-                self.keyFrames.fullTableValues(note, 1, self.player.sampleRate, index=self.waveScene.currentKeyFrame.index), 
-                volume=max(1, velocity) / 127.)
+            if self.harmonicsWidget.isVisible():
+                wavePath = self.waveScene.currentWavePath.path()
+                index = [-wavePath.elementAt(s).y + pow20 for s in range(128)]
+            else:
+                index = self.waveScene.currentKeyFrame.index
+#                index = self.waveScene.currentKeyFrame.values
+#            print(index[:10])
+#                data = np.concatenate(np.array([wavePath.elementAt(s).y for s in range(128)]))
+            data = self.keyFrames.fullTableValues(note, 1, self.player.sampleRate, index=index)
+            self.player.playData(data, volume=max(1, velocity) / 127.)
 
     def setFullTablePlayhead(self):
 #        inBuffer = self.player.output.bufferSize() - self.player.output.bytesFree()
@@ -1461,6 +1512,19 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         if activate:
             self.mainTabWidget.setCurrentWidget(self.waveEditTab)
         self.waveScene.setKeyFrame(keyFrame)
+#        self.selectTransform(keyFrame.nextTransform)
+
+    def checkCurrentTransform(self, *args):
+        print('changed', args)
+
+    def _selectTransform(self, transform, activate=False):
+        if not transform.isValid() or transform.isContiguous() or not transform.mode or len(self.keyFrames) == 1:
+            self.mainTabWidget.setHidden(2, True)
+        else:
+            self.mainTabWidget.setHidden(2, False)
+            if activate:
+                self.mainTabWidget.setCurrentIndex(2)
+            self.transformTab.setTransform(transform)
 
     def setKeyFrameIndex(self, item):
         prev = 0
@@ -2291,10 +2355,13 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 count += 1
         return count
 
-    def checkDumps(self):
+    @QtCore.pyqtSlot()
+    def checkDumps(self, canDump=None):
         res = self.isDumpClean()
-        self.dumpAllBtn.setEnabled(res)
-        self.applyBtn.setEnabled(res == 1)
+        if canDump is None:
+            canDump = self.canDump()
+        self.dumpAllBtn.setEnabled(res and canDump)
+        self.applyBtn.setEnabled(res == 1 and canDump)
 #        hasContents = False
 #        for row in range(86, 125):
 #            if self.dumpModel.index(row, UidColumn).data():
@@ -2361,8 +2428,10 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 restoreAction = menu.addAction(QtGui.QIcon.fromTheme('document-save'), 'Restore wavetable')
             menu.addSeparator()
             dumpAction = menu.addAction(QtGui.QIcon(':/images/dump.svg'), 'Dump wavetable')
+            dumpAction.setEnabled(self.canDump())
         else:
             dumpAction = menu.addAction(QtGui.QIcon(':/images/dump.svg'), 'Dump {} wavetables'.format(count))
+            dumpAction.setEnabled(self.canDump())
 
         res = menu.exec_(QtGui.QCursor.pos())
         if res == editAction:
@@ -2462,12 +2531,17 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 return event.ignore()
             elif res == QtWidgets.QMessageBox.Save:
                 self.save()
+
+        isLast = not any(w.isVisible() for w in self.openedWindows if w != self)
         self.settings.beginGroup('WaveTables')
         self.settings.setValue('Dock', [self.waveTableDock.isVisible(), self.waveTableDock.isFloating(), self.waveTableDock.dockedWidth, self.waveTableDock.floatingWidth, self.waveTableDock.geometry()])
+        if isLast:
+            self.settings.setValue('AcceptMidiNotes', self.pianoIcon.state)
         self.settings.endGroup()
+
         self.settings.beginGroup('MessageBoxes')
         if self.settings.value('WaveTableAskUndumpedOnClose', True, bool) and \
-            self.isDumpClean() == 1 and not any(w.isVisible() for w in self.openedWindows if w != self):
+            self.isDumpClean() == 1 and isLast:
                 msgBox = AdvancedMessageBox(self, 'Wavetables not dumped', 
                     '{} wavetables in the dump list have not been updated with your Blofeld yet.'.format(self.undumpedCount()), 
                     buttons=[
@@ -2506,7 +2580,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 
 
 from bigglesworth.wavetables.keyframes import VirtualKeyFrames
-from bigglesworth.wavetables.widgets import CheckBoxDelegate
+from bigglesworth.wavetables.widgets import CheckBoxDelegate, PianoStatusWidget
 from bigglesworth.wavetables.graphics import WaveScene, SampleItem, WaveTransformItem, WaveTableScene, KeyFrameScene
 from bigglesworth.wavetables.audioimport import AudioImportTab
 
@@ -2534,7 +2608,7 @@ GenericDrawUndo.labels = {
 
 if __name__ == '__main__':
 
-    from mididings import *
+    from mididings import run, config, Filter, Call, NOTE as mdNOTE, NOTEOFF as mdNOTEOFF, NOTEON as mdNOTEON
     from mididings.engine import output_event as outputEvent
     from mididings.event import SysExEvent as mdSysExEvent
     app = QtWidgets.QApplication(sys.argv)
@@ -2546,6 +2620,7 @@ if __name__ == '__main__':
     #print(db.databaseName())
     db.open()
     w = WaveTableWindow()
+    w._db = db
     w.show()
     sys.exit(app.exec_())
 

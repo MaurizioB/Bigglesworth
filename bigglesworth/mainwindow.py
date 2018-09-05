@@ -36,7 +36,6 @@ class MainWindow(QtWidgets.QMainWindow):
 #        self.referenceModel = QtSql.QSqlTableModel()
         self.referenceModel = self.database.referenceModel
         self.midiWidget = MidiStatusBarWidget(self, menu=True)
-        self.midiWidget.setFrameStyle(self.midiWidget.StyledPanel|self.midiWidget.Sunken)
         self.midiWidget.setMidiDevice(self.main.midiDevice)
         self.main.midiConnChanged.connect(self.midiWidget.midiConnChanged)
         self.main.midiEventSent.connect(self.midiWidget.midiEventSent)

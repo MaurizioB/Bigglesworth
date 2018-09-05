@@ -138,6 +138,7 @@ class MidiStatusBarWidget(QtWidgets.QFrame):
 
     def __init__(self, parent, directions=3, menu=False):
         QtWidgets.QFrame.__init__(self, parent)
+        self.setFrameStyle(self.StyledPanel|self.Sunken)
         layout = QtWidgets.QHBoxLayout()
         self.setLayout(layout)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -145,7 +146,7 @@ class MidiStatusBarWidget(QtWidgets.QFrame):
         if directions & 1:
             self.inputWidget = MidiStatusBarIcon('input')
             layout.addWidget(self.inputWidget)
-            self.inputWidget.customContextMenuRequested.connect(lambda: self.showMenu(0))
+#            self.inputWidget.customContextMenuRequested.connect(lambda: self.showMenu(0))
             self.widgets.append(self.inputWidget)
         else:
             self.inputWidget = None
@@ -153,7 +154,7 @@ class MidiStatusBarWidget(QtWidgets.QFrame):
         if directions & 2:
             self.outputWidget = MidiStatusBarIcon('output')
             layout.addWidget(self.outputWidget)
-            self.outputWidget.customContextMenuRequested.connect(lambda: self.showMenu(1))
+#            self.outputWidget.customContextMenuRequested.connect(lambda: self.showMenu(1))
             self.widgets.append(self.outputWidget)
             self.midiEventSent = self.outputWidget.activate
         else:
@@ -175,24 +176,41 @@ class MidiStatusBarWidget(QtWidgets.QFrame):
         if self.inputWidget:
             midiDevice.midi_event.connect(self.inputWidget.activate)
 
-    def getPortCount(self, direction):
+    def getPortCount(self, direction=None):
         if not self.midiDevice:
             return 0
-        count = 0
-        direction = int(direction == 'output')
+        inPorts = outPorts = 0
+#        direction = int(direction == 'output')
         for portDict in self.graph.port_id_dict.values():
             for port in portDict.values():
                 if port.hidden or port.client in (self.midiDevice.input.client, self.midiDevice.output.client):
                     continue
-                elif (direction and not port.is_input) or (not direction and not port.is_output):
-                    continue
-                count += 1
-        return count
+                elif port.is_input:
+                    outPorts += 1
+                elif port.is_output:
+                    inPorts += 1
+        if direction is None:
+            return inPorts, outPorts
+        elif direction:
+            return inPorts
+        return outPorts
 
-    def showMenu(self, direction):
-        if not self.menuEnabled:
-            return
+    def contextMenuEvent(self, event):
+        if self.menuEnabled:
+            widget = self.childAt(event.pos())
+            if widget:
+                if widget == self.inputWidget:
+                    menu = self.getMenu(0)
+                else:
+                    menu = self.getMenu(1)
+                menu.exec_(event.globalPos())
+
+    def getMenu(self, direction):
         menu = QtWidgets.QMenu()
+        if not self.midiDevice:
+            menu.addAction('Fake port')
+            return menu
+        sections = self.midiDevice.backend == self.midiDevice.Alsa
         if direction:
             connected = [conn.dest for conn in QtWidgets.QApplication.instance().connections[1]]
         else:
@@ -208,31 +226,39 @@ class MidiStatusBarWidget(QtWidgets.QFrame):
                 if not port.hidden and ((direction and port.is_input) or (not direction and port.is_output)):
                     ports.append(port)
             if ports:
-                menu.addSection(client.name)
+                if sections:
+                    menu.addSection(client.name)
                 for port in ports:
                     portAction = menu.addAction(port.name)
                     portAction.setCheckable(True)
                     portAction.setChecked(port in connected)
                     portAction.setData(port)
-        res = menu.exec_(QtGui.QCursor.pos())
-        if res:
-            self.midiConnect.emit(res.data(), direction, res.isChecked())
+                    portAction.triggered.connect(
+                        lambda action, direction=direction, port=port: self.midiConnect.emit(port, direction, action))
+        return menu
+#        res = menu.exec_(QtGui.QCursor.pos())
+#        if res:
+#            self.midiConnect.emit(res.data(), direction, res.isChecked())
 
-    def midiConnChanged(self, input, output):
-        self.midiInputConnChanged(input)
-        self.midiOutputConnChanged(output)
+    def midiConnChanged(self, input, output, update=False):
+        if update:
+            inPorts, outPorts = self.getPortCount()
+        else:
+            inPorts = outPorts = None
+        self.midiInputConnChanged(input, inPorts)
+        self.midiOutputConnChanged(output, outPorts)
 
     def midiInputEvent(self):
         self.inputWidget.activate()
 
-    def midiInputConnChanged(self, conn):
-        self.inputWidget.setConn(conn)
+    def midiInputConnChanged(self, conn, inPorts=None):
+        self.inputWidget.setConn(conn, inPorts)
 
     def midiOutputEvent(self):
         self.outputWidget.activate()
 
-    def midiOutputConnChanged(self, conn):
-        self.outputWidget.setConn(conn)
+    def midiOutputConnChanged(self, conn, outPorts=None):
+        self.outputWidget.setConn(conn, outPorts)
 
 
 class MidiStatusBarIcon(QtWidgets.QLabel):
@@ -240,8 +266,9 @@ class MidiStatusBarIcon(QtWidgets.QLabel):
 
     def __init__(self, dirText):
         QtWidgets.QLabel.__init__(self)
-        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+#        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.dirText = dirText
+        self.direction = dirText == 'output'
         self.icon = self.normalIcon = QtGui.QIcon(':/images/midiicon{}.svg'.format(dirText))
         self.disabledIcon = QtGui.QIcon(':/images/midiicon{}disabled.svg'.format(dirText))
         self.activeIcon = QtGui.QIcon(':/images/midiicon{}active.svg'.format(dirText))
@@ -267,7 +294,7 @@ class MidiStatusBarIcon(QtWidgets.QLabel):
             self.update()
 
     def graphChanged(self):
-        self.ports = self.parent().getPortCount(self.dirText)
+        self.ports = self.parent().getPortCount(self.direction)
         self.updateToolTip()
 
     def updateToolTip(self):
@@ -278,8 +305,10 @@ class MidiStatusBarIcon(QtWidgets.QLabel):
             toolTip += '\nRight click for menu'
         self.setToolTip(toolTip)
 
-    def setConn(self, conn):
+    def setConn(self, conn, ports=None):
         self.count = len([c for c in conn if not c.hidden])
+        if ports is not None:
+            self.ports = ports
         self.updateToolTip()
         self.setState(0 if conn else -1)
 

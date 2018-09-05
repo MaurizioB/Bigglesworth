@@ -1,12 +1,49 @@
+# *-* encoding: utf-8 *-*
+import sys
 from uuid import uuid4
 
 from Qt import QtCore, QtGui, QtWidgets
+from PyQt4.QtGui import QStyleOptionTabV3
+QtWidgets.QStyleOptionTabV3 = QStyleOptionTabV3
 
 from bigglesworth.utils import sanitize
 from bigglesworth.dialogs.messageboxes import AdvancedMessageBox
 from bigglesworth.wavetables import UidColumn, NameColumn, SlotColumn, EditedColumn, DataColumn, PreviewColumn, DumpedColumn
 from bigglesworth.wavetables.utils import ActivateDrag
 from bigglesworth.wavetables.graphics import SampleItem
+
+
+class PianoStatusWidget(QtWidgets.QFrame):
+    stateChanged = QtCore.pyqtSignal(bool)
+
+    def __init__(self):
+        QtWidgets.QFrame.__init__(self)
+        self.setFrameStyle(self.StyledPanel|self.Sunken)
+        self.icon = QtGui.QIcon.fromTheme('pianoicon')
+        self.state = True
+        self.setToolTip('Enable/Disable input keyboard events')
+
+    def minimumSizeHint(self):
+        size = QtWidgets.QApplication.fontMetrics().height() * 2
+        return QtCore.QSize(size, size)
+
+    def mousePressEvent(self, event):
+        self.setState(not self.state)
+
+    def setState(self, state):
+        if state == self.state:
+            return
+        self.state = state
+        self.setFrameStyle(self.StyledPanel|(self.Sunken if state else self.Raised))
+        self.stateChanged.emit(state)
+
+    def paintEvent(self, event):
+        QtWidgets.QFrame.paintEvent(self, event)
+        qp = QtGui.QPainter(self)
+        l, t, r, b = self.getContentsMargins()
+        rect = self.rect().adjusted(l + 2, t + 2, -r - 2, -b - 2)
+        qp.drawPixmap(rect, self.icon.pixmap(rect.height(), mode=not (self.state and self.isEnabled())))
+
 
 class IconWidget(QtWidgets.QWidget):
     _sizeHint = QtCore.QSize(1, 1)
@@ -114,7 +151,8 @@ class HarmonicsSlider(QtWidgets.QWidget):
         elif (event.buttons() == QtCore.Qt.MiddleButton or event.modifiers() == QtCore.Qt.ShiftModifier) and \
             (ignore or event.pos() in self.rect()):
                 self.setValue(1)
-        event.ignore()
+        if event.pos() not in self.rect():
+            event.ignore()
 
     def setValue(self, value):
         self.value = max(0, min(value, 2))
@@ -193,6 +231,7 @@ class HarmonicsWidget(QtWidgets.QWidget):
             self.sliders[0].setValue(1)
             for s, v in enumerate(range(1, 50)):
                 self.sliders[s].setValue(1 - v * .02)
+            self.sliders[-1].setValue(0)
 
     def eventFilter(self, source, event):
         if event.type() == QtCore.QEvent.MouseMove and \
@@ -417,6 +456,7 @@ class SwitchablePanel(QtWidgets.QWidget):
 class CollapsibleGroupBox(QtWidgets.QGroupBox):
     collapsed = False
     collapsedChanged = QtCore.pyqtSignal(bool)
+    arrows = u'▾▴'
 
     def __init__(self, *args, **kwargs):
         QtWidgets.QGroupBox.__init__(self, *args, **kwargs)
@@ -424,6 +464,13 @@ class CollapsibleGroupBox(QtWidgets.QGroupBox):
         self.baseFont = self.font()
         self.hoverFont = QtGui.QFont(self.baseFont)
         self.hoverFont.setUnderline(True)
+#        self._title = self.title()
+
+    def _setTitle(self, title=None):
+        if title is None:
+            title = self._title
+        self._title = title
+        QtWidgets.QGroupBox.setTitle(self, u'{0} {1} {0}'.format(self.arrows[self.collapsed], title))
 
     def checkHover(self, pos):
         option = QtWidgets.QStyleOptionGroupBox()
@@ -470,6 +517,7 @@ class CollapsibleGroupBox(QtWidgets.QGroupBox):
                 [w.setVisible(True) for w in self.firstLevelWidgets]
                 self.setMaximumHeight(16777215)
             self.collapsed = collapsed
+#        self.setTitle()
         self.collapsedChanged.emit(collapsed)
 
     def mouseMoveEvent(self, event):
@@ -487,6 +535,20 @@ class CollapsibleGroupBox(QtWidgets.QGroupBox):
 
     def resizeEvent(self, event):
         self.checkHover(self.mapFromGlobal(QtGui.QCursor.pos()))
+
+    def paintEvent(self, event):
+        QtWidgets.QGroupBox.paintEvent(self, event)
+        option = QtWidgets.QStyleOptionGroupBox()
+        self.initStyleOption(option)
+        labelRect = self.style().subControlRect(QtWidgets.QStyle.CC_GroupBox, option, QtWidgets.QStyle.SC_GroupBoxLabel)
+        qp = QtGui.QPainter(self)
+        qp.setFont(QtWidgets.QApplication.font())
+        arrow = self.arrows[self.collapsed]
+        width = option.fontMetrics.width(arrow)
+        labelRect.setLeft(labelRect.left() - width - 5)
+        labelRect.setRight(labelRect.right() + width + 5)
+        qp.drawText(labelRect, QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop, arrow)
+        qp.drawText(labelRect, QtCore.Qt.AlignRight|QtCore.Qt.AlignTop, arrow)
 
 
 class AdvancedSplitterHandle(QtWidgets.QSplitterHandle):
@@ -678,9 +740,86 @@ class WaveTableMiniView(QtWidgets.QGraphicsView):
             self.clicked.emit()
 
 
+class MainTabBar(QtWidgets.QTabBar):
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QTabBar.__init__(self, *args, **kwargs)
+        self.hidden = set()
+
+    def setHidden(self, index, hidden):
+        if hidden:
+            if hidden in self.hidden or len(self.hidden) == self.count() - 1:
+                return
+            self.hidden.add(index)
+            if self.currentIndex() == index:
+                if not index:
+                    newIndex = 1
+                    while newIndex in self.hidden:
+                        newIndex += 1
+                else:
+                    delta = -1
+                    newIndex = index - 1
+                    while newIndex in self.hidden:
+                        newIndex += delta
+                        if newIndex == self.count():
+                            delta = 1
+                            newIndex = index - 1
+                self.setCurrentIndex(newIndex)
+        else:
+            self.hidden.discard(index)
+#        self.tabRemoved(index)
+        self.tabLayoutChange()
+        QtWidgets.QApplication.processEvents()
+        size = QtCore.QSize(self.parent().width(), self.height())
+        self.resizeEvent(QtGui.QResizeEvent(size, QtCore.QSize()))
+        self.parent().resizeEvent(QtGui.QResizeEvent(self.parent().size(), QtCore.QSize()))
+#        self.update()
+
+    def tabSizeHint(self, index):
+        hint = QtWidgets.QTabBar.tabSizeHint(self, index)
+        if index in self.hidden:
+            hint.setWidth(0)
+        return hint
+
+    def wheelEvent(self, event):
+        index = self.currentIndex()
+        if event.delta() < 1:
+            delta = 1
+        else:
+            delta = -1
+        newIndex = index + delta
+        while newIndex in self.hidden:
+            newIndex += delta
+        if not 0 <= newIndex < self.count():
+            newIndex = index
+        self.setCurrentIndex(newIndex)
+
+    def paintEvent(self, event):
+        option = QtWidgets.QStyleOptionTabV3()
+        qp = QtWidgets.QStylePainter(self)
+        current = 0
+        last = self.count() - 1 - len(self.hidden)
+        for index in range(self.count()):
+            if index in self.hidden:
+                continue
+            self.initStyleOption(option, index)
+            if not last:
+                option.position = 3
+            elif not current:
+                option.position = 0
+            elif current == last:
+                option.position = 2
+            qp.drawPrimitive(QtWidgets.QStyle.PE_FrameTabBarBase, option)
+            qp.drawControl(QtWidgets.QStyle.CE_TabBarTab, option)
+            qp.drawControl(QtWidgets.QStyle.CE_TabBarTabShape, option)
+            qp.drawControl(QtWidgets.QStyle.CE_TabBarTabLabel, option)
+            current += 1
+
+
 class MainTabWidget(QtWidgets.QTabWidget):
     def __init__(self, *args, **kwargs):
         QtWidgets.QTabWidget.__init__(self, *args, **kwargs)
+#        self.setTabBar(MainTabBar(self))
+#        self.setHidden = self.tabBar().setHidden
         metrics = {}
         dpi = (self.logicalDpiX() + self.logicalDpiY()) / 2.
         ratio = 1. / 76 * dpi
@@ -826,24 +965,25 @@ class IndexSlider(QtWidgets.QSlider):
     def resizeEvent(self, event):
         option = QtWidgets.QStyleOptionSlider()
         self.initStyleOption(option)
+        option.subControls |= QtWidgets.QStyle.SC_SliderTickmarks
+        option.tickPosition |= self.TicksBothSides
         handleRect = self.style().subControlRect(QtWidgets.QStyle.CC_Slider, option, QtWidgets.QStyle.SC_SliderHandle, self)
         self.grooveRect = self.style().subControlRect(QtWidgets.QStyle.CC_Slider, option, QtWidgets.QStyle.SC_SliderGroove, self)
-        ticksUpRect = QtCore.QRect(handleRect.width() / 2, 0, self.width() - handleRect.width() + 1, self.grooveRect.top() - 1)
-        ticksDownRect = ticksUpRect.translated(0, self.grooveRect.bottom() + 2)
+        ticksUpRect = QtCore.QRect(handleRect.width() / 2, 0, self.width() - handleRect.width() + 1, self.grooveRect.top())
+        ticksDownRect = ticksUpRect.translated(0, self.grooveRect.bottom() - 1).adjusted(0, 0, 0, 2)
         self.ticksRect = ticksUpRect | ticksDownRect
         self.ticksRegion = QtGui.QRegion(ticksUpRect) | QtGui.QRegion(ticksDownRect)
         self.ticksRatio = (self.ticksRect.width() - 1) / 63.
         self.updateTicks()
 
     def paintEvent(self, event):
-#        self.setTickPosition(self.TicksAbove)
         qp = QtGui.QPainter(self)
         qp.setRenderHints(qp.Antialiasing)
         qp.setClipRegion(self.ticksRegion)
         qp.translate(.5 + self.ticksRect.left(), .5)
         qp.setPen(self.tickPen)
         for x in self.tickPositions:
-            qp.drawLine(x, 0, x, self.height())
+            qp.drawLine(x, 0, x, self.height() + 1)
 
         QtWidgets.QSlider.paintEvent(self, event)
 

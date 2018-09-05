@@ -20,7 +20,7 @@
    <string>Wavetable Editor [*]</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout" stretch="1,10">
+   <layout class="QVBoxLayout" name="verticalLayout" stretch="1,1000">
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
@@ -93,7 +93,7 @@
        <bool>true</bool>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="elideMode">
        <enum>Qt::ElideMiddle</enum>
@@ -351,7 +351,7 @@
                 <string>Show action history</string>
                </property>
                <property name="text">
-                <string>History</string>
+                <string>Undo history</string>
                </property>
                <property name="icon">
                 <iconset theme="edit-undo-history">
@@ -597,6 +597,16 @@
                </property>
                <property name="text">
                 <string>Apply</string>
+               </property>
+               <property name="icon">
+                <iconset theme="checkbox"/>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="discardHarmonicsBtn">
+               <property name="text">
+                <string>Discard</string>
                </property>
               </widget>
              </item>

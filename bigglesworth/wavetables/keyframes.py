@@ -270,6 +270,8 @@ class KeyFrames(QtCore.QObject):
             if item:
                 items.append(item)
 #        lastTransform = item.nextTransform
+        if len(items) <= 2:
+            return
         self.deleteKeyFrames(items)
 #        self.deleteTransform(lastTransform)
         firstTransform = self.fullList[start].nextTransform
@@ -794,8 +796,11 @@ class KeyFrames(QtCore.QObject):
             self.clean and self.fullClean and self.fullAudioValues.any():
                 return self.fullAudioValues
         if index is not None:
-            #usa np.tile(array, multiplier)
-            arrays = [np.concatenate((np.array(self.get(index).values), ) * 500)]
+            if isinstance(index, int):
+                #usa np.tile(array, multiplier)
+                arrays = [np.concatenate((np.array(self.get(index).values), ) * 500)]
+            else:
+                arrays = [np.concatenate((np.array(index), ) * 500)]
         else:
 #            arrays = [np.concatenate((np.array(self.keyFrames[0].values), ) * multiplier)]
             arrays = []
