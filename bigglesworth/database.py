@@ -160,10 +160,18 @@ class BlofeldDB(QtCore.QObject):
             text = '{}\n{}'.format(extMessage, text)
         self.logger.append(logLevel, message, text)
 
-    def initialize(self):
-        self.path = self.main.settings.value('dbPath', 
-            QtCore.QDir(QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.DataLocation)).filePath(
-                'library.sqlite'), 'QString')
+    def initialize(self, path=None):
+        if path:
+            fileInfo = QtCore.QFileInfo(path)
+            if not (fileInfo.isFile() and fileInfo.isWritable()):
+                self.logger.append(LogWarning, 'Database path invalid, reverting to default', path)
+                path = None
+        if path is not None:
+            self.path = path
+        else:
+            self.path = self.main.settings.value('dbPath', 
+                QtCore.QDir(QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.DataLocation)).filePath(
+                    'library.sqlite'), 'QString')
         self.logger.append(LogInfo, 'Loading database', self.path)
         self.backup.setPath(self.path)
         if not QtCore.QFile.exists(self.path):

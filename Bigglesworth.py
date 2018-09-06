@@ -18,6 +18,7 @@ def process_args():
 #    parser.add_argument('-l', '--library-limit', metavar='N', type=int, help=argparse.SUPPRESS)
 #    parser.add_argument('-w', '--wavetable', metavar='WTFILE', nargs='?', const=True, help='Open Wavetable editor (with optional WTFILE)')
     parser.add_argument('--log', help='Show log dialog on startup', action='store_true')
+    parser.add_argument('-d', '--database', metavar='DBPATH', action='store', help='Set database path (only for debugging!)')
     parser.add_argument('-L', '--librarian', metavar='COLLECTION', nargs='?', const=True, help='Show the librarian, selecting the optional COLLECTION')
     parser.add_argument('-W', '--wavetables', help='Show Wavetable editor', action='store_true')
     parser.add_argument('-E', '--editor', nargs=argparse.REMAINDER, 
@@ -38,7 +39,6 @@ if parser.rtmidi:
         print('Requested RtMidi on command line. RtMidi on Linux is not recommended!')
 else:
     os.environ['MIDI_BACKEND'] = 'ALSA'
-
 import bigglesworth
 
 if __name__ == '__main__':
