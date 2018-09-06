@@ -28,7 +28,8 @@ class PianoStatusWidget(QtWidgets.QFrame):
         return QtCore.QSize(size, size)
 
     def mousePressEvent(self, event):
-        self.setState(not self.state)
+        if event.button() == QtCore.Qt.LeftButton:
+            self.setState(not self.state)
 
     def setState(self, state):
         if state == self.state:
@@ -92,6 +93,8 @@ class HarmonicsSlider(QtWidgets.QWidget):
     brush.setColorAt(1, QtGui.QColor(0, 128, 192, 192))
 
     valueChanged = QtCore.pyqtSignal(int, float)
+    selected = QtCore.pyqtSignal(bool)
+    drag = QtCore.pyqtSignal(float)
 
     names = [
         'Fundamental', 
@@ -116,7 +119,10 @@ class HarmonicsSlider(QtWidgets.QWidget):
         QtWidgets.QWidget.__init__(self)
         self.setMouseTracking(True)
         self.fract = fract
+        self.label = '/{}'.format(self.fract + 1)
         self.value = 0
+        self.labelFont = self.font()
+        self._selected = False
         fontHeight = self.fontMetrics().height() * 1.5
         self.baseSize = QtCore.QSize(self.baseSize)
         self.sliderRect = QtCore.QRect(QtCore.QPoint(0, 0), self.baseSize)
@@ -125,7 +131,20 @@ class HarmonicsSlider(QtWidgets.QWidget):
         self.labelRect = QtCore.QRect(0, 0, self.baseSize.width(), fontHeight)
         self.sliderRect.moveTop(self.labelRect.bottom())
         if fract <= len(self.names) - 1:
-            self.setStatusTip(self.names[fract])
+            self.statusName = self.names[fract]
+        else:
+            fract += 1
+            unit = fract % 10
+            if unit == 1:
+                suffix = 'st'
+            elif unit == 2:
+                suffix = 'nd'
+            elif unit == 3:
+                suffix = 'rd'
+            else:
+                suffix = 'th'
+            self.statusName = '{}{} harmonic'.format(fract, suffix)
+        self.setStatusTip('{} (0.00%)'.format(self.statusName))
 
     def sizeHint(self):
         return self.baseSize
@@ -138,33 +157,61 @@ class HarmonicsSlider(QtWidgets.QWidget):
         y = sanitize(0, y - self.sliderRect.top(), self.sliderRect.bottom())
         return (1 - float(y) / self.sliderRect.height()) * 2
 
+    def setSelected(self, selected):
+        if self._selected == selected:
+            return
+        self._selected = selected
+        self.labelFont = self.font()
+        self.labelFont.setBold(selected)
+        self.selected.emit(selected)
+
     def mousePressEvent(self, event):
         if event.buttons() == QtCore.Qt.LeftButton:
+            if event.pos() in self.labelRect:
+                self.setSelected(not self._selected)
+                self.update()
+                return event.ignore()
             self.setValue(self.getValueFromY(event.pos().y()))
-        elif event.buttons() == QtCore.Qt.MiddleButton or event.modifiers() == QtCore.Qt.ShiftModifier:
+        elif event.buttons() == QtCore.Qt.MiddleButton:
             self.setValue(1)
+        self.drag.emit(self.value)
         event.ignore()
 
-    def mouseMoveEvent(self, event, ignore=False):
+    def mouseMoveEvent(self, event, ignore=False, override=1):
         if event.buttons() == QtCore.Qt.LeftButton and (ignore or event.pos() in self.rect()) and not event.modifiers():
+            if event.pos() in self.labelRect:
+                return event.ignore()
             self.setValue(self.getValueFromY(event.pos().y()))
-        elif (event.buttons() == QtCore.Qt.MiddleButton or event.modifiers() == QtCore.Qt.ShiftModifier) and \
+        elif (event.buttons() == QtCore.Qt.MiddleButton or 
+            (event.buttons() == QtCore.Qt.LeftButton and event.modifiers() == QtCore.Qt.ShiftModifier)) and \
             (ignore or event.pos() in self.rect()):
-                self.setValue(1)
+                self.setValue(override if event.modifiers() == QtCore.Qt.ShiftModifier else 1)
         if event.pos() not in self.rect():
             event.ignore()
 
-    def setValue(self, value):
+    def mouseReleaseEvent(self, event):
+        self.drag.emit(-1)
+        QtWidgets.QWidget.mouseReleaseEvent(self, event)
+
+    def setValue(self, value, emit=True):
+        if value == self.value:
+            return
         self.value = max(0, min(value, 2))
-        self.valueChanged.emit(self.fract, self.value)
         self.update()
+        if emit:
+            self.valueChanged.emit(self.fract, self.value)
+#        strValue = '{:.02f}'.format(self.value * 50).rstrip('0').rstrip('.')
+        statusText = '{} ({:.02f}%)'.format(self.statusName, self.value * 50)
+        self.setStatusTip(statusText)
+        QtWidgets.QApplication.sendEvent(self.window(), QtGui.QStatusTipEvent(statusText))
 
     def paintEvent(self, event):
         qp = QtGui.QPainter(self)
         qp.translate(.5, .5)
         qp.setRenderHints(qp.Antialiasing)
 
-        qp.drawText(self.labelRect, QtCore.Qt.AlignCenter, '1/{}'.format(self.fract + 1))
+        qp.setFont(self.labelFont)
+        qp.drawText(self.labelRect, QtCore.Qt.AlignCenter, self.label)
 
         qp.setPen(self.basePen)
         qp.setBrush(QtCore.Qt.black)
@@ -197,52 +244,185 @@ class HarmonicsWidget(QtWidgets.QWidget):
         self.setContentsMargins(1, 1, 1, 1)
         layout.setContentsMargins(1, 1, 1, 1)
         self.sliders = []
+        self.selection = set()
         self.values = [0 for _ in range(50)]
+        self.override = -1
         for f in range(50):
             slider = HarmonicsSlider(f)
             layout.addWidget(slider)
             slider.installEventFilter(self)
             slider.valueChanged.connect(self.setHarmonic)
+            slider.selected.connect(self.setSelection)
+            slider.drag.connect(self.setOverride)
             self.sliders.append(slider)
+
+    def setOverride(self, value):
+        self.override = value
+        print('override', value)
+
+    def setSelection(self, selected):
+        if selected:
+            self.selection.add(self.sender().fract)
+        else:
+            self.selection.discard(self.sender().fract)
+
+    def selectAll(self):
+        [s.setSelected(True) for s in self.sliders]
+
+    def selectNone(self):
+        [s.setSelected(False) for s in self.sliders]
+
+    def selectEven(self):
+        [s.setSelected(i & 1) for i, s in enumerate(self.sliders)]
+
+    def selectOdd(self):
+        [s.setSelected(not i & 1) for i, s in enumerate(self.sliders)]
 
     def reset(self):
         for slider in self.sliders:
-            slider.blockSignals(True)
-            slider.setValue(0)
-            slider.blockSignals(False)
+            slider.setValue(0, False)
         self.values = [0 for _ in range(50)]
 
     def setHarmonic(self, harmonic, value):
         self.values[harmonic] = value
+        if harmonic in self.selection:
+            for h in self.selection - set((harmonic, )):
+                self.sliders[h].setValue(value, False)
+                self.values[h] = value
         self.harmonicsChanged.emit(self.values)
 
     def contextMenuEvent(self, event):
 #        slider = QtWidgets.QApplication.widgetAt(event.globalPos())
         menu = QtWidgets.QMenu()
-        resetAllAction = menu.addAction('Reset all harmonics')
-        scaleAction = menu.addAction('Set decreasing harmonic values')
+        child = self.childAt(event.pos())
+        if child:
+            selected = child.fract in self.selection
+            selectAction = menu.addAction('Deselect' if selected else 'Select')
+            if not selected:
+                selectAction.setIcon(QtGui.QIcon.fromTheme('checkbox'))
+                selectAction.triggered.connect(lambda: child.setSelected(not selected))
+        selectAllAction = menu.addAction(QtGui.QIcon.fromTheme('edit-select-all'), 'Select all')
+        selectAllAction.triggered.connect(self.selectAll)
+        selectNoneAction = menu.addAction(QtGui.QIcon.fromTheme('edit-select-none'), 'Select none')
+        selectNoneAction.triggered.connect(self.selectNone)
+
+        evenAction = menu.addAction(QtGui.QIcon.fromTheme('harmonics-even'), 'Select even harmonics')
+        evenAction.triggered.connect(self.selectEven)
+        oddAction = menu.addAction(QtGui.QIcon.fromTheme('harmonics-odd'), 'Select odd harmonics')
+        oddAction.triggered.connect(self.selectOdd)
+
+        menu.addSeparator()
+        resetAllAction = menu.addAction(QtGui.QIcon.fromTheme('chronometer-reset'), 'Reset all harmonics')
+        scaleAction = menu.addAction(QtGui.QIcon.fromTheme('harmonics-decrease'), 'Set decreasing harmonic values')
         defaultAction = menu.addAction('Set all harmonics to 100%')
         res = menu.exec_(QtGui.QCursor.pos())
         if res == resetAllAction:
-            [s.setValue(0) for s in self.sliders]
+            [s.setValue(0, False) for s in self.sliders]
+            self.values = [0] * 50
+            self.harmonicsChanged.emit(self.values)
         elif res == defaultAction:
-            [s.setValue(2) for s in self.sliders]
+            [s.setValue(2, False) for s in self.sliders]
+            self.values = [2] * 50
+            self.harmonicsChanged.emit(self.values)
         elif res == scaleAction:
-            self.sliders[0].setValue(1)
+            self.values = []
+            self.sliders[0].setValue(1, False)
             for s, v in enumerate(range(1, 50)):
-                self.sliders[s].setValue(1 - v * .02)
-            self.sliders[-1].setValue(0)
+                value = 1 - v * .02
+                self.sliders[s].setValue(value, False)
+                self.values.append(value)
+            self.sliders[-1].setValue(0, False)
+            self.values.append(0)
+            self.harmonicsChanged.emit(self.values)
 
     def eventFilter(self, source, event):
         if event.type() == QtCore.QEvent.MouseMove and \
             (event.buttons() & (QtCore.Qt.LeftButton | QtCore.Qt.MiddleButton)):
                 widget = QtWidgets.QApplication.widgetAt(event.globalPos())
                 if widget != source and isinstance(widget, HarmonicsSlider):
-                    widget.mouseMoveEvent(event, True)
+                    widget.mouseMoveEvent(event, True, self.override if self.override >= 0 else 1)
+                    return True
+                elif widget == source and event.modifiers() == QtCore.Qt.ShiftModifier and self.override >= 0:
+                    widget.mouseMoveEvent(event, False, self.override)
+                    return True
         return QtWidgets.QWidget.eventFilter(self, source, event)
 
 
+class MiniHarmonicsWidget(QtWidgets.QWidget):
+    grad = QtGui.QLinearGradient(0, 0, 0, 1)
+    grad.setCoordinateMode(grad.StretchToDeviceMode)
+    grad.setColorAt(0, QtGui.QColor(0, 128, 192, 128))
+    grad.setColorAt(1, QtGui.QColor(0, 128, 192, 224))
+    pen = QtGui.QPen(QtGui.QBrush(grad), 1)
+    wheel = QtCore.pyqtSignal(object)
+
+    def __init__(self):
+        QtWidgets.QWidget.__init__(self)
+#        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding))
+        self.setFixedWidth(52)
+        self.values = [0] * 50
+
+    def harmonicsChanged(self, values):
+        self.values[:] = values
+        self.update()
+
+    def wheelEvent(self, event):
+        self.wheel.emit(event)
+#        self.wheel.emit(QtGui.QWheelEvent(
+#            QtGui.QCursor.pos(), event.delta(), event.buttons(), event.modifiers(), event.orientation()))
+#        self.wheel.emit(event.delta() / -40.)
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter(self)
+        qp.setRenderHints(qp.Antialiasing)
+        qp.setBrush(QtCore.Qt.black)
+        qp.drawRect(self.rect().adjusted(1, 1, -1, -1))
+        qp.save()
+        qp.setPen(self.pen)
+        qp.translate(1.5, .5)
+        bottom = self.height() - 1
+        ratio = (bottom - 1.) / 2
+        for i, value in enumerate(self.values):
+            if not value:
+                continue
+            qp.save()
+            y = bottom - value * ratio
+            qp.translate(i, y)
+            qp.drawLine(0, 0, 0, bottom - y)
+            qp.restore()
+        qp.restore()
+        qp.setPen(QtCore.Qt.black)
+        qp.setBrush(QtCore.Qt.NoBrush)
+        qp.translate(.5, .5)
+        qp.drawRoundedRect(self.rect().adjusted(0, 0, -1, -1), 2, 2)
+#        qp.drawLine(0, bottom + 1, self.width(), bottom + 1)
+
+
 class HarmonicsScrollArea(QtWidgets.QScrollArea):
+    mousePos = None
+
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QScrollArea.__init__(self, *args, **kwargs)
+        self.miniWidget = MiniHarmonicsWidget()
+        self.addScrollBarWidget(self.miniWidget, QtCore.Qt.AlignRight)
+        scrollBar = self.horizontalScrollBar()
+#        self.miniWidget.wheel.connect(lambda step: scrollBar.setValue(scrollBar.value() + scrollBar.singleStep() * step))
+        self.miniWidget.wheel.connect(lambda ev: QtWidgets.QApplication.sendEvent(scrollBar, ev))
+
+    def setWidget(self, widget):
+        widget.harmonicsChanged.connect(self.miniWidget.harmonicsChanged)
+        QtWidgets.QScrollArea.setWidget(self, widget)
+
+    @property
+    def labelRect(self):
+        try:
+            return self._labelRect
+        except:
+            first = self.widget().sliders[0]
+            self._labelRect = QtCore.QRect(first.mapToParent(first.labelRect.topLeft()), 
+                self.widget().sliders[-1].mapToParent(first.labelRect.topLeft()))
+            return self._labelRect
+
     def mousePressEvent(self, event):
         self.mousePos = event.pos()
         QtWidgets.QScrollArea.mousePressEvent(self, event)
@@ -251,14 +431,18 @@ class HarmonicsScrollArea(QtWidgets.QScrollArea):
         if event.buttons() & (QtCore.Qt.LeftButton | QtCore.Qt.MiddleButton):
             delta = event.pos() - self.mousePos
             if self.horizontalScrollBar().value() < self.horizontalScrollBar().maximum() and \
-                event.pos().x() >= self.rect().right() - 8 and delta.x() > 0:
+                event.pos().x() >= self.rect().right() - 4 and delta.x() > 0:
                     self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() + delta.x())
             elif self.horizontalScrollBar().value() > self.horizontalScrollBar().minimum() and \
-                event.pos().x() <= 8 and delta.x() < 0:
+                event.pos().x() <= 4 and delta.x() < 0:
                     self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() + delta.x())
             else:
                 self.mousePos = event.pos()
-        QtWidgets.QScrollArea.mouseMoveEvent(self, event)
+#        QtWidgets.QScrollArea.mouseMoveEvent(self, event)
+
+    def mouseReleaseEvent(self, event):
+        self.mousePos = None
+        QtWidgets.QScrollArea.mouseReleaseEvent(self, event)
 
     def resizeEvent(self, event):
         left, top, right, bottom = self.getContentsMargins()

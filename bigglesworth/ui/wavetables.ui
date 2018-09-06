@@ -93,7 +93,7 @@
        <bool>true</bool>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <property name="elideMode">
        <enum>Qt::ElideMiddle</enum>
@@ -599,7 +599,9 @@
                 <string>Apply</string>
                </property>
                <property name="icon">
-                <iconset theme="checkbox"/>
+                <iconset theme="checkbox">
+                 <normaloff/>
+                </iconset>
                </property>
               </widget>
              </item>
@@ -1218,8 +1220,7 @@
                  <string>Draw harmonic curves or add them to the existing wave</string>
                 </property>
                 <property name="icon">
-                 <iconset theme="adjustcurves">
-                  <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
+                 <iconset theme="wavetables"/>
                 </property>
                 <property name="checkable">
                  <bool>true</bool>
