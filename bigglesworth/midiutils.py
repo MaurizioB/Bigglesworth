@@ -10,6 +10,9 @@ try:
     ALSA = True
 except:
     ALSA = False
+    #fake alsaseq class to catch exceptions
+    class alsaseq(object):
+        SequencerError = None
 try:
     import rtmidi
 except:
@@ -761,6 +764,8 @@ class Connection(QtCore.QObject):
             self.seq.disconnect_ports(self.src.addr, self.dest.addr)
         except alsaseq.SequencerError:
             print 'Disconnect not successful'
+        except Exception as e:
+            print 'Disconnect not successful\n{}'.format(e)
 
 class Port(QtCore.QObject):
     connection = QtCore.pyqtSignal(object, object)
@@ -825,19 +830,21 @@ class Port(QtCore.QObject):
         if (self.is_duplex and dest.is_duplex) or self.is_output:
             try:
                 self.seq.connect_ports(self.addr, dest.addr)
+            except alsaseq.SequencerError:
+                print('ALSA connection error')
+                return False
             except Exception as e:
                 print('Connection error (output):', e)
-                return False
-            except alsaseq.SequencerError:
                 return False
             return True
         try:
             self.seq.connect_ports(dest.addr, self.addr)
             return True
+        except alsaseq.SequencerError:
+            print('ALSA connection error')
+            return False
         except Exception as e:
             print('Connection error (input):', e)
-            return False
-        except alsaseq.SequencerError:
             return False
 
     def disconnect(self, dest, port=None):
@@ -854,11 +861,15 @@ class Port(QtCore.QObject):
             except alsaseq.SequencerError:
                 print 'Disconnection {} > {} not permitted'.format(self.exp, dest.exp)
                 return
+            except Exception as e:
+                print 'Disconnection {} > {} not permitted\n{}'.format(self.exp, dest.exp, e)
+                return
         try:
             self.seq.disconnect_ports(dest.addr, self.addr)
         except alsaseq.SequencerError:
             print 'Disconnection {} > {} not permitted'.format(dest.exp, self.exp)
-            return
+        except Exception as e:
+            print 'Disconnection {} > {} not permitted\n{}'.format(self.exp, dest.exp, e)
 
     def disconnect_all(self, dir=None, skip_hidden=True):
         if not dir:
@@ -869,6 +880,8 @@ class Port(QtCore.QObject):
                     self.seq.disconnect_ports(conn.src.addr, conn.dest.addr)
                 except alsaseq.SequencerError:
                     print 'Disconnection {} > {} not permitted'.format(conn.src.exp, conn.dest.exp)
+                except Exception as e:
+                    print 'Disconnection {} > {} not permitted\n{}'.format(conn.src.exp, conn.dest.exp, e)
         else:
             if not self.is_duplex and ((dir == OUTPUT and not self.is_output) or (dir == INPUT and not self.is_input)):
                 return
@@ -880,6 +893,8 @@ class Port(QtCore.QObject):
                         self.seq.disconnect_ports(conn.src.addr, conn.dest.addr)
                     except alsaseq.SequencerError:
                         print 'Disconnection {} > {} not permitted'.format(conn.src.exp, conn.dest.exp)
+                    except Exception as e:
+                        print 'Disconnection {} > {} not permitted\n{}'.format(conn.src.exp, conn.dest.exp, e)
             else:
                 for conn in self.connections.input:
                     if skip_hidden and conn.hidden:
@@ -888,6 +903,8 @@ class Port(QtCore.QObject):
                         self.seq.disconnect_ports(conn.src.addr, conn.dest.addr)
                     except alsaseq.SequencerError:
                         print 'Disconnection {} > {} not permitted'.format(conn.src.exp, conn.dest.exp)
+                    except Exception as e:
+                        print 'Disconnection {} > {} not permitted\n{}'.format(conn.src.exp, conn.dest.exp, e)
 
     @property
     def type_str(self):
