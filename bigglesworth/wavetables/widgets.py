@@ -239,6 +239,7 @@ class HarmonicsWidget(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         layout = QtWidgets.QHBoxLayout()
+#        layout.setSizeConstraint(layout.SetFixedSize)
         self.setLayout(layout)
         layout.setSpacing(2)
         self.setContentsMargins(1, 1, 1, 1)
@@ -255,10 +256,10 @@ class HarmonicsWidget(QtWidgets.QWidget):
             slider.selected.connect(self.setSelection)
             slider.drag.connect(self.setOverride)
             self.sliders.append(slider)
+#        self.setFixedSize(self.size())
 
     def setOverride(self, value):
         self.override = value
-        print('override', value)
 
     def setSelection(self, selected):
         if selected:
@@ -348,29 +349,38 @@ class HarmonicsWidget(QtWidgets.QWidget):
         return QtWidgets.QWidget.eventFilter(self, source, event)
 
 
-class MiniHarmonicsWidget(QtWidgets.QWidget):
+class HarmonicsMiniWidget(QtWidgets.QWidget):
     grad = QtGui.QLinearGradient(0, 0, 0, 1)
     grad.setCoordinateMode(grad.StretchToDeviceMode)
     grad.setColorAt(0, QtGui.QColor(0, 128, 192, 128))
     grad.setColorAt(1, QtGui.QColor(0, 128, 192, 224))
     pen = QtGui.QPen(QtGui.QBrush(grad), 1)
-    wheel = QtCore.pyqtSignal(object)
 
-    def __init__(self):
+    def __init__(self, scrollArea, harmonicsWidget):
         QtWidgets.QWidget.__init__(self)
-#        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding))
         self.setFixedWidth(52)
-        self.values = [0] * 50
+        self.scrollArea = scrollArea
+        self.harmonicsWidget = harmonicsWidget
+        harmonicsWidget.harmonicsChanged.connect(self.update)
+        self.scrollArea.horizontalScrollBar().valueChanged.connect(self.resetArea)
+        self.extent = QtCore.QRect(0, 0, 50, self.height())
 
-    def harmonicsChanged(self, values):
-        self.values[:] = values
+    def resetArea(self):
+        left = self.harmonicsWidget.mapFrom(self.scrollArea, self.scrollArea.viewport().geometry().topLeft()).x()
+        right = self.harmonicsWidget.mapFrom(self.scrollArea, self.scrollArea.viewport().geometry().topRight()).x()
+        width = self.harmonicsWidget.width()
+        ratio = 50./width
+        self.extent.setLeft(left * ratio)
+        self.extent.setRight(right * ratio)
         self.update()
+#        print(left, right, self.harmonicsWidget.width())
+
+    @property
+    def values(self):
+        return self.harmonicsWidget.values
 
     def wheelEvent(self, event):
-        self.wheel.emit(event)
-#        self.wheel.emit(QtGui.QWheelEvent(
-#            QtGui.QCursor.pos(), event.delta(), event.buttons(), event.modifiers(), event.orientation()))
-#        self.wheel.emit(event.delta() / -40.)
+        QtWidgets.QApplication.sendEvent(self.scrollArea.horizontalScrollBar(), event)
 
     def paintEvent(self, event):
         qp = QtGui.QPainter(self)
@@ -390,28 +400,23 @@ class MiniHarmonicsWidget(QtWidgets.QWidget):
             qp.translate(i, y)
             qp.drawLine(0, 0, 0, bottom - y)
             qp.restore()
+        qp.setPen(QtCore.Qt.NoPen)
+        qp.setBrush(QtGui.QColor(255, 255, 255, 64))
+        qp.drawRect(self.extent)
         qp.restore()
         qp.setPen(QtCore.Qt.black)
         qp.setBrush(QtCore.Qt.NoBrush)
         qp.translate(.5, .5)
         qp.drawRoundedRect(self.rect().adjusted(0, 0, -1, -1), 2, 2)
-#        qp.drawLine(0, bottom + 1, self.width(), bottom + 1)
 
 
 class HarmonicsScrollArea(QtWidgets.QScrollArea):
     mousePos = None
 
-    def __init__(self, *args, **kwargs):
-        QtWidgets.QScrollArea.__init__(self, *args, **kwargs)
-        self.miniWidget = MiniHarmonicsWidget()
-        self.addScrollBarWidget(self.miniWidget, QtCore.Qt.AlignRight)
-        scrollBar = self.horizontalScrollBar()
-#        self.miniWidget.wheel.connect(lambda step: scrollBar.setValue(scrollBar.value() + scrollBar.singleStep() * step))
-        self.miniWidget.wheel.connect(lambda ev: QtWidgets.QApplication.sendEvent(scrollBar, ev))
-
     def setWidget(self, widget):
-        widget.harmonicsChanged.connect(self.miniWidget.harmonicsChanged)
         QtWidgets.QScrollArea.setWidget(self, widget)
+        self.miniWidget = HarmonicsMiniWidget(self, widget)
+        self.addScrollBarWidget(self.miniWidget, QtCore.Qt.AlignRight)
 
     @property
     def labelRect(self):
@@ -447,6 +452,8 @@ class HarmonicsScrollArea(QtWidgets.QScrollArea):
     def resizeEvent(self, event):
         left, top, right, bottom = self.getContentsMargins()
         self.setMinimumHeight(self.widget().sizeHint().height() + top + bottom)
+        QtWidgets.QScrollArea.resizeEvent(self, event)
+        self.miniWidget.resetArea()
 
 
 class DefaultSlider(QtWidgets.QSlider):
