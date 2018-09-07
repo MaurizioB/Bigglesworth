@@ -93,7 +93,7 @@
        <bool>true</bool>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="elideMode">
        <enum>Qt::ElideMiddle</enum>
@@ -636,12 +636,12 @@
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>191</width>
+                <width>16</width>
                 <height>16</height>
                </rect>
               </property>
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+               <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -1220,7 +1220,9 @@
                  <string>Draw harmonic curves or add them to the existing wave</string>
                 </property>
                 <property name="icon">
-                 <iconset theme="wavetables"/>
+                 <iconset theme="wavetables">
+                  <normaloff/>
+                 </iconset>
                 </property>
                 <property name="checkable">
                  <bool>true</bool>

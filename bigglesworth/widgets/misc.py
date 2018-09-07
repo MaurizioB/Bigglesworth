@@ -2,7 +2,6 @@ from bisect import bisect_left
 
 from Qt import QtCore, QtGui, QtWidgets
 
-
 class DeltaSpin(QtWidgets.QSpinBox):
     delta = 0
 
@@ -544,5 +543,65 @@ class Waiter(QtWidgets.QWidget):
         size = min(self.width(), self.height()) - 1
         self.timerRect = QtCore.QRect((self.width() - size) * .5, (self.height() - size) * .5, size, size)
         self.pen.setWidth(size * .1)
+
+
+class ExpandButton(QtWidgets.QPushButton):
+    _expanded = False
+    expanded = QtCore.pyqtSignal(bool)
+    arrowPath = arrowPathDown = QtGui.QPainterPath()
+    arrowPathDown.moveTo(-6, -3)
+    arrowPathDown.lineTo(0, 3)
+    arrowPathDown.lineTo(6, -3)
+    arrowPathUp = QtGui.QPainterPath()
+    arrowPathUp.moveTo(-6, 3)
+    arrowPathUp.lineTo(0, -3)
+    arrowPathUp.lineTo(6, 3)
+
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QPushButton.__init__(self, *args, **kwargs)
+        self.clicked.connect(self.toggleExpand)
+
+    def toggleExpand(self):
+        self._expanded = not self._expanded
+        self.arrowPath = self.arrowPathUp if self._expanded else self.arrowPathDown
+        self.expanded.emit(self._expanded)
+        self.update()
+
+    def setExpanded(self, expanded):
+        if expanded == self._expanded:
+            return
+        self._expanded = expanded
+        self.arrowPath = self.arrowPathUp if self._expanded else self.arrowPathDown
+        self.update()
+
+    def showEvent(self, event):
+        palette = self.window().palette()
+        self.setPalette(palette)
+        self.setStyleSheet('''
+            ExpandButton {
+                border: 1px solid palette(mid);
+                border-radius: 2px;
+                border-style: outset;
+            }
+            ExpandButton:pressed {
+                border-color: palette(mid);
+                border-style: inset;
+            }
+        ''')
+        self.pen = QtGui.QPen(palette.color(QtGui.QPalette.Mid), 2, cap=QtCore.Qt.RoundCap)
+
+    def paintEvent(self, event):
+        QtWidgets.QPushButton.paintEvent(self, event)
+        qp = QtGui.QPainter(self)
+        qp.setPen(self.pen)
+        width = self.width()
+        count = width / 64
+        ratio = width / count
+        left = int(width - ratio * count + ratio * .5) + .5
+        ratio = int(ratio)
+        qp.translate(left, self.height() / 2 - .5)
+        for i in range(count):
+            qp.drawPath(self.arrowPath)
+            qp.translate(ratio, 0)
 
 

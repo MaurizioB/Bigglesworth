@@ -867,6 +867,8 @@ class EditorWindow(QtWidgets.QMainWindow):
         except Exception as e:
             print(e)
 
+        self.expandMixerBtn.expanded.connect(self.expandMixer)
+
         self.osc1ShapeWidget = OscShapeWidget(self, self.osc1Shape, self.osc1Pulsewidth)
         self.osc2ShapeWidget = OscShapeWidget(self, self.osc2Shape, self.osc2Pulsewidth)
 
@@ -877,6 +879,9 @@ class EditorWindow(QtWidgets.QMainWindow):
     def activate(self):
         self.show()
         self.activateWindow()
+
+    def expandMixer(self, expand):
+        self.ampFrame.setVisible(not expand)
 
     def showModMatrix(self):
         if not self.modMatrixView:
@@ -1718,8 +1723,10 @@ class EditorWindow(QtWidgets.QMainWindow):
             self.modMatrixCover.resize(self.centralWidget().size())
             self.repaintModMatrixCover()
             self.modMatrixView.resize(self.centralWidget().size())
-#        if self.ModMatrixView and self.ModMatrixView.isVisible():
-#            self.ModMatrixView.resize(self.centralWidget().size())
-#        print(self.osc1Shape.mapTo(self.centralWidget(), self.osc1Shape.rect().topLeft()))
+        expand = self.height() < 760
+        if not expand:
+            self.expandMixerBtn.setExpanded(False)
+            self.ampFrame.setVisible(True)
+        self.expandMixerBtn.setVisible(expand)
 
 

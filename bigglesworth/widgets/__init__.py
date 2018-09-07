@@ -13,7 +13,7 @@ from bigglesworth.widgets.filters import FilterNameEdit, FilterTagsEdit
 from bigglesworth.widgets.libraryviews import LibraryWidget, CollectionWidget, LibraryTableView, CollectionTableView
 from bigglesworth.widgets.librarytabwidgets import LeftTabBar, RightTabBar, LeftTabWidget, RightTabWidget
 from bigglesworth.widgets.misc import (MidiStatusBarWidget, MidiInWidget, MidiOutWidget, 
-    VerticalLabel, DeltaSpin, DeviceIdSpin, DevicePopupSpin, Waiter)
+    VerticalLabel, DeltaSpin, DeviceIdSpin, DevicePopupSpin, Waiter, ExpandButton)
 from bigglesworth.widgets.display import BlofeldDisplay
 from bigglesworth.widgets.graphicsbuttons import GraphicsButton, CloseBtn
 from bigglesworth.widgets.arpeggiator import ArpeggiatorDisplay

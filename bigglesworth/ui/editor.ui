@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1089</width>
-    <height>708</height>
+    <height>719</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -22,6 +22,12 @@
      <layout class="QVBoxLayout" name="leftLayout">
       <item>
        <widget class="Frame" name="mixerFrame">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="label" stdset="0">
          <string>Mixer</string>
         </property>
@@ -38,6 +44,13 @@
          <property name="spacing">
           <number>4</number>
          </property>
+         <item row="1" column="2">
+          <widget class="Slider" name="mixerOsc3Level">
+           <property name="label" stdset="0">
+            <string>OSC 3</string>
+           </property>
+          </widget>
+         </item>
          <item row="1" column="0">
           <widget class="Slider" name="mixerOsc1Level">
            <property name="label" stdset="0">
@@ -45,8 +58,8 @@
            </property>
           </widget>
          </item>
-         <item row="2" column="0">
-          <widget class="Dial" name="mixerOsc1Balance">
+         <item row="2" column="2">
+          <widget class="Dial" name="mixerOsc3Balance">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
              <horstretch>0</horstretch>
@@ -58,8 +71,48 @@
            </property>
           </widget>
          </item>
-         <item row="2" column="1">
-          <widget class="Dial" name="mixerOsc2Balance">
+         <item row="0" column="1">
+          <spacer name="verticalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::Maximum</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>10</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="0" column="4" rowspan="2">
+          <layout class="QVBoxLayout" name="verticalLayout_6">
+           <item>
+            <widget class="Dial" name="mixerNoiseColour">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="label" stdset="0">
+              <string>Colour</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="Slider" name="mixerNoiseLevel">
+             <property name="label" stdset="0">
+              <string>Noise</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="2" column="4">
+          <widget class="Dial" name="mixerNoiseBalance">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
              <horstretch>0</horstretch>
@@ -78,6 +131,19 @@
            </property>
           </widget>
          </item>
+         <item row="2" column="1">
+          <widget class="Dial" name="mixerOsc2Balance">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="label" stdset="0">
+            <string>Bal</string>
+           </property>
+          </widget>
+         </item>
          <item row="1" column="3">
           <widget class="Slider" name="mixerRingModLevel">
            <property name="label" stdset="0">
@@ -85,15 +151,8 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="2">
-          <widget class="Slider" name="mixerOsc3Level">
-           <property name="label" stdset="0">
-            <string>OSC 3</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="2">
-          <widget class="Dial" name="mixerOsc3Balance">
+         <item row="2" column="0">
+          <widget class="Dial" name="mixerOsc1Balance">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
              <horstretch>0</horstretch>
@@ -118,58 +177,15 @@
            </property>
           </widget>
          </item>
-         <item row="2" column="5">
-          <widget class="Dial" name="mixerNoiseBalance">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="label" stdset="0">
-            <string>Bal</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="5" rowspan="2">
-          <layout class="QVBoxLayout" name="verticalLayout_6">
-           <item>
-            <widget class="Dial" name="mixerNoiseColour">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="label" stdset="0">
-              <string>Colour</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="Slider" name="mixerNoiseLevel">
-             <property name="label" stdset="0">
-              <string>Noise</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item row="0" column="1">
-          <spacer name="verticalSpacer_2">
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-           <property name="sizeType">
-            <enum>QSizePolicy::Maximum</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
+         <item row="3" column="0" colspan="5">
+          <widget class="ExpandButton" name="expandMixerBtn">
+           <property name="maximumSize">
             <size>
-             <width>20</width>
-             <height>10</height>
+             <width>16777215</width>
+             <height>16</height>
             </size>
            </property>
-          </spacer>
+          </widget>
          </item>
         </layout>
        </widget>
@@ -3487,6 +3503,11 @@
   <customwidget>
    <class>VerticalLabel</class>
    <extends>QLabel</extends>
+   <header>bigglesworth.widgets</header>
+  </customwidget>
+  <customwidget>
+   <class>ExpandButton</class>
+   <extends>QPushButton</extends>
    <header>bigglesworth.widgets</header>
   </customwidget>
  </customwidgets>
