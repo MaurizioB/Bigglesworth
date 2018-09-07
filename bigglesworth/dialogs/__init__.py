@@ -19,3 +19,4 @@ from bigglesworth.dialogs.duplicates import FindDuplicates
 from bigglesworth.dialogs.soundexport import SoundExport
 from bigglesworth.dialogs.soundlistexport import SoundListExport
 from bigglesworth.dialogs.midichart import MidiChartDialog
+from bigglesworth.dialogs.mididuplicate import MidiDuplicateDialog

@@ -57,7 +57,7 @@ from bigglesworth.mainwindow import MainWindow
 from bigglesworth.themes import ThemeCollection
 from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, GlobalsDialog, 
     DumpReceiveDialog, DumpSendDialog, WarningMessageBox, SmallDumper, FirstRunWizard, LogWindow, 
-    BlofeldDumper, FindDuplicates, SoundImport, SoundExport, SoundListExport)
+    BlofeldDumper, FindDuplicates, SoundImport, SoundExport, SoundListExport, MidiDuplicateDialog)
 #from bigglesworth.utils import localPath
 from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR, LogInfo, factoryPresets, factoryPresetsNamesDict
 from bigglesworth.midiutils import SYSEX, CTRL, NOTEOFF, NOTEON, PROGRAM, SysExEvent
@@ -127,6 +127,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.logger.append(LogInfo, 'Physical DPI: {}x{}'.format(self.splash.physicalDpiX(), self.splash.physicalDpiY()))
         self.logger.append(LogInfo, 'Logical DPI: {}x{}'.format(self.splash.logicalDpiX(), self.splash.logicalDpiY()))
 
+        self.lastMidiEvent = None
     
     def startUp(self):
         self.loggerWindow = LogWindow(self)
@@ -179,6 +180,9 @@ class Bigglesworth(QtWidgets.QApplication):
         self.midiDevice.moveToThread(self.midiThread)
         self.midiDevice.stopped.connect(self.midiThread.quit)
         self.midiThread.started.connect(self.midiDevice.run)
+
+        self.midiDuplicateDialog = MidiDuplicateDialog(self)
+        self.midiDuplicateDialog.midiWidget.midiConnect.connect(self.midiConnect)
 
         self.seq = self.midiDevice.seq
         self.input = self.midiDevice.input
@@ -282,7 +286,7 @@ class Bigglesworth(QtWidgets.QApplication):
 
         self.settingsDialog = SettingsDialog(self, self.mainWindow)
         self.settingsDialog.midiEvent.connect(self.sendMidiEvent)
-        self.settingsDialog.midiConnectionsWidget.setMain(self)
+#        self.settingsDialog.midiConnectionsWidget.setMain(self)
         self.settingsDialog.midiConnectionsWidget.midiConnect.connect(self.midiConnect)
         self.settingsDialog.themeChanged.connect(self.editorWindow.setTheme)
         self.editorWindow.setTheme(self.themes.current)
@@ -499,9 +503,20 @@ class Bigglesworth(QtWidgets.QApplication):
                 port.disconnect(self.input)
 
     def midiEventReceived(self, event):
-        print('midi event received', event, 'source:', event.source, self.graph.port_id_dict[event.source[0]][event.source[1]])
         if event.source[0] == self.midiDevice.output.client.id:
             return
+        print('midi event received', event, 'source:', event.source, self.graph.port_id_dict[event.source[0]][event.source[1]])
+        if event == self.lastMidiEvent and self.lastMidiEvent.source != event.source:
+            if self.startTimer.elapsed() - self.lastMidiTime < 200:
+                self.midiDuplicateDialog.activate(self.dumpBlock, set((self.lastMidiEvent.source, event.source)))
+                self.lastMidiEvent = event
+                self.lastMidiTime = self.startTimer.elapsed()
+                return
+            else:
+                self.midiDuplicateDialog.dismissed = False
+                
+        self.lastMidiEvent = event
+        self.lastMidiTime = self.startTimer.elapsed()
         if self.globalsBlock:
             return
         elif self.dumpBlock:

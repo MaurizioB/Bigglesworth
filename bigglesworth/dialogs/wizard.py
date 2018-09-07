@@ -382,7 +382,7 @@ class FirstRunWizard(QtWidgets.QWizard):
         self.setModal(False)
         self.main = main
         self.main.logger.append(LogInfo, 'First-run wizard started')
-        self.midiConnectionsWidget.setMain(main)
+#        self.midiConnectionsWidget.setMain(main)
         self.autoconnectPage.main = main
         self.autoconnectPage.graph = main.graph
         self.autoconnectPage.logger = self.logger

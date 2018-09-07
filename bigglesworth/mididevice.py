@@ -201,6 +201,7 @@ class RtMidiSequencer(QtCore.QObject):
                 }
 
     def connect_ports(self, source, dest, *args):
+        print('\n\nports:\n{}\n\nconnections:\n{}'.format(self.ports[INPUT], self.connections))
         source = source[0]
         dest = dest[0]
         if source == 1:
@@ -234,6 +235,7 @@ class RtMidiSequencer(QtCore.QObject):
                 self.connections[port] = source_name
                 self.conn_created.emit({'connect.sender.client': source, 'connect.sender.port': 0, 'connect.dest.client': 0, 'connect.dest.port': 0})
             except:
+                self.connections[port] = None
                 print('connection not created')
 
     def error_callback(self, errType, errMsg, data):

@@ -552,6 +552,11 @@ class MidiEvent(object):
         event.source = (0, port)
         return event
 
+    def __eq__(self, other):
+        return isinstance(other, type(self)) and \
+            self.type == other.type and self.port == other.port and self.channel == other.channel and \
+            self.data1 == other.data1 and self.data2 == other.data2 and self._sysex == other._sysex
+
     def __repr__(self):
         return self.__rstr[self.type].format(cls=self.__tstr[self._type],
                                   p=self.port, c=self.channel,

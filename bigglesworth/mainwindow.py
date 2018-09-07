@@ -39,7 +39,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.midiWidget.setMidiDevice(self.main.midiDevice)
         self.main.midiConnChanged.connect(self.midiWidget.midiConnChanged)
         self.main.midiEventSent.connect(self.midiWidget.midiEventSent)
-        self.midiWidget.midiConnChanged(*self.main.connections)
+        inConn, outConn = self.main.connections
+        self.midiWidget.midiConnChanged(inConn, outConn, True)
         self.midiWidget.midiConnect.connect(self.midiConnect)
         self.statusbar.addPermanentWidget(self.midiWidget)
         self.statusbar.setDatabase(parent.database)

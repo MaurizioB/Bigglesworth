@@ -31,6 +31,9 @@
      <property name="rootIsDecorated">
       <bool>false</bool>
      </property>
+     <property name="uniformRowHeights">
+      <bool>true</bool>
+     </property>
      <property name="expandsOnDoubleClick">
       <bool>false</bool>
      </property>
@@ -53,6 +56,9 @@
      </property>
      <property name="rootIsDecorated">
       <bool>false</bool>
+     </property>
+     <property name="uniformRowHeights">
+      <bool>true</bool>
      </property>
      <property name="expandsOnDoubleClick">
       <bool>false</bool>
