@@ -194,7 +194,7 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
         if index.data(QtCore.Qt.CheckStateRole):
             painter.setPen(self.select_pen)
             painter.setBrush(self.select_brush)
-            painter.translate(self.square.left(), self.square.top())
+#            painter.translate(self.square.left(), self.square.top())
             painter.drawPath(self.path)
         painter.restore()
 

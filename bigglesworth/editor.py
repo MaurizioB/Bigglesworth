@@ -6,7 +6,7 @@ from collections import namedtuple
 
 from Qt import QtCore, QtGui, QtWidgets, QtSql
 
-from bigglesworth.utils import loadUi, localPath, getName, getChar, Enum, setBold
+from bigglesworth.utils import loadUi, getName, getChar, Enum, setBold, sanitize
 from bigglesworth.const import (chr2ord, UidColumn, LocationColumn, 
     INIT, IDW, IDE, SNDP, END, templateGroupDict)
 from bigglesworth.parameters import Parameters, fullRangeCenterZero, driveCurves, arpLength, ctrl2sysex
@@ -95,6 +95,37 @@ _effects = [
 
 
 MidiIn, MidiOut = range(2)
+
+
+class UndoView(QtWidgets.QUndoView):
+    def __init__(self, parent):
+        QtWidgets.QUndoView.__init__(self, parent.undoStack, parent)
+        self.setWindowFlags(self.windowFlags() | QtCore.Qt.Window | QtCore.Qt.Tool)
+        self.setWindowTitle('Bigglesworth editor undo list')
+        self.setEmptyLabel('"Init" clean status')
+        self.setCleanIcon(QtGui.QIcon.fromTheme('document-new'))
+        self.undoStack = parent.undoStack
+        self.undoStack.cleanChanged.connect(self.cleanChanged)
+
+    def cleanChanged(self, clean):
+        if clean:
+            if self.undoStack.cleanIndex():
+                self.setCleanIcon(QtGui.QIcon.fromTheme('document-save'))
+            else:
+                self.setCleanIcon(QtGui.QIcon.fromTheme('document-new'))
+
+    def showEvent(self, event):
+        if not event.spontaneous():
+            QtWidgets.QApplication.processEvents()
+            desktop = QtWidgets.QApplication.desktop().availableGeometry(self.parent())
+            parent = self.parent().geometry()
+            left = parent.left() - desktop.left()
+            right = desktop.right() - parent.right()
+            x = desktop.left() if left > right else parent.right()
+            x = sanitize(desktop.left(), x, desktop.right() - self.width())
+            y = sanitize(desktop.top(), parent.top(), desktop.bottom() - self.height())
+            self.move(x, y)
+
 
 
 class FilterRoutingDisplay(QtWidgets.QWidget):
@@ -595,12 +626,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.undoStack.indexChanged.connect(self.editStatusCheck)
         self.undoStack.cleanChanged.connect(self.editStatusCheck)
 
-        self.undoView = QtWidgets.QUndoView(self.undoStack)
-        self.undoView.setParent(self)
-        self.undoView.setWindowFlags(self.undoView.windowFlags() | QtCore.Qt.Window | QtCore.Qt.Tool)
-        self.undoView.setCleanIcon(QtGui.QIcon.fromTheme('document-new'))
-        self.undoView.setEmptyLabel('"Init" clean status')
-        self.undoView.setWindowTitle('Bigglesworth editor undo list')
+        self.undoView = UndoView(self)
 #        self.undoView.show()
 
         self.display.undoBtn.undoRequest.connect(self.undoUpdate)
@@ -1202,7 +1228,7 @@ class EditorWindow(QtWidgets.QMainWindow):
             text = '{} reset to "{}"'.format(cmd.actionText(), cmd.oldText)
         elif isinstance(cmd, ValueUndo):
             text = '{} reset to {}'.format(cmd.actionText(), cmd.oldValueStr)
-        elif cmd.text() == 'Sound INITed':
+        else:
             text = 'Sound reset to previous values'
 #            self.display.nameEdit.setText('stocazzo')
         self.display.setStatusText(text)
@@ -1217,6 +1243,8 @@ class EditorWindow(QtWidgets.QMainWindow):
             text = '{} restored to {}'.format(cmd.actionText(), cmd.valueStr)
         elif cmd.text() == 'Sound INITed':
             text = 'Sound re-INITed'
+        else:
+            text = cmd.text()
 #            self.display.nameEdit.setText('')
         self.display.setStatusText(text)
 
@@ -1337,7 +1365,7 @@ class EditorWindow(QtWidgets.QMainWindow):
             oldName = self.database.getNameFromUid(self.currentUid)
             if not self.database.isUidWritable(self.currentUid):
                 return self.saveAs(True)
-            if self._editStatus == self.Modified:
+            if self._editStatus == self.Modified or not self.undoStack.isClean():
                 saved = self.database.updateSound(self.currentUid, self.parameters)
                 if self.database.getNameFromUid(self.currentUid) != oldName:
                     self.soundNameChanged.emit(self.currentUid)
@@ -1605,18 +1633,6 @@ class EditorWindow(QtWidgets.QMainWindow):
         if res and res.data():
             self.openSoundFromMenu(res)
 
-    def randomizeAll(self):
-        if self.display.editStatusWidget.status:
-            pass
-        for param in Parameters.parameterData:
-            if param.attr.startswith('reserved'):
-                continue
-            if param.children:
-                for child in param.children.values():
-                    setattr(self.parameters, child.attr, randrange(child.range.minimum, child.range.maximum + 1, child.range.step))
-            else:
-                setattr(self.parameters, param.attr, randrange(param.range.minimum, param.range.maximum + 1, param.range.step))
-
     def initNew(self):
         if self._editStatus == self.Modified or self.setFromDump:
             if self._editStatus == self.Modified:
@@ -1654,12 +1670,27 @@ class EditorWindow(QtWidgets.QMainWindow):
 #        self.undoView.setEmptyLabel('"{}" clean status'.format(name))
         self.display.setStatusText('Sound INITed'.format(name))
 
+    def randomizeAll(self):
+        if self.display.editStatusWidget.status:
+            pass
+        self.undoStack.beginMacro('Sound randomized')
+        for param in Parameters.parameterData:
+            if param.attr.startswith('reserved'):
+                continue
+            if param.children:
+                for child in param.children.values():
+                    setattr(self.parameters, child.attr, randrange(child.range.minimum, child.range.maximum + 1, child.range.step))
+            else:
+                setattr(self.parameters, param.attr, randrange(param.range.minimum, param.range.maximum + 1, param.range.step))
+        self.undoStack.endMacro()
+        self.display.setStatusText('Sound randomized')
+
     def randomizeCustom(self):
         randomDialog = RandomDialog()
-        res = randomDialog.exec_()
-        if not res:
+        if not randomDialog.exec_():
             return
         paramList = randomDialog.getChecked()
+        self.undoStack.beginMacro('{} parameters randomized'.format(len(paramList)))
         for param in Parameters.parameterData:
             if param.id not in paramList or param.attr.startswith('reserved'):
                 continue
@@ -1668,6 +1699,8 @@ class EditorWindow(QtWidgets.QMainWindow):
                     setattr(self.parameters, child.attr, randrange(child.range.minimum, child.range.maximum + 1, child.range.step))
             else:
                 setattr(self.parameters, param.attr, randrange(param.range.minimum, param.range.maximum + 1, param.range.step))
+        self.undoStack.endMacro()
+        self.display.setStatusText('{} parameters randomized'.format(len(paramList)))
 
     def closeEvent(self, event):
         QtWidgets.QMainWindow.closeEvent(self, event)

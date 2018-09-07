@@ -39,8 +39,14 @@ class SelectorWidget(QtWidgets.QFrame):
         self.halfHeight = height * .5
         self.allFont.setPointSize(self.halfHeight - 3)
         self.itemFont = self.font()
-        self.itemFont.setPointSize(height * .35)
+        itemHeight = height * .35
+        self.itemFont.setPointSizeF(itemHeight)
         self.hRatio = (self.width() - 1) / (float(self.half) + 3)
+        itemMetrics = QtGui.QFontMetricsF(self.itemFont)
+        while itemMetrics.width('16') > self.hRatio:
+            itemHeight -= .5
+            self.itemFont.setPointSizeF(itemHeight)
+            itemMetrics = QtGui.QFontMetricsF(self.itemFont)
         self.left = left = self.hRatio * 3 + 1
         self.allRect = QtCore.QRect(0, 0, left, height)
         topRects = []
@@ -63,13 +69,6 @@ class SelectorWidget(QtWidgets.QFrame):
         return QtCore.QSize(150, 40)
 
     def resizeEvent(self, event):
-#        width = self.width()
-#        height = self.height()
-#        if width > height * 5:
-#            height = width * .2
-#        elif width < height * 5:
-#            width = height * 5
-#        self.resize(width, height)
         self.rebuild()
 
     @property

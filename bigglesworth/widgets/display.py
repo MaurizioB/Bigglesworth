@@ -493,7 +493,7 @@ class DisplayBtn(QtWidgets.QPushButton):
                 border-top: 1px solid palette(midlight);
                 border-bottom: 1px solid palette(mid);
                 background: rgba(220, 220, 180, 65);
-                min-width: 40px;
+                min-width: 30px;
             }
             DisplayBtn::menu-indicator {
                 subcontrol-origin: margin;
