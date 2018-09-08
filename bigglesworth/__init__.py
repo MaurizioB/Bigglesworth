@@ -1,7 +1,9 @@
 #!/usr/bin/env python2.7
 
-from __future__ import print_function
+#from __future__ import print_function
 import os, sys
+from time import sleep
+from Queue import Queue
 from string import uppercase
 sys.path.append(os.path.join(os.path.dirname(__file__), 'bigglesworth/editorWidgets'))
 os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
@@ -74,6 +76,31 @@ class SqlTableModelFix(QtSql.QSqlTableModel):
         self.modelReset.emit()
         return res
 
+class SessionWatcher(QtCore.QObject):
+    activate = QtCore.pyqtSignal()
+    def __init__(self, pid, pidFile):
+        QtCore.QObject.__init__(self)
+        self.pid = pid
+        self.pidFile = pidFile
+        self.watcher = QtCore.QFileSystemWatcher([self.pidFile.fileName()])
+        self.watcher.fileChanged.connect(self.callback)
+        self.waiter = Queue()
+
+    def quit(self):
+        self.waiter.put(1)
+
+    def start(self):
+        self.waiter.get(True)
+        self.pidFile.remove()
+
+    def callback(self):
+        self.pidFile.open(QtCore.QIODevice.ReadWrite)
+        if self.pidFile.read(100) != self.pid:
+            self.activate.emit()
+            self.pidFile.seek(0)
+            self.pidFile.write(self.pid)
+        self.pidFile.close()
+
 
 class Bigglesworth(QtWidgets.QApplication):
     progSendToggled = QtCore.pyqtSignal(bool)
@@ -86,20 +113,66 @@ class Bigglesworth(QtWidgets.QApplication):
     def __init__(self, argparse, args):
         QtWidgets.QApplication.__init__(self, ['Bigglesworth'] + args)
 #        self.setEffectEnabled(QtCore.Qt.UI_AnimateCombo, False)
+        self.setOrganizationName('jidesk')
+        self.setApplicationName('Bigglesworth')
+
         self.startTimer = QtCore.QElapsedTimer()
         self.startTimer.start()
         self.argparse = argparse
         self._arguments = args
-        self.setOrganizationName('jidesk')
-        self.setApplicationName('Bigglesworth')
-        self.settings = QtCore.QSettings()
-        logo = QtGui.QIcon(':/images/bigglesworth_logo_whitebg.svg')
-        self.setWindowIcon(logo)
+
+        self.lastActiveWindows = []
+        self.lastMidiEvent = None
+        self.firstRunWizard = None
+        self.firstRunObject = None
+        self.globalsBlock = False
+        self.dumpBlock = False
+        self.dumpBuffer = []
+        self.watchedDialogs = []
+
+        pidPath = QtCore.QDir(QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.TempLocation))
+        self.pid = str(self.applicationPid())
+        self.pidFile = QtCore.QFile(pidPath.filePath('.Bigglesworth.pid'))
+        existing = self.pidFile.exists()
+        if existing:
+            if QtCore.QFileInfo(self.pidFile).lastModified().secsTo(QtCore.QDateTime.currentDateTime()) < 5:
+                print('Recent pid file found, quitting')
+                QtCore.QTimer.singleShot(0, self.quit)
+                return
+        self.pidFile.open(QtCore.QIODevice.WriteOnly)
+        self.pidFile.write(self.pid)
+        self.pidFile.close()
+        if existing:
+            print('Existing pid file found, waiting...')
+            sleep(2)
+            self.pidFile.open(QtCore.QIODevice.ReadOnly)
+            newPid = self.pidFile.read(100)
+            self.pidFile.close()
+            if newPid != self.pid:
+                print('Bigglesworth is already running, quitting')
+                QtCore.QTimer.singleShot(0, self.quit)
+                return
+        self.watcher = SessionWatcher(self.pid, self.pidFile)
+        self.watcherThread = QtCore.QThread()
+        self.watcher.moveToThread(self.watcherThread)
+        self.watcherThread.started.connect(self.watcher.start)
+        self.watcher.activate.connect(self.activateTopMost)
+
+        self.splash = SplashScreen()
+        self.splash.start()
+
+        self.logger = Logger(self)
+        self.logger.append(LogInfo, 'Physical DPI: {}x{}'.format(self.splash.physicalDpiX(), self.splash.physicalDpiY()))
+        self.logger.append(LogInfo, 'Logical DPI: {}x{}'.format(self.splash.logicalDpiX(), self.splash.logicalDpiY()))
 
         QtGui.QFontDatabase.addApplicationFont(':/fonts/DroidSansFallback.ttf')
         QtGui.QFontDatabase.addApplicationFont(':/fonts/FiraSans-Regular.ttf')
         QtGui.QFontDatabase.addApplicationFont(':/fonts/OPTIAlpine_Bold.otf')
 
+        logo = QtGui.QIcon(':/images/bigglesworth_logo_whitebg.svg')
+        self.setWindowIcon(logo)
+
+        self.settings = QtCore.QSettings()
         self.settings.beginGroup('MIDI')
         rtmidi = self.settings.value('rtmidi', 0 if 'linux' in sys.platform else 1, int)
         if self.argparse.rtmidi:
@@ -114,21 +187,27 @@ class Bigglesworth(QtWidgets.QApplication):
         self._chanSend = self.settings.value('chanSend', set((0, )), set)
         self.settings.endGroup()
 
-        self.firstRunWizard = None
-        self.firstRunObject = None
-        self.globalsBlock = False
-        self.dumpBlock = False
-        self.dumpBuffer = []
-        self.watchedDialogs = []
+        self.aboutToQuit.connect(self.closeSession)
 
-        self.splash = SplashScreen()
-        self.splash.start()
-        self.logger = Logger(self)
-        self.logger.append(LogInfo, 'Physical DPI: {}x{}'.format(self.splash.physicalDpiX(), self.splash.physicalDpiY()))
-        self.logger.append(LogInfo, 'Logical DPI: {}x{}'.format(self.splash.logicalDpiX(), self.splash.logicalDpiY()))
+    def closeSession(self):
+        #maybe not necessary?
+        try:
+            self.watcher.quit()
+        except:
+            pass
+        self.pidFile.remove()
 
-        self.lastMidiEvent = None
-    
+    def activateTopMost(self):
+        try:
+            for window in reversed(self.lastActiveWindows):
+                if window.isVisible():
+                    window.activateWindow()
+                    break
+            else:
+                self.mainWindow.activate()
+        except:
+            pass
+
     def startUp(self):
         self.loggerWindow = LogWindow(self)
         if self.argparse.log:
@@ -967,6 +1046,10 @@ class Bigglesworth(QtWidgets.QApplication):
 
     def exec_(self):
         #TODO: fix, maybe with some polished signal from the splash?
-        self.splash.showMessage('Starting up...', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .1)
-        QtCore.QTimer.singleShot(150, self.startUp)
+        try:
+            self.splash.showMessage('Starting up...', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .1)
+            QtCore.QTimer.singleShot(150, self.startUp)
+        except:
+            #existing instance found, will quit...
+            pass
         return QtWidgets.QApplication.exec_()
