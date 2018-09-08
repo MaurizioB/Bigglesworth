@@ -198,6 +198,7 @@ class MidiConnectionsWidget(QtWidgets.QWidget):
         self.outputModel.clear()
         inConn = 0
         outConn = 0
+        portFlags = QtCore.Qt.ItemIsEnabled|QtCore.Qt.ItemIsEditable
         for client in [self.main.graph.client_id_dict[cid] for cid in sorted(self.main.graph.client_id_dict.keys())]:
             if client in (self.main.midiDevice.input.client, self.main.midiDevice.output.client):
                 continue
@@ -217,6 +218,7 @@ class MidiConnectionsWidget(QtWidgets.QWidget):
                     clientItem.setEnabled(False)
                 for port in in_ports:
                     portItem = QtGui.QStandardItem(port.name)
+                    portItem.setFlags(portFlags)
                     connected = any([True for conn in port.connections.input if conn.src == self.main.midiDevice.output])
                     setBold(portItem, connected)
                     if connected:
@@ -238,6 +240,7 @@ class MidiConnectionsWidget(QtWidgets.QWidget):
                     clientItem.setEnabled(False)
                 for port in out_ports:
                     portItem = QtGui.QStandardItem(port.name)
+                    portItem.setFlags(portFlags)
                     connected = any([True for conn in port.connections.output if conn.dest == self.main.midiDevice.input])
                     setBold(portItem, connected)
                     if connected:

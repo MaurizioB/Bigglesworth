@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="mainTab">
       <attribute name="title">
@@ -364,7 +364,7 @@
       </attribute>
       <layout class="QGridLayout" name="gridLayout_10">
        <item row="4" column="1">
-        <widget class="QGroupBox" name="groupBox_5">
+        <widget class="QGroupBox" name="backendGroupBox">
          <property name="title">
           <string>MIDI backend</string>
          </property>
@@ -416,6 +416,13 @@
            <widget class="QCheckBox" name="autoconnectRememberChk">
             <property name="text">
              <string>Try to remember MIDI connections</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="autoconnectClearChk">
+            <property name="text">
+             <string>Clear saved connections</string>
             </property>
            </widget>
           </item>

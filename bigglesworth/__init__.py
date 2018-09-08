@@ -61,7 +61,7 @@ from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, 
     DumpReceiveDialog, DumpSendDialog, WarningMessageBox, SmallDumper, FirstRunWizard, LogWindow, 
     BlofeldDumper, FindDuplicates, SoundImport, SoundExport, SoundListExport, MidiDuplicateDialog)
 #from bigglesworth.utils import localPath
-from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR, LogInfo, factoryPresets, factoryPresetsNamesDict
+from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR, LogInfo, LogWarning, factoryPresets, factoryPresetsNamesDict
 from bigglesworth.midiutils import SYSEX, CTRL, NOTEOFF, NOTEON, PROGRAM, SysExEvent
 
 from bigglesworth.mididevice import MidiDevice
@@ -91,10 +91,11 @@ class SessionWatcher(QtCore.QObject):
 
     def start(self):
         self.waiter.get(True)
+        self.watcher.fileChanged.disconnect()
         self.pidFile.remove()
 
     def callback(self):
-        self.pidFile.open(QtCore.QIODevice.ReadWrite)
+        self.pidFile.open(QtCore.QIODevice.ReadWrite|QtCore.QIODevice.Text)
         if self.pidFile.read(100) != self.pid:
             self.activate.emit()
             self.pidFile.seek(0)
@@ -123,6 +124,7 @@ class Bigglesworth(QtWidgets.QApplication):
 
         self.lastActiveWindows = []
         self.lastMidiEvent = None
+        self.disconnectionQueue = set()
         self.firstRunWizard = None
         self.firstRunObject = None
         self.globalsBlock = False
@@ -130,7 +132,12 @@ class Bigglesworth(QtWidgets.QApplication):
         self.dumpBuffer = []
         self.watchedDialogs = []
 
-        pidPath = QtCore.QDir(QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.TempLocation))
+        self.logger = Logger(self)
+
+        if QtCore.QFile.exists(QtCore.QDir.tempPath()):
+            pidPath = QtCore.QDir(QtCore.QDir.tempPath())
+        else:
+            pidPath = QtCore.QDir(QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.DataLocation))
         self.pid = str(self.applicationPid())
         self.pidFile = QtCore.QFile(pidPath.filePath('.Bigglesworth.pid'))
         existing = self.pidFile.exists()
@@ -139,13 +146,19 @@ class Bigglesworth(QtWidgets.QApplication):
                 print('Recent pid file found, quitting')
                 QtCore.QTimer.singleShot(0, self.quit)
                 return
-        self.pidFile.open(QtCore.QIODevice.WriteOnly)
-        self.pidFile.write(self.pid)
+        self.pidFile.open(QtCore.QIODevice.WriteOnly|QtCore.QIODevice.Text)
+        written = self.pidFile.write(self.pid)
+        if written > 0:
+            print('pidFile ok! ({})'.format(self.pidFile.fileName()))
+            self.logger.append(LogInfo, 'PID file created', self.pidFile.fileName())
+        else:
+            print('pidFile not written: {} ({})'.format(self.pidFile.errorString(), self.pidFile.fileName()))
+            self.logger.append(LogWarning, 'PID file not created', self.pidFile.fileName())
         self.pidFile.close()
         if existing:
             print('Existing pid file found, waiting...')
             sleep(2)
-            self.pidFile.open(QtCore.QIODevice.ReadOnly)
+            self.pidFile.open(QtCore.QIODevice.ReadOnly|QtCore.QIODevice.Text)
             newPid = self.pidFile.read(100)
             self.pidFile.close()
             if newPid != self.pid:
@@ -156,12 +169,12 @@ class Bigglesworth(QtWidgets.QApplication):
         self.watcherThread = QtCore.QThread()
         self.watcher.moveToThread(self.watcherThread)
         self.watcherThread.started.connect(self.watcher.start)
+        self.watcher.activate.connect(lambda: self.logger.append(LogInfo, 'Attempt to start another session catched'))
         self.watcher.activate.connect(self.activateTopMost)
 
         self.splash = SplashScreen()
         self.splash.start()
 
-        self.logger = Logger(self)
         self.logger.append(LogInfo, 'Physical DPI: {}x{}'.format(self.splash.physicalDpiX(), self.splash.physicalDpiY()))
         self.logger.append(LogInfo, 'Logical DPI: {}x{}'.format(self.splash.logicalDpiX(), self.splash.logicalDpiY()))
 
@@ -500,7 +513,6 @@ class Bigglesworth(QtWidgets.QApplication):
             [conn for conn in self.midiDevice.output.connections.output if not conn.hidden])
 
     def midiConnEvent(self, conn, state):
-        print('connection event', conn, state)
         if conn.hidden or (conn.dest != self.midiDevice.input and conn.src != self.midiDevice.output):
             return
         if conn.src == self.midiDevice.output:
@@ -525,21 +537,27 @@ class Bigglesworth(QtWidgets.QApplication):
         autoConnect = self.settings.value('tryAutoConnect', True, bool)
         if not autoConnect:
             self.settings.endGroup()
+            self.disconnectionQueue.clear()
             return
         autoConnectInput = set(self.settings.value('autoConnectInput', [], 'QStringList'))
         autoConnectOutput = set(self.settings.value('autoConnectOutput', [], 'QStringList'))
+        #we only discard ports manually disconnected by Bigglesworth
         if autoConnect:
             if direction:
                 if state:
                     autoConnectOutput.add(portName)
                 else:
-                    autoConnectOutput.discard(portName)
+                    if (port, direction) in self.disconnectionQueue:
+                        self.disconnectionQueue.discard((port, direction))
+                        autoConnectOutput.discard(portName)
                 self.settings.setValue('autoConnectOutput', list(autoConnectOutput))
             else:
                 if state:
                     autoConnectInput.add(portName)
                 else:
-                    autoConnectInput.discard(portName)
+                    if (port, direction) in self.disconnectionQueue:
+                        self.disconnectionQueue.discard((port, direction))
+                        autoConnectInput.discard(portName)
                 self.settings.setValue('autoConnectInput', list(autoConnectInput))
         self.settings.endGroup()
         self.settings.sync()
@@ -580,6 +598,8 @@ class Bigglesworth(QtWidgets.QApplication):
                 port.connect(self.input)
             else:
                 port.disconnect(self.input)
+        if not state:
+            self.disconnectionQueue.add((port, direction))
 
     def midiEventReceived(self, event):
         if event.source[0] == self.midiDevice.output.client.id:
@@ -974,9 +994,9 @@ class Bigglesworth(QtWidgets.QApplication):
     def showSettings(self):
         self.globalsBlock = True
         self.midiDevice.midi_event.connect(self.settingsDialog.midiEventReceived)
-#        self.graph.conn_register.connect(self.settingsDialog.midiConnEvent)
+        self.graph.conn_register.connect(self.settingsDialog.midiConnEvent)
         res = self.settingsDialog.exec_()
-#        self.graph.conn_register.disconnect(self.settingsDialog.midiConnEvent)
+        self.graph.conn_register.disconnect(self.settingsDialog.midiConnEvent)
         self.midiDevice.midi_event.disconnect(self.settingsDialog.midiEventReceived)
         self.globalsBlock = False
         if not res:
@@ -1027,6 +1047,9 @@ class Bigglesworth(QtWidgets.QApplication):
 
     def restart(self):
 #        self.database.sql.close()
+        self.watcher.quit()
+        self.pidFile.remove()
+        sleep(2)
         QtWidgets.QApplication.quit()
         QtCore.QProcess.startDetached(self._arguments[0], self._arguments)
 

@@ -101,11 +101,25 @@ class SettingsDialog(QtWidgets.QDialog):
             self.dbPathEdit, QtCore.QDir.toNativeSeparators(text))
         self.dbPathEdit.text = lambda: QtCore.QDir.fromNativeSeparators(QtWidgets.QLineEdit.text(self.dbPathEdit))
         if not 'linux' in sys.platform:
-            self.alsaBackendRadio.setEnabled(False)
+            self.backendGroupBox.setVisible(False)
         else:
             self.alsaBackendRadio.setText(self.alsaBackendRadio.text() + ' (recommended)')
         self.backendGroup.setId(self.alsaBackendRadio, 0)
         self.backendGroup.setId(self.rtmidiBackendRadio, 1)
+        self.autoconnectClearChk.clicked.connect(self.clearAutoconnect)
+
+    def clearAutoconnect(self):
+        self.settings.beginGroup('MIDI')
+        self.settings.remove('autoConnectInput')
+        self.settings.remove('autoConnectOutput')
+        self.settings.endGroup()
+        self.autoconnectClearChk.setEnabled(False)
+
+    def midiConnEvent(self, *args):
+        self.settings.beginGroup('MIDI')
+        self.autoconnectClearChk.setEnabled(bool(
+            self.settings.value('autoConnectOutput') or self.settings.value('autoConnectInput')))
+        self.settings.endGroup()
 
     def restoreDbPath(self):
         defaultDbPath = QtCore.QDir(
@@ -301,6 +315,8 @@ class SettingsDialog(QtWidgets.QDialog):
         self.deviceIdSpin.setValue(self.main.blofeldId)
         self.autoconnectUsbChk.setChecked(self.settings.value('blofeldDetect', True, bool))
         self.autoconnectRememberChk.setChecked(self.settings.value('tryAutoConnect', True, bool))
+        self.autoconnectClearChk.setEnabled(bool(
+            self.settings.value('autoConnectOutput') or self.settings.value('autoConnectInput')))
         self.settings.endGroup()
         self.inputChannelWidget.setChannels(self.main.chanReceive)
         self.outputChannelWidget.setChannels(self.main.chanSend)

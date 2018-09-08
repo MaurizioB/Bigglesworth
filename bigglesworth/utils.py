@@ -8,6 +8,15 @@ from PyQt4 import QtCore, QtGui, uic
 from bigglesworth.const import backgroundRole, ord2chr
 from bigglesworth.libs import midifile
 
+def getQtFlags(flags, enum, module=QtCore.Qt, values=False):
+    results = {}
+    for k, v in module.__dict__.items():
+        if isinstance(v, enum) and flags & v:
+            results[int(v)] = k
+    if not values:
+        return ', '.join(results[v] for v in sorted(results.keys()))
+    return ', '.join('{} ({})'.format(results[v], v) for v in sorted(results.keys()))
+
 def readMidContents(filePath, check=False):
     try:
         track = midifile.read_midifile(filePath)[0]
