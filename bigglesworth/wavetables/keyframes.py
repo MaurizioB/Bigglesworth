@@ -822,6 +822,19 @@ class KeyFrames(QtCore.QObject):
 #                        arrays.append(np.concatenate((values, ) * (nextFrame.index - currentFrame.index - 1) * multiplier))
                         for _ in range(nextIndex - currentIndex):
                             arrays.append(np.concatenate((values, ) * multiplier))
+                    elif transform.mode == WaveTransformItem.CurveMorph and transform.curve:
+                        first = np.array(currentValues)
+                        try:
+                            last = np.array(self.fullValues[nextIndex])
+                        except:
+                            last = np.array(self.fullValues[0])
+                        diff = (nextIndex - currentIndex)
+                        ratio = 1. / diff
+                        curveFunc = transform.curveFunction
+                        for index in range(diff):
+                            percent = curveFunc(index * ratio)
+                            deltaArray = (1 - percent) * first + percent * last
+                            arrays.append(np.concatenate((deltaArray, ) * multiplier))
                     else:
                         first = np.array(currentValues)
                         try:

@@ -47,7 +47,7 @@ from bigglesworth.widgets import MidiStatusBarWidget
 
 from bigglesworth.wavetables.utils import pow20, pow21, fixFileName, sineValues, parseTime
 #from bigglesworth.wavetables.dialogs import Dumper, AudioSettingsDialog, SetIndexDialog
-from bigglesworth.wavetables.dialogs import Dumper, SetIndexDialog
+from bigglesworth.wavetables.dialogs import Dumper, SetIndexDialog, CurveMorphDialog
 
 if QTMULTIMEDIA:
     from bigglesworth.wavetables.waveplay import Player, AudioSettingsDialog
@@ -699,9 +699,11 @@ class WaveTableWindow(QtWidgets.QMainWindow):
     shown = False
     isClosing = False
     waveTableModel = None
+    currentTransform = None
     windowsDict = {}
     openedWindows = []
     lastActive = []
+    recentTables = []
 
     midiEvent = QtCore.pyqtSignal(object)
     midiConnect = QtCore.pyqtSignal(object, int, bool)
@@ -722,6 +724,17 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.midiWidget = MidiStatusBarWidget(self, 3, True)
         self.statusbar.addPermanentWidget(self.midiWidget)
         self.midiEvent.connect(self.midiWidget.midiOutputEvent)
+
+        for mode in sorted(WaveTransformItem.modeNames.keys()):
+            name = WaveTransformItem.modeNames[mode]
+            icon = QtGui.QIcon.fromTheme(WaveTransformItem.modeIcons[mode])
+            self.nextTransformCombo.addItem(icon, name)
+        self.nextTransformCombo.currentIndexChanged.connect(self.setCurrentTransformMode)
+        self.curveTransformCombo.currentIndexChanged.connect(self.setCurrentTransformCurve)
+#        self.curveTransformCombo = CurveTransformCombo()
+#        self.nextTransformCycler.addWidget(self.curveTransformCombo)
+#        self.nextTransformCycler.setCurrentIndex(1)
+#        self.nextTransformEditBtn.clicked.connect(self.editTransform)
 
         self.uuid = uuid4()
         self._isClean = True
@@ -879,9 +892,9 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.duplicateBtn.clicked.connect(self.duplicateWaveTable)
         self.deleteBtn.clicked.connect(self.deleteWaveTables)
 
-        self.showDockAction = QtWidgets.QAction('WaveTable library', self)
-        self.showDockAction.triggered.connect(lambda: [self.waveTableDock.setVisible(True), self.waveTableDock.activateWindow()])
-        self.menubar.addAction(self.showDockAction)
+        self.waveTableMenu.aboutToShow.connect(self.fillWaveTableMenu)
+        self.waveTableMenuSeparator = self.waveTableMenu.addSection('Recent wavetables')
+        self.showDockAction.triggered.connect(self.toggleDock)
         self.audioSettingsAction = QtWidgets.QAction('Audio settings', self)
         self.audioSettingsAction.triggered.connect(self.setAudioDevice)
         self.menubar.addAction(self.audioSettingsAction)
@@ -922,7 +935,8 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.keyFrameScene.externalDrop.connect(self.keyFrameSceneExternalDrop)
         self.keyFrameScene.waveDrop.connect(self.keyFrameSceneWaveDrop)
         self.keyFrames = self.keyFrameScene.keyFrames
-        self.keyFrames.changed.connect(self.checkCurrentTransform)
+        self.keyFrames.changed.connect(self.setNextKeyFrame)
+        self.mainTransformWidget.keyFrames = self.keyFrames
 
         self.nameValidator = NameValidator()
         self.nameEdit.setValidator(self.nameValidator)
@@ -1072,6 +1086,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.checkDumps()
         self.dumpAllBtn.clicked.connect(self.dumpAll)
         self.applyBtn.clicked.connect(self.dumpUpdated)
+        self.mainTransformWidget.setTransform(self.keyFrames[0])
 
     def isClean(self):
         return self.undoStack.isClean() and self._isClean
@@ -1085,6 +1100,46 @@ class WaveTableWindow(QtWidgets.QMainWindow):
     def currentWaveTableName(self):
         return self.nameEdit.text()
 
+    def toggleDock(self, show):
+        if show:
+            self.waveTableDock.setVisible(True), self.waveTableDock.activateWindow()
+        else:
+            self.waveTableDock.setVisible(False)
+
+    def fillWaveTableMenu(self):
+        self.showDockAction.setChecked(self.waveTableDock.isVisible())
+        self.showDockAction.setText('{} library'.format('Hide' if self.waveTableDock.isVisible() else 'Show'))
+        actions = self.waveTableMenu.actions()
+        for action in actions[actions.index(self.waveTableMenuSeparator) + 1:]:
+            self.waveTableMenu.removeAction(action)
+        self.settings.beginGroup('WaveTables')
+        recentLoaded = self.settings.value('Recent', [])
+        existing = []
+        count = 0
+        for uid in recentLoaded:
+            found = self.waveTableModel.match(self.waveTableModel.index(0, UidColumn), QtCore.Qt.DisplayRole, 
+                uid, flags=QtCore.Qt.MatchExactly)
+            if not found:
+                found = self.dumpModel.match(self.dumpModel.index(0, UidColumn), 
+                    QtCore.Qt.DisplayRole, uid, flags=QtCore.Qt.MatchExactly)
+                if not found:
+                    continue
+            count += 1
+            found = found[0]
+            text = '&{}. {} (slot {})'.format(count, found.sibling(found.row(), NameColumn).data().strip(), 
+                found.sibling(found.row(), SlotColumn).data())
+            action = self.waveTableMenu.addAction(text)
+            action.triggered.connect(lambda _, found=found: self.openFromModel(found))
+            existing.insert(0, uid)
+            if count >= 10:
+                break
+        if existing != recentLoaded:
+            if existing:
+                self.settings.setValue('Recent', existing)
+            else:
+                self.settings.remove('Recent')
+        self.settings.endGroup()
+
     def checkWindowsMenu(self):
         windows = [w for w in self.openedWindows if w.isVisible()]
         for action in self.windowsActionGroup.actions():
@@ -1095,11 +1150,11 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 window = action.data()
                 windows.remove(window)
                 if window.isClean():
-                    text = window.nameEdit.text()
+                    text = window.nameEdit.text().strip()
                     icon = QtGui.QIcon.fromTheme('checkbox')
                     italic = False
                 else:
-                    text = '(*) ' + window.nameEdit.text()
+                    text = '(*) ' + window.nameEdit.text().strip()
                     icon = QtGui.QIcon.fromTheme('document-edit')
                     italic = True
                 action.setText(text)
@@ -1107,7 +1162,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 setItalic(action, italic)
                 action.setChecked(window == self)
         for window in windows:
-            text = window.nameEdit.text()
+            text = window.nameEdit.text().strip()
             if window.isClean():
                 icon = QtGui.QIcon.fromTheme('checkbox')
                 italic = False
@@ -1415,6 +1470,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             nextColor.setAlphaF(pos)
             nextItem.setPen(nextColor)
         prevItem.setPen(prevColor)
+        self.mainTransformWidget.setTransform(prevKeyFrame)
 
     def updateMiniWave(self, keyFrame):
         #workaround, maybe should rethink the whole signaling structure
@@ -1434,6 +1490,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.indexSpin.setValue(index + 1)
         self.indexSpin.blockSignals(False)
         self.waveEditBtn.setEnabled(True if self.keyFrames.fullList[index] else False)
+        self.mainTransformWidget.setTransform(keyFrame)
 
     #Keyframes
     def createKeyFrame(self, index, values, after):
@@ -1512,10 +1569,52 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         if activate:
             self.mainTabWidget.setCurrentWidget(self.waveEditTab)
         self.waveScene.setKeyFrame(keyFrame)
-#        self.selectTransform(keyFrame.nextTransform)
+        self.setNextKeyFrame()
 
-    def checkCurrentTransform(self, *args):
-        print('changed', args)
+    def setCurrentTransformMode(self, mode):
+        self.nextTransformCycler.setCurrentIndex(mode)
+        self.currentTransform.setMode(mode)
+
+    def setCurrentTransformCurve(self, index):
+        self.currentTransform.setData({'curve': self.curveTransformCombo.itemData(index)})
+
+#    def editTransform(self):
+#        if not self.currentTransform.isValid() or self.currentTransform.isContiguous() or not self.currentTransform.mode:
+##            self.nextTransformEditBtn.setEnabled(False)
+#            return
+#        if self.currentTransform.mode == self.currentTransform.CurveMorph:
+#            dialog = CurveMorphDialog(self)
+#        else:
+#            return
+#        dialog.exec_(self.currentTransform)
+
+    def setNextKeyFrame(self):
+        if self.currentTransform:
+            self.currentTransform.changed.disconnect(self.updateTransform)
+        self.currentTransform = self.waveScene.currentKeyFrame.nextTransform
+        if self.currentTransform:
+            self.currentTransform.changed.connect(self.updateTransform)
+        self.updateTransform()
+
+    def updateTransform(self):
+        if len(self.keyFrames) > 1 and self.currentTransform and self.currentTransform.isValid() and not self.currentTransform.isContiguous():
+            self.nextTransformCombo.setEnabled(True)
+            self.nextTransformCombo.blockSignals(True)
+            self.nextTransformCombo.setCurrentIndex(self.currentTransform.mode)
+            self.nextTransformCombo.blockSignals(False)
+            self.nextTransformCycler.setCurrentIndex(self.currentTransform.mode)
+            if self.currentTransform.mode == WaveTransformItem.CurveMorph:
+                self.curveTransformCombo.blockSignals(True)
+                self.curveTransformCombo.setCurrentCurve(self.currentTransform.curve)
+                self.curveTransformCombo.blockSignals(False)
+#            self.nextTransformEditBtn.setEnabled(self.currentTransform.mode > 1)
+        else:
+            self.nextTransformCombo.setEnabled(False)
+#            self.nextTransformEditBtn.setEnabled(False)
+        try:
+            self.nextView.setWave(self.currentTransform.nextItem)
+        except Exception as e:
+            print('no update?', e)
 
     def _selectTransform(self, transform, activate=False):
         if not transform.isValid() or transform.isContiguous() or not transform.mode or len(self.keyFrames) == 1:
@@ -1982,7 +2081,6 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             if msgBox.isChecked():
                 self.settings.setValue('WaveTableNoMidiDump', False)
         self.settings.endGroup()
-        return
 
         slot = self.slotSpin.value()
         sameUid = sameUidSlot = None
@@ -2177,6 +2275,14 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             self.blofeldWaveTableList.setCurrentIndex(self.blofeldProxy.mapFromSource(self.dumpModel.index(slot, UidColumn)))
         return edited, byteArray, preview
 
+    def openFromModel(self, index):
+        if index.model() == self.waveTableModel:
+            self.openFromLocalList(self.localProxy.mapFromSource(index))
+        elif index.model() == self.dumpModel:
+            self.openFromDumpList(self.blofeldProxy.mapFromSource(index))
+        else:
+            print('Not found?!', index.row(), index.model())
+
     def openFromLocalList(self, index):
         uid = self.localProxy.index(index.row(), UidColumn).data()
         if not self.currentWaveTable:
@@ -2232,6 +2338,13 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             res = self.waveTableModel.match(self.waveTableModel.index(0, UidColumn), QtCore.Qt.DisplayRole, self.currentWaveTable, flags=QtCore.Qt.MatchExactly)
             row = res[0].row()
         except:
+            if isinstance(self.sender(), QtWidgets.QAction):
+                self.settings.beginGroup('WaveTables')
+                recent = self.settings.value('Recent', [])
+                if uid in recent:
+                    recent.remove(uid)
+                self.settings.setValue('Recent', recent)
+                self.settings.endGroup()
             return
         name = self.waveTableModel.index(row, NameColumn).data().rstrip()
         self.nameEdit.setText(name)
@@ -2251,6 +2364,15 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         viewIndex = self.localProxy.mapFromSource(self.waveTableModel.index(row, UidColumn))
         self.localWaveTableList.setCurrentIndex(viewIndex)
         self.localWaveTableList.scrollTo(viewIndex)
+
+        self.settings.beginGroup('WaveTables')
+        recent = self.settings.value('Recent', [])
+        if uid in recent:
+            recent.remove(uid)
+        recent.insert(0, uid)
+        self.settings.setValue('Recent', recent[:10])
+        self.settings.endGroup()
+
 
     def createNewWindow(self):
         for window in self.openedWindows:
@@ -2296,7 +2418,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         byteArray = QtCore.QByteArray()
         buffer = QtCore.QBuffer(byteArray)
         pixmap.save(buffer, 'PNG', 32)
-        print(byteArray.size())
+        print('img size: {}'.format(byteArray.size()))
         return byteArray
 
     def duplicateWaveTable(self):
@@ -2573,10 +2695,13 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             self.updateMiniWave(self.keyFrames[0])
 
     def resizeEvent(self, event):
+        QtWidgets.QMainWindow.resizeEvent(self, event)
         self.fullTableMiniView.setFixedHeight(self.fullTableMiniView.width() * .4)
 #        self.fullTableMiniView.fitInView(self.fullTableMiniScene.sceneRect())
         rect = QtCore.QRectF(0, 0, SampleItem.wavePathMaxWidth, SampleItem.wavePathMaxHeight)
         self.fullTableMiniView.fitInView(rect)
+        height = self.morphLabel.sizeHint().height() + self.nextTransformCombo.sizeHint().height() + self.nextTab.layout().verticalSpacing()
+        self.nextView.setMaximumSize(height * 1.3, height)
 
 
 from bigglesworth.wavetables.keyframes import VirtualKeyFrames
@@ -2611,6 +2736,23 @@ if __name__ == '__main__':
     from mididings import run, config, Filter, Call, NOTE as mdNOTE, NOTEOFF as mdNOTEOFF, NOTEON as mdNOTEON
     from mididings.engine import output_event as outputEvent
     from mididings.event import SysExEvent as mdSysExEvent
+
+#    if 'linux' in sys.platform:
+#        def addSection(self, text=''):
+#            action = self.addSeparator()
+#            action.setText(text)
+#            return action
+#
+#        def insertSection(self, before, text=''):
+#            action = self.insertSeparator(before)
+#            action.setText(text)
+#            return action
+#    else:
+#        from bigglesworth.compatibility import addSection, insertSection
+#
+#    QtWidgets.QMenu.addSection = addSection
+#    QtWidgets.QMenu.insertSection = insertSection
+
     app = QtWidgets.QApplication(sys.argv)
     app.setOrganizationName('jidesk')
     app.setApplicationName('Bigglesworth')

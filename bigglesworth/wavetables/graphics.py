@@ -10,7 +10,7 @@ import numpy as np
 
 from bigglesworth.utils import setBold, sanitize
 from bigglesworth.wavetables.keyframes import KeyFrames
-from bigglesworth.wavetables.utils import pow16, pow19, pow20, pow21, pow22, sineValues, baseSineValues, waveFunction
+from bigglesworth.wavetables.utils import pow16, pow19, pow20, pow21, pow22, sineValues, baseSineValues, waveFunction, getCurvePath
 
 polyPoints = namedtuple('polyPoints', 'topLeft topRight bottomRight bottomLeft')
 
@@ -520,6 +520,7 @@ class SampleItem(QtWidgets.QGraphicsWidget):
         qp.restore()
 
 
+
 class WaveTransformItem(QtWidgets.QGraphicsWidget):
     deleteRequested = QtCore.pyqtSignal()
     copyTransform = QtCore.pyqtSignal()
@@ -535,13 +536,25 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
     invalidPen = QtGui.QColor(QtCore.Qt.red)
     invalidBrush = QtGui.QColor(255, 0, 0, 96)
 
-    Const, LinMorph, SpecMorph = range(3)
+    Const, CurveMorph, TransMorph = range(3)
+
+    modeNames = {
+        Const: 'Constant', 
+        CurveMorph: 'Curve', 
+        TransMorph: 'Translate', 
+    }
 
     modeLabels = {
         Const: 'CONST', 
-        LinMorph: 'LINEAR\nMORPH', 
-        SpecMorph: 'TRANSL\nMORPH', 
-        }
+        CurveMorph: 'CURVE\nMORPH', 
+        TransMorph: 'TRANSL\nMORPH', 
+    }
+
+    modeIcons = {
+        Const: 'arrow-right-double', 
+        CurveMorph: 'labplot-xy-curve-segments', 
+        TransMorph: 'kdenlive-object-width', 
+    }
 
     normalTransformPath = QtGui.QPainterPath()
     minimizedTransformPath = QtGui.QPainterPath()
@@ -585,16 +598,16 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
 
         self.computePaths()
 
-        constAction = QtWidgets.QAction('Constant', self)
+        constAction = QtWidgets.QAction(QtGui.QIcon.fromTheme(self.modeIcons[self.Const]), 'Constant', self)
         constAction.setData(self.Const)
         constAction.triggered.connect(lambda: self.setMode(self.Const))
-        linMorphAction = QtWidgets.QAction('Linear morph', self)
-        linMorphAction.setData(self.LinMorph)
-        linMorphAction.triggered.connect(lambda: self.setMode(self.LinMorph))
-        specMorphAction = QtWidgets.QAction('Translate morph', self)
-        specMorphAction.setData(self.SpecMorph)
-        specMorphAction.triggered.connect(lambda: self.setMode(self.SpecMorph))
-        self.morphActions = [constAction, linMorphAction, specMorphAction]
+        curveMorphAction = QtWidgets.QAction(QtGui.QIcon.fromTheme(self.modeIcons[self.CurveMorph]), 'Curve morph', self)
+        curveMorphAction.setData(self.CurveMorph)
+        curveMorphAction.triggered.connect(lambda: self.setMode(self.CurveMorph))
+        transMorphAction = QtWidgets.QAction(QtGui.QIcon.fromTheme(self.modeIcons[self.TransMorph]), 'Translate morph', self)
+        transMorphAction.setData(self.TransMorph)
+        transMorphAction.triggered.connect(lambda: self.setMode(self.TransMorph))
+        self.morphActions = [constAction, curveMorphAction, transMorphAction]
         sep = QtWidgets.QAction(self)
         sep.setSeparator(True)
         copyAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('edit-copy'), 'Copy transformation', self)
@@ -606,12 +619,28 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
         self.deleteAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('edit-delete'), 'Remove', self)
         self.deleteAction.triggered.connect(self.deleteRequested)
 
+    @property
+    def curve(self):
+        if not self.mode:
+            return 0
+        try:
+            return self.data['curve']
+        except:
+            self.data['curve'] = QtCore.QEasingCurve.Linear
+            return QtCore.QEasingCurve.Linear
+
     def clone(self, prevItem, nextItem=None):
         return WaveTransformItem(self.mode, prevItem, nextItem)
 
     def setData(self, data):
         self.data.update(data)
         self.computePaths()
+        if data:
+            self.changed.emit()
+        try:
+            self.update()
+        except:
+            pass
 
     def isValid(self):
         try:
@@ -736,28 +765,40 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
             self.minimizedTransformPath.addPath(self.prevItem.previewPath.translated(-x, -y * 2))
             self.minimizedTransformPath.addPath(self.nextItem.previewPath.translated(-x, y * 2))
             if self.mode == 1:
-                self.minimizedTransformPath.moveTo(0, -y)
-                self.minimizedTransformPath.lineTo(0, y)
+                if self.curve:
+                    self.minimizedTransformPath.addPath(getCurvePath(self.curve, int(y)).translated(-x * .5, -y * .5))
+                else:
+                    self.minimizedTransformPath.moveTo(0, -y)
+                    self.minimizedTransformPath.lineTo(0, y)
             else:
-                self.minimizedTransformPath.moveTo(-x * .5, -y)
-                self.minimizedTransformPath.lineTo(-x * .5, y)
-                self.minimizedTransformPath.moveTo(x * .5, -y)
-                self.minimizedTransformPath.lineTo(x * .5, y)
+                self.minimizedTransformPath.moveTo(-x * .3, -y)
+                self.minimizedTransformPath.lineTo(-x * .7, y)
+                self.minimizedTransformPath.moveTo(x * .7, -y)
+                self.minimizedTransformPath.lineTo(x * .3, y)
 
     def setMode(self, mode):
         if mode is None:
             return
         self.mode = mode
+        if self.mode == self.CurveMorph and not self.data.get('curve'):
+            self.data['curve'] = QtCore.QEasingCurve.Linear
+        if self.mode == self.TransMorph and not self.data.get('translate'):
+            self.data['translate'] = 0
         self.computePaths()
         self.update()
         self.changed.emit()
+
+    @property
+    def curveFunction(self):
+        curve = QtCore.QEasingCurve(self.data['curve'])
+        return curve.valueForProgress
 
     def valuesAt(self, index):
         if not self.isValid():
             return baseSineValues
         if self.mode == self.Const:
             return self.prevItem.values
-        elif self.mode == self.LinMorph:
+        elif self.mode == self.CurveMorph:
             pos = (index - self.prevItem.index) / float(self.nextItem.index - self.prevItem.index)
             values = []
             for sample in range(128):
@@ -768,7 +809,7 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
 #                print(start, end, res)
             print(self.prevItem.index, index, self.nextItem.index, pos, values[-1])
             return values
-        elif self.mode == self.SpecMorph:
+        elif self.mode == self.TransMorph:
             return self.nextItem.values
 
     @property
@@ -1157,7 +1198,7 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
             deleteSelectedAction = menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 'Remove selected items')
             if set(selected) == set(self.keyFrames):
                 deleteSelectedAction.setEnabled(False)
-        if not menu.actions()[-1].isSeparator():
+        if menu.actions() and not menu.actions()[-1].isSeparator():
             menu.addSeparator()
         if self.maximized:
             minimizeAction = menu.addAction(QtGui.QIcon.fromTheme('zoom-out'), 'Minimize all items')
@@ -1185,25 +1226,25 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
                 (isinstance(underMouse, WaveTransformItem) or (underMouse.index and not underMouse.final)):
                     QtCore.QTimer.singleShot(500, underMouse.minimize)
 
-    def getTransformValues(self, index, keyFrameIndex):
-        layout = self.keyFrameContainer.layout()
-        prevItem = layout.itemAt(index - 1)
-        nextItem = layout.itemAt(index)
-        if isinstance(prevItem, SampleItem):
-            if isinstance(nextItem, SampleItem):
-                return prevItem.values, None
-            #TODO: check this!
-            return prevItem.values, None
-        elif isinstance(prevItem, WaveTransformItem) and isinstance(nextItem, WaveTransformItem):
-            while isinstance(prevItem, WaveTransformItem):
-                index -= 1
-                prevItem = layout.itemAt(index)
-            return prevItem.values, None
-        transform = prevItem
-        while isinstance(prevItem, WaveTransformItem):
-            index -= 1
-            prevItem = layout.itemAt(index)
-        return transform.valuesAt(keyFrameIndex), transform
+#    def getTransformValues(self, index, keyFrameIndex):
+#        layout = self.keyFrameContainer.layout()
+#        prevItem = layout.itemAt(index - 1)
+#        nextItem = layout.itemAt(index)
+#        if isinstance(prevItem, SampleItem):
+#            if isinstance(nextItem, SampleItem):
+#                return prevItem.values, None
+#            #TODO: check this!
+#            return prevItem.values, None
+#        elif isinstance(prevItem, WaveTransformItem) and isinstance(nextItem, WaveTransformItem):
+#            while isinstance(prevItem, WaveTransformItem):
+#                index -= 1
+#                prevItem = layout.itemAt(index)
+#            return prevItem.values, None
+#        transform = prevItem
+#        while isinstance(prevItem, WaveTransformItem):
+#            index -= 1
+#            prevItem = layout.itemAt(index)
+#        return transform.valuesAt(keyFrameIndex), transform
 
     def dragEnterEvent(self, event):
         mimeData = event.mimeData()
@@ -1689,18 +1730,21 @@ class WaveIndexItem(QtWidgets.QGraphicsObject):
         QtWidgets.QGraphicsObject.__init__(self)
         self.setFlags(self.flags() ^ self.ItemIgnoresTransformations)
         self.setAcceptsHoverEvents(True)
+        self.text = '1'
         self.font = QtWidgets.QApplication.font()
-        self.font.setPointSizeF(32.)
-        self.text = 1
-        self.fontMetrics = QtGui.QFontMetricsF(self.font)
-        self._rect = self.fontMetrics.boundingRect('WWW')
-        self._rect.moveTop(0)
-        self._rect.moveLeft(self.fontMetrics.width('.') * .5)
+        self.setPointSize(32)
         self._pen = QtGui.QColor(self.basePen)
         self.penAnimation = QtCore.QPropertyAnimation(self, b'pen')
         self.penAnimation.setDuration(150)
         self.penAnimation.setStartValue(self._pen)
         self.penAnimation.setEndValue(self.hoverPen)
+
+    def setPointSize(self, size):
+        self.font.setPointSizeF(size)
+        self.fontMetrics = QtGui.QFontMetricsF(self.font)
+        self._rect = self.fontMetrics.boundingRect('WWW')
+        self._rect.moveTop(0)
+        self._rect.moveLeft(self.fontMetrics.width('.') * .5)
 
     @QtCore.pyqtProperty(QtGui.QColor)
     def pen(self):
@@ -2605,6 +2649,45 @@ class WaveScene(QtWidgets.QGraphicsScene):
             self.nodes[sample].setPos(element.x, element.y)
 
 
+class NextWaveScene(WaveScene):
+    baseLinePen = QtGui.QPen(QtGui.QColor(QtCore.Qt.red), .5)
+    baseLinePen.setCosmetic(True)
+    currentKeyFrame = None
+
+    def __init__(self):
+        QtWidgets.QGraphicsScene.__init__(self)
+        self.setSceneRect(QtCore.QRectF(0, 0, pow21, pow21))
+        self.backgroundPath = self.addPath(QtGui.QPainterPath())
+        self.backgroundPath.setPen(QtGui.QPen(QtCore.Qt.NoPen))
+        self.backgroundPath.setBrush(self.waveBackground)
+        self.currentWavePath = self.addPath(QtGui.QPainterPath())
+        self.currentWavePath.setPen(self.wavePen)
+        self.baseLine = self.addLine(0, pow20, pow21, pow20)
+        self.baseLine.setPen(self.baseLinePen)
+        self.baseLine.setZValue(10)
+
+        self.waveIndexItem = WaveIndexItem(self)
+        self.addItem(self.waveIndexItem)
+        self.waveIndexItem.setZValue(-5)
+        self.waveIndexItem.setPointSize(8)
+
+    def setWave(self, keyFrame):
+        if self.currentKeyFrame:
+            self.currentKeyFrame.changed.disconnect(self.updateWave)
+        self.currentKeyFrame = keyFrame
+        self.currentKeyFrame.changed.connect(self.updateWave)
+        self.updateWave()
+
+    def updateWave(self):
+        self.waveIndexItem.setText(str(self.currentKeyFrame.index + 1))
+        bgdPath = QtGui.QPainterPath(self.currentKeyFrame.wavePath)
+        bgdPath.lineTo(self.baseLine.line().p2())
+        bgdPath.lineTo(self.baseLine.line().p1())
+        self.backgroundPath.setPath(bgdPath)
+        self.currentWavePath.setPath(self.currentKeyFrame.wavePath)
+        self.waveIndexItem.setText(str(self.currentKeyFrame.index + 1))
+
+
 class PreviewWaveItem(QtWidgets.QGraphicsPathItem):
 #    highlight = QtCore.pyqtSignal(object)
 #    clicked = QtCore.pyqtSignal(object)
@@ -2984,16 +3067,37 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
         if nextItem != self.keyFrames[0]:
             nextX = nextItem.index * self.xRatio * scaleX
             nextY = -(nextItem.index) * self.yRatio * scaleY
+            diff = nextItem.index - prevItem.index
         else:
             nextX = 63 * self.xRatio * scaleX
             nextY = -63 * self.yRatio * scaleY
+            diff = 63 - prevItem.index
 #        print(prevX, prevY, nextX, nextY)
         lines = []
-        if transform.mode:
-            for sample in range(128):
-                p0 = prevItem.wavePath.elementAt(sample)
-                p1 = nextItem.wavePath.elementAt(sample)
-                lines.append(QtCore.QLineF(p0.x + prevX, p0.y + prevY, p0.x + nextX, p1.y + nextY))
+        if transform.mode == WaveTransformItem.CurveMorph:
+            if not transform.curve or diff < 3:
+                for sample in range(128):
+                    p0 = prevItem.wavePath.elementAt(sample)
+                    p1 = nextItem.wavePath.elementAt(sample)
+                    lines.append(QtCore.QLineF(p0.x + prevX, p0.y + prevY, p0.x + nextX, p1.y + nextY))
+            else:
+                curveFunction = transform.curveFunction
+                for sample in range(128):
+                    p0 = prevItem.wavePath.elementAt(sample)
+                    p1 = nextItem.wavePath.elementAt(sample)
+                    path = QtGui.QPainterPath()
+                    path.moveTo(p0.x, p0.y)
+                    ratio = 1. / diff
+                    yDiff = p1.y - p0.y
+                    for p in range(1, diff + 1):
+                        path.lineTo(p0.x + p * self.xRatio * scaleX, p0.y - p * self.yRatio * scaleY + yDiff * curveFunction(p * ratio))
+                    path.translate(prevX, prevY)
+                    lines.append(path)
+#                    lines.append(QtCore.QLineF(p0.x + prevX, p0.y + prevY, p0.x + nextX, p1.y + nextY))
+        elif transform.mode == WaveTransformItem.TransMorph:
+            pass
+#        elif transform.mode == 3:
+#            pass
         else:
             for sample in range(128):
                 p0 = prevItem.wavePath.elementAt(sample)
@@ -3001,12 +3105,32 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
                 lines.append(QtCore.QLineF(p0.x + prevX, p0.y + prevY, p0.x + nextX, p0.y + nextY))
         motionLines = self.motionLines.get(transform)
         if motionLines:
-            [lineItem.setLine(line) for lineItem, line in zip(motionLines, lines)]
+#            [lineItem.setLine(line) for lineItem, line in zip(motionLines, lines)]
+            try:
+                for lineItem, line in zip(motionLines, lines):
+                    try:
+                        lineItem.setLine(line)
+                    except:
+                        lineItem.setPath(line)
+            except:
+                [self.removeItem(l) for l in motionLines]
+                motionLines[:] = []
+                for line in lines:
+                    try:
+                        lineItem = self.addLine(line)
+                    except:
+                        lineItem = self.addPath(line)
+                    lineItem.setPen(self.transformPen)
+                    lineItem.setTransform(self.scaleTransform)
+                    motionLines.append(lineItem)
         else:
             transform.changed.connect(self.updateTransform)
             motionLines = self.motionLines.setdefault(transform, [])
             for line in lines:
-                lineItem = self.addLine(line)
+                try:
+                    lineItem = self.addLine(line)
+                except:
+                    lineItem = self.addPath(line)
                 lineItem.setPen(self.transformPen)
                 lineItem.setTransform(self.scaleTransform)
                 motionLines.append(lineItem)

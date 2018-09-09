@@ -3,14 +3,150 @@ import sys
 from uuid import uuid4
 
 from Qt import QtCore, QtGui, QtWidgets
-from PyQt4.QtGui import QStyleOptionTabV3
+from PyQt4.QtGui import QStyleOptionTabV3, QIconEngineV2
 QtWidgets.QStyleOptionTabV3 = QStyleOptionTabV3
+QtGui.QIconEngineV2 = QIconEngineV2
 
-from bigglesworth.utils import sanitize
+from bigglesworth.utils import sanitize, loadUi
 from bigglesworth.dialogs.messageboxes import AdvancedMessageBox
 from bigglesworth.wavetables import UidColumn, NameColumn, SlotColumn, EditedColumn, DataColumn, PreviewColumn, DumpedColumn
-from bigglesworth.wavetables.utils import ActivateDrag
-from bigglesworth.wavetables.graphics import SampleItem
+from bigglesworth.wavetables.utils import ActivateDrag, curves, getCurvePath
+from bigglesworth.wavetables.graphics import SampleItem, NextWaveScene, WaveTransformItem
+
+
+class IconEngine(QtGui.QIconEngineV2):
+    pixmapDict = {}
+
+    def __init__(self, curveType):
+        QtGui.QIconEngineV2.__init__(self)
+        self.curveType = curveType
+
+    def pixmap(self, size, mode, state):
+        try:
+            return self.pixmapDict[(size, mode, state)]
+        except:
+            pixmap = QtGui.QPixmap(size)
+            pixmap.fill(QtCore.Qt.transparent)
+            self.pixmapDict[(size, mode, state)] = pixmap
+            qp = QtGui.QPainter(pixmap)
+            qp.setRenderHints(qp.Antialiasing)
+            size = min(size.width(), size.height())
+            qp.drawPath(getCurvePath(self.curveType, size))
+            qp.end()
+            return pixmap
+
+    def paint(self, qp, rect, mode, state):
+        qp.save()
+        qp.setRenderHints(qp.Antialiasing)
+        size = min(rect.width(), rect.height())
+        qp.translate(rect.topLeft())
+        qp.drawPath(getCurvePath(self.curveType, size))
+        qp.restore()
+
+
+class CurveIcon(QtGui.QIcon):
+    def __init__(self, curveType=QtCore.QEasingCurve.Linear):
+        QtGui.QIcon.__init__(self, IconEngine(curveType))
+
+
+class ExpandingView(QtWidgets.QListView):
+    def showEvent(self, event):
+        QtWidgets.QListView.showEvent(self, event)
+        self.setMinimumWidth(self.sizeHintForColumn(0) + self.parent().parent().iconSize().width())
+
+class CurveTransformCombo(QtWidgets.QComboBox):
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QComboBox.__init__(self, *args, **kwargs)
+        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Maximum))
+        self.curveDict = {}
+        for index, curve in enumerate(sorted(curves)):
+            self.addItem(CurveIcon(curve), curves[curve])
+            self.setItemData(index, curve)
+            self.curveDict[curve] = index
+        self.setView(ExpandingView())
+#        self.view().setMinimumWidth(self.view().sizeHintForColumn(0) + self.iconSize().width())
+        self.currentIndexChanged.connect(lambda i: self.setToolTip(self.itemText(i)))
+
+    def setCurrentCurve(self, curve):
+        self.setCurrentIndex(self.curveDict[curve])
+
+class PositiveSpin(QtWidgets.QSpinBox):
+    def textFromValue(self, value):
+        if value <= 0:
+            return str(value)
+        return '+{}'.format(value)
+
+
+class TransformWidget(QtWidgets.QWidget):
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QWidget.__init__(self, *args, **kwargs)
+        loadUi('ui/wavetablemorphwidget.ui', self)
+        self.nextWaveLbl.setFixedWidth(self.fontMetrics().width('8888'))
+        for mode in sorted(WaveTransformItem.modeNames.keys()):
+            name = WaveTransformItem.modeNames[mode]
+            icon = QtGui.QIcon.fromTheme(WaveTransformItem.modeIcons[mode])
+            self.nextTransformCombo.addItem(icon, name)
+        self.nextTransformCombo.currentIndexChanged.connect(self.setCurrentTransformMode)
+        self.curveTransformCombo.currentIndexChanged.connect(self.setCurrentTransformCurve)
+        self.currentTransform = None
+
+    def setCurrentTransformMode(self, mode):
+        self.nextTransformCycler.setCurrentIndex(mode)
+        self.currentTransform.setMode(mode)
+
+    def setCurrentTransformCurve(self, index):
+        self.currentTransform.setData({'curve': self.curveTransformCombo.itemData(index)})
+
+    def setTransform(self, keyFrame):
+        if keyFrame.nextTransform == self.currentTransform:
+            return
+        if self.currentTransform:
+            self.currentTransform.changed.disconnect(self.updateTransform)
+        self.currentTransform = keyFrame.nextTransform
+        if self.currentTransform:
+            self.currentTransform.changed.connect(self.updateTransform)
+        self.updateTransform()
+
+    def updateTransform(self):
+        if len(self.keyFrames) > 1 and self.currentTransform and self.currentTransform.isValid() and not self.currentTransform.isContiguous():
+            self.nextTransformCombo.setEnabled(True)
+            self.nextTransformCombo.blockSignals(True)
+            self.nextTransformCombo.setCurrentIndex(self.currentTransform.mode)
+            self.nextTransformCombo.blockSignals(False)
+            self.nextTransformCycler.setEnabled(True)
+            self.nextTransformCycler.setCurrentIndex(self.currentTransform.mode)
+            if self.currentTransform.mode == WaveTransformItem.CurveMorph:
+                self.curveTransformCombo.blockSignals(True)
+                self.curveTransformCombo.setCurrentCurve(self.currentTransform.curve)
+                self.curveTransformCombo.blockSignals(False)
+        else:
+            self.nextTransformCombo.setEnabled(False)
+            self.nextTransformCycler.setEnabled(False)
+            self.nextTransformCombo.blockSignals(True)
+            self.nextTransformCombo.setCurrentIndex(-1)
+            self.nextTransformCombo.blockSignals(False)
+        try:
+            self.nextWaveLbl.setNum(self.currentTransform.nextItem.index + 1)
+        except:
+            pass
+
+class NextWaveView(QtWidgets.QGraphicsView):
+    shown = False
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QGraphicsView.__init__(self, *args, **kwargs)
+        self.setScene(NextWaveScene())
+
+    def showEvent(self, event):
+        if not self.shown:
+            self.shown = True
+            self.fitInView(self.sceneRect())
+
+    def setWave(self, waveItem):
+        self.scene().setWave(waveItem)
+        self.fitInView(self.sceneRect())
+
+    def sizeHint(self):
+        return self.minimumSizeHint()
 
 
 class PianoStatusWidget(QtWidgets.QFrame):
@@ -1004,6 +1140,24 @@ class MainTabBar(QtWidgets.QTabBar):
             qp.drawControl(QtWidgets.QStyle.CE_TabBarTabShape, option)
             qp.drawControl(QtWidgets.QStyle.CE_TabBarTabLabel, option)
             current += 1
+
+
+class ExtendedTabBar(QtWidgets.QTabBar):
+    def tabSizeHint(self, index):
+        hint = QtWidgets.QTabBar.tabSizeHint(self, index)
+        hint.setWidth(self.parent().width() / self.count() - 1)
+        return hint
+
+
+class WaveTabWidget(QtWidgets.QTabWidget):
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QTabWidget.__init__(self, *args, **kwargs)
+        self.setTabBar(ExtendedTabBar(self))
+
+    def resizeEvent(self, event):
+        if not self.minimumHeight():
+            self.setMinimumHeight(self.minimumSizeHint().height())
+        QtWidgets.QTabWidget.resizeEvent(self, event)
 
 
 class MainTabWidget(QtWidgets.QTabWidget):

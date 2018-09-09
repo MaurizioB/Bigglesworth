@@ -677,7 +677,7 @@ class AudioImportTab(QtWidgets.QWidget):
         self.recentView.clicked.connect(self.fileSelected)
         self.recentView.customContextMenuRequested.connect(self.recentMenu)
 
-        recents = self.settings.value('Recent', [])
+        recents = self.settings.value('RecentFiles', [])
         if not self.recentLoaded:
             self.recentModel.setHorizontalHeaderLabels(['Name', 'Location'])
             for path in recents:
@@ -897,10 +897,10 @@ class AudioImportTab(QtWidgets.QWidget):
         fileInfo = QtCore.QFileInfo(filePath)
 
         self.settings.beginGroup('WaveTables')
-        recents = self.settings.value('Recent', [])
+        recents = self.settings.value('RecentFiles', [])
         if filePath not in recents:
             recents.append(filePath)
-            self.settings.setValue('Recent', recents)
+            self.settings.setValue('RecentFiles', recents)
             nameItem = QtGui.QStandardItem(fileInfo.fileName())
             nameItem.setData(fileInfo.absoluteFilePath(), PathRole)
             locationItem = QtGui.QStandardItem(QtCore.QDir.toNativeSeparators(fileInfo.absolutePath()))
@@ -1121,7 +1121,7 @@ class AudioImportTab(QtWidgets.QWidget):
                 'Do you want to clear all your recent files?', 
                 QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel) == QtWidgets.QMessageBox.Ok:
                     self.settings.beginGroup('WaveTables')
-                    self.settings.remove('Recent')
+                    self.settings.remove('RecentFiles')
                     self.settings.endGroup()
                     for _ in range(self.recentModel.rowCount()):
                         self.recentModel.takeRow(0)
@@ -1134,9 +1134,9 @@ class AudioImportTab(QtWidgets.QWidget):
                 recents.append(index.data(PathRole))
             self.settings.beginGroup('WaveTables')
             if recents:
-                self.settings.setValue('Recent', recents)
+                self.settings.setValue('RecentFiles', recents)
             else:
-                self.settings.remove('Recent')
+                self.settings.remove('RecentFiles')
             self.settings.endGroup()
             self.recentModel.takeRow(index.row())
         self.checkRecents()

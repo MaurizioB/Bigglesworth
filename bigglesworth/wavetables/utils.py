@@ -2,7 +2,7 @@ import sys
 from math import sqrt, sin, pi
 import re
 
-from Qt import QtGui
+from Qt import QtCore, QtGui
 
 #noteFreqs = (16.35, 17.32, 18.35, 19.45, 20.6, 21.83, 23.12, 24.5, 25.96, 27.5, 29.14, 30.87, 
 #    32.7, 34.65, 36.71, 38.89, 41.2, 43.65, 46.25, 49.0, 51.91, 55.0, 58.27, 61.74, 
@@ -111,6 +111,58 @@ pow16 = 2**16
 baseSineValues = []
 for sine in sineValues(1):
     baseSineValues.append(int(sine*pow19))
+
+curves = {
+    QtCore.QEasingCurve.Linear: 'Linear', 
+    QtCore.QEasingCurve.InQuad: 'Quadratic accelerating', 
+    QtCore.QEasingCurve.OutQuad: 'Quadratic decelerating', 
+    QtCore.QEasingCurve.InOutQuad: 'Quadratic accel/decel', 
+    QtCore.QEasingCurve.OutInQuad: 'Quadratic decel/accel', 
+    QtCore.QEasingCurve.InCubic: 'Cubic accelerating', 
+    QtCore.QEasingCurve.OutCubic: 'Cubic decelerating', 
+    QtCore.QEasingCurve.InOutCubic: 'Cubic accel/decel', 
+    QtCore.QEasingCurve.OutInCubic: 'Cubic decel/accel', 
+    QtCore.QEasingCurve.InQuart: 'Quartic accelerating', 
+    QtCore.QEasingCurve.OutQuart: 'Quartic decelerating', 
+    QtCore.QEasingCurve.InOutQuart: 'Quartic accel/decel', 
+    QtCore.QEasingCurve.OutInQuart: 'Quartic decel/accel', 
+    QtCore.QEasingCurve.InQuint: 'Quintic accelerating', 
+    QtCore.QEasingCurve.OutQuint: 'Quintic decelerating', 
+    QtCore.QEasingCurve.InOutQuint: 'Quintic accel/decel', 
+    QtCore.QEasingCurve.OutInQuint: 'Quintic decel/accel', 
+    QtCore.QEasingCurve.InSine: 'Sine accelerating', 
+    QtCore.QEasingCurve.OutSine: 'Sine decelerating', 
+    QtCore.QEasingCurve.InOutSine: 'Sine accel/decel', 
+    QtCore.QEasingCurve.OutInSine: 'Sine decel/accel', 
+    QtCore.QEasingCurve.InExpo: 'Exponential accelerating', 
+    QtCore.QEasingCurve.OutExpo: 'Exponential decelerating', 
+    QtCore.QEasingCurve.InOutExpo: 'Exponential accel/decel', 
+    QtCore.QEasingCurve.OutInExpo: 'Exponential decel/accel', 
+    QtCore.QEasingCurve.InCirc: 'Circular accelerating', 
+    QtCore.QEasingCurve.OutCirc: 'Circular decelerating', 
+    QtCore.QEasingCurve.InOutCirc: 'Circular accel/decel', 
+    QtCore.QEasingCurve.OutInCirc: 'Circular decel/accel', 
+    QtCore.QEasingCurve.OutInBack: 'Overshooting decel/accel', 
+    QtCore.QEasingCurve.InBounce: 'Bounce accelerating', 
+    QtCore.QEasingCurve.OutBounce: 'Bounce decelerating', 
+    QtCore.QEasingCurve.InOutBounce: 'Bounce accel/decel', 
+    QtCore.QEasingCurve.OutInBounce: 'Bounce decel/accel', 
+}
+
+curvePaths = {}
+def getCurvePath(curveType, size=50):
+    try:
+        return curvePaths[(curveType, size)]
+    except:
+        curve = QtCore.QEasingCurve(curveType)
+        path = QtGui.QPainterPath()
+        path.moveTo(0, size)
+        fSize = float(size)
+        for x in range(1, size + 1):
+            y = size - curve.valueForProgress(x / fSize) * size
+            path.lineTo(x, y)
+        curvePaths[(curveType, size)] = path
+        return path
 
 if sys.platform == 'win32':
     forbiddenChars = re.compile(r'[<>:\"\/\\\|\?\*]')
