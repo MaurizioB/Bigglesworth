@@ -12,7 +12,7 @@ class MidiDuplicateDialog(QtWidgets.QMessageBox):
         self.setModal(True)
         self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
 
-        self.midiWidget = MidiConnectionsWidget()
+        self.midiWidget = MidiConnectionsWidget(hideOutput=True, hideAlert=True)
         self.layout().addWidget(self.midiWidget, self.layout().rowCount(), 0, 1, self.layout().columnCount())
 #        self.accepted.connect(lambda: setattr(self, 'shown', False))
         self.shown = False

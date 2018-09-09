@@ -66,10 +66,15 @@ class MidiConnectionsDialog(QtWidgets.QDialog):
 class MidiConnectionsWidget(QtWidgets.QWidget):
     midiConnect = QtCore.pyqtSignal(object, int, bool)
     shown = False
+    _hideAlert = False
 
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         loadUi(localPath('ui/midiconnections.ui'), self)
+        if self.property('hideOutput') or kwargs.get('hideOutput'):
+            self.hideOutput = True
+        if self.property('hideAlert') or kwargs.get('hideAlert'):
+            self.hideAlert = True
         self.refreshBtn.clicked.connect(self.refresh)
 
         self.inputModel = QtGui.QStandardItemModel()
@@ -97,6 +102,32 @@ class MidiConnectionsWidget(QtWidgets.QWidget):
         self.graph.graph_changed.connect(self.refresh)
 
         self.duplicates = set()
+
+    @QtCore.pyqtProperty(bool)
+    def hideAlert(self):
+        return self._hideAlert
+
+    @hideAlert.setter
+    def hideAlert(self, hide):
+        try:
+            self.infoLbl.setText('')
+            self.infoIcon.setVisible(not hide)
+            self._hideAlert = hide
+        except:
+            pass
+
+    @QtCore.pyqtProperty(bool)
+    def hideOutput(self):
+        return self.outputTreeView.isVisible()
+
+    @hideOutput.setter
+    def hideOutput(self, hide):
+        try:
+            self.outputTreeView.setVisible(not hide)
+            self.vLine.setVisible(not hide)
+        except:
+            pass
+
 
     def setPossibleDuplicates(self, ports):
         self.duplicates |= ports
@@ -268,6 +299,15 @@ class MidiConnectionsWidget(QtWidgets.QWidget):
 
         self.inputModel.dataChanged.connect(self.toggleConnection)
         self.outputModel.dataChanged.connect(self.toggleConnection)
+        if inConn <= 1 or self.hideAlert:
+            self.infoLbl.setText('')
+            self.infoIcon.setVisible(False)
+        elif not self.infoLbl.text():
+            self.infoLbl.setText('Be careful when connecting to more than one MIDI input, as some devices, programs or ' \
+                'system utilities might duplicate events incoming from your Blofeld.')
+            self.infoIcon.setVisible(True)
+            if not self.infoIcon.pixmap():
+                self.infoIcon.setPixmap(QtGui.QIcon.fromTheme('emblem-warning').pixmap(self.fontMetrics().height() * .8))
 
     def showEvent(self, event):
         if not self.shown:
