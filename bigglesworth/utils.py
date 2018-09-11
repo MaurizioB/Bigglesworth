@@ -8,6 +8,18 @@ from PyQt4 import QtCore, QtGui, uic
 from bigglesworth.const import backgroundRole, ord2chr
 from bigglesworth.libs import midifile
 
+def getCardinal(value):
+    unit = value % 10
+    if unit == 1:
+        suffix = 'st'
+    elif unit == 2:
+        suffix = 'nd'
+    elif unit == 3:
+        suffix = 'rd'
+    else:
+        suffix = 'th'
+    return '{}{}'.format(value, suffix)
+
 def getQtFlags(flags, enum, module=QtCore.Qt, values=False):
     results = {}
     for k, v in module.__dict__.items():

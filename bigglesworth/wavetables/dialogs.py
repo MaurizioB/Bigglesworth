@@ -1,115 +1,115 @@
 from Qt import QtCore, QtGui, QtWidgets
 
+from bigglesworth.utils import loadUi
 from bigglesworth.widgets import Waiter
-from bigglesworth.wavetables.utils import parseTime, getCurvePath
+from bigglesworth.wavetables.utils import parseTime
+
+#class CurveWidget(QtWidgets.QWidget):
+#    curveType = QtCore.QEasingCurve.Linear
+#    path = QtGui.QPainterPath()
+#    path.moveTo(0, 50)
+#    path.lineTo(50, 0)
+#
+#    def __init__(self):
+#        QtWidgets.QWidget.__init__(self)
+#        self.setFixedSize(51, 51)
+#
+#    def setCurve(self, curveType):
+#        if curveType != self.curveType:
+#            self.curveType = curveType
+#            self.path = getCurvePath(curveType)
+#            self.update()
+#
+#    def paintEvent(self, event):
+#        qp = QtGui.QPainter(self)
+#        qp.setRenderHints(qp.Antialiasing)
+#        qp.setBrush(QtCore.Qt.white)
+#        qp.setPen(QtCore.Qt.NoPen)
+#        qp.drawRect(self.rect())
+#        qp.setPen(QtCore.Qt.black)
+#        qp.translate(.5, .5)
+#        qp.drawPath(self.path)
 
 
-class CurveWidget(QtWidgets.QWidget):
-    curveType = QtCore.QEasingCurve.Linear
-    path = QtGui.QPainterPath()
-    path.moveTo(0, 50)
-    path.lineTo(50, 0)
-
-    def __init__(self):
-        QtWidgets.QWidget.__init__(self)
-        self.setFixedSize(51, 51)
-
-    def setCurve(self, curveType):
-        if curveType != self.curveType:
-            self.curveType = curveType
-            self.path = getCurvePath(curveType)
-            self.update()
-
-    def paintEvent(self, event):
-        qp = QtGui.QPainter(self)
-        qp.setRenderHints(qp.Antialiasing)
-        qp.setBrush(QtCore.Qt.white)
-        qp.setPen(QtCore.Qt.NoPen)
-        qp.drawRect(self.rect())
-        qp.setPen(QtCore.Qt.black)
-        qp.translate(.5, .5)
-        qp.drawPath(self.path)
-
-
-class CurveMorphDialog(QtWidgets.QDialog):
-    curves = {
-        QtCore.QEasingCurve.Linear: 'Linear', 
-        QtCore.QEasingCurve.InQuad: 'Quadratic accelerating', 
-        QtCore.QEasingCurve.OutQuad: 'Quadratic decelerating', 
-        QtCore.QEasingCurve.InOutQuad: 'Quadratic accel/decel', 
-        QtCore.QEasingCurve.OutInQuad: 'Quadratic decel/accel', 
-        QtCore.QEasingCurve.InCubic: 'Cubic accelerating', 
-        QtCore.QEasingCurve.OutCubic: 'Cubic decelerating', 
-        QtCore.QEasingCurve.InOutCubic: 'Cubic accel/decel', 
-        QtCore.QEasingCurve.OutInCubic: 'Cubic decel/accel', 
-        QtCore.QEasingCurve.InQuart: 'Quartic accelerating', 
-        QtCore.QEasingCurve.OutQuart: 'Quartic decelerating', 
-        QtCore.QEasingCurve.InOutQuart: 'Quartic accel/decel', 
-        QtCore.QEasingCurve.OutInQuart: 'Quartic decel/accel', 
-        QtCore.QEasingCurve.InQuint: 'Quintic accelerating', 
-        QtCore.QEasingCurve.OutQuint: 'Quintic decelerating', 
-        QtCore.QEasingCurve.InOutQuint: 'Quintic accel/decel', 
-        QtCore.QEasingCurve.OutInQuint: 'Quintic decel/accel', 
-        QtCore.QEasingCurve.InSine: 'Sine accelerating', 
-        QtCore.QEasingCurve.OutSine: 'Sine decelerating', 
-        QtCore.QEasingCurve.InOutSine: 'Sine accel/decel', 
-        QtCore.QEasingCurve.OutInSine: 'Sine decel/accel', 
-        QtCore.QEasingCurve.InExpo: 'Exponential accelerating', 
-        QtCore.QEasingCurve.OutExpo: 'Exponential decelerating', 
-        QtCore.QEasingCurve.InOutExpo: 'Exponential accel/decel', 
-        QtCore.QEasingCurve.OutInExpo: 'Exponential decel/accel', 
-        QtCore.QEasingCurve.InCirc: 'Circular accelerating', 
-        QtCore.QEasingCurve.OutCirc: 'Circular decelerating', 
-        QtCore.QEasingCurve.InOutCirc: 'Circular accel/decel', 
-        QtCore.QEasingCurve.OutInCirc: 'Circular decel/accel', 
-        QtCore.QEasingCurve.OutInBack: 'Overshooting decel/accel', 
-        QtCore.QEasingCurve.InBounce: 'Bounce accelerating', 
-        QtCore.QEasingCurve.OutBounce: 'Bounce decelerating', 
-        QtCore.QEasingCurve.InOutBounce: 'Bounce accel/decel', 
-        QtCore.QEasingCurve.OutInBounce: 'Bounce decel/accel', 
-    }
-
-    reverseDict = {}
-
-    def __init__(self, parent):
-        from bigglesworth.wavetables.widgets import CurveIcon
-        QtWidgets.QDialog.__init__(self, parent)
-        layout = QtWidgets.QGridLayout()
-        self.setLayout(layout)
-        self.combo = QtWidgets.QComboBox()
-        iconSize = self.combo.iconSize().height()
-        for index, curve in enumerate(sorted(self.curves)):
-            self.combo.addItem(CurveIcon(curve), self.curves[curve])
-            pixmap = QtGui.QPixmap(iconSize, iconSize)
-            pixmap.fill(QtCore.Qt.transparent)
-            qp = QtGui.QPainter(pixmap)
-            qp.setRenderHints(qp.Antialiasing)
-            qp.setPen(QtCore.Qt.black)
-            qp.drawPath(getCurvePath(curve, iconSize))
-            qp.end()
-#            self.combo.model().setData(self.combo.model().index(index, 0), pixmap, QtCore.Qt.DecorationRole)
-#            self.combo.setItemData(index, pixmap, QtCore.Qt.DecorationRole)
-#            self.combo.setItemIcon(index, CurveIcon())
-            self.combo.setItemData(index, curve)
-            self.reverseDict[curve] = index
-        layout.addWidget(self.combo)
-        self.curveWidget = CurveWidget()
-        layout.addWidget(self.curveWidget)
-        self.combo.currentIndexChanged.connect(self.updateCurve)
-
-        self.buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok|QtWidgets.QDialogButtonBox.Cancel)
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
-        layout.addWidget(self.buttonBox)
-
-    def updateCurve(self, index):
-        self.curveWidget.setCurve(self.combo.itemData(index))
-
-    def exec_(self, transform):
-        self.combo.setCurrentIndex(self.reverseDict[transform.data['curve']])
-        res = QtWidgets.QDialog.exec_(self)
-        if res:
-            transform.setData({'curve': self.curveWidget.curveType})
+#class CurveMorphDialog(QtWidgets.QDialog):
+#    curves = {
+#        QtCore.QEasingCurve.Linear: 'Linear', 
+#        QtCore.QEasingCurve.InQuad: 'Quadratic accelerating', 
+#        QtCore.QEasingCurve.OutQuad: 'Quadratic decelerating', 
+#        QtCore.QEasingCurve.InOutQuad: 'Quadratic accel/decel', 
+#        QtCore.QEasingCurve.OutInQuad: 'Quadratic decel/accel', 
+#        QtCore.QEasingCurve.InCubic: 'Cubic accelerating', 
+#        QtCore.QEasingCurve.OutCubic: 'Cubic decelerating', 
+#        QtCore.QEasingCurve.InOutCubic: 'Cubic accel/decel', 
+#        QtCore.QEasingCurve.OutInCubic: 'Cubic decel/accel', 
+#        QtCore.QEasingCurve.InQuart: 'Quartic accelerating', 
+#        QtCore.QEasingCurve.OutQuart: 'Quartic decelerating', 
+#        QtCore.QEasingCurve.InOutQuart: 'Quartic accel/decel', 
+#        QtCore.QEasingCurve.OutInQuart: 'Quartic decel/accel', 
+#        QtCore.QEasingCurve.InQuint: 'Quintic accelerating', 
+#        QtCore.QEasingCurve.OutQuint: 'Quintic decelerating', 
+#        QtCore.QEasingCurve.InOutQuint: 'Quintic accel/decel', 
+#        QtCore.QEasingCurve.OutInQuint: 'Quintic decel/accel', 
+#        QtCore.QEasingCurve.InSine: 'Sine accelerating', 
+#        QtCore.QEasingCurve.OutSine: 'Sine decelerating', 
+#        QtCore.QEasingCurve.InOutSine: 'Sine accel/decel', 
+#        QtCore.QEasingCurve.OutInSine: 'Sine decel/accel', 
+#        QtCore.QEasingCurve.InExpo: 'Exponential accelerating', 
+#        QtCore.QEasingCurve.OutExpo: 'Exponential decelerating', 
+#        QtCore.QEasingCurve.InOutExpo: 'Exponential accel/decel', 
+#        QtCore.QEasingCurve.OutInExpo: 'Exponential decel/accel', 
+#        QtCore.QEasingCurve.InCirc: 'Circular accelerating', 
+#        QtCore.QEasingCurve.OutCirc: 'Circular decelerating', 
+#        QtCore.QEasingCurve.InOutCirc: 'Circular accel/decel', 
+#        QtCore.QEasingCurve.OutInCirc: 'Circular decel/accel', 
+#        QtCore.QEasingCurve.OutInBack: 'Overshooting decel/accel', 
+#        QtCore.QEasingCurve.InBounce: 'Bounce accelerating', 
+#        QtCore.QEasingCurve.OutBounce: 'Bounce decelerating', 
+#        QtCore.QEasingCurve.InOutBounce: 'Bounce accel/decel', 
+#        QtCore.QEasingCurve.OutInBounce: 'Bounce decel/accel', 
+#    }
+#
+#    reverseDict = {}
+#
+#    def __init__(self, parent):
+#        from bigglesworth.wavetables.widgets import CurveIcon
+#        QtWidgets.QDialog.__init__(self, parent)
+#        layout = QtWidgets.QGridLayout()
+#        self.setLayout(layout)
+#        self.combo = QtWidgets.QComboBox()
+#        iconSize = self.combo.iconSize().height()
+#        for index, curve in enumerate(sorted(self.curves)):
+#            self.combo.addItem(CurveIcon(curve), self.curves[curve])
+#            pixmap = QtGui.QPixmap(iconSize, iconSize)
+#            pixmap.fill(QtCore.Qt.transparent)
+#            qp = QtGui.QPainter(pixmap)
+#            qp.setRenderHints(qp.Antialiasing)
+#            qp.setPen(QtCore.Qt.black)
+#            qp.drawPath(getCurvePath(curve, iconSize))
+#            qp.end()
+##            self.combo.model().setData(self.combo.model().index(index, 0), pixmap, QtCore.Qt.DecorationRole)
+##            self.combo.setItemData(index, pixmap, QtCore.Qt.DecorationRole)
+##            self.combo.setItemIcon(index, CurveIcon())
+#            self.combo.setItemData(index, curve)
+#            self.reverseDict[curve] = index
+#        layout.addWidget(self.combo)
+#        self.curveWidget = CurveWidget()
+#        layout.addWidget(self.curveWidget)
+#        self.combo.currentIndexChanged.connect(self.updateCurve)
+#
+#        self.buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok|QtWidgets.QDialogButtonBox.Cancel)
+#        self.buttonBox.accepted.connect(self.accept)
+#        self.buttonBox.rejected.connect(self.reject)
+#        layout.addWidget(self.buttonBox)
+#
+#    def updateCurve(self, index):
+#        self.curveWidget.setCurve(self.combo.itemData(index))
+#
+#    def exec_(self, transform):
+#        self.combo.setCurrentIndex(self.reverseDict[transform.data['curve']])
+#        res = QtWidgets.QDialog.exec_(self)
+#        if res:
+#            transform.setData({'curve': self.curveWidget.curveType})
 
 
 class AdvancedProgressBar(QtWidgets.QProgressBar):

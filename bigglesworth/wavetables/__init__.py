@@ -47,7 +47,7 @@ from bigglesworth.widgets import MidiStatusBarWidget
 
 from bigglesworth.wavetables.utils import pow20, pow21, fixFileName, sineValues, parseTime
 #from bigglesworth.wavetables.dialogs import Dumper, AudioSettingsDialog, SetIndexDialog
-from bigglesworth.wavetables.dialogs import Dumper, SetIndexDialog, CurveMorphDialog
+from bigglesworth.wavetables.dialogs import Dumper, SetIndexDialog
 
 if QTMULTIMEDIA:
     from bigglesworth.wavetables.waveplay import Player, AudioSettingsDialog
@@ -731,6 +731,8 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             self.nextTransformCombo.addItem(icon, name)
         self.nextTransformCombo.currentIndexChanged.connect(self.setCurrentTransformMode)
         self.curveTransformCombo.currentIndexChanged.connect(self.setCurrentTransformCurve)
+        self.specTransformEditBtn.clicked.connect(self.editSpectral)
+        self.mainTransformWidget.specTransformRequest.connect(self.editSpectral)
 #        self.curveTransformCombo = CurveTransformCombo()
 #        self.nextTransformCycler.addWidget(self.curveTransformCombo)
 #        self.nextTransformCycler.setCurrentIndex(1)
@@ -1087,6 +1089,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.dumpAllBtn.clicked.connect(self.dumpAll)
         self.applyBtn.clicked.connect(self.dumpUpdated)
         self.mainTransformWidget.setTransform(self.keyFrames[0])
+#        SpecTransformDialog(self).exec_(self.keyFrames[0].nextTransform)
 
     def isClean(self):
         return self.undoStack.isClean() and self._isClean
@@ -1578,6 +1581,15 @@ class WaveTableWindow(QtWidgets.QMainWindow):
     def setCurrentTransformCurve(self, index):
         self.currentTransform.setData({'curve': self.curveTransformCombo.itemData(index)})
 
+    def editSpectral(self):
+        if self.sender() == self.mainTransformWidget:
+            transform = self.mainTransformWidget.currentTransform
+        else:
+            transform = self.currentTransform
+#        res = SpecTransformDialog(self, transform).exec_()
+#        print(res)
+        SpecTransformDialog(self).exec_(transform)
+
 #    def editTransform(self):
 #        if not self.currentTransform.isValid() or self.currentTransform.isContiguous() or not self.currentTransform.mode:
 ##            self.nextTransformEditBtn.setEnabled(False)
@@ -1694,6 +1706,8 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             self.localWaveTableList.selectionModel().select(selection, QtCore.QItemSelectionModel.ClearAndSelect|QtCore.QItemSelectionModel.Rows)
             self.localWaveTableList.resizeColumnToContents(NameColumn)
             self.localWaveTableList.resizeColumnToContents(EditedColumn)
+            if len(rows) == 1:
+                self.openFromLocalList(self.localProxy.index(rows[-1], UidColumn), True)
         if invalid:
             title = 'Invalid file'
             if len(invalid) == 1:
@@ -1940,14 +1954,14 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 typeElement = ET.SubElement(root, 'WaveTableData')
                 countElement = ET.SubElement(typeElement, 'Count')
                 countElement.text = '1'
-                fullData = []
+#                fullData = []
                 wtElement = ET.SubElement(typeElement, 'WaveTable')
                 ET.SubElement(wtElement, 'Name').text = self.nameEdit.text().ljust(14, ' ')
                 ET.SubElement(wtElement, 'Slot').text = str(self.slotSpin.value())
-                ET.SubElement(wtElement, 'WaveCount').text = len(self.keyFrames)
+                ET.SubElement(wtElement, 'WaveCount').text = str(len(self.keyFrames))
                 stream.writeString(ET.tostring(root))
-                for data in fullData:
-                    stream.writeQVariant(self.keyFrames.getSnapshot())
+                stream.writeQVariant(self.keyFrames.getSnapshot())
+#                for data in fullData:
             file.close()
         except Exception as e:
             print('Exception', e)
@@ -2283,17 +2297,20 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         else:
             print('Not found?!', index.row(), index.model())
 
-    def openFromLocalList(self, index):
+    def openFromLocalList(self, index, showDock=False, tabIndex=0):
         uid = self.localProxy.index(index.row(), UidColumn).data()
-        if not self.currentWaveTable:
+        if not self.currentWaveTable and self.isClean():
             self.openFromUid(uid)
+            window = self
         elif self.currentWaveTable != uid:
-            new = self.windowsDict.get(uid)
-            if not new:
-                new = WaveTableWindow(uid)
-            new.show()
-            new.activateWindow()
-            return new
+            window = self.windowsDict.get(uid)
+            if not window:
+                window = WaveTableWindow(uid)
+            window.show()
+            window.activateWindow()
+        if showDock:
+            window.waveTableDock.setVisible(True)
+            window.dockTabWidget.setCurrentIndex(tabIndex)
 
     def openFromDumpList(self, index):
 #        slot = self.blofeldProxy.mapToSource(index).row()
@@ -2303,16 +2320,16 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         uid = self.blofeldProxy.index(index.row(), UidColumn).data()
         res = self.localProxy.match(self.localProxy.index(0, 0), QtCore.Qt.DisplayRole, uid, flags=QtCore.Qt.MatchExactly)
         if res:
-            window = self.openFromLocalList(res[0])
-            if window and window.waveTableDock.isVisible():
-                window.dockTabWidget.setCurrentIndex(1)
+            self.openFromLocalList(res[0], True, 1)
+#            if window and window.waveTableDock.isVisible():
+#                window.dockTabWidget.setCurrentIndex(1)
         else:
             if not uid:
                 if QtWidgets.QMessageBox.question(self, 'Create new wavetable', 
                     'Do you want to create a new wavetable at slot {}?'.format(slot), 
                     QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel) != QtWidgets.QMessageBox.Ok:
                         return
-                if not self.currentWaveTable and not self.isWindowModified():
+                if not self.currentWaveTable and self.isClean():
                     window = self
                 else:
                     window = self.createNewWindow()
@@ -2372,6 +2389,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         recent.insert(0, uid)
         self.settings.setValue('Recent', recent[:10])
         self.settings.endGroup()
+        self.setCurrentKeyFrame(self.keyFrames[0])
 
 
     def createNewWindow(self):
@@ -2559,7 +2577,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         if res == editAction:
             self.openFromUid(uid)
         elif res == newAction:
-            if not self.currentWaveTable and not self.isWindowModified():
+            if not self.currentWaveTable and self.isClean():
                 window = self
             else:
                 window = self.createNewWindow()
@@ -2708,6 +2726,7 @@ from bigglesworth.wavetables.keyframes import VirtualKeyFrames
 from bigglesworth.wavetables.widgets import CheckBoxDelegate, PianoStatusWidget
 from bigglesworth.wavetables.graphics import WaveScene, SampleItem, WaveTransformItem, WaveTableScene, KeyFrameScene
 from bigglesworth.wavetables.audioimport import AudioImportTab
+from bigglesworth.wavetables.spectral import SpecTransformDialog
 
 WaveUndo.labels = {
     WaveScene.Randomize: 'Wave {} randomized', 

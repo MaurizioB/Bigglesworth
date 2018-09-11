@@ -536,24 +536,27 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
     invalidPen = QtGui.QColor(QtCore.Qt.red)
     invalidBrush = QtGui.QColor(255, 0, 0, 96)
 
-    Const, CurveMorph, TransMorph = range(3)
+    Const, CurveMorph, TransMorph, SpecMorph = range(4)
 
     modeNames = {
         Const: 'Constant', 
         CurveMorph: 'Curve', 
         TransMorph: 'Translate', 
+        SpecMorph: 'Spectral', 
     }
 
     modeLabels = {
         Const: 'CONST', 
         CurveMorph: 'CURVE\nMORPH', 
         TransMorph: 'TRANSL\nMORPH', 
+        SpecMorph: 'SPECTRAL\nMORPH'
     }
 
     modeIcons = {
         Const: 'arrow-right-double', 
         CurveMorph: 'labplot-xy-curve-segments', 
         TransMorph: 'kdenlive-object-width', 
+        SpecMorph: 'pathshape', 
     }
 
     normalTransformPath = QtGui.QPainterPath()
@@ -607,7 +610,11 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
         transMorphAction = QtWidgets.QAction(QtGui.QIcon.fromTheme(self.modeIcons[self.TransMorph]), 'Translate morph', self)
         transMorphAction.setData(self.TransMorph)
         transMorphAction.triggered.connect(lambda: self.setMode(self.TransMorph))
-        self.morphActions = [constAction, curveMorphAction, transMorphAction]
+        specMorphAction = QtWidgets.QAction(QtGui.QIcon.fromTheme(self.modeIcons[self.SpecMorph]), 'Spectral morph', self)
+        specMorphAction.setData(self.SpecMorph)
+        specMorphAction.triggered.connect(lambda: self.setMode(self.SpecMorph))
+        self.morphActions = [constAction, curveMorphAction, transMorphAction, specMorphAction]
+
         sep = QtWidgets.QAction(self)
         sep.setSeparator(True)
         copyAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('edit-copy'), 'Copy transformation', self)
@@ -753,7 +760,7 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
     def computePaths(self):
         if not self.isValid():
             return
-        if self.mode in (1, 2):
+        if self.mode:
             self.normalTransformPath = QtGui.QPainterPath()
             self.minimizedTransformPath = QtGui.QPainterPath()
 #            x = self.prevItem.previewPath.boundingRect().width() * .5
@@ -793,24 +800,24 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
         curve = QtCore.QEasingCurve(self.data['curve'])
         return curve.valueForProgress
 
-    def valuesAt(self, index):
-        if not self.isValid():
-            return baseSineValues
-        if self.mode == self.Const:
-            return self.prevItem.values
-        elif self.mode == self.CurveMorph:
-            pos = (index - self.prevItem.index) / float(self.nextItem.index - self.prevItem.index)
-            values = []
-            for sample in range(128):
-                start = self.prevItem.values[sample]
-                end = self.nextItem.values[sample]
-                res = start + (end - start) * pos
-                values.append(res)
-#                print(start, end, res)
-            print(self.prevItem.index, index, self.nextItem.index, pos, values[-1])
-            return values
-        elif self.mode == self.TransMorph:
-            return self.nextItem.values
+#    def valuesAt(self, index):
+#        if not self.isValid():
+#            return baseSineValues
+#        if self.mode == self.Const:
+#            return self.prevItem.values
+#        elif self.mode == self.CurveMorph:
+#            pos = (index - self.prevItem.index) / float(self.nextItem.index - self.prevItem.index)
+#            values = []
+#            for sample in range(128):
+#                start = self.prevItem.values[sample]
+#                end = self.nextItem.values[sample]
+#                res = start + (end - start) * pos
+#                values.append(res)
+##                print(start, end, res)
+#            print(self.prevItem.index, index, self.nextItem.index, pos, values[-1])
+#            return values
+#        elif self.mode == self.TransMorph:
+#            return self.nextItem.values
 
     @property
     def modeLabel(self):
@@ -2592,7 +2599,7 @@ class WaveScene(QtWidgets.QGraphicsScene):
         for id, ratio in enumerate(harmonics, 1):
             if ratio:
 #                array += np.array(waveFunction[waveType](id)) * pow19 * ratio * .5 / id
-                np.add(array, np.array(waveFunction[waveType](id)) * pow19 * ratio * .5 / id, out=array, casting='unsafe')
+                np.add(array, np.array(waveFunction[waveType](id)) * pow19 * ratio / id, out=array, casting='unsafe')
         path = self.currentWavePath.path()
         for sample in range(128):
             value = sanitize(0, pow20 - array[sample], pow21)
@@ -2933,6 +2940,12 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
         self.updateKeyFrames()
         self.setSceneRect(self.sceneRect().adjusted(-65536, 0, 65536, 0))
 
+        self.updateQueue = set()
+        self.queueTimer = QtCore.QTimer()
+        self.queueTimer.setInterval(25)
+        self.queueTimer.setSingleShot(True)
+        self.queueTimer.timeout.connect(self.consumeQueue)
+
     def getPreview(self, qp, targetRect, sourceRect):
         if self.highlightedItem:
             self.highlightedItem.setHighlighted(False)
@@ -3052,6 +3065,14 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
 ##                print('habeoje', keyFrame, keyFrame.index, transform)
 #            print(self.motionLines.keys())
 
+    def queueTransformUpdate(self):
+        self.updateQueue.add(self.sender())
+        self.queueTimer.start()
+
+    def consumeQueue(self):
+        while self.updateQueue:
+            self.updateTransform(self.updateQueue.pop())
+
     def updateTransform(self, transform=None):
         if transform is None:
             transform = self.sender()
@@ -3124,7 +3145,7 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
                     lineItem.setTransform(self.scaleTransform)
                     motionLines.append(lineItem)
         else:
-            transform.changed.connect(self.updateTransform)
+            transform.changed.connect(self.queueTransformUpdate)
             motionLines = self.motionLines.setdefault(transform, [])
             for line in lines:
                 try:

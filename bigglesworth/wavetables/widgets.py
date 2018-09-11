@@ -7,10 +7,10 @@ from PyQt4.QtGui import QStyleOptionTabV3, QIconEngineV2
 QtWidgets.QStyleOptionTabV3 = QStyleOptionTabV3
 QtGui.QIconEngineV2 = QIconEngineV2
 
-from bigglesworth.utils import sanitize, loadUi
+from bigglesworth.utils import sanitize, loadUi, getCardinal
 from bigglesworth.dialogs.messageboxes import AdvancedMessageBox
 from bigglesworth.wavetables import UidColumn, NameColumn, SlotColumn, EditedColumn, DataColumn, PreviewColumn, DumpedColumn
-from bigglesworth.wavetables.utils import ActivateDrag, curves, getCurvePath
+from bigglesworth.wavetables.utils import ActivateDrag, curves, getCurvePath, sineValues
 from bigglesworth.wavetables.graphics import SampleItem, NextWaveScene, WaveTransformItem
 
 
@@ -78,6 +78,7 @@ class PositiveSpin(QtWidgets.QSpinBox):
 
 
 class TransformWidget(QtWidgets.QWidget):
+    specTransformRequest = QtCore.pyqtSignal()
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         loadUi('ui/wavetablemorphwidget.ui', self)
@@ -89,6 +90,7 @@ class TransformWidget(QtWidgets.QWidget):
         self.nextTransformCombo.currentIndexChanged.connect(self.setCurrentTransformMode)
         self.curveTransformCombo.currentIndexChanged.connect(self.setCurrentTransformCurve)
         self.currentTransform = None
+        self.specTransformEditBtn.clicked.connect(self.specTransformRequest)
 
     def setCurrentTransformMode(self, mode):
         self.nextTransformCycler.setCurrentIndex(mode)
@@ -220,17 +222,28 @@ class PositionWidgetIcon(IconWidget):
 
 class HarmonicsSlider(QtWidgets.QWidget):
     baseSize = QtCore.QSize(24, 80)
-    basePen = QtGui.QPen(QtGui.QColor(64, 192, 216))
-    valuePen = QtGui.QPen(QtGui.QColor(64, 192, 216), 2)
-    midPen = QtGui.QPen(QtGui.QColor(64, 192, 216), 1)
-    brush = QtGui.QLinearGradient(0, 0, 0, 1)
+    basePen = basePenEnabled = QtGui.QPen(QtGui.QColor(64, 192, 216))
+    basePenDisabled = QtGui.QPen(QtGui.QColor(64, 192, 216, 128))
+    valuePen = valuePenEnabled = QtGui.QPen(QtGui.QColor(64, 192, 216), 2)
+    valuePenDisabled = QtGui.QPen(QtGui.QColor(64, 192, 216, 128), 2)
+    midPen = midPenEnabled = QtGui.QPen(QtGui.QColor(64, 192, 216), 1)
+    midPenDisabled = QtGui.QPen(QtGui.QColor(64, 192, 216), 1)
+    brush = brushEnabled = QtGui.QLinearGradient(0, 0, 0, 1)
     brush.setCoordinateMode(brush.ObjectBoundingMode)
     brush.setColorAt(0, QtGui.QColor(0, 128, 192, 64))
     brush.setColorAt(1, QtGui.QColor(0, 128, 192, 192))
+    brushDisabled = QtGui.QLinearGradient(0, 0, 0, 1)
+    brushDisabled.setCoordinateMode(brushDisabled.ObjectBoundingMode)
+    brushDisabled.setColorAt(0, QtGui.QColor(0, 128, 192, 32))
+    brushDisabled.setColorAt(1, QtGui.QColor(0, 128, 192, 96))
+    sliderEnabled = True
 
-    valueChanged = QtCore.pyqtSignal(int, float)
+    valueChanged = QtCore.pyqtSignal([int, float], [float, float])
+    polarityChanged = QtCore.pyqtSignal(int)
     selected = QtCore.pyqtSignal(bool)
     drag = QtCore.pyqtSignal(float)
+    triggered = QtCore.pyqtSignal()
+    value = 0
 
     names = [
         'Fundamental', 
@@ -251,36 +264,57 @@ class HarmonicsSlider(QtWidgets.QWidget):
         '5th octave'
     ]
 
-    def __init__(self, fract):
+    def __init__(self, fract, interactive=False, polarity=1):
         QtWidgets.QWidget.__init__(self)
         self.setMouseTracking(True)
-        self.fract = fract
-        self.label = '/{}'.format(self.fract + 1)
-        self.value = 0
+        self.interactive = interactive
+        self.polarity = polarity
+        self.setFract(fract)
+#        self.value = 0
         self.labelFont = self.font()
+        self.arrow = False
         self._selected = False
         fontHeight = self.fontMetrics().height() * 1.5
         self.baseSize = QtCore.QSize(self.baseSize)
         self.sliderRect = QtCore.QRect(QtCore.QPoint(0, 0), self.baseSize)
-        self.baseSize.setHeight(self.baseSize.height() + fontHeight)
-        self.setMinimumSize(self.baseSize)
-        self.labelRect = QtCore.QRect(0, 0, self.baseSize.width(), fontHeight)
+#        self.curvePath = QtGui.QPainterPath()
+        if not interactive:
+            self.baseSize.setHeight(self.baseSize.height() + fontHeight)
+            self.setMinimumSize(self.baseSize)
+            self.labelRect = QtCore.QRect(0, 0, self.baseSize.width(), fontHeight)
+            self.panelRect = QtCore.QRect()
+        else:
+            self.baseSize.setHeight(self.baseSize.height() + fontHeight * 2)
+            self.setMinimumSize(self.baseSize)
+            self.panelRect = QtCore.QRect(0, 2, self.baseSize.width(), fontHeight - 4)
+            self.labelRect = QtCore.QRect(0, fontHeight, self.baseSize.width(), fontHeight)
         self.sliderRect.moveTop(self.labelRect.bottom())
+
+    def setFract(self, fract):
+        self.fract = fract
+        self.label = '/{}'.format(self.fract + 1)
+        if self.interactive:
+            if 'linux' in sys.platform:
+                self.label += u' ▾'
+            else:
+                self.label += '   '
+                self.arrow = True
+        else:
+            self.arrow = False
         if fract <= len(self.names) - 1:
             self.statusName = self.names[fract]
         else:
-            fract += 1
-            unit = fract % 10
-            if unit == 1:
-                suffix = 'st'
-            elif unit == 2:
-                suffix = 'nd'
-            elif unit == 3:
-                suffix = 'rd'
-            else:
-                suffix = 'th'
-            self.statusName = '{}{} harmonic'.format(fract, suffix)
-        self.setStatusTip('{} (0.00%)'.format(self.statusName))
+            self.statusName = '{} harmonic'.format(getCardinal(fract + 1))
+        self.setStatusTip()
+
+    def setStatusTip(self, emit=False):
+#        strValue = '{:.02f}'.format(self.value * 50).rstrip('0').rstrip('.')
+        statusText = '{} ({:.02f}%)'.format(self.statusName, self.value * 100)
+        if self.polarity < 0:
+            statusText += ' negative'
+        QtWidgets.QWidget.setStatusTip(self, statusText)
+        if emit:
+            QtWidgets.QApplication.sendEvent(self.window(), QtGui.QStatusTipEvent(self.statusTip()))
 
     def sizeHint(self):
         return self.baseSize
@@ -291,7 +325,7 @@ class HarmonicsSlider(QtWidgets.QWidget):
 
     def getValueFromY(self, y):
         y = sanitize(0, y - self.sliderRect.top(), self.sliderRect.bottom())
-        return (1 - float(y) / self.sliderRect.height()) * 2
+        return (1 - float(y) / self.sliderRect.height())
 
     def setSelected(self, selected):
         if self._selected == selected:
@@ -303,25 +337,35 @@ class HarmonicsSlider(QtWidgets.QWidget):
 
     def mousePressEvent(self, event):
         if event.buttons() == QtCore.Qt.LeftButton:
-            if event.pos() in self.labelRect:
-                self.setSelected(not self._selected)
-                self.update()
+            if event.pos() in self.panelRect:
+                self.togglePolarity()
                 return event.ignore()
+            if event.pos() in self.labelRect:
+                if not self.interactive:
+                    self.setSelected(not self._selected)
+                    self.update()
+                else:
+                    self.triggered.emit()
+                return event.ignore()
+            if not self.sliderEnabled:
+                return event.accept()
             self.setValue(self.getValueFromY(event.pos().y()))
-        elif event.buttons() == QtCore.Qt.MiddleButton:
-            self.setValue(1)
+        elif event.buttons() == QtCore.Qt.MiddleButton and self.sliderEnabled:
+            self.setValue(.5)
         self.drag.emit(self.value)
         event.ignore()
 
-    def mouseMoveEvent(self, event, ignore=False, override=1):
+    def mouseMoveEvent(self, event, ignore=False, override=.5):
         if event.buttons() == QtCore.Qt.LeftButton and (ignore or event.pos() in self.rect()) and not event.modifiers():
-            if event.pos() in self.labelRect:
+            if event.pos() in self.labelRect|self.panelRect:
                 return event.ignore()
+            if not self.sliderEnabled:
+                return event.accept()
             self.setValue(self.getValueFromY(event.pos().y()))
         elif (event.buttons() == QtCore.Qt.MiddleButton or 
             (event.buttons() == QtCore.Qt.LeftButton and event.modifiers() == QtCore.Qt.ShiftModifier)) and \
             (ignore or event.pos() in self.rect()):
-                self.setValue(override if event.modifiers() == QtCore.Qt.ShiftModifier else 1)
+                self.setValue(override if event.modifiers() == QtCore.Qt.ShiftModifier else .5)
         if event.pos() not in self.rect():
             event.ignore()
 
@@ -332,22 +376,90 @@ class HarmonicsSlider(QtWidgets.QWidget):
     def setValue(self, value, emit=True):
         if value == self.value:
             return
-        self.value = max(0, min(value, 2))
+        oldValue = self.value
+        self.value = sanitize(0, value, 1)
+        self.rebuildPaths()
         self.update()
+        self.setStatusTip(True)
         if emit:
             self.valueChanged.emit(self.fract, self.value)
-#        strValue = '{:.02f}'.format(self.value * 50).rstrip('0').rstrip('.')
-        statusText = '{} ({:.02f}%)'.format(self.statusName, self.value * 50)
-        self.setStatusTip(statusText)
-        QtWidgets.QApplication.sendEvent(self.window(), QtGui.QStatusTipEvent(statusText))
+            self.valueChanged[float, float].emit(self.value, oldValue)
+
+    def togglePolarity(self):
+        self.polarity *= -1
+#        self.curvePath = self.positivePath if self.polarity > 0 else self.negativePath
+        self.polarityChanged.emit(self.polarity)
+        self.setStatusTip(True)
+        self.update()
+
+    def setSliderEnabled(self, enabled):
+        self.sliderEnabled = enabled
+        if enabled:
+            self.basePen = self.basePenEnabled
+            self.valuePen = self.valuePenEnabled
+            self.midPen = self.midPenEnabled
+            self.brush = self.brushEnabled
+        else:
+            self.basePen = self.basePenDisabled
+            self.valuePen = self.valuePenDisabled
+            self.midPen = self.midPenDisabled
+            self.brush = self.brushDisabled
+        self.update()
+
+    def changeEvent(self, event):
+        if event.type() == QtCore.QEvent.EnabledChange:
+            self.setSliderEnabled(self.isEnabled())
+
+
+    def resizeEvent(self, event):
+        if self.interactive:
+            self.rebuildPaths()
+
+    def rebuildPaths(self):
+        self.positivePath = QtGui.QPainterPath()
+        self.negativePath = QtGui.QPainterPath()
+#        self.curvePath = self.positivePath if self.polarity > 0 else self.negativePath
+        y = self.panelRect.height() / 2.
+        count = self.panelRect.width() - 4
+        values = sineValues(1, count)
+#        ratio = self.value / 2.
+        for x, v in zip(range(count), values):
+            self.positivePath.lineTo(x, -v * y * self.value)
+            self.negativePath.lineTo(x, v * y * self.value)
+        self.negativePath.translate(2, 2 + y)
+        self.positivePath.translate(2, 2 + y)
+        self.arrowPath = QtGui.QPainterPath()
+        size = self.fontMetrics().height() * .25
+        self.arrowPath.moveTo(-size, -size)
+        self.arrowPath.lineTo(size, -size)
+        self.arrowPath.lineTo(0, size)
+        self.arrowPath.closeSubpath()
 
     def paintEvent(self, event):
         qp = QtGui.QPainter(self)
         qp.translate(.5, .5)
         qp.setRenderHints(qp.Antialiasing)
 
+        if self.polarity > 0:
+            qp.drawPath(self.positivePath)
+        else:
+            qp.save()
+            qp.setBrush(QtCore.Qt.black)
+            qp.setPen(QtCore.Qt.NoPen)
+            qp.drawRect(self.panelRect)
+            qp.setPen(QtCore.Qt.white)
+            qp.drawPath(self.negativePath)
+            qp.restore()
         qp.setFont(self.labelFont)
         qp.drawText(self.labelRect, QtCore.Qt.AlignCenter, self.label)
+        if self.arrow:
+            qp.save()
+            qp.setBrush(qp.pen().color())
+            qp.setPen(QtCore.Qt.NoPen)
+#            qp.translate(self.labelRect.adjusted(self.labelRect.center().x(), 0, 0, 0).center())
+            qp.translate(self.labelRect.width() * .8, self.labelRect.center().y())
+            qp.drawPath(self.arrowPath)
+            qp.restore()
 
         qp.setPen(self.basePen)
         qp.setBrush(QtCore.Qt.black)
@@ -357,8 +469,8 @@ class HarmonicsSlider(QtWidgets.QWidget):
         qp.translate(0, self.labelRect.bottom())
         qp.setPen(QtCore.Qt.NoPen)
         qp.setBrush(self.brush)
-        rect = QtCore.QRectF(1, 1, self.width() - 2, self.height() - 2)
-        rect.setTop(self.sliderRect.height() * (2 - self.value) * .5 + 1)
+        rect = QtCore.QRectF(1, 1, self.width() - 2, self.sliderRect.height() - 2)
+        rect.setTop(self.sliderRect.height() * (1 - self.value) + 1)
         qp.drawRect(rect)
         qp.setPen(self.valuePen)
         qp.drawLine(rect.left(), rect.top() - 1, rect.right(), rect.top() - 1)

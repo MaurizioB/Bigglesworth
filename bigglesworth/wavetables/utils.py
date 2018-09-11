@@ -57,13 +57,14 @@ def noteFrequency(note, tuning=440):
 
 #sine128 = tuple(sin(2 * pi * r * (0.0078125)) for r in xrange(128))
 sineData = {}
-def sineValues(fract):
+def sineValues(fract, count=128):
     try:
-        return sineData[fract]
+        return sineData[(fract, count)]
     except:
-        ratio = 0.0078125 * fract
-        values = tuple(sin(2 * pi * r * ratio) for r in xrange(128))
-        sineData[fract] = values
+#        ratio = 0.0078125 * fract
+        ratio = 1./count * fract
+        values = tuple(sin(2 * pi * r * ratio) for r in xrange(count))
+        sineData[(fract, count)] = values
         return values
 
 squareData = {}
@@ -149,17 +150,26 @@ curves = {
     QtCore.QEasingCurve.OutInBounce: 'Bounce decel/accel', 
 }
 
+curveFuncs = {}
+def getCurveFunc(curveType):
+    try:
+        return curveFuncs[curveType].valueForProgress
+    except:
+        curve = QtCore.QEasingCurve(curveType)
+        curveFuncs[curveType] = curve
+        return curve.valueForProgress
+
 curvePaths = {}
 def getCurvePath(curveType, size=50):
     try:
         return curvePaths[(curveType, size)]
     except:
-        curve = QtCore.QEasingCurve(curveType)
+        curveFunc = getCurveFunc(curveType)
         path = QtGui.QPainterPath()
         path.moveTo(0, size)
         fSize = float(size)
         for x in range(1, size + 1):
-            y = size - curve.valueForProgress(x / fSize) * size
+            y = size - curveFunc(x / fSize) * size
             path.lineTo(x, y)
         curvePaths[(curveType, size)] = path
         return path
