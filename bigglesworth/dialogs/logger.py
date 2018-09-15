@@ -136,7 +136,12 @@ class LogWindow(QtWidgets.QDialog):
         elif isinstance(extMessage, (tuple, list)):
             extMessage = ', '.join(str(m) for m in extMessage)
 
-        self.model.appendRow([timeItem, logLevelItem, QtGui.QStandardItem(message), QtGui.QStandardItem(extMessage)])
+        messageItem = QtGui.QStandardItem(message)
+        messageItem.setData(message, QtCore.Qt.ToolTipRole)
+        extItem = QtGui.QStandardItem(extMessage)
+        extItem.setData(message, QtCore.Qt.ToolTipRole)
+
+        self.model.appendRow([timeItem, logLevelItem, messageItem, extItem])
 
     def append(self, *data):
         self.appendRow(*data)

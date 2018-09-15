@@ -229,13 +229,13 @@ class Bigglesworth(QtWidgets.QApplication):
 
         self.database = BlofeldDB(self)
         if not self.database.initialize(self.argparse.database):
-            if self.database.lastError & (self.database.SoundsEmpty|self.database.ReferenceEmpty):
+            if self.database.lastError & self.database.EmptyMask:
                 self.database.factoryStatus.connect(self.updateSplashFactory)
 #                self.splash.showMessage('Creating factory database, this could take a while...', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .25)
                 self.database.initializeFactory(self.database.lastError)
             elif self.database.lastError & self.database.DatabaseFormatError:
                 print(self.database.lastError)
-                if not self.database.checkTables(True) and self.database.lastError & (self.database.SoundsEmpty|self.database.ReferenceEmpty):
+                if not self.database.checkTables(True) and self.database.lastError & self.database.EmptyMask:
                     DatabaseCorruptionMessageBox(self.splash, str(self.database.lastError)).exec_()
                     self.splash.showMessage('Correcting factory database', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .4)
                     self.database.initializeFactory(self.database.lastError)

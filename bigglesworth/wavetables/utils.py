@@ -242,6 +242,61 @@ def parseTime(seconds, verbose=False, approx=False, floatSeconds=True):
             return '{} hour{}, {} minutes and {} seconds'.format(hours, minutes, seconds)
         return '{:02.0f}:{:02.0f}:{:.0{}f}'.format(hours, minutes, seconds, 3 if floatSeconds else '')
 
+def getOscPaths():
+    wavePen = QtGui.QPen(QtGui.QColor(64, 192, 216), 1.2, cap=QtCore.Qt.RoundCap)
+    wavePen.setCosmetic(True)
+
+    paths = []
+
+    #Pulse
+    path = QtGui.QPainterPath()
+    path.moveTo(1, 35)
+    path.lineTo(1, 4)
+    path.lineTo(64, 4)
+    path.lineTo(64, 68)
+    path.lineTo(127, 68)
+    path.lineTo(127, 35)
+    paths.append(path)
+
+    #Sawtooth
+    path = QtGui.QPainterPath()
+    path.moveTo(1, 35)
+    path.lineTo(1, 4)
+    path.lineTo(127, 68)
+    path.lineTo(127, 35)
+    paths.append(path)
+
+    #Triangle
+    path = QtGui.QPainterPath()
+    path.moveTo(1, 35)
+    path.lineTo(32, 4)
+    path.lineTo(96, 68)
+    path.lineTo(127, 35)
+    paths.append(path)
+
+    #Sine
+    path = QtGui.QPainterPath()
+    path.moveTo(0, 35)
+    for x, y in enumerate(sineValues(1), 1):
+        path.lineTo(x, -y * 28 + 35)
+    paths.append(path)
+
+    paths = iter(paths)
+    shapes = {}
+    for shape in range(1, 5):
+        pixmap = QtGui.QPixmap(128, 72)
+        pixmap.fill(QtCore.Qt.transparent)
+        qp = QtGui.QPainter(pixmap)
+        qp.setRenderHints(qp.Antialiasing)
+        qp.setPen(wavePen)
+        qp.drawPath(paths.next())
+#            qp.drawLine(0, 0, 128, 72)
+        qp.end()
+        byteArray = QtCore.QByteArray()
+        buffer = QtCore.QBuffer(byteArray)
+        pixmap.save(buffer, 'PNG', 32)
+        shapes[shape] = byteArray
+    return shapes
 
 class Envelope(object):
     def __init__(self, nodes=None, curves=None, waveType=0):

@@ -11,7 +11,7 @@ from Qt import QtCore, QtGui, QtSql
 QtCore.pyqtSignal = QtCore.Signal
 
 from bigglesworth.utils import Enum, localPath, getName, getSizeStr, elapsedFrom
-from bigglesworth.parameters import Parameters
+from bigglesworth.parameters import Parameters, oscShapes
 from bigglesworth.libs import midifile
 from bigglesworth.const import factoryPresets, NameColumn, chr2ord, LogInfo, LogWarning, LogCritical, LogFatal, LogDebug
 from bigglesworth.library import CollectionModel, LibraryModel
@@ -36,7 +36,8 @@ referenceDef = '(uid varchar primary key, tags varchar, blofeld_fact_200801 int,
 class BlofeldDB(QtCore.QObject):
 
     ReadError, WriteError, InvalidError, DatabaseFormatError, TableFormatError, QueryError = Enum(6)
-    SoundsEmpty, ReferenceEmpty = Enum(32, 64)
+    SoundsEmpty, ReferenceEmpty, WaveTablesEmpty = Enum(32, 64, 128)
+    EmptyMask = 224
 
     soundNameChanged = QtCore.pyqtSignal(str, str)
 
@@ -216,11 +217,9 @@ class BlofeldDB(QtCore.QObject):
     def checkTables(self, deepCheck=False):
         self.logger.append(LogInfo, 'Checking tables')
         self.query.exec_('DROP TABLE IF EXISTS _oldreference')
-        self.query.exec_('SELECT name FROM sqlite_master WHERE type="table"')
-        tables = set()
-        while self.query.next():
-            tables.add(self.query.value(0))
-        defaultSet = set(('sounds', 'reference', 'ascii', 'tags', 'fake_reference', 'templates'))
+#        self.query.exec_('SELECT name FROM sqlite_master WHERE type="table"')
+        tables = set(self.sql.tables())
+        defaultSet = set(('sounds', 'reference', 'ascii', 'tags', 'fake_reference', 'templates', 'wavetables', 'dumpedwt'))
         if tables and (tables | defaultSet) ^ defaultSet:
             self.logger.append(LogCritical, 'Database table mismatch', 'Missing tables or unknown tables found')
             self.lastError = self.DatabaseFormatError
@@ -228,14 +227,13 @@ class BlofeldDB(QtCore.QObject):
                 return False
 
         self.logger.append(LogDebug, 'Checking sounds table')
-        self.query.exec_('PRAGMA table_info(sounds)')
         createBit = 0
-        if not self.query.next():
+        if not 'sounds' in tables:
             self.logger.append(LogDebug, 'Creating sounds table')
             self.query.exec_('CREATE TABLE sounds ' + soundsDef)
             createBit |= self.SoundsEmpty
         else:
-            self.query.seek(-1)
+            self.query.exec_('PRAGMA table_info(sounds)')
             columns = []
             while self.query.next():
                 columns.append(self.query.value(1))
@@ -245,13 +243,12 @@ class BlofeldDB(QtCore.QObject):
                 return False
 
         self.logger.append(LogDebug, 'Checking reference table')
-        self.query.exec_('PRAGMA table_info(reference)')
-        if not self.query.next():
+        if not 'reference' in tables:
             self.logger.append(LogDebug, 'Preparing creation of reference table')
             self.query.exec_('CREATE TABLE reference ' + referenceDef)
             createBit |= self.ReferenceEmpty
         else:
-            self.query.seek(-1)
+            self.query.exec_('PRAGMA table_info(reference)')
             columns = []
             while self.query.next():
                 columns.append(self.query.value(1))
@@ -302,8 +299,8 @@ class BlofeldDB(QtCore.QObject):
                 self.logger.append(LogDebug, 'Reference table successfully reordered')
 
         self.logger.append(LogDebug, 'Checking templates table')
-        self.query.exec_('PRAGMA table_info(templates)')
-        if not self.query.next():
+#        self.query.exec_('PRAGMA table_info(templates)')
+        if not 'templates' in tables:
             self.logger.append(LogDebug, 'Preparing creation of templates table')
             self.query.exec_('CREATE TABLE templates ' + templateDef)
 
@@ -328,10 +325,11 @@ class BlofeldDB(QtCore.QObject):
             self.query.exec_('PRAGMA journal_mode=DELETE')
 
         self.logger.append(LogDebug, 'Checking tags table')
-        self.query.exec_('PRAGMA table_info(tags)')
-        if not self.query.next():
+#        self.query.exec_('PRAGMA table_info(tags)')
+        if not 'tags' in tables:
             self.logger.append(LogDebug, 'Creating tags table')
             self.query.exec_('CREATE TABLE tags (tag varchar primary key, bgColor int, fgColor int)')
+        #TODO: manca check tags.
 
         self.logger.append(LogDebug, 'Checking empty-reference table')
         self.query.exec_('PRAGMA table_info(fake_reference)')
@@ -354,8 +352,21 @@ class BlofeldDB(QtCore.QObject):
                 else:
                     self.sql.commit()
 
+        self.logger.append(LogDebug, 'Checking local wavetables table')
+        if not 'wavetables' in tables:
+            self.logger.append(LogDebug, 'Creating local wavetables table')
+            self.query.exec_('CREATE TABLE wavetables(uid varchar primary key, name varchar(14), slot int, edited int, data blob, preview blob)')
+        else:
+            self.query.exec_('PRAGMA table_info(wavetables)')
+
+        self.logger.append(LogDebug, 'Checking dumped wavetables table')
+        if not 'dumpedwt' in tables:
+            self.logger.append(LogDebug, 'Preparing creation of dumped wavetables table')
+            self.query.exec_('CREATE TABLE dumpedwt(uid varchar, name varchar(14), slot int primary key, edited int, data blob, preview blob, dumped int)')
+            createBit |= self.WaveTablesEmpty
+
         if createBit:
-            self.logger.append(LogCritical, 'Unknown error creating reference', 'createBit: {}'.format(createBit))
+            self.logger.append(LogWarning, 'Reference and sound tables empty', 'createBit: {}'.format(createBit))
             self.lastError = createBit
             return False
         else:
@@ -363,21 +374,29 @@ class BlofeldDB(QtCore.QObject):
             self.query.first()
             if self.query.value(0) < 1:
                 createBit |= self.SoundsEmpty
+
             self.query.exec_('SELECT Count(rowid) FROM reference')
             self.query.first()
             if self.query.value(0) < 1:
                 createBit |= self.ReferenceEmpty
+
+            self.query.exec_('SELECT Count(rowid) FROM dumpedwt')
+            self.query.first()
+            if self.query.value(0) < 1:
+                createBit |= self.WaveTablesEmpty
+
             if createBit:
                 self.logger.append(LogCritical, 'Unknown error creating reference', 'createBit: {}'.format(createBit))
                 self.lastError = createBit
                 return False
-        self.logger.append(LogDebug, 'Reference/sounds completed')
+        self.logger.append(LogInfo, 'Reference/sounds completed successfully!')
         return True
 
     def initializeFactory(self, createBit):
         self.logger.append(LogInfo, 'Filling factory presets')
         soundCreate = createBit & self.SoundsEmpty
         refCreate = createBit & self.ReferenceEmpty
+
         if soundCreate and not refCreate:
             raise BaseException('Database reference mismatch!!!')
 
@@ -419,6 +438,32 @@ class BlofeldDB(QtCore.QObject):
                         print('starting bank ' + bank)
         self.query.exec_('PRAGMA journal_mode=DELETE')
         self.referenceModel.refresh()
+
+        if createBit & self.WaveTablesEmpty:
+            self.initializeWavetables()
+
+    def initializeWavetables(self):
+        from bigglesworth.wavetables.utils import getOscPaths
+        self.query.prepare('INSERT INTO dumpedwt(uid, name, slot,preview) VALUES("blofeld", :name, :slot, :preview)')
+        shapes = getOscPaths()
+        for slot in range(7):
+            self.query.bindValue(':name', oscShapes[slot])
+            self.query.bindValue(':slot', -slot)
+            self.query.bindValue(':preview', shapes.get(slot))
+            if not self.query.exec_():
+                print(self.query.lastError().databaseText())
+        self.query.prepare('INSERT INTO dumpedwt(uid, name, slot) VALUES("blofeld", :name, :slot)')
+        for slot in range(7, 86):
+            self.query.bindValue(':name', oscShapes[slot])
+            self.query.bindValue(':slot', slot - 6)
+            if not self.query.exec_():
+                print(self.query.lastError().databaseText())
+        self.query.prepare('INSERT INTO dumpedwt(name, slot) VALUES(:name, :slot)')
+        for slot in range(86, 125):
+            self.query.bindValue(':name', oscShapes[slot])
+            self.query.bindValue(':slot', slot - 6)
+            if not self.query.exec_():
+                print(self.query.lastError().databaseText())
 
     def getTemplatesByName(self, name=None):
         templates = {}

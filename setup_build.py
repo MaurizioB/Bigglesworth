@@ -136,7 +136,7 @@ else:
     ]
 
 buildOptions = dict(packages = [], includes = includes, include_files = files, 
-    excludes = ['soundfile', 'samplerate'], bin_excludes = ['libsndfile32bit.dll', 'libsamplerate-32bit.dll'])
+    excludes = ['soundfile', 'samplerate', 'tkinter', 'tcl'], bin_excludes = ['libsndfile32bit.dll', 'libsamplerate-32bit.dll'])
 macbuildOptions = {'iconfile': 'resources/bigglesworth_icon.icns', 'bundle_name': 'BigglesworthBeta'}
 dmgOptions = {'applications_shortcut': True}
 
