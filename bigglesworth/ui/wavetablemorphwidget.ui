@@ -80,7 +80,7 @@
           <bool>true</bool>
          </property>
          <property name="minimum">
-          <number>-128</number>
+          <number>-127</number>
          </property>
          <property name="maximum">
           <number>128</number>

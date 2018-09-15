@@ -1,3 +1,4 @@
+from copy import deepcopy
 import numpy as np
 from uuid import UUID
 
@@ -17,7 +18,7 @@ class KeyFrames(QtCore.QObject):
         self.fullValues = [baseSineValues[:] for _ in range(64)]
         firstItem = SampleItem(self)
         firstItem.setFirst(True)
-        firstTransform = WaveTransformItem(0, firstItem)
+        firstTransform = WaveTransformItem(self, 0, firstItem)
         firstTransform.prevWaveIndex = 0
         self.keyFrames = [firstItem]
         self.fullList = self.keyFrames + [None for _ in range(63)]
@@ -108,9 +109,7 @@ class KeyFrames(QtCore.QObject):
             self.get(index).setWaveValues(data)
 
     def setValuesMulti(self, start, sourceData, fromFile=False):
-#        print(sourceData[0][:10])
         count = len(sourceData)
-#        print(count, self.fullValues[0], sourceData[0])
         data = {}
         allItems = []
         keyFrames = []
@@ -147,7 +146,21 @@ class KeyFrames(QtCore.QObject):
                         prevTransform = invalidTransforms[w]
                         prevTransform.setPrevItem(keyFrame)
                     else:
-                        prevTransform = WaveTransformItem(0, keyFrame)
+                        prevTransform = WaveTransformItem(self, 0, keyFrame)
+                    allItems.append(prevTransform)
+        else:
+            prevTransform = None
+            sourceData = iter(sourceData)
+            for w in range(64):
+                data[w] = sourceData.next()
+                keyFrame = SampleItem(self)
+                allItems.append(keyFrame)
+                self.fullList[w] = keyFrame
+                keyFrames.append(keyFrame)
+                if prevTransform:
+                    prevTransform.setNextItem(keyFrame)
+                if w < 63:
+                    prevTransform = WaveTransformItem(self, 0, keyFrame)
                     allItems.append(prevTransform)
         for item in self.allItems:
 #            if isinstance(item, WaveTransformItem):
@@ -244,7 +257,7 @@ class KeyFrames(QtCore.QObject):
 #                        if index == targets[-1]:
 #                            prevTransform = beforeTransform.clone(waveItem, afterItem)
 #                        else:
-#                            prevTransform = WaveTransformItem(0, waveItem)
+#                            prevTransform = WaveTransformItem(self, 0, waveItem)
 #                    newItems.append(prevTransform)
 #                self.allItems[layoutTarget:layoutTarget] = newItems
 #                existing = self.scene.items()
@@ -278,6 +291,55 @@ class KeyFrames(QtCore.QObject):
         firstTransform.setNextItem(self.fullList[end])
         firstTransform.setMode(1)
         self.changed.emit()
+
+    def bounce(self, firstIndex, lastIndex):
+        firstItem = self.fullList[firstIndex]
+        transform = firstItem.nextTransform
+        firstValues = self.fullValues[firstIndex][:]
+        data = []
+        if not transform.mode:
+            for i in range(lastIndex - firstIndex):
+                data.append(firstValues)
+        elif transform.isLinear():
+            firstValues = np.array(firstValues)
+            lastValues = np.array(self.fullValues[lastIndex])
+            diff = lastIndex - firstIndex
+            ratio = 1. / diff
+            for index in range(lastIndex - firstIndex + 1):
+                percent = index * ratio
+                deltaArray = (1 - percent) * firstValues + percent * lastValues
+                data.append(deltaArray.tolist())
+        elif transform.mode == transform.CurveMorph:
+            firstValues = np.array(firstValues)
+            lastValues = np.array(self.fullValues[lastIndex])
+            diff = lastIndex - firstIndex
+            ratio = 1. / diff
+            curveFunc = transform.curveFunction
+            for index in range(diff):
+                percent = curveFunc(index * ratio)
+                deltaArray = (1 - percent) * firstValues + percent * lastValues
+                data.append(deltaArray.tolist())
+        elif transform.mode == transform.TransMorph:
+            firstValues = np.array(firstValues)
+            lastValues = np.roll(np.array(self.fullValues[lastIndex]), -transform.translate)
+            diff = lastIndex - firstIndex
+            ratio = 1. / diff
+            for index in range(lastIndex - firstIndex + 1):
+                percent = index * ratio
+                deltaArray = np.roll((1 - percent) * firstValues + percent * lastValues, int(transform.translate * percent))
+                data.append(deltaArray.tolist())
+        elif transform.mode == transform.SpecMorph:
+            firstValues = np.array(firstValues)
+            lastValues = np.array(self.fullValues[lastIndex])
+            diff = lastIndex - firstIndex
+            ratio = 1. / diff
+            harmonicsArrays = transform.getHarmonicsArray()
+            for index in range(diff):
+                percent = index * ratio
+                deltaArray = (1 - percent) * firstValues + percent * lastValues
+                np.clip(np.add(deltaArray, harmonicsArrays[index]), -pow20, pow20, out=deltaArray)
+                data.append(deltaArray.tolist())
+        self.setValuesMulti(firstIndex, data)
 
     def reverse(self, start, end):
         if (start, end) == (0, 64):
@@ -366,7 +428,7 @@ class KeyFrames(QtCore.QObject):
         try:
             return self.fullList.index(item)
         except:
-            print('index requested, but not found', item, self.sender())
+#            print('index requested, but not found', item, self.sender())
             return None
 
     def values(self, item):
@@ -427,7 +489,7 @@ class KeyFrames(QtCore.QObject):
             self.keyFrames.insert(0, keyFrame)
             self.allItems.insert(0, keyFrame)
             oldFirst = self.keyFrames[0]
-            transform = WaveTransformItem(0, keyFrame, oldFirst)
+            transform = WaveTransformItem(self, 0, keyFrame, oldFirst)
             transforms.add(transform)
             self.allItems.insert(1, transform)
             self.layout.insertItem(0, keyFrame)
@@ -693,7 +755,7 @@ class KeyFrames(QtCore.QObject):
             if isinstance(item, SampleItem):
                 content.append((item.uuid, self.index(item), item.values[:]))
             else:
-                content.append((item.mode, item.data, item.prevWaveIndex))
+                content.append((item.mode, deepcopy(item.data), item.prevWaveIndex))
         return content
 
     def setSnapshot(self, content):
@@ -715,7 +777,7 @@ class KeyFrames(QtCore.QObject):
                     prevTransform.setNextItem(item)
             else:
                 mode, data, prevWaveIndex = itemData
-                prevTransform = WaveTransformItem(mode, prevItem, data=data)
+                prevTransform = WaveTransformItem(self, mode, prevItem, data=data)
                 if not prevItem and prevWaveIndex is not None:
                     prevTransform.prevWaveIndex = prevWaveIndex
                 allItems.append(prevTransform)
@@ -752,7 +814,7 @@ class KeyFrames(QtCore.QObject):
         newIndex = self.index(self.keyFrames[-1]) + 1
         self.keyFrames.append(item)
         self.fullList[newIndex] = item
-        transform = WaveTransformItem(0, item)
+        transform = WaveTransformItem(self, 0, item)
         self.allItems.extend((item, transform))
 #        item.indexChanged.connect(self.setFullDirty)
         item.changed.connect(self.setValuesDirty)
@@ -765,7 +827,7 @@ class KeyFrames(QtCore.QObject):
         self.keyFrames.extend(items)
         for index, item in enumerate(items, newIndex):
             self.fullList[newIndex] = item
-            transform = WaveTransformItem(item, 0)
+            transform = WaveTransformItem(self, item, 0)
             self.allItems.extend((item, transform))
             item.changed.connect(self.setValuesDirty)
         self.clean = False
@@ -817,12 +879,26 @@ class KeyFrames(QtCore.QObject):
                     nextIndex = 64
                 if nextIndex != currentIndex + 1:
                     transform = currentFrame.nextTransform
-                    if not transform.mode:
+#                    print('linear? {}'.format(transform.isLinear()))
+#                    if not transform.mode:
+                    if not transform.mode or not transform.isValid():
                         values = np.array(currentValues)
 #                        arrays.append(np.concatenate((values, ) * (nextFrame.index - currentFrame.index - 1) * multiplier))
                         for _ in range(nextIndex - currentIndex):
                             arrays.append(np.concatenate((values, ) * multiplier))
-                    elif transform.mode == WaveTransformItem.CurveMorph and transform.curve:
+                    elif transform.isLinear():
+                        first = np.array(currentValues)
+                        try:
+                            last = np.array(self.fullValues[nextIndex])
+                        except:
+                            last = np.array(self.fullValues[0])
+                        diff = (nextIndex - currentIndex)
+                        ratio = 1. / diff
+                        for index in range(diff):
+                            percent = index * ratio
+                            deltaArray = (1 - percent) * first + percent * last
+                            arrays.append(np.concatenate((deltaArray, ) * multiplier))
+                    elif transform.mode == WaveTransformItem.CurveMorph:
                         first = np.array(currentValues)
                         try:
                             last = np.array(self.fullValues[nextIndex])
@@ -835,7 +911,7 @@ class KeyFrames(QtCore.QObject):
                             percent = curveFunc(index * ratio)
                             deltaArray = (1 - percent) * first + percent * last
                             arrays.append(np.concatenate((deltaArray, ) * multiplier))
-                    else:
+                    elif transform.mode == WaveTransformItem.TransMorph:
                         first = np.array(currentValues)
                         try:
                             last = np.array(self.fullValues[nextIndex])
@@ -843,9 +919,25 @@ class KeyFrames(QtCore.QObject):
                             last = np.array(self.fullValues[0])
                         diff = (nextIndex - currentIndex)
                         ratio = 1. / diff
+                        offset = transform.translate
+                        last = np.roll(last, offset)
+                        for index in range(diff):
+                            percent = index * ratio
+                            deltaArray = np.roll((1 - percent) * first + percent * last, int(transform.translate * percent))
+                            arrays.append(np.concatenate((deltaArray, ) * multiplier))
+                    elif transform.mode == WaveTransformItem.SpecMorph:
+                        first = np.array(currentValues)
+                        try:
+                            last = np.array(self.fullValues[nextIndex])
+                        except:
+                            last = np.array(self.fullValues[0])
+                        diff = (nextIndex - currentIndex)
+                        ratio = 1. / diff
+                        harmonicsArrays = transform.getHarmonicsArray()
                         for index in range(diff):
                             percent = index * ratio
                             deltaArray = (1 - percent) * first + percent * last
+                            np.clip(np.add(deltaArray, harmonicsArrays[index]), -pow20, pow20, out=deltaArray)
                             arrays.append(np.concatenate((deltaArray, ) * multiplier))
                 else:
                     arrays.append(np.concatenate((np.array(currentValues), ) * multiplier))

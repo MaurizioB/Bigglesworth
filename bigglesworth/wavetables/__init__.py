@@ -2,6 +2,7 @@
 # *-* encoding: utf-8 *-*
 
 import sys, os
+from copy import deepcopy
 from itertools import chain
 from xml.etree import ElementTree as ET
 from uuid import uuid4
@@ -45,7 +46,7 @@ from bigglesworth.widgets import MidiStatusBarWidget
 
 #from bigglesworth.wavetables.utils import baseSineValues, sineValues, noteFrequency
 
-from bigglesworth.wavetables.utils import pow20, pow21, fixFileName, sineValues, parseTime
+from bigglesworth.wavetables.utils import pow20, pow21, fixFileName, sineValues, parseTime, curves
 #from bigglesworth.wavetables.dialogs import Dumper, AudioSettingsDialog, SetIndexDialog
 from bigglesworth.wavetables.dialogs import Dumper, SetIndexDialog
 
@@ -92,7 +93,7 @@ class FreeDrawUndo(QtWidgets.QUndoCommand):
 
 
 class GenericDrawUndo(QtWidgets.QUndoCommand):
-    def __init__(self, main, mouseMode, keyFrame, newValues):
+    def __init__(self, main, mouseMode, keyFrame, newValues, extData=None):
         QtWidgets.QUndoCommand.__init__(self)
         self.main = main
         self.keyFrames = main.keyFrames
@@ -100,7 +101,7 @@ class GenericDrawUndo(QtWidgets.QUndoCommand):
         self.index = keyFrame.index
         self.oldValues = keyFrame.values[:]
         self.newValues = newValues
-        self.setText(self.labels[mouseMode].format(self.index + 1))
+        self.setText(self.labels[mouseMode].format(self.index + 1, extData))
 
     def id(self):
         return self.mouseMode
@@ -238,6 +239,25 @@ class MergeWavesUndo(KeyFrameUndo):
             self.oldIndexes = self.keyFrames.getUuidDict()
             self.oldState = self.keyFrames.getSnapshot()
             self.keyFrames.merge(self.start, self.end)
+            self.newState = self.keyFrames.getSnapshot()
+            self.done = True
+            self.newIndexes = self.keyFrames.getUuidDict()
+            self.checkIndexes(self.oldIndexes, self.newIndexes)
+        else:
+            KeyFrameUndo.redo(self)
+
+
+class BounceWavesUndo(KeyFrameUndo):
+    def __init__(self, main, start, end):
+        KeyFrameUndo.__init__(self, main, 'Waves {} to {} bounced'.format(start + 1, end + 1))
+        self.start = start
+        self.end = end
+
+    def redo(self):
+        if not self.done:
+            self.oldIndexes = self.keyFrames.getUuidDict()
+            self.oldState = self.keyFrames.getSnapshot()
+            self.keyFrames.bounce(self.start, self.end)
             self.newState = self.keyFrames.getSnapshot()
             self.done = True
             self.newIndexes = self.keyFrames.getUuidDict()
@@ -390,6 +410,126 @@ class ReverseWaveTableUndo(KeyFrameUndo):
             self.checkIndexes(self.oldIndexes, self.newIndexes)
         else:
             KeyFrameUndo.redo(self)
+
+
+class TransformUndo(KeyFrameUndo):
+    def redo(self):
+        self.keyFrames.setSnapshot(self.newState)
+
+    def undo(self):
+        self.keyFrames.setSnapshot(self.oldState)
+
+    def id(self):
+        return pow21
+
+
+class TransformChangeUndo(TransformUndo):
+    def __init__(self, main, transform, mode):
+        TransformUndo.__init__(self, main, 'Transform changed to {}'.format(WaveTransformItem.modeNames[mode]))
+        self.transform = transform
+        self.reference = transform.prevItem.index
+        self.oldMode = transform.mode
+        self.newMode = mode
+
+    def redo(self):
+        if not self.done:
+            self.done = True
+#            self.oldIndexes = self.keyFrames.getUuidDict()
+            self.oldState = self.keyFrames.getSnapshot()
+            self.transform.setMode(self.newMode)
+            self.newState = self.keyFrames.getSnapshot()
+#            self.newIndexes = self.keyFrames.getUuidDict()
+#            self.checkIndexes(self.oldIndexes, self.newIndexes)
+        else:
+            TransformUndo.redo(self)
+
+    def undo(self):
+        self.keyFrames.setSnapshot(self.oldState)
+
+    def mergeWith(self, other):
+        if isinstance(other, TransformChangeUndo) and self.reference == other.reference:
+            self.setText('Transform changed to {}'.format(WaveTransformItem.modeNames[other.newMode]))
+            self.newState = other.newState
+            self.newMode = other.newMode
+            return True
+        return False
+
+
+class CurveTransformUndo(TransformUndo):
+    def __init__(self, main, transform, curve):
+        TransformUndo.__init__(self, main, 'Transform curve set to {}'.format(curves[curve]))
+        self.transform = transform
+        self.reference = transform.prevItem.index
+        self.oldCurve = transform.curve
+        self.newCurve = curve
+
+    def redo(self):
+        if not self.done:
+            self.done = True
+            self.oldState = self.keyFrames.getSnapshot()
+            self.transform.setData({'curve': self.newCurve})
+            self.newState = self.keyFrames.getSnapshot()
+        else:
+            TransformUndo.redo(self)
+
+    def mergeWith(self, other):
+        if isinstance(other, CurveTransformUndo) and self.reference == other.reference:
+            self.newState = other.newState
+#            self.newIndexes = other.newIndexes
+            self.newCurve = other.newCurve
+            return True
+        return False
+
+
+class TranslateTransformUndo(TransformUndo):
+    def __init__(self, main, transform, offset):
+        TransformUndo.__init__(self, main, 'Transform offset set to {}'.format(offset))
+        self.transform = transform
+        self.reference = transform.prevItem.index
+        self.oldOffset = transform.translate
+        self.newOffset = offset
+
+    def redo(self):
+        if not self.done:
+            self.done = True
+            self.oldState = self.keyFrames.getSnapshot()
+            self.transform.setData({'translate': self.newOffset})
+            self.newState = self.keyFrames.getSnapshot()
+        else:
+            TransformUndo.redo(self)
+
+    def mergeWith(self, other):
+        if isinstance(other, TranslateTransformUndo) and self.reference == other.reference:
+            self.newState = other.newState
+#            self.newIndexes = other.newIndexes
+            self.newOffset = other.newOffset
+            return True
+        return False
+
+
+class SpecTransformUndo(TransformUndo):
+    def __init__(self, main, transform, data):
+        TransformUndo.__init__(self, main, 'Spectral morph edited')
+        self.transform = transform
+        self.reference = transform.prevItem.index
+        self.oldHarmonics = deepcopy(transform.harmonics)
+        self.newHarmonics = data
+
+    def redo(self):
+        if not self.done:
+            self.done = True
+            self.oldState = self.keyFrames.getSnapshot()
+            self.transform.setData({'harmonics': self.newHarmonics})
+            self.newState = self.keyFrames.getSnapshot()
+        else:
+            TransformUndo.redo(self)
+
+    def mergeWith(self, other):
+        if isinstance(other, TranslateTransformUndo) and self.reference == other.reference:
+            self.newState = other.newState
+            self.newHarmonics = other.newHarmonics
+            return True
+        return False
 
 
 class LocalProxyModel(QtCore.QSortFilterProxyModel):
@@ -731,8 +871,13 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             self.nextTransformCombo.addItem(icon, name)
         self.nextTransformCombo.currentIndexChanged.connect(self.setCurrentTransformMode)
         self.curveTransformCombo.currentIndexChanged.connect(self.setCurrentTransformCurve)
+        self.translOffsetSpin.valueChanged.connect(self.setCurrentTransformTransl)
         self.specTransformEditBtn.clicked.connect(self.editSpectral)
+
+        self.mainTransformWidget.changeTransformModeRequested.connect(self.setCurrentTransformMode)
         self.mainTransformWidget.specTransformRequest.connect(self.editSpectral)
+        self.mainTransformWidget.changeTransformCurveRequested.connect(self.setCurrentTransformCurve)
+        self.mainTransformWidget.changeTransformTranslRequested.connect(self.setCurrentTransformTransl)
 #        self.curveTransformCombo = CurveTransformCombo()
 #        self.nextTransformCycler.addWidget(self.curveTransformCombo)
 #        self.nextTransformCycler.setCurrentIndex(1)
@@ -932,12 +1077,13 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 #        self.keyFrameScene.transformSelected.connect(self.selectTransform)
         self.keyFrameScene.deleteRequested.connect(self.deleteRequested)
         self.keyFrameScene.mergeRequested.connect(self.mergeRequested)
+        self.keyFrameScene.bounceRequested.connect(self.bounceRequested)
         self.keyFrameScene.pasteTransformRequested.connect(self.pasteTransform)
         self.keyFrameScene.createKeyFrameRequested.connect(self.createKeyFrame)
         self.keyFrameScene.externalDrop.connect(self.keyFrameSceneExternalDrop)
         self.keyFrameScene.waveDrop.connect(self.keyFrameSceneWaveDrop)
         self.keyFrames = self.keyFrameScene.keyFrames
-        self.keyFrames.changed.connect(self.setNextKeyFrame)
+        self.keyFrames.changed.connect(self.keyFramesChanged)
         self.mainTransformWidget.keyFrames = self.keyFrames
 
         self.nameValidator = NameValidator()
@@ -958,11 +1104,13 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 
         self.indexSlider.valueChanged.connect(self.highlightKeyFrame)
         self.indexSlider.valueChanged.connect(lambda i: self.indexSpin.setValue(i + 1))
-        self.indexSlider.valueChanged.connect(lambda i: self.waveEditBtn.setEnabled(True if self.keyFrames.fullList[i] else False))
+        self.indexSlider.valueChanged.connect(self.setWaveEditBtn)
+#        self.indexSlider.valueChanged.connect(lambda i: self.waveEditBtn.setEnabled(True if self.keyFrames.fullList[i] else False))
         self.indexSlider.setKeyFrames(self.keyFrames)
         self.indexSpin.valueChanged.connect(lambda i: self.indexSlider.setValue(i - 1))
         self.indexSpin.setKeyFrames(self.keyFrames)
-        self.waveEditBtn.clicked.connect(lambda: self.setCurrentKeyFrame(self.keyFrames.get(self.indexSlider.value()), True))
+        self.waveEditBtn.clicked.connect(self.triggerWaveEditBtn)
+#        self.waveEditBtn.clicked.connect(lambda: self.setCurrentKeyFrame(self.keyFrames.get(self.indexSlider.value()), True))
         self.saveBtn.clicked.connect(self.save)
         self.dumpBtn.setIcon(QtGui.QIcon(':/images/dump.svg'))
         self.dumpBtn.clicked.connect(self.saveAndDump)
@@ -988,6 +1136,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.waveScene.freeDraw.connect(self.freeDraw)
         self.waveScene.freeDrawInterpolate.connect(self.freeDraw)
         self.waveScene.genericDraw.connect(self.genericDraw)
+        self.waveScene.genericDraw[int, object, object, object].connect(self.genericDraw)
         self.waveScene.waveTransform.connect(self.waveTransform)
         self.harmonicsWidget.harmonicsChanged.connect(
             lambda harmonics: self.waveScene.harmonicsChanged(harmonics, self.waveTypeCombo.currentIndex(), self.addHarmonicsChk.isChecked()))
@@ -1088,7 +1237,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.checkDumps()
         self.dumpAllBtn.clicked.connect(self.dumpAll)
         self.applyBtn.clicked.connect(self.dumpUpdated)
-        self.mainTransformWidget.setTransform(self.keyFrames[0])
+#        self.mainTransformWidget.setTransform(self.keyFrames[0])
 #        SpecTransformDialog(self).exec_(self.keyFrames[0].nextTransform)
 
     def isClean(self):
@@ -1364,8 +1513,8 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             undo = FreeDrawUndo(self, keyFrame, sampleRange, values, buttonTimer)
         self.undoStack.push(undo)
 
-    def genericDraw(self, mouseMode, keyFrame, values):
-        self.undoStack.push(GenericDrawUndo(self, mouseMode, keyFrame, values))
+    def genericDraw(self, mouseMode, keyFrame, values, extData=None):
+        self.undoStack.push(GenericDrawUndo(self, mouseMode, keyFrame, values, extData))
 
     def waveTransform(self, mode, keyFrame, values):
         self.undoStack.push(WaveUndo(self, mode, keyFrame, values))
@@ -1458,22 +1607,42 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         if nextKeyFrame is None:
             if prevKeyFrame.index < 63:
                 nextKeyFrame = self.keyFrames[0]
-                keyRange = 63 - prevKeyFrame.index
-        else:
-            keyRange = nextKeyFrame.index - prevKeyFrame.index
+#                keyRange = 63 - prevKeyFrame.index
+#        else:
+#            keyRange = nextKeyFrame.index - prevKeyFrame.index
         self.waveTableScene.updateSlice(index)
         self.fullTableMiniScene.clear()
         prevItem = self.fullTableMiniScene.addPath(prevKeyFrame.wavePath)
-        prevColor = QtGui.QColor(SampleItem.highlightPen)
-        if nextKeyFrame and prevKeyFrame.nextTransform.mode:
-            nextItem = self.fullTableMiniScene.addPath(nextKeyFrame.wavePath)
-            nextColor = QtGui.QColor(SampleItem.highlightPen)
-            pos = (index - prevKeyFrame.index) / float(keyRange)
-            prevColor.setAlphaF(1 - pos)
-            nextColor.setAlphaF(pos)
-            nextItem.setPen(nextColor)
+        prevColor = QtGui.QColor(SampleItem.wavePen.color())
+        transform = prevKeyFrame.nextTransform
+        if nextKeyFrame and transform.isValid() and transform.mode:
+            pathItem = self.fullTableMiniScene.addPath(transform.getIntermediatePaths(index))
+            nextColor = QtGui.QColor(SampleItem.wavePen.color())
+            nextColor.setAlphaF(.8)
+            pathItem.setPen(nextColor)
+            prevColor.setAlphaF(.5)
+#            nextItem = self.fullTableMiniScene.addPath(nextKeyFrame.wavePath)
+#            nextColor = QtGui.QColor(SampleItem.highlightPen)
+#            pos = (index - prevKeyFrame.index) / float(keyRange)
+#            nextColor.setAlphaF(pos)
+#            nextItem.setPen(nextColor)
         prevItem.setPen(prevColor)
         self.mainTransformWidget.setTransform(prevKeyFrame)
+
+    def setWaveEditBtn(self, index=None):
+        if index is None:
+            index = self.indexSlider.value()
+        if self.keyFrames.fullList[index]:
+            self.waveEditBtn.setIcon(QtGui.QIcon.fromTheme('document-edit'))
+        else:
+            self.waveEditBtn.setIcon(QtGui.QIcon.fromTheme('document-new'))
+
+    def triggerWaveEditBtn(self):
+        index = self.indexSlider.value()
+        if self.keyFrames.fullList[index]:
+            self.setCurrentKeyFrame(self.keyFrames.get(index), True)
+        else:
+            self.createKeyFrame(index, None, False)
 
     def updateMiniWave(self, keyFrame):
         #workaround, maybe should rethink the whole signaling structure
@@ -1482,7 +1651,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             return
         self.fullTableMiniScene.clear()
         item = self.fullTableMiniScene.addPath(keyFrame.wavePath)
-        item.setPen(keyFrame.highlightPen)
+        item.setPen(keyFrame.wavePen)
         rect = QtCore.QRectF(0, 0, keyFrame.wavePathMaxWidth, keyFrame.wavePathMaxHeight)
         self.fullTableMiniView.fitInView(rect)
         index = keyFrame.index
@@ -1492,12 +1661,14 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.indexSpin.blockSignals(True)
         self.indexSpin.setValue(index + 1)
         self.indexSpin.blockSignals(False)
-        self.waveEditBtn.setEnabled(True if self.keyFrames.fullList[index] else False)
+        self.setWaveEditBtn(index)
+#        self.waveEditBtn.setEnabled(True if self.keyFrames.fullList[index] else False)
         self.mainTransformWidget.setTransform(keyFrame)
 
     #Keyframes
     def createKeyFrame(self, index, values, after):
         self.undoStack.push(CreateKeyFrameUndo(self, index, values, after))
+        self.setWaveEditBtn(index)
 
 #    def moveKeyFrame(self, keyFrame, index):
 #        if keyFrame.index == index:
@@ -1535,6 +1706,14 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             return
         self.undoStack.push(MergeWavesUndo(self, start, end))
 
+    def bounceRequested(self, items):
+        indexes = [item.index for item in items]
+        first = min(indexes)
+        last = max(indexes)
+        if last - first < 2:
+            return
+        self.undoStack.push(BounceWavesUndo(self, first, last))
+
     def pasteTransform(self, transform, values):
         #create undoCommand here
         transform.setParameters(values)
@@ -1568,27 +1747,57 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             end += 1
         self.undoStack.push(DistributeWaveTableUndo(self, start, end))
 
+    def keyFramesChanged(self):
+        if not self.waveScene.currentKeyFrame in self.keyFrames:
+            try:
+                keyFrame = self.keyFrames.get(self.waveScene.currentIndex)
+            except:
+                keyFrame = self.keyFrames.previous(self.waveScene.currentIndex)
+            self.setCurrentKeyFrame(keyFrame)
+        else:
+            self.setNextKeyFrame()
+
     def setCurrentKeyFrame(self, keyFrame, activate=False):
         if activate:
             self.mainTabWidget.setCurrentWidget(self.waveEditTab)
         self.waveScene.setKeyFrame(keyFrame)
         self.setNextKeyFrame()
+        self.mainTransformWidget.setTransform(self.keyFrames[0])
 
     def setCurrentTransformMode(self, mode):
-        self.nextTransformCycler.setCurrentIndex(mode)
-        self.currentTransform.setMode(mode)
+        if self.sender() == self.mainTransformWidget:
+            transform = self.mainTransformWidget.currentTransform
+        else:
+            transform = self.currentTransform
+            self.nextTransformCycler.setCurrentIndex(mode)
+#        transform.setMode(mode)
+        self.undoStack.push(TransformChangeUndo(self, transform, mode))
 
-    def setCurrentTransformCurve(self, index):
-        self.currentTransform.setData({'curve': self.curveTransformCombo.itemData(index)})
+    def setCurrentTransformCurve(self, curve):
+        if self.sender() == self.mainTransformWidget:
+            transform = self.mainTransformWidget.currentTransform
+        else:
+            transform = self.currentTransform
+            curve = self.curveTransformCombo.itemData(curve)
+#        transform.setData({'curve': curve})
+        self.undoStack.push(CurveTransformUndo(self, transform, curve))
+
+    def setCurrentTransformTransl(self, offset):
+        if self.sender() == self.mainTransformWidget:
+            transform = self.mainTransformWidget.currentTransform
+        else:
+            transform = self.currentTransform
+#        transform.setData({'offset': offset})
+        self.undoStack.push(TranslateTransformUndo(self, transform, offset))
 
     def editSpectral(self):
         if self.sender() == self.mainTransformWidget:
             transform = self.mainTransformWidget.currentTransform
         else:
             transform = self.currentTransform
-#        res = SpecTransformDialog(self, transform).exec_()
-#        print(res)
-        SpecTransformDialog(self).exec_(transform)
+        res = SpecTransformDialog(self, transform).exec_()
+        if res:
+            self.undoStack.push(SpecTransformUndo(self, transform, res))
 
 #    def editTransform(self):
 #        if not self.currentTransform.isValid() or self.currentTransform.isContiguous() or not self.currentTransform.mode:
@@ -1607,9 +1816,12 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         if self.currentTransform:
             self.currentTransform.changed.connect(self.updateTransform)
         self.updateTransform()
+        self.mainTransformWidget.reload()
+#        self.mainTransformWidget.setTransform(self.keyFrames[self.indexSpin])
 
     def updateTransform(self):
-        if len(self.keyFrames) > 1 and self.currentTransform and self.currentTransform.isValid() and not self.currentTransform.isContiguous():
+#        if len(self.keyFrames) > 1 and self.currentTransform and self.currentTransform.isValid() and not self.currentTransform.isContiguous():
+        if self.currentTransform and self.currentTransform.isValid() and not self.currentTransform.isContiguous():
             self.nextTransformCombo.setEnabled(True)
             self.nextTransformCombo.blockSignals(True)
             self.nextTransformCombo.setCurrentIndex(self.currentTransform.mode)
@@ -1619,6 +1831,10 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 self.curveTransformCombo.blockSignals(True)
                 self.curveTransformCombo.setCurrentCurve(self.currentTransform.curve)
                 self.curveTransformCombo.blockSignals(False)
+            elif self.currentTransform.mode == WaveTransformItem.TransMorph:
+                self.translOffsetSpin.blockSignals(True)
+                self.translOffsetSpin.setValue(self.currentTransform.translate)
+                self.translOffsetSpin.blockSignals(False)
 #            self.nextTransformEditBtn.setEnabled(self.currentTransform.mode > 1)
         else:
             self.nextTransformCombo.setEnabled(False)
@@ -1701,6 +1917,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             except Exception as e:
                 print(e)
                 invalid.append(fileInfo)
+        print('table imported: {}'.format(len(rows)))
         if rows:
             selection = QtCore.QItemSelection(self.localProxy.index(rows[0], 0), self.localProxy.index(rows[-1], 0))
             self.localWaveTableList.selectionModel().select(selection, QtCore.QItemSelectionModel.ClearAndSelect|QtCore.QItemSelectionModel.Rows)
@@ -2740,7 +2957,7 @@ GenericDrawUndo.labels = {
     WaveScene.LineDraw: 'Line draw on wave {}', 
     WaveScene.QuadCurveDraw: 'Simple curve draw on wave {}', 
     WaveScene.CubicCurveDraw: 'Simple curve draw on wave {}', 
-    WaveScene.Shift: 'Wave {} shift', 
+    WaveScene.Shift: 'Wave {} shifted by {} samples', 
     WaveScene.Gain: 'Sample gain change on wave {}', 
     WaveScene.HLock: 'Samples vertically shifte on wave {}', 
     WaveScene.VLock: 'Samples horizontally shifte on wave {}', 

@@ -68,37 +68,37 @@ def sineValues(fract, count=128):
         return values
 
 squareData = {}
-def squareValues(fract):
+def squareValues(fract, count=128):
     try:
-        return squareData[fract]
+        return squareData[(fract, count)]
     except:
-        values = tuple(1 if v >= 0 else -1 for v in sineValues(fract))
-        squareData[fract] = values
+        values = tuple(1 if v >= 0 else -1 for v in sineValues(fract, count))
+        squareData[(fract, count)] = values
         return values
 
 sawData = {}
-def sawToothValues(fract):
+def sawToothValues(fract, count=128):
     try:
-        return sawData[fract]
+        return sawData[(fract, count)]
     except:
         values = [0]
-        ratio = fract / 64.
+        ratio = fract / (count * .5)
         value = 0
-        for sine in sineValues(fract)[1:]:
+        for sine in sineValues(fract, count)[1:]:
             value += ratio
             if value >= 1:
                 value = -1
             values.append(value)
-        sawData[fract] = values
+        sawData[(fract, count)] = values
         return values
 
 inverseSawData = {}
-def inverseSawValues(fract):
+def inverseSawValues(fract, count=128):
     try:
-        return inverseSawData[fract]
+        return inverseSawData[(fract, count)]
     except:
-        values = list(reversed(sawToothValues(fract)))
-        inverseSawData[fract] = values
+        values = list(reversed(sawToothValues(fract, count)))
+        inverseSawData[(fract, count)] = values
         return values
 
 waveFunction = [sineValues, squareValues, sawToothValues, inverseSawValues]
@@ -149,6 +149,22 @@ curves = {
     QtCore.QEasingCurve.InOutBounce: 'Bounce accel/decel', 
     QtCore.QEasingCurve.OutInBounce: 'Bounce decel/accel', 
 }
+
+halfSqrt = sqrt(2) / 2
+restSqrt = 1 - halfSqrt
+cubicTranslation = {
+    QtCore.QEasingCurve.InQuad: lambda x1, y1, x2, y2: (x1 + (x2 - x1) / 3, y1, x1 + (x2 - x1) / 1.5, y1 + (y2 - y1) / 3, x2, y2), 
+    QtCore.QEasingCurve.OutQuad: lambda x1, y1, x2, y2: (x1 + (x2 - x1) / 3, y1 + (y2 - y1) / 1.5, x1 + (x2 - x1) / 1.5, y2, x2, y2), 
+    QtCore.QEasingCurve.InCubic: lambda x1, y1, x2, y2: (x1 + (x2 - x1) / 3, y1, x1 + (x2 - x1) / 1.5, y1, x2, y2), 
+    QtCore.QEasingCurve.OutCubic: lambda x1, y1, x2, y2: (x1 + (x2 - x1) / 3, y2, x1 + (x2 - x1) / 1.5, y2, x2, y2), 
+    QtCore.QEasingCurve.InSine: lambda x1, y1, x2, y2: (x1 + (x2 - x1) * .25, y1, x1 + (x2 - x1) * .5, y1 + (y2 - y1) * .2, x2, y2), 
+    QtCore.QEasingCurve.OutSine: lambda x1, y1, x2, y2: (x1 + (x2 - x1) * .5, y1 + (y2 - y1) * .8, x1 + (x2 - x1) * .75, y2, x2, y2), 
+    QtCore.QEasingCurve.InExpo: lambda x1, y1, x2, y2: (x1 + (x2 - x1) * halfSqrt, y1, x1 + (x2 - x1) / 1.2, y1, x2, y2), 
+    QtCore.QEasingCurve.OutExpo: lambda x1, y1, x2, y2: (x1 + (x2 - x1) / 6, y2, x1 + (x2 - x1) * restSqrt, y2, x2, y2), 
+    QtCore.QEasingCurve.InCirc: lambda x1, y1, x2, y2: (x1 + (x2 - x1) * .55, y1, x2, y1 + (y2 - y1) * .45, x2, y2), 
+    QtCore.QEasingCurve.OutCirc: lambda x1, y1, x2, y2: (x1, y1 + (y2 - y1) * .55, x1 + (x2 - x1) * .45, y2, x2, y2), 
+}
+
 
 curveFuncs = {}
 def getCurveFunc(curveType):
@@ -226,6 +242,45 @@ def parseTime(seconds, verbose=False, approx=False, floatSeconds=True):
             return '{} hour{}, {} minutes and {} seconds'.format(hours, minutes, seconds)
         return '{:02.0f}:{:02.0f}:{:.0{}f}'.format(hours, minutes, seconds, 3 if floatSeconds else '')
 
+
+class Envelope(object):
+    def __init__(self, nodes=None, curves=None, waveType=0):
+        self.nodes = nodes[:] if nodes is not None else [(0, .5)]
+        self.curves = curves.copy() if curves is not None else {}
+        self.waveType = waveType
+
+    def fullIter(self):
+        for i, (x, y) in enumerate(self.nodes):
+            yield x, y, self.curves.get(i)
+
+    def clear(self):
+        self.nodes[:] = []
+
+    def __len__(self):
+        return len(self.nodes)
+
+    def __getitem__(self, pos):
+        for x, y in self.nodes:
+            if x == pos:
+                return y
+        return y if pos else 0
+
+    def __setslice__(self, start, end, values):
+        self.nodes[start:end] = values
+
+    def __setitem__(self, pos, value):
+        self.nodes.append((pos, value))
+        self.sort()
+
+    def sort(self):
+        self.nodes.sort(key=lambda d: d[0])
+
+    def __iter__(self):
+        self.sort()
+        return iter(self.nodes)
+
+    def __repr__(self):
+        return ', '.join('{:.04f}: {:.04f}'.format(x, y) for x, y in self.nodes)
 
 
 class ActivateDrag(QtGui.QDrag):

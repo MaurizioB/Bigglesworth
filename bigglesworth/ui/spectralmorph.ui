@@ -6,15 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>680</width>
-    <height>505</height>
+    <width>724</width>
+    <height>504</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Spectral morph editor</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout" rowstretch="10,1,1">
-   <item row="1" column="1">
+  <layout class="QGridLayout" name="gridLayout" rowstretch="10,1,1,0">
+   <item row="2" column="1">
     <widget class="QWidget" name="widget" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -32,7 +32,114 @@
       <property name="spacing">
        <number>4</number>
       </property>
-      <item row="6" column="2">
+      <item row="0" column="0" rowspan="2">
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QPushButton" name="playBtn">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="toolTip">
+           <string>Play full transition</string>
+          </property>
+          <property name="statusTip">
+           <string>Play full transition</string>
+          </property>
+          <property name="icon">
+           <iconset theme="media-playback-start">
+            <normaloff/>
+           </iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="previewBtn">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="toolTip">
+           <string>Play waves on mouse hover</string>
+          </property>
+          <property name="statusTip">
+           <string>Play waves on mouse hover</string>
+          </property>
+          <property name="icon">
+           <iconset theme="document-preview">
+            <normaloff/>
+           </iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item alignment="Qt::AlignHCenter">
+         <widget class="VolumeSlider" name="volumeSlider">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+         </widget>
+        </item>
+        <item alignment="Qt::AlignHCenter">
+         <widget class="VolumeIcon" name="volumeIcon">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="0" column="1" rowspan="2">
+       <widget class="Line" name="line_3">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QGraphicsView" name="previewView">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="backgroundBrush">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </property>
+        <property name="interactive">
+         <bool>false</bool>
+        </property>
+        <property name="renderHints">
+         <set>QPainter::Antialiasing|QPainter::TextAntialiasing</set>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
        <layout class="QGridLayout" name="gridLayout_3">
         <property name="horizontalSpacing">
          <number>4</number>
@@ -94,169 +201,63 @@
         </item>
        </layout>
       </item>
-      <item row="0" column="1" rowspan="7">
-       <widget class="Line" name="line_3">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="2">
-       <widget class="QPushButton" name="addBtn">
-        <property name="text">
-         <string>Add envelope</string>
-        </property>
-        <property name="icon">
-         <iconset theme="list-add">
-          <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0" rowspan="7">
-       <layout class="QVBoxLayout" name="verticalLayout">
-        <item>
-         <widget class="QPushButton" name="playBtn">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="toolTip">
-           <string>Play full transition</string>
-          </property>
-          <property name="statusTip">
-           <string>Play full transition</string>
-          </property>
-          <property name="icon">
-           <iconset theme="media-playback-start"/>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="previewBtn">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="toolTip">
-           <string>Play waves on mouse hover</string>
-          </property>
-          <property name="statusTip">
-           <string>Play waves on mouse hover</string>
-          </property>
-          <property name="icon">
-           <iconset theme="document-preview"/>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item alignment="Qt::AlignHCenter">
-         <widget class="VolumeSlider" name="volumeSlider">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-         </widget>
-        </item>
-        <item alignment="Qt::AlignHCenter">
-         <widget class="VolumeIcon" name="volumeIcon">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item row="2" column="2">
-       <widget class="Line" name="line">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="2">
-       <widget class="QPushButton" name="deleteBtn">
-        <property name="text">
-         <string>Remove envelope</string>
-        </property>
-        <property name="icon">
-         <iconset theme="edit-delete">
-          <normaloff/>
-         </iconset>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="2">
-       <layout class="QHBoxLayout" name="horizontalLayout_2">
-        <item>
-         <widget class="QLabel" name="label">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>Snap to</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="waveSnapChk">
-          <property name="statusTip">
-           <string>Vertical snap to wave positions</string>
-          </property>
-          <property name="text">
-           <string>waves</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="valueSnapChk">
-          <property name="statusTip">
-           <string>Horizontal snap to 5% grid</string>
-          </property>
-          <property name="text">
-           <string>values</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item row="5" column="2">
-       <spacer name="verticalSpacer">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>20</width>
-          <height>40</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
      </layout>
     </widget>
    </item>
-   <item row="1" column="0">
-    <widget class="QScrollArea" name="scrollArea">
+   <item row="3" column="0" colspan="2">
+    <layout class="QHBoxLayout" name="buttonLayout">
+     <item>
+      <widget class="StatusBar" name="statusBar">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDialogButtonBox" name="buttonBox">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="standardButtons">
+        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="0" column="0" colspan="2">
+    <widget class="QGraphicsView" name="envelopeView">
+     <property name="statusTip">
+      <string>Double click to create new nodes, Shift+click to remove, middle click to switch to node envelope; right click on an active node/line to edit curve type</string>
+     </property>
+     <property name="backgroundBrush">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>0</red>
+        <green>0</green>
+        <blue>0</blue>
+       </color>
+      </brush>
+     </property>
+     <property name="renderHints">
+      <set>QPainter::Antialiasing|QPainter::TextAntialiasing</set>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="SpecHarmonicsScrollArea" name="scrollArea">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
        <horstretch>0</horstretch>
@@ -278,7 +279,7 @@
         <x>0</x>
         <y>0</y>
         <width>16</width>
-        <height>156</height>
+        <height>119</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -295,30 +296,101 @@
      </widget>
     </widget>
    </item>
-   <item row="0" column="0" colspan="2">
-    <widget class="QGraphicsView" name="envelopeView">
-     <property name="toolTip">
-      <string>Double click to create new nodes, right click to remove, middle to switch envelope</string>
-     </property>
-     <property name="statusTip">
-      <string>Double click to create new nodes, right click to remove, middle to switch envelope</string>
-     </property>
-     <property name="backgroundBrush">
-      <brush brushstyle="SolidPattern">
-       <color alpha="255">
-        <red>0</red>
-        <green>0</green>
-        <blue>0</blue>
-       </color>
-      </brush>
-     </property>
-     <property name="renderHints">
-      <set>QPainter::Antialiasing|QPainter::TextAntialiasing</set>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="0" colspan="2">
-    <layout class="QHBoxLayout" name="buttonLayout">
+   <item row="1" column="0" colspan="2">
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QPushButton" name="addBtn">
+       <property name="text">
+        <string>Add envelope</string>
+       </property>
+       <property name="icon">
+        <iconset theme="list-add">
+         <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="deleteBtn">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>Remove envelope</string>
+       </property>
+       <property name="icon">
+        <iconset theme="edit-delete">
+         <normaloff/>
+        </iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="Line" name="line_2">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Snap to</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="waveSnapChk">
+       <property name="statusTip">
+        <string>Vertical snap to wave positions</string>
+       </property>
+       <property name="text">
+        <string>wave indexes</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="valueSnapChk">
+       <property name="statusTip">
+        <string>Horizontal snap to 5% grid</string>
+       </property>
+       <property name="text">
+        <string>values</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="envSnapChk">
+       <property name="text">
+        <string>envelopes</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="Line" name="line">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
+     </item>
      <item>
       <widget class="QToolButton" name="presetsBtn">
        <property name="enabled">
@@ -334,42 +406,15 @@
         <string>Presets</string>
        </property>
        <property name="icon">
-        <iconset theme="template"/>
+        <iconset theme="template">
+         <normaloff/>
+        </iconset>
        </property>
        <property name="popupMode">
         <enum>QToolButton::MenuButtonPopup</enum>
        </property>
        <property name="toolButtonStyle">
         <enum>Qt::ToolButtonTextBesideIcon</enum>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="Line" name="line_2">
-       <property name="minimumSize">
-        <size>
-         <width>30</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QDialogButtonBox" name="buttonBox">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="standardButtons">
-        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
        </property>
       </widget>
      </item>
@@ -402,6 +447,17 @@
    <class>VolumeIcon</class>
    <extends>QLabel</extends>
    <header>bigglesworth.wavetables.widgets</header>
+  </customwidget>
+  <customwidget>
+   <class>StatusBar</class>
+   <extends>QLabel</extends>
+   <header>bigglesworth.wavetables.spectral</header>
+  </customwidget>
+  <customwidget>
+   <class>SpecHarmonicsScrollArea</class>
+   <extends>QScrollArea</extends>
+   <header>bigglesworth.wavetables.spectral</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -10,16 +10,21 @@ QtGui.QIconEngineV2 = QIconEngineV2
 from bigglesworth.utils import sanitize, loadUi, getCardinal
 from bigglesworth.dialogs.messageboxes import AdvancedMessageBox
 from bigglesworth.wavetables import UidColumn, NameColumn, SlotColumn, EditedColumn, DataColumn, PreviewColumn, DumpedColumn
-from bigglesworth.wavetables.utils import ActivateDrag, curves, getCurvePath, sineValues
+from bigglesworth.wavetables.utils import ActivateDrag, curves, getCurvePath, sineValues, waveFunction
 from bigglesworth.wavetables.graphics import SampleItem, NextWaveScene, WaveTransformItem
 
+CurveIconType, WaveIconType = 0, 1
+
+WaveLabels = ['Sine', 'Square', 'Sawtooth', 'Inv. Saw']
 
 class IconEngine(QtGui.QIconEngineV2):
-    pixmapDict = {}
 
-    def __init__(self, curveType):
+    def __init__(self, iconType, icon):
         QtGui.QIconEngineV2.__init__(self)
-        self.curveType = curveType
+        self.iconType = iconType
+        self.icon = icon
+        self.pixmapDict = {}
+        self.paths = {}
 
     def pixmap(self, size, mode, state):
         try:
@@ -29,9 +34,23 @@ class IconEngine(QtGui.QIconEngineV2):
             pixmap.fill(QtCore.Qt.transparent)
             self.pixmapDict[(size, mode, state)] = pixmap
             qp = QtGui.QPainter(pixmap)
+            if mode == QtGui.QIcon.Disabled:
+                qp.setPen(QtWidgets.QApplication.palette().color(QtGui.QPalette.Disabled, QtGui.QPalette.Text))
             qp.setRenderHints(qp.Antialiasing)
             size = min(size.width(), size.height())
-            qp.drawPath(getCurvePath(self.curveType, size))
+            if self.iconType == CurveIconType:
+                qp.drawPath(getCurvePath(self.icon, size))
+            else:
+                path = self.paths.get(size)
+                if not path:
+                    values = waveFunction[self.icon](1, size)
+                    path = QtGui.QPainterPath()
+                    half = size * .5
+                    path.moveTo(0, half)
+                    for x, y in enumerate(values):
+                        path.lineTo(x, -y * half + half)
+                    self.paths[size] = path
+                qp.drawPath(path)
             qp.end()
             return pixmap
 
@@ -40,13 +59,30 @@ class IconEngine(QtGui.QIconEngineV2):
         qp.setRenderHints(qp.Antialiasing)
         size = min(rect.width(), rect.height())
         qp.translate(rect.topLeft())
-        qp.drawPath(getCurvePath(self.curveType, size))
+        if self.iconType == CurveIconType:
+            qp.drawPath(getCurvePath(self.icon, size))
+        else:
+            path = self.paths.get(size)
+            if not path:
+                values = waveFunction[self.icon](1, size)
+                path = QtGui.QPainterPath()
+                half = size * .5
+                path.moveTo(0, half)
+                for x, y in enumerate(values):
+                    path.lineTo(x, -y * half + half)
+                self.paths[size] = path
+            qp.drawPath(path)
         qp.restore()
 
 
 class CurveIcon(QtGui.QIcon):
     def __init__(self, curveType=QtCore.QEasingCurve.Linear):
-        QtGui.QIcon.__init__(self, IconEngine(curveType))
+        QtGui.QIcon.__init__(self, IconEngine(CurveIconType, curveType))
+
+
+class WaveIcon(QtGui.QIcon):
+    def __init__(self, waveType=0):
+        QtGui.QIcon.__init__(self, IconEngine(WaveIconType, waveType))
 
 
 class ExpandingView(QtWidgets.QListView):
@@ -78,7 +114,11 @@ class PositiveSpin(QtWidgets.QSpinBox):
 
 
 class TransformWidget(QtWidgets.QWidget):
+    changeTransformModeRequested = QtCore.pyqtSignal(int)
     specTransformRequest = QtCore.pyqtSignal()
+    changeTransformCurveRequested = QtCore.pyqtSignal(int)
+    changeTransformTranslRequested = QtCore.pyqtSignal(int)
+
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         loadUi('ui/wavetablemorphwidget.ui', self)
@@ -89,19 +129,30 @@ class TransformWidget(QtWidgets.QWidget):
             self.nextTransformCombo.addItem(icon, name)
         self.nextTransformCombo.currentIndexChanged.connect(self.setCurrentTransformMode)
         self.curveTransformCombo.currentIndexChanged.connect(self.setCurrentTransformCurve)
+        self.translOffsetSpin.valueChanged.connect(self.changeTransformTranslRequested)
         self.currentTransform = None
+        self.currentIndex = None
         self.specTransformEditBtn.clicked.connect(self.specTransformRequest)
 
     def setCurrentTransformMode(self, mode):
         self.nextTransformCycler.setCurrentIndex(mode)
-        self.currentTransform.setMode(mode)
+        self.changeTransformModeRequested.emit(mode)
+#        self.currentTransform.setMode(mode)
 
     def setCurrentTransformCurve(self, index):
-        self.currentTransform.setData({'curve': self.curveTransformCombo.itemData(index)})
+#        self.currentTransform.setData({'curve': self.curveTransformCombo.itemData(index)})
+        self.changeTransformCurveRequested.emit(self.curveTransformCombo.itemData(index))
+
+    def reload(self):
+        try:
+            self.setTransform(self.keyFrames[self.currentIndex])
+        except:
+            self.setTransform(self.keyFrames[0])
 
     def setTransform(self, keyFrame):
-        if keyFrame.nextTransform == self.currentTransform:
-            return
+#        if keyFrame.nextTransform == self.currentTransform:
+#            return
+        self.currentIndex = keyFrame.index
         if self.currentTransform:
             self.currentTransform.changed.disconnect(self.updateTransform)
         self.currentTransform = keyFrame.nextTransform
@@ -110,7 +161,8 @@ class TransformWidget(QtWidgets.QWidget):
         self.updateTransform()
 
     def updateTransform(self):
-        if len(self.keyFrames) > 1 and self.currentTransform and self.currentTransform.isValid() and not self.currentTransform.isContiguous():
+#        if len(self.keyFrames) > 1 and self.currentTransform and self.currentTransform.isValid() and not self.currentTransform.isContiguous():
+        if self.currentTransform and self.currentTransform.isValid() and not self.currentTransform.isContiguous():
             self.nextTransformCombo.setEnabled(True)
             self.nextTransformCombo.blockSignals(True)
             self.nextTransformCombo.setCurrentIndex(self.currentTransform.mode)
@@ -121,6 +173,10 @@ class TransformWidget(QtWidgets.QWidget):
                 self.curveTransformCombo.blockSignals(True)
                 self.curveTransformCombo.setCurrentCurve(self.currentTransform.curve)
                 self.curveTransformCombo.blockSignals(False)
+            elif self.currentTransform.mode == WaveTransformItem.TransMorph:
+                self.translOffsetSpin.blockSignals(True)
+                self.translOffsetSpin.setValue(self.currentTransform.translate)
+                self.translOffsetSpin.blockSignals(False)
         else:
             self.nextTransformCombo.setEnabled(False)
             self.nextTransformCycler.setEnabled(False)
@@ -244,6 +300,7 @@ class HarmonicsSlider(QtWidgets.QWidget):
     drag = QtCore.pyqtSignal(float)
     triggered = QtCore.pyqtSignal()
     value = 0
+    fract = None
 
     names = [
         'Fundamental', 
@@ -264,15 +321,15 @@ class HarmonicsSlider(QtWidgets.QWidget):
         '5th octave'
     ]
 
-    def __init__(self, fract, interactive=False, polarity=1):
+    def __init__(self, fract, interactive=False):
         QtWidgets.QWidget.__init__(self)
         self.setMouseTracking(True)
         self.interactive = interactive
-        self.polarity = polarity
+        self.arrow = False
+#        self.polarity = polarity
         self.setFract(fract)
 #        self.value = 0
         self.labelFont = self.font()
-        self.arrow = False
         self._selected = False
         fontHeight = self.fontMetrics().height() * 1.5
         self.baseSize = QtCore.QSize(self.baseSize)
@@ -288,11 +345,24 @@ class HarmonicsSlider(QtWidgets.QWidget):
             self.setMinimumSize(self.baseSize)
             self.panelRect = QtCore.QRect(0, 2, self.baseSize.width(), fontHeight - 4)
             self.labelRect = QtCore.QRect(0, fontHeight, self.baseSize.width(), fontHeight)
+
+            self.menu = QtWidgets.QMenu()
+            self.menuActionGroup = QtWidgets.QActionGroup(self.menu)
+            for wave, label in enumerate(WaveLabels):
+                action = self.menu.addAction(WaveIcon(wave), label)
+                action.setCheckable(True)
+                self.menuActionGroup.addAction(action)
+                if wave:
+                    action.setEnabled(False)
+
         self.sliderRect.moveTop(self.labelRect.bottom())
 
     def setFract(self, fract):
+        if fract == self.fract:
+            return
         self.fract = fract
-        self.label = '/{}'.format(self.fract + 1)
+        fract = abs(fract)
+        self.label = '/{}'.format(fract)
         if self.interactive:
             if 'linux' in sys.platform:
                 self.label += u' ▾'
@@ -301,16 +371,19 @@ class HarmonicsSlider(QtWidgets.QWidget):
                 self.arrow = True
         else:
             self.arrow = False
-        if fract <= len(self.names) - 1:
-            self.statusName = self.names[fract]
+        if fract <= len(self.names):
+            self.statusName = self.names[fract - 1]
         else:
-            self.statusName = '{} harmonic'.format(getCardinal(fract + 1))
+            self.statusName = '{} harmonic'.format(getCardinal(fract))
         self.setStatusTip()
+        self.update()
 
     def setStatusTip(self, emit=False):
 #        strValue = '{:.02f}'.format(self.value * 50).rstrip('0').rstrip('.')
         statusText = '{} ({:.02f}%)'.format(self.statusName, self.value * 100)
-        if self.polarity < 0:
+        if self.fract >> 7:
+            statusText += WaveLabels[abs(self.fract >> 7)]
+        if self.fract < 0:
             statusText += ' negative'
         QtWidgets.QWidget.setStatusTip(self, statusText)
         if emit:
@@ -320,8 +393,9 @@ class HarmonicsSlider(QtWidgets.QWidget):
         return self.baseSize
 
     def wheelEvent(self, event):
-        multi = .2 if event.modifiers() == QtCore.Qt.ShiftModifier else 1
-        self.setValue(self.value + (.05 if event.delta() > 0 else -.05) * multi)
+        if self.sliderEnabled:
+            multi = .2 if event.modifiers() == QtCore.Qt.ShiftModifier else 1
+            self.setValue(self.value + (.05 if event.delta() > 0 else -.05) * multi)
 
     def getValueFromY(self, y):
         y = sanitize(0, y - self.sliderRect.top(), self.sliderRect.bottom())
@@ -334,6 +408,12 @@ class HarmonicsSlider(QtWidgets.QWidget):
         self.labelFont = self.font()
         self.labelFont.setBold(selected)
         self.selected.emit(selected)
+
+    def contextMenuEvent(self, event):
+        if not self.interactive:
+            return
+        self.menuActionGroup.actions()[abs(self.fract) >> 7].setChecked(True)
+        self.menu.exec_(QtGui.QCursor.pos())
 
     def mousePressEvent(self, event):
         if event.buttons() == QtCore.Qt.LeftButton:
@@ -380,15 +460,15 @@ class HarmonicsSlider(QtWidgets.QWidget):
         self.value = sanitize(0, value, 1)
         self.rebuildPaths()
         self.update()
-        self.setStatusTip(True)
+        self.setStatusTip(emit)
         if emit:
             self.valueChanged.emit(self.fract, self.value)
             self.valueChanged[float, float].emit(self.value, oldValue)
 
     def togglePolarity(self):
-        self.polarity *= -1
+        self.setFract(self.fract * -1)
 #        self.curvePath = self.positivePath if self.polarity > 0 else self.negativePath
-        self.polarityChanged.emit(self.polarity)
+        self.polarityChanged.emit(self.fract)
         self.setStatusTip(True)
         self.update()
 
@@ -410,7 +490,6 @@ class HarmonicsSlider(QtWidgets.QWidget):
         if event.type() == QtCore.QEvent.EnabledChange:
             self.setSliderEnabled(self.isEnabled())
 
-
     def resizeEvent(self, event):
         if self.interactive:
             self.rebuildPaths()
@@ -421,7 +500,7 @@ class HarmonicsSlider(QtWidgets.QWidget):
 #        self.curvePath = self.positivePath if self.polarity > 0 else self.negativePath
         y = self.panelRect.height() / 2.
         count = self.panelRect.width() - 4
-        values = sineValues(1, count)
+        values = waveFunction[self.fract >> 7](1, count)
 #        ratio = self.value / 2.
         for x, v in zip(range(count), values):
             self.positivePath.lineTo(x, -v * y * self.value)
@@ -440,16 +519,17 @@ class HarmonicsSlider(QtWidgets.QWidget):
         qp.translate(.5, .5)
         qp.setRenderHints(qp.Antialiasing)
 
-        if self.polarity > 0:
-            qp.drawPath(self.positivePath)
-        else:
-            qp.save()
-            qp.setBrush(QtCore.Qt.black)
-            qp.setPen(QtCore.Qt.NoPen)
-            qp.drawRect(self.panelRect)
-            qp.setPen(QtCore.Qt.white)
-            qp.drawPath(self.negativePath)
-            qp.restore()
+        if self.interactive:
+            if self.fract > 0:
+                qp.drawPath(self.positivePath)
+            else:
+                qp.save()
+                qp.setBrush(QtCore.Qt.black)
+                qp.setPen(QtCore.Qt.NoPen)
+                qp.drawRect(self.panelRect)
+                qp.setPen(QtCore.Qt.white)
+                qp.drawPath(self.negativePath)
+                qp.restore()
         qp.setFont(self.labelFont)
         qp.drawText(self.labelRect, QtCore.Qt.AlignCenter, self.label)
         if self.arrow:
@@ -496,7 +576,7 @@ class HarmonicsWidget(QtWidgets.QWidget):
         self.selection = set()
         self.values = [0 for _ in range(50)]
         self.override = -1
-        for f in range(50):
+        for f in range(1, 51):
             slider = HarmonicsSlider(f)
             layout.addWidget(slider)
             slider.installEventFilter(self)
@@ -533,6 +613,7 @@ class HarmonicsWidget(QtWidgets.QWidget):
         self.values = [0 for _ in range(50)]
 
     def setHarmonic(self, harmonic, value):
+        harmonic -= 1
         self.values[harmonic] = value
         if harmonic in self.selection:
             for h in self.selection - set((harmonic, )):
@@ -545,7 +626,7 @@ class HarmonicsWidget(QtWidgets.QWidget):
         menu = QtWidgets.QMenu()
         child = self.childAt(event.pos())
         if child:
-            selected = child.fract in self.selection
+            selected = child.fract - 1 in self.selection
             selectAction = menu.addAction('Deselect' if selected else 'Select')
             if not selected:
                 selectAction.setIcon(QtGui.QIcon.fromTheme('checkbox'))
@@ -1540,7 +1621,7 @@ class BlofeldWaveTable(QtWidgets.QTableView):
     def copy(self, source, target):
         if len(source) != len(target):
             raise
-        print(source, target)
+#        print(source, target)
 #        return
         model = self.model().sourceModel()
         waveTableModel = self.model().waveTableModel
@@ -1737,7 +1818,7 @@ class WaveTableDock(QtWidgets.QDockWidget):
 
     def changeEvent(self, event):
         if event.type() == QtCore.QEvent.ActivationChange:
-            self.parent().checkDock()
+            self.parent().checkActivation()
         return QtWidgets.QDockWidget.changeEvent(self, event)
 
     def setState(self, state):

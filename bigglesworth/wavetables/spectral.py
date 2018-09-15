@@ -1,11 +1,31 @@
 # *-* encoding: utf-8 *-*
 
 import sys
+import numpy as np
 from Qt import QtCore, QtGui, QtWidgets
 
 from bigglesworth.utils import loadUi, getCardinal, getQtFlags, sanitize
 from bigglesworth.wavetables.widgets import HarmonicsSlider, CurveIcon
-from bigglesworth.wavetables.utils import curves
+from bigglesworth.wavetables.utils import curves, waveFunction, cubicTranslation, getCurveFunc, Envelope
+
+FractRole = QtCore.Qt.UserRole + 1
+
+
+class StatusBar(QtWidgets.QLabel):
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QLabel.__init__(self, *args, **kwargs)
+        self.timer = QtCore.QTimer()
+        self.timer.setSingleShot(True)
+        self.timer.timeout.connect(self.clear)
+
+    def showMessage(self, message, timeout=0):
+        if message == self.text():
+            return
+        self.setText(message)
+        self.timer.stop()
+        if timeout:
+            self.timer.setInterval(timeout)
+            self.timer.start()
 
 
 class RangeLabel(QtWidgets.QLabel):
@@ -44,7 +64,23 @@ class StartRangeLabel(RangeLabel):
 
 
 class EndRangeLabel(RangeLabel):
-    def resizeEvent(self, event):
+    def setNum(self, num):
+        if num <= 64:
+            self.resizeEvent = self.resizeEventNormal
+        else:
+            num = 1
+            self.resizeEvent = self.resizeEventFinal
+        RangeLabel.setNum(self, num)
+
+    def resizeEventFinal(self, event):
+        RangeLabel.resizeEvent(self, event)
+        half = self.rectSize * .5
+        rect = QtCore.QRectF(-half, -half, self.rectSize, self.rectSize)
+        self.path = QtGui.QPainterPath()
+        self.path.arcMoveTo(rect, 210)
+        self.path.arcTo(rect, 210, 300)
+
+    def resizeEventNormal(self, event):
         RangeLabel.resizeEvent(self, event)
         half = self.rectSize * .5
         self.path = QtGui.QPainterPath()
@@ -61,11 +97,17 @@ class ToolTipSlider(QtWidgets.QSlider):
     def __init__(self, *args, **kwargs):
         QtWidgets.QSlider.__init__(self, *args, **kwargs)
         self.label = QtWidgets.QLabel(self)
+        self.label.setAlignment(QtCore.Qt.AlignCenter)
         self.label.setFrameStyle(self.label.StyledPanel|self.label.Sunken)
+        l, t, r, b = self.label.getContentsMargins()
+        self.label.setMinimumWidth(self.fontMetrics().width('66') + self.label.frameWidth() * 2 + l + r)
 
     def setValue(self, value):
         QtWidgets.QSlider.setValue(self, value)
-        self.label.setNum(value + 1)
+        if value <= 63:
+            self.label.setNum(value + 1)
+        else:
+            self.label.setNum(1)
         option = QtWidgets.QStyleOptionSlider()
         self.initStyleOption(option)
         handleRect = self.style().subControlRect(QtWidgets.QStyle.CC_Slider, option, QtWidgets.QStyle.SC_SliderHandle, self).adjusted(0, 0, -1, -1)
@@ -100,7 +142,6 @@ class FakeCombo(QtWidgets.QComboBox):
         pass
 
 class Selector(QtWidgets.QPushButton):
-    removeRequested = QtCore.pyqtSignal()
 
     def __init__(self, main):
         QtWidgets.QPushButton.__init__(self, QtGui.QIcon.fromTheme('document-edit'), '')
@@ -121,28 +162,33 @@ class Selector(QtWidgets.QPushButton):
             }
         ''')
 
+        self.menu = QtWidgets.QMenu()
+        self.copyAction = self.menu.addAction(QtGui.QIcon.fromTheme('edit-copy'), 'Copy envelope')
+        self.pasteAction = self.menu.addAction(QtGui.QIcon.fromTheme('edit-paste'), 'Paste envelope')
+        self.menu.addSeparator()
+        self.removeAction = self.menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 'Remove')
+
     def mousePressEvent(self, event):
         self.click()
 
     def contextMenuEvent(self, event):
         self.click()
-#        self.clicked.emit(True)
-#        self.setChecked(True)
-        menu = QtWidgets.QMenu()
-        removeAction = menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 'Remove')
-        removeAction.triggered.connect(self.removeRequested.emit)
+        self.pasteAction.setEnabled(QtWidgets.QApplication.clipboard().mimeData().hasFormat('bigglesworth/EnvelopeData'))
         if len(self.main.envelopes) == 1:
-            removeAction.setEnabled(False)
-        menu.exec_(QtGui.QCursor.pos())
+            self.removeAction.setEnabled(False)
+        self.menu.exec_(QtGui.QCursor.pos())
 
 
 class SliderContainer(QtWidgets.QWidget):
     triggered = QtCore.pyqtSignal()
     fractChanged = QtCore.pyqtSignal(int)
+    polarityChanged = QtCore.pyqtSignal(int)
     valueChanged = QtCore.pyqtSignal(float, float)
     removeRequested = QtCore.pyqtSignal()
+    copyRequested = QtCore.pyqtSignal()
+    pasteRequested = QtCore.pyqtSignal()
 
-    def __init__(self, main, fract=None, polarity=1):
+    def __init__(self, main, fract, model):
         QtWidgets.QWidget.__init__(self)
         self.main = main
         layout = QtWidgets.QVBoxLayout()
@@ -152,17 +198,41 @@ class SliderContainer(QtWidgets.QWidget):
         self.selector = Selector(main)
         layout.addWidget(self.selector)
 
-        self.slider = HarmonicsSlider(fract, True, polarity)
+        self.slider = HarmonicsSlider(fract, True)
         self.slider.valueChanged[float, float].connect(self.valueChanged)
+        self.slider.polarityChanged.connect(self.polarityChanged)
         layout.addWidget(self.slider)
 #        self.setValue = self.slider.setValue
         self.setSliderEnabled = self.slider.setSliderEnabled
 
         self.selector.setMaximumWidth(self.slider.sizeHint().width())
-        self.selector.removeRequested.connect(self.removeRequested)
+        self.selector.copyAction.triggered.connect(self.copyRequested)
+        self.selector.pasteAction.triggered.connect(self.pasteRequested)
+        self.selector.removeAction.triggered.connect(self.removeRequested)
 
         self.fakeCombo = FakeCombo(self)
-        self.fakeCombo.currentIndexChanged.connect(self.setFract)
+        self.fakeCombo.setModel(model)
+        self.fakeCombo.view().setMinimumWidth(self.fakeCombo.view().sizeHintForColumn(0))
+        self.fakeCombo.setFixedSize(self.slider.labelRect.size())
+        self.fakeCombo.setCurrentIndex(abs(fract) - 1)
+        self.fakeCombo.currentIndexChanged.connect(self.setFractFromCombo)
+
+    def setFractFromCombo(self, index):
+        available = self.fakeCombo.itemData(index, FractRole)
+        if not available:
+            print('errore fract disponibili?!')
+            return
+        newIndex = index + 1
+        if abs(self.fract & 127) == abs(newIndex):
+            return
+        if self.fract > 0:
+            if not available & 1:
+                newIndex *= -1
+        else:
+            if not available & 2:
+                newIndex *= -1
+        self.setFract(newIndex + (self.fract >> 7))
+        QtWidgets.QApplication.sendEvent(self.window(), QtGui.QStatusTipEvent(self.slider.statusTip()))
 
     def setFract(self, fract):
         self.fract = fract
@@ -171,10 +241,10 @@ class SliderContainer(QtWidgets.QWidget):
     def resizeEvent(self, event):
         self.fakeCombo.move(self.slider.mapTo(self, self.slider.labelRect.topLeft()))
 
-    def setModel(self, model):
-        self.fakeCombo.setModel(model)
-        self.fakeCombo.view().setMinimumWidth(self.fakeCombo.view().sizeHintForColumn(0))
-        self.fakeCombo.setFixedSize(self.slider.labelRect.size())
+#    def setModel(self, model):
+#        self.fakeCombo.setModel(model)
+#        self.fakeCombo.view().setMinimumWidth(self.fakeCombo.view().sizeHintForColumn(0))
+#        self.fakeCombo.setFixedSize(self.slider.labelRect.size())
 #        self.fakeCombo.setFixedSize(QtCore.QSize(self.slider.labelRect.width(), 1))
 
     @property
@@ -253,9 +323,16 @@ class NodeItem(QtWidgets.QGraphicsItem):
         except:
             return False
 
+    @property
+    def envSnap(self):
+        try:
+            return self.scene().envSnap
+        except:
+            return False
+
     def setFract(self, fract):
         self.fract = fract
-        self.setZValue(-fract * .01)
+        self.setZValue(-abs(fract) * .01 + .01)
 
     def hoverEnterEvent(self, event):
         QtWidgets.QGraphicsItem.hoverEnterEvent(self, event)
@@ -295,6 +372,10 @@ class NodeItem(QtWidgets.QGraphicsItem):
                         value.setY(y + .05)
                     else:
                         value.setY(y)
+                if self.envSnap:
+                    for item in self.scene().paths.values():
+                        if item != self.path and item.near(value):
+                            value.setY(item.yAtX(value.x()))
         elif change == self.ItemPositionHasChanged:
             self.path.redraw(emit=value.y() * -1)
         elif change == self.ItemSelectedChange:
@@ -312,15 +393,35 @@ class NodeItem(QtWidgets.QGraphicsItem):
     def boundingRect(self):
         return self._rect
 
+    def contextMenuEvent(self, event):
+        if self.selectable:
+            self.setSelected(True)
+            menu = QtWidgets.QMenu()
+            self.path.curveMenu.nodeIndex = self.path.getSortedNodes().index(self)
+            self.path.checkCurveMenu()
+            menu.addMenu(self.path.curveMenu)
+            menu.addSeparator()
+            removeAction = menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 'Remove node')
+            removeAction.triggered.connect(lambda: self.path.removeNode(self))
+            res = menu.exec_(QtGui.QCursor.pos())
+            if res and res.data() is not None:
+                self.path.setCurve(res.data())
+
     def mousePressEvent(self, event):
         if not self.selectable:
             return QtWidgets.QGraphicsItem.mousePressEvent(self, event)
-        if event.buttons() == QtCore.Qt.RightButton:
+        if event.modifiers() == QtCore.Qt.ShiftModifier:
             self.path.removeNode(self)
 
     def mouseMoveEvent(self, event):
         self.scene().notifyPosition(self)
         QtWidgets.QGraphicsItem.mouseMoveEvent(self, event)
+
+    def selectionRect(self):
+        viewTransform = self.scene().view.viewportTransform()
+        inverted, _ = viewTransform.inverted()
+        transform = self.deviceTransform(viewTransform)
+        return inverted.mapRect(transform.mapRect(self.sceneBoundingRect()))
 
     def _shape(self):
         transform, _ = self.scene().view.transform().inverted()
@@ -330,11 +431,15 @@ class NodeItem(QtWidgets.QGraphicsItem):
 #        print(rect, path.boundingRect())
         return path
 
-    def contains(self, pos):
+    #overriding contains() has problems with isUnderMouse()
+    #we use it only for envelope switch detection
+    def _contains(self, pos):
         viewTransform = self.scene().view.viewportTransform()
         inverted, _ = viewTransform.inverted()
         transform = self.deviceTransform(viewTransform)
         rect = transform.mapRect(self.sceneBoundingRect())
+#        contains = pos in inverted.mapRect(rect)
+#        print(contains, pos, inverted.mapRect(rect))
         return pos in inverted.mapRect(rect)
 #        path = transform.map(self.path())
 #        stroke = self.stroker.createStroke(path)
@@ -363,13 +468,16 @@ class EnvelopePath(QtWidgets.QGraphicsPathItem):
     pens = normalPen, selectPen
     stroker = QtGui.QPainterPathStroker()
     stroker.setWidth(4)
+    nearStroker = QtGui.QPainterPathStroker()
+    nearStroker.setWidth(15)
 
     def __init__(self, slider, envelope):
         QtWidgets.QGraphicsPathItem.__init__(self)
         self.slider = slider
         self.slider.fractChanged.connect(self.setFract)
         self.envelope = envelope
-        self.uniqueEnvelope = []
+        self.curves = envelope.curves
+#        self.uniqueEnvelope = []
         self.slider.valueChanged[float, float].connect(self.setValue)
         self.nodes = []
         self.closed = False
@@ -377,13 +485,52 @@ class EnvelopePath(QtWidgets.QGraphicsPathItem):
         self.setPen(self.normalPen)
 
         self.menu = QtWidgets.QMenu()
-        for curve in sorted(curves):
-            action = self.menu.addAction(CurveIcon(curve), curves[curve])
+        self.menu.aboutToShow.connect(self.checkCurveMenu)
+        self.curveMenu = self.menu.addMenu('Curve type')
+        self.curveMenu.nodeIndex = 0
+        self.curveActions = QtWidgets.QActionGroup(self.curveMenu)
+        self.linearAction = self.curveMenu.addAction(CurveIcon(0), curves[0])
+        self.linearAction.setData(QtCore.QEasingCurve.Linear)
+        self.linearAction.setCheckable(True)
+        self.curveActions.addAction(self.linearAction)
+        self.curveActionDict = {0: self.linearAction}
+        for curve in sorted(cubicTranslation):
+            action = self.curveMenu.addAction(CurveIcon(curve), curves[curve])
             action.setData(curve)
+            action.setCheckable(True)
+            self.curveActions.addAction(action)
+            self.curveActionDict[curve] = action
+
+    def setup(self):
+        for x, y, curve in self.envelope.fullIter():
+            node = NodeItem(self)
+            node.setPos(x, -y)
+            self.scene().addItem(node)
+            self.addNode(node)
+        self.close()
+
+    def cubicTranslate(self, curve, pos1, pos2):
+        return cubicTranslation[curve](pos1.x(), pos1.y(), pos2.x(), pos2.y())
+
+    def applyEnvelope(self):
+        self.closed = False
+        while len(self.envelope) > len(self.nodes):
+            node = NodeItem(self)
+            self.scene().addItem(node)
+            self.nodes.append(node)
+            node.setFract(self.slider.fract)
+        while len(self.envelope) < len(self.nodes):
+            self.scene().removeItem(self.nodes.pop())
+        for (x, y), node in zip(self.envelope, self.nodes):
+            node.setPos(x, -y)
+
+        self.closed = True
+        self.redraw(True)
+        self.nodes[0].setSelected(True)
 
     def setFract(self, fract):
         [n.setFract(fract) for n in self.nodes]
-        QtWidgets.QGraphicsPathItem.setZValue(self, -fract * .01)
+        QtWidgets.QGraphicsPathItem.setZValue(self, -abs(fract) * .01)
 #        self.setZValue(-fract * .01)
 
     def setSelectable(self, selectable):
@@ -407,18 +554,42 @@ class EnvelopePath(QtWidgets.QGraphicsPathItem):
 
     def setZValue(self, z):
         QtWidgets.QGraphicsPathItem.setZValue(self, z)
-        [n.setZValue(z) for n in self.nodes]
+        [n.setZValue(z + .01) for n in self.nodes]
 
     def addNode(self, node):
         self.nodes.append(node)
         node.setFract(self.slider.fract)
 
+    def aboutToInsert(self):
+        self.closed = False
+
+    def insertComplete(self, node):
+        self.closed = True
+        insertIndex = self.getSortedNodes().index(node)
+        if not self.curves:
+            return
+        if insertIndex <= max(self.curves):
+            moved = set()
+            for index in reversed(self.curves.keys()):
+                if index <= insertIndex:
+                    break
+                moved.add(index)
+                newIndex = index + 1
+                self.curves[newIndex] = self.curves[index]
+                moved.discard(newIndex)
+            for index in moved:
+                self.curves.pop(index)
+
     def removeNode(self, node):
         if len(self.nodes) > 1:
+            nodeIndex = self.getSortedNodes().index(node)
             self.nodes.remove(node)
             self.scene().removeItem(node)
             self.redraw(True)
             self.nodes[0].setSelected(True)
+            self.scene().notifyPosition()
+            if nodeIndex in self.curves:
+                self.curves.pop(nodeIndex)
 
     def getSortedNodes(self):
         return sorted(self.nodes, key=lambda n: n.x())
@@ -427,48 +598,140 @@ class EnvelopePath(QtWidgets.QGraphicsPathItem):
         if not self.closed:
             return
         self.envelope.clear()
-        self.uniqueEnvelope[:] = []
         path = self.path()
-        if rebuild:
+        if rebuild or self.curves:
             path = QtGui.QPainterPath()
             path.lineTo(0, 0)
             count = -1
         else:
             count = path.elementCount()
-        for index, node in enumerate(self.getSortedNodes()):
-            if index >= count:
-                path.lineTo(node.pos())
+        if not self.curves and not rebuild:
+            for index, node in enumerate(self.getSortedNodes()):
+                if index >= count:
+                    path.lineTo(node.pos())
+                else:
+                    path.setElementPositionAt(index + 1, node.x(), node.y())
+                self.envelope[node.x()] = -node.y()
+            count = path.elementCount()
+            if count == len(self.nodes) + 1:
+                path.lineTo(1, node.y())
             else:
-                path.setElementPositionAt(index + 1, node.x(), node.y())
-            self.envelope[node.x()] = -node.y()
-            self.uniqueEnvelope.append((node.x(), -node.y()))
-        count = path.elementCount()
-        if count == len(self.nodes) + 1:
-#            print('chiudo', count, len(self.nodes), node.y())
-            path.lineTo(1, node.y())
+                path.setElementPositionAt(count - 1, 1, node.y())
         else:
-            path.setElementPositionAt(count - 1, 1, node.y())
+            prevPos = QtCore.QPoint(0, 0)
+            for index, node in enumerate(self.getSortedNodes()):
+                curve = self.curves.get(index)
+                if not curve:
+                    path.lineTo(node.pos())
+                else:
+                    data = self.cubicTranslate(curve, prevPos, node.pos())
+                    path.cubicTo(*data)
+                self.envelope[node.x()] = -node.y()
+                prevPos = node.pos()
+            path.lineTo(1, node.y())
         self.setPath(path)
         if emit:
             self.slider.setValue(emit, False)
+        self.scene().pathChanged.emit(self)
 
-    def _contextMenuEvent(self, event):
+    def checkCurveMenu(self):
+        if self.curveMenu.nodeIndex < len(self.nodes):
+            nodes = self.getSortedNodes()
+            prevX = 0
+            node = nodes[self.curveMenu.nodeIndex]
+            if self.curveMenu.nodeIndex:
+                prevX = nodes[self.curveMenu.nodeIndex - 1].x()
+#            print(node.x(), prevX)
+            if node.x() - prevX < .005:
+                self.curveMenu.setEnabled(False)
+            else:
+                self.curveMenu.setEnabled(True)
+                self.curveActionDict[self.curves.get(self.curveMenu.nodeIndex, 0)].setChecked(True)
+        else:
+            self.linearAction.setChecked(True)
+
+    def contextMenuEvent(self, event):
         if self.selectable and self.contains(event.pos()):
-            self.menu.exec_(QtGui.QCursor.pos())
+            x = event.scenePos().x()
+            self.curveMenu.nodeIndex = 0
+            for i, node in enumerate(self.getSortedNodes()):
+                self.curveMenu.nodeIndex = i
+                if x < node.selectionRect().right():
+                    break
+            else:
+                self.curveMenu.nodeIndex += 1
+            res = self.menu.exec_(QtGui.QCursor.pos())
+            if res:
+                self.setCurve(res.data())
         else:
             QtWidgets.QGraphicsPathItem.contextMenuEvent(self, event)
+
+    def setCurve(self, curve, nodeIndex=None):
+        if not nodeIndex:
+            nodeIndex = self.curveMenu.nodeIndex
+        if not curve:
+            try:
+                self.curves.pop(self.curveMenu.nodeIndex)
+            except:
+                pass
+        else:
+            self.curves[self.curveMenu.nodeIndex] = curve
+            if len(self.nodes) == self.curveMenu.nodeIndex:
+                self.closed = False
+                node = NodeItem(self, True)
+                self.scene().addItem(node)
+                node.setPos(1, 0)
+                self.addNode(node)
+                node.setZValue(self.nodes[0].zValue())
+                self.closed = True
+        self.redraw(True)
 
     def close(self):
         self.closed = True
         path = QtGui.QPainterPath()
         path.moveTo(0, 0)
+        prevPos = QtCore.QPoint(0, 0)
         for index, node in enumerate(self.getSortedNodes()):
-            path.lineTo(node.pos())
+            curve = self.curves.get(index)
+            if not curve:
+                path.lineTo(node.pos())
+            else:
+                path.cubicTo(*self.cubicTranslate(curve, prevPos, node.pos()))
+            prevPos = node.pos()
         path.lineTo(1, node.y())
         self.setPath(path)
 #        path = self.path()
 #        path.lineTo(1, self.nodes[-1].y())
 #        self.setPath(path)
+
+    def yAtX(self, pos):
+        prevX = prevY = 0
+        if not pos:
+            return -self.envelope[0]
+        for i, (x, y) in enumerate(self.envelope):
+            if x == pos:
+                return -y
+            elif x < pos:
+                prevX = x
+                prevY = y
+                continue
+            else:
+                curve = self.curves.get(i)
+                diff = y - prevY
+                ratio = (pos - prevX) / (x - prevX)
+                if not curve:
+                    return -(prevY + diff * ratio)
+                return -(prevY + diff * getCurveFunc(curve)(ratio))
+        return -y
+
+    def near(self, pos):
+        viewTransform = self.scene().view.viewportTransform()
+        inverted, _ = viewTransform.inverted()
+        transform = self.deviceTransform(viewTransform)
+        path = transform.map(self.path())
+        stroke = self.nearStroker.createStroke(path)
+        actual = inverted.map(stroke)
+        return actual.contains(pos)
 
     def contains(self, pos):
         viewTransform = self.scene().view.viewportTransform()
@@ -508,12 +771,11 @@ class ToolTipItem(QtWidgets.QGraphicsItem):
     def setItem(self, item, pos=None):
         if self.item == item:
             return
+        self.title = getCardinal(item.fract)
         if not pos:
-            self.title = getCardinal(item.fract + 1)
             self.posText = ''
             self._rect = self.baseRect
         else:
-            self.title = getCardinal(item.fract + 1)
             if self.scene().waveSnap:
                 self.posText = 'Value: {:.02f}%\nWave: {}'.format(max(0, -item.y() * 100), 
                     int(round(self.scene().start + item.x() / self.scene().waveRatio)) + 1)
@@ -549,13 +811,15 @@ class ToolTipItem(QtWidgets.QGraphicsItem):
 class IndexItem(QtWidgets.QGraphicsItemGroup):
     linePen = QtGui.QPen(QtGui.QColor(QtCore.Qt.darkGray), .5)
     linePen.setCosmetic(True)
+    thinLinePen = QtGui.QPen(QtGui.QColor(250, 250, 250, 64), .5)
+    thinLinePen.setCosmetic(True)
     indexBrush = QtGui.QBrush(QtGui.QColor(QtCore.Qt.lightGray))
 
     def __init__(self, index, showIndex):
         QtWidgets.QGraphicsItemGroup.__init__(self)
         self.index = index
         self.line = QtWidgets.QGraphicsLineItem(QtCore.QLineF(0, -2, 0, 1))
-        self.line.setPen(self.linePen)
+        self.line.setPen(self.linePen if showIndex else self.thinLinePen)
         self.addToGroup(self.line)
         if showIndex:
             self.line.setZValue(-1)
@@ -580,6 +844,11 @@ class EnvelopeScene(QtWidgets.QGraphicsScene):
     playPen = QtGui.QPen(QtGui.QColor('orange'), .5)
     playPen.setCosmetic(True)
     playHeadMoved = QtCore.pyqtSignal(float)
+    waveValues = QtCore.pyqtSignal(object)
+    pathChanged = QtCore.pyqtSignal(object)
+
+    previewResolution = 64
+    silentWave = np.array([0] * previewResolution, dtype='float64')
 
     def __init__(self, main):
         QtWidgets.QGraphicsScene.__init__(self)
@@ -589,6 +858,9 @@ class EnvelopeScene(QtWidgets.QGraphicsScene):
         self.waveRatio = .1
         self.waveSnap = False
         self.valueSnap = False
+        self.envSnap = False
+        self.currentEnvelope = None
+        self.pathChanged.connect(self.updateShape)
 
         self.playHead = self.addLine(QtCore.QLineF(0, -2, 0, 1))
         self.playHead.setPen(self.playPen)
@@ -597,6 +869,18 @@ class EnvelopeScene(QtWidgets.QGraphicsScene):
         self.toolTipItem = ToolTipItem()
         self.addItem(self.toolTipItem)
         self.toolTipItem.setPos(-2, 2)
+
+        self.shapeItem = QtWidgets.QGraphicsPathItem()
+        self.addItem(self.shapeItem)
+        self.shapeItem.setPen(QtGui.QPen(QtCore.Qt.NoPen))
+
+        envBrush = QtGui.QLinearGradient(0, -1, 0, 1)
+        envBrush.setCoordinateMode(envBrush.LogicalMode)
+        envBrush.setColorAt(0, QtGui.QColor(0, 128, 192, 64))
+        envBrush.setColorAt(.5, QtGui.QColor(200, 128, 192, 64))
+        envBrush.setColorAt(1, QtGui.QColor(0, 128, 192, 64))
+
+        self.shapeItem.setBrush(envBrush)
 
         self.indexItems = []
 
@@ -607,7 +891,19 @@ class EnvelopeScene(QtWidgets.QGraphicsScene):
 
     @property
     def sortedSliders(self):
-        return sorted(self.envelopes.keys(), key=lambda s: s.fract)
+        return sorted(self.envelopes.keys(), key=lambda s: (abs(s.fract & 127), -(s.fract & 127)))
+
+    def setCurrent(self, envelope):
+        self.currentEnvelope = envelope
+        self.updateShape(envelope)
+
+    def updateShape(self, envelope):
+        if envelope != self.currentEnvelope:
+            return
+        path = envelope.path()
+        path.lineTo(1, 0)
+        path.closeSubpath()
+        self.shapeItem.setPath(path)
 
     def notifyHover(self, item=None):
         if not item:
@@ -627,6 +923,8 @@ class EnvelopeScene(QtWidgets.QGraphicsScene):
 
     def setWaveRange(self, start, end):
         self.start = start
+        if not end:
+            end = 64
         self.end = end
         for item in self.indexItems:
             self.removeItem(item)
@@ -646,43 +944,57 @@ class EnvelopeScene(QtWidgets.QGraphicsScene):
         item.setZValue(-50)
         item.setX((end - start) * self.waveRatio)
 
-    def movePlayHead(self, pos, ignore=None):
+    def updateValues(self, pos, ignore=None, update=True):
         self.playHead.setX(pos)
+        values = np.copy(self.silentWave)
         for slider, envelope in self.envelopes.items():
-            if slider == ignore:
-                continue
             prevX = prevY = 0
             if not pos:
-                if envelope.get(0) is not None:
-                    slider.setValue(envelope[0], False)
-                else:
-                    slider.setValue(0, False)
-                continue
-            for x in sorted(envelope):
-                if not pos:
-                    slider.setValue(0, False)
-                    break
-                elif x == pos:
-                    slider.setValue(envelope[x], False)
-                    break
-                elif x < pos:
-                    prevX = x
-                    prevY = envelope[x]
-                else:
-                    y = envelope[x]
-                    diff = y - prevY
-                    ratio = (pos - prevX) / (x - prevX)
-                    slider.setValue(prevY + diff * ratio, False)
-                    break
+                value = envelope[0]
+#                if envelope.get(0) is not None:
+#                    value = envelope[0]
+#                else:
+#                    value = 0
             else:
-                slider.setValue(envelope[x], False)
-#        print(envelope, self.paths[slider].uniqueEnvelope)
+                for i, (x, y) in enumerate(sorted(envelope)):
+                    if not pos:
+                        value = 0
+                        break
+                    elif x == pos:
+                        value = envelope[x]
+                    elif x < pos:
+                        prevX = x
+                        prevY = envelope[x]
+                        continue
+                    else:
+                        y = envelope[x]
+                        diff = y - prevY
+                        ratio = (pos - prevX) / (x - prevX)
+                        curve = envelope.curves.get(i)
+                        if not curve:
+                            value = prevY + diff * ratio
+                        else:
+                            value = prevY + diff * getCurveFunc(curve)(ratio)
+                    break
+                else:
+#                    print(envelope.data)
+                    value = envelope[x]
+            if update and slider != ignore:
+                slider.setValue(value, False)
+#            value /= slider.fract * 2
+#            value *= .5
+            fract = abs(slider.fract)
+            np.add(values, np.multiply(waveFunction[fract >> 7](fract & 127, self.previewResolution), value), out=values)
+        self.waveValues.emit(values)
 
     def setWaveSnap(self, waveSnap):
         self.waveSnap = waveSnap
 
     def setValueSnap(self, valueSnap):
         self.valueSnap = valueSnap
+
+    def setEnvSnap(self, envSnap):
+        self.envSnap = envSnap
 
     def getSortedValues(self, slider):
         for x in sorted(self.envelopes[slider]):
@@ -694,19 +1006,22 @@ class EnvelopeScene(QtWidgets.QGraphicsScene):
             pathItem = self.paths.get(slider)
             if not pathItem:
                 pathItem = self.paths[slider] = EnvelopePath(slider, self.envelopes[slider])
-                for x, y in self.getSortedValues(slider):
-                    node = NodeItem(pathItem)
-                    node.setPos(x, -y)
-                    self.addItem(node)
-                    pathItem.addNode(node)
-                pathItem.close()
                 self.addItem(pathItem)
+                pathItem.setup()
                 pathItem.setPos(0, 0)
 #                pathItem.valueChanged.connect(lambda value, slider=slider: slider.setValue(value, False))
-            else:
-                if pathItem in existing:
-                    existing.remove(pathItem)
-            pathItem.setZValue(-slider.fract * .01)
+            elif pathItem in existing:
+                existing.remove(pathItem)
+#                pathItem.checkNodes()
+#                for x, y, node in izip_longest(self.envelopes[slider], pathItem.nodes, fillvalue=None):
+#                    if node is None:
+#                        node = NodeItem(pathItem)
+#                        node.setPos(x, -y)
+#                        self.addItem(node)
+#                        pathItem.addNode(node)
+#                    else:
+#                        node.setPos(x, -y)
+            pathItem.setZValue(-abs(slider.fract & 127) * .01)
             pathItem.setSelectable(slider.selector.isChecked())
         for pathItem in existing:
             [self.removeItem(n) for n in pathItem.nodes]
@@ -716,13 +1031,13 @@ class EnvelopeScene(QtWidgets.QGraphicsScene):
         if event.buttons() == QtCore.Qt.MiddleButton:
             pos = event.scenePos()
             for item in self.items(pos):
-                if isinstance(item, NodeItem) and item.contains(pos):
+                if isinstance(item, NodeItem) and item._contains(pos):
                     item.path.slider.selector.click()
         QtWidgets.QGraphicsScene.mousePressEvent(self, event)
 
     def mouseMoveEvent(self, event):
         x = sanitize(0, event.scenePos().x(), 1)
-        self.movePlayHead(x, self.main.currentSlider if self.selectedItems() else None)
+        self.updateValues(x, self.main.currentSlider if self.selectedItems() else None)
         self.playHeadMoved.emit(x)
 #        print(self.main.currentSlider, event.scenePos())
         QtWidgets.QGraphicsScene.mouseMoveEvent(self, event)
@@ -730,6 +1045,7 @@ class EnvelopeScene(QtWidgets.QGraphicsScene):
     def mouseDoubleClickEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
             node = NodeItem(self.main.currentPath, True)
+            self.main.currentPath.aboutToInsert()
             self.main.currentPath.addNode(node)
             pos = event.scenePos()
             if self.waveSnap:
@@ -748,9 +1064,57 @@ class EnvelopeScene(QtWidgets.QGraphicsScene):
                     pos.setY(y)
             node.setPos(pos)
             self.addItem(node)
+            self.main.currentPath.insertComplete(node)
             self.main.currentPath.redraw()
             node.setSelected(True)
         QtWidgets.QGraphicsScene.mouseDoubleClickEvent(self, event)
+
+
+class PreviewScene(QtWidgets.QGraphicsScene):
+    def __init__(self):
+        QtWidgets.QGraphicsScene.__init__(self)
+        self.previewTimer = QtCore.QTimer()
+        self.previewTimer.setSingleShot(True)
+        self.previewTimer.setInterval(1)
+        self.previewTimer.timeout.connect(self.paintPreview)
+        self.setSceneRect(QtCore.QRectF(0, -1, 63, 2))
+
+        self.currentValues = np.array([0] * 64)
+        self.currentPreviewPath = QtGui.QPainterPath()
+        self.currentPreviewPath.moveTo(0, 0)
+        for s in range(1, 64):
+            self.currentPreviewPath.lineTo(s, 0)
+        self.pathItem = self.addPath(self.currentPreviewPath)
+        pen = QtGui.QPen(QtGui.QColor(64, 192, 216), 1)
+        pen.setCosmetic(True)
+        self.pathItem.setPen(pen)
+
+    def queuePreview(self, values):
+        if np.array_equal(values, self.currentValues):
+            return
+        self.currentValues = values
+        self.previewTimer.start()
+
+    def paintPreview(self):
+        for sample, value in zip(range(64), self.currentValues):
+            self.currentPreviewPath.setElementPositionAt(sample, sample, -value)
+        self.pathItem.setPath(self.currentPreviewPath)
+
+
+class SpecHarmonicsScrollArea(QtWidgets.QScrollArea):
+    addEnvelopeRequest = QtCore.pyqtSignal()
+
+    def mouseDoubleClickEvent(self, event):
+        widget = QtWidgets.QApplication.widgetAt(QtGui.QCursor.pos())
+        if widget == self.viewport():
+            self.addEnvelopeRequest.emit()
+
+
+class FractModel(QtGui.QStandardItemModel):
+    def flags(self, index):
+        if index.data(FractRole):
+            return QtCore.Qt.ItemIsSelectable|QtCore.Qt.ItemIsEnabled
+        return QtCore.Qt.ItemIsSelectable
 
 
 class SpecTransformDialog(QtWidgets.QDialog):
@@ -759,7 +1123,6 @@ class SpecTransformDialog(QtWidgets.QDialog):
     def __init__(self, parent, transform=None):
         QtWidgets.QDialog.__init__(self, parent)
         loadUi('ui/spectralmorph.ui', self)
-        self.transform = transform
 
         self.envelopeScene = EnvelopeScene(self)
         self.envelopeView.setScene(self.envelopeScene)
@@ -767,21 +1130,27 @@ class SpecTransformDialog(QtWidgets.QDialog):
         self.envelopeScene.paths = self.paths = {}
         self.envelopeScene.playHeadMoved.connect(self.moveProgressSlider)
 
+        self.previewScene = PreviewScene()
+        self.previewView.setScene(self.previewScene)
+        self.envelopeScene.waveValues.connect(self.previewScene.queuePreview)
+
         self.selectors = QtWidgets.QButtonGroup()
 
+        self.scrollArea.addEnvelopeRequest.connect(self.addEnvelope)
         self.addBtn.clicked.connect(self.addEnvelope)
         self.deleteBtn.clicked.connect(self.removeEnvelope)
         self.waveSnapChk.toggled.connect(self.envelopeScene.setWaveSnap)
         self.valueSnapChk.toggled.connect(self.envelopeScene.setValueSnap)
+        self.envSnapChk.toggled.connect(self.envelopeScene.setEnvSnap)
 
-        self.sliderModel = QtGui.QStandardItemModel()
+        self.sliderModel = FractModel()
         for h, l in enumerate(HarmonicsSlider.names):
             item = QtGui.QStandardItem('{}. {}'.format(h + 1, l))
-            item.setData(h)
+            item.setData(2, FractRole)
             self.sliderModel.appendRow(item)
         for h in range(h + 1, 50):
             item = QtGui.QStandardItem('{} harmonic'.format(getCardinal(h + 1)))
-            item.setData(h)
+            item.setData(2, FractRole)
             self.sliderModel.appendRow(item)
 
         self.updatePaths = self.envelopeScene.updatePaths
@@ -814,15 +1183,42 @@ class SpecTransformDialog(QtWidgets.QDialog):
         self.startLbl.clicked.connect(lambda: self.progressSlider.setValue(self.progressSlider.minimum()))
         self.endLbl.clicked.connect(lambda: self.progressSlider.setValue(self.progressSlider.maximum()))
 
-        self.statusbar = QtWidgets.QStatusBar(self)
-        self.buttonLayout.insertWidget(0, self.statusbar)
+#        self.statusbar = StatusBar(self)
+#        self.statusbar.setSizeGripEnabled(False)
+#        self.buttonLayout.insertWidget(0, self.statusbar)
 
         self.volumeIcon.iconSize = self.playBtn.iconSize()
         self.volumeIcon.setVolume(self.volumeSlider.value())
         self.volumeIcon.step.connect(lambda step: self.volumeSlider.setValue(self.volumeSlider.value() + self.volumeSlider.pageStep() * step))
         self.volumeIcon.reset.connect(self.volumeSlider.reset)
         self.volumeSlider.valueChanged.connect(self.volumeIcon.setVolume)
+#        self.setTransform(transform)
 
+#    def setTransform(self, transform):
+        self.transform = transform
+        self.prevItem = transform.prevItem
+        self.nextItem = transform.nextItem
+
+        self.start = self.prevItem.index
+        self.end = self.nextItem.index
+        if not self.end:
+            self.end = 64
+        self.envelopeScene.setWaveRange(self.start, self.end)
+        self.progressSlider.blockSignals(True)
+        self.progressSlider.setRange(self.start, self.end)
+        self.progressSlider.setValue(self.start)
+#        self.progressSlider.setToolTip(str(start))
+        self.progressSlider.blockSignals(False)
+        self.toolTipSlider.setRange(self.start, self.end)
+        self.toolTipSlider.setValue(self.start)
+        self.startLbl.setNum(self.start + 1)
+        self.endLbl.setNum(self.end + 1)
+
+        self.transformData = transform.data['harmonics']
+        for h, data in self.transformData.items():
+            self.addEnvelope(h, *data)
+
+        self.updatePaths()
 
     @property
     def currentSlider(self):
@@ -838,10 +1234,13 @@ class SpecTransformDialog(QtWidgets.QDialog):
 
     @property
     def sortedSliders(self):
-        return sorted(self.envelopes.keys(), key=lambda s: s.fract)
+        #sort by harmonic, negative fractions are after positive
+#        return sorted(self.envelopes.keys(), key=lambda s: (abs(s.fract), -s.fract))
+        return sorted(self.envelopes.keys(), key=lambda s: abs(s.fract & 127))
 
     def movePlayHead(self, value):
-        self.envelopeScene.movePlayHead(float(value - self.start) / (self.end - self.start))
+        x = float(value - self.start) / (self.end - self.start)
+        self.envelopeScene.updateValues(x)
         self.toolTipSlider.setValue(value)
 #        self.progressSlider.setToolTip(str(value))
 
@@ -853,35 +1252,46 @@ class SpecTransformDialog(QtWidgets.QDialog):
 #        self.progressSlider.setValue(int(x * 1000))
         self.progressSlider.blockSignals(False)
 
-    def setWaveRange(self, start, end):
-        self.start = start
-        self.end = end
-        self.envelopeScene.setWaveRange(start, end)
-        self.progressSlider.blockSignals(True)
-        self.progressSlider.setRange(start, end)
-        self.progressSlider.setValue(start)
-#        self.progressSlider.setToolTip(str(start))
-        self.progressSlider.blockSignals(False)
-        self.toolTipSlider.setRange(start, end)
-        self.toolTipSlider.setValue(start)
-        self.startLbl.setNum(start + 1)
-        self.endLbl.setNum(end + 1)
-
     def setCurrentEnvelope(self, btn):
         for slider, path in self.paths.items():
             if slider.selector == btn:
                 path.setSelectable(True)
                 path.setZValue(10)
+                self.envelopeScene.setCurrent(path)
             else:
-                path.setZValue(-slider.fract * .01)
+                path.setZValue(-abs(slider.fract & 127) * .01)
                 path.setSelectable(False)
-#            path.setSelectable(slider.selector == btn)
+
+    def checkPolarities(self, newFract):
+        for slider in self.envelopes:
+            if slider.fract == newFract and slider != self.sender():
+                slider.setFract(-newFract)
+                break
+
+    @QtCore.pyqtSlot()
+    def resetFractions(self):
+        sliders = list(self.sortedSliders)
+        fracts = [s.fract for s in sliders]
+#        self.sliderModel.blockSignals(True)
+        for h in range(1, 51):
+            available = 3
+            if h in fracts:
+                available -= 1
+            if -h in fracts:
+                available -= 2
+            self.sliderModel.setData(self.sliderModel.index(h - 1, 0), available, FractRole)
+#        self.sliderModel.blockSignals(False)
+        for newIndex, slider in enumerate(sliders):
+            oldIndex = self.hLayout.indexOf(slider)
+            if oldIndex != newIndex:
+                self.hLayout.takeAt(oldIndex)
+                self.hLayout.insertWidget(newIndex, slider)
 
     def removeEnvelope(self):
         if self.sender() == self.deleteBtn:
             slider = self.currentSlider
             if QtWidgets.QMessageBox.question(self, 'Delete envelope', 
-                'Delete envelope for {} harmonic?'.format(getCardinal(slider.fract + 1)), 
+                'Delete envelope for {} harmonic?'.format(getCardinal(slider.fract & 127)), 
                 QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel) != QtWidgets.QMessageBox.Ok:
                     return
         else:
@@ -892,66 +1302,88 @@ class SpecTransformDialog(QtWidgets.QDialog):
         self.hLayout.removeWidget(slider)
         self.updatePaths()
         if not self.selectors.checkedButton():
+            sliders = list(self.sortedSliders)
             try:
-                self.sortedSliders[slider.fract].selector.click()
+                sliders[sliders.index(slider)].selector.click()
             except:
-                self.sortedSliders[-1].selector.click()
+                sliders[-1].selector.click()
         slider.deleteLater()
         self.resetFractions()
         self.addBtn.setEnabled(len(self.envelopes) < 50)
         self.deleteBtn.setEnabled(len(self.envelopes) > 1)
 #        print([(s.fract, e) for s, e in self.envelopes.items()])
 
-    def resetFractions(self):
-        sliders = list(self.sortedSliders)
-        fracts = [s.fract for s in sliders]
-        for h in range(50):
-            self.sliderModel.item(h).setEnabled(h not in fracts)
-        for newIndex, slider in enumerate(sliders):
-            oldIndex = self.hLayout.indexOf(slider)
-            if oldIndex != newIndex:
-                self.hLayout.takeAt(oldIndex)
-                self.hLayout.insertWidget(newIndex, slider)
-
     @QtCore.pyqtSlot()
-    def addEnvelope(self, fract=None, polarity=1, values=None, update=True):
+    def addEnvelope(self, fract=None, nodes=None, curves=None, update=True):
         fracts = [s.fract for s in self.envelopes]
         if len(fracts) == 50:
             self.addBtn.setEnabled(False)
             return
         if fract is None:
-            for fract in range(50):
+            for fract in range(1, 51):
                 if fract not in fracts:
                     break
-        slider = SliderContainer(self, fract, polarity)
-        self.selectors.addButton(slider.selector)
+        slider = SliderContainer(self, fract, self.sliderModel)
 #        slider.triggered.connect(self.changeFract)
-        slider.setModel(self.sliderModel)
+#        slider.setModel(self.sliderModel)
         slider.fractChanged.connect(self.resetFractions)
+        slider.polarityChanged.connect(self.checkPolarities)
         slider.removeRequested.connect(self.removeEnvelope)
-        values = values if values else {0: .5}
+        slider.copyRequested.connect(self.copyEnvelope)
+        slider.pasteRequested.connect(self.pasteEnvelope)
+        envelope = Envelope(nodes, curves)
 
 #        if not self.envelopes or (fracts and fract > max(fracts)):
 #            self.hLayout.addWidget(slider)
 #        else:
         self.hLayout.addWidget(slider)
 
-        self.envelopes[slider] = values
-        if len(self.envelopes) == 1 or self.sender() == self.addBtn:
-            slider.selector.click()
-        if values.get(0) is not None:
-            slider.setValue(values[0])
+        self.envelopes[slider] = envelope
 
-        self.sliderModel.item(fract).setEnabled(False)
+#        self.sliderModel.item(fract).setEnabled(False)
         self.resetFractions()
         if update:
             self.updatePaths()
+
+        self.selectors.addButton(slider.selector)
+        if len(self.envelopes) == 1 or self.sender() in (self.addBtn, self.scrollArea):
+            slider.selector.click()
+        slider.blockSignals(True)
+        slider.setValue(envelope[0])
+        slider.blockSignals(False)
+
         self.deleteBtn.setEnabled(True)
+        QtWidgets.QApplication.processEvents()
+        self.scrollArea.ensureWidgetVisible(slider)
+
+    def setEnvelope(self, slider, values, curves):
+#        print(slider.fract, values)
+        self.envelopes[slider][:] = values
+        self.envelopes[slider].curves.clear()
+        self.envelopes[slider].curves.update(curves)
+        self.paths[slider].applyEnvelope()
+        self.updatePaths()
+
+    def copyEnvelope(self):
+        mimeData = QtCore.QMimeData()
+        byteArray = QtCore.QByteArray()
+        stream = QtCore.QDataStream(byteArray, QtCore.QIODevice.WriteOnly)
+        stream.writeQVariant(self.envelopes[self.sender()])
+        stream.writeQVariant(self.envelopes[self.sender()].curves)
+        mimeData.setData('bigglesworth/EnvelopeData', byteArray)
+        QtWidgets.QApplication.clipboard().setMimeData(mimeData)
+
+    def pasteEnvelope(self):
+        mimeData = QtWidgets.QApplication.clipboard().mimeData()
+        if mimeData.hasFormat('bigglesworth/EnvelopeData'):
+            byteArray = mimeData.data('bigglesworth/EnvelopeData')
+            stream = QtCore.QDataStream(byteArray)
+            self.setEnvelope(self.sender(), stream.readQVariant(), stream.readQVariant())
 
     def event(self, event):
         if event.type() == QtCore.QEvent.StatusTip:
             if self.isVisible():
-                self.statusbar.showMessage(event.tip())
+                self.statusBar.showMessage(event.tip())
         return QtWidgets.QDialog.event(self, event)
 
     def resizeEvent(self, event):
@@ -968,14 +1400,13 @@ class SpecTransformDialog(QtWidgets.QDialog):
         transform, _ = self.envelopeView.viewportTransform().inverted()
         margin = transform.m11() * 5
         self.envelopeView.fitInView(self.envelopeScene.sceneRect().adjusted(-margin, 0, margin, 0))
+        self.previewView.fitInView(self.previewScene.sceneRect())
 
-    def exec_(self, transform=None):
-        for i in range(4):
-            self.addEnvelope(i, update=False)
-        self.setWaveRange(12, 54)
-        self.updatePaths()
-
-        self.show()
+    def exec_(self):
+        res = QtWidgets.QDialog.exec_(self)
+        if res:
+            data = {slider.fract: (list(envelope.nodes), envelope.curves) for slider, envelope in self.envelopes.items()}
+            return data
 
 #    def changeFract(self):
 #        print('agggiornato')
