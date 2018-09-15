@@ -844,6 +844,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
     openedWindows = []
     lastActive = []
     recentTables = []
+    _checkWindowOverlap = None
 
     midiEvent = QtCore.pyqtSignal(object)
     midiConnect = QtCore.pyqtSignal(object, int, bool)
@@ -2842,6 +2843,8 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                     self.waveTableDock.setVisible(True)
             elif self.waveTableDock.isFloating():
                 self.waveTableDock.setVisible(False)
+        if self._checkWindowOverlap:
+            self.checkWindowOverlap()
 
     def dumpAll(self):
         count = self.blofeldCount()
@@ -2928,6 +2931,23 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 #            self.fullTableMiniView.fitInView(self.fullTableMiniScene.sceneRect())
             self.setCurrentKeyFrame(self.keyFrames[0])
             self.updateMiniWave(self.keyFrames[0])
+            for w in reversed(self.lastActive):
+                if w.isVisible():
+                    self._checkWindowOverlap = w
+                    break
+
+    def checkWindowOverlap(self):
+        current = self.geometry()
+        if current == self._checkWindowOverlap.geometry():
+            desktop = QtWidgets.QApplication.desktop().availableGeometry()
+            x = max(desktop.left(), self.pos().x() + 32)
+            y = max(desktop.top(), self.pos().y() + 32)
+            if x + self.width() > desktop.right():
+                x = desktop.left()
+            if y + self.height() > desktop.height():
+                y = desktop.top()
+            self.move(x, y)
+        self._checkWindowOverlap = None
 
     def resizeEvent(self, event):
         QtWidgets.QMainWindow.resizeEvent(self, event)
