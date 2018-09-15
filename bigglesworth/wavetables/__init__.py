@@ -32,7 +32,7 @@ except:
     QTMULTIMEDIA = False
 
 
-#import soundfile
+import soundfile
 
 from bigglesworth.libs import midifile
 #from bigglesworth.mididevice import MidiDevice
@@ -48,7 +48,7 @@ from bigglesworth.widgets import MidiStatusBarWidget
 
 from bigglesworth.wavetables.utils import pow20, pow21, fixFileName, sineValues, parseTime, curves
 #from bigglesworth.wavetables.dialogs import Dumper, AudioSettingsDialog, SetIndexDialog
-from bigglesworth.wavetables.dialogs import Dumper, SetIndexDialog
+from bigglesworth.wavetables.dialogs import Dumper, SetIndexDialog, UndoView, WaveExportDialog
 
 if QTMULTIMEDIA:
     from bigglesworth.wavetables.waveplay import Player, AudioSettingsDialog
@@ -334,6 +334,7 @@ class AdvancedValuesUndo(KeyFrameUndo):
             text = '{} wave{} dropped'.format(count, 's' if count > 1 else '')
             if self.fromFile:
                 text += 'dropped from file "{}"'.format(QtCore.QFileInfo(self.fromFile).fileName())
+            self.setText(text)
         else:
             KeyFrameUndo.redo(self)
 
@@ -1058,10 +1059,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.waveUndoBtn.clicked.connect(self.undoStack.undo)
         self.mainRedoBtn.clicked.connect(self.undoStack.redo)
         self.waveRedoBtn.clicked.connect(self.undoStack.redo)
-        self.undoView = QtWidgets.QUndoView(self.undoStack)
-        self.undoView.show = lambda: [QtWidgets.QUndoView.show(self.undoView), self.undoView.activateWindow()]
-        self.undoView.setWindowTitle('Wave table undo list')
-        self.undoView.setEmptyLabel('New wave table')
+        self.undoView = UndoView(self.undoStack)
         self.mainUndoHistoryBtn.clicked.connect(self.undoView.show)
         self.waveUndoHistoryBtn.clicked.connect(self.undoView.show)
         self.undoAction = self.undoStack.createUndoAction(self)
@@ -1240,6 +1238,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.applyBtn.clicked.connect(self.dumpUpdated)
 #        self.mainTransformWidget.setTransform(self.keyFrames[0])
 #        SpecTransformDialog(self).exec_(self.keyFrames[0].nextTransform)
+#        self.exportWave()
 
     def isClean(self):
         return self.undoStack.isClean() and self._isClean
@@ -1444,7 +1443,6 @@ class WaveTableWindow(QtWidgets.QMainWindow):
     def midiEventReceived(self, event):
         if not event.type in (NOTEOFF, NOTEON) or not self.pianoIcon.state:
             return
-        print([w for w in QtWidgets.QApplication.topLevelWidgets() if w.isVisible() and isinstance(w, QtWidgets.QMainWindow)])
         for window in reversed(self.openedWindows + self.lastActive):
             if window.isVisible():
                 break
@@ -1488,7 +1486,6 @@ class WaveTableWindow(QtWidgets.QMainWindow):
     #UndoStack
 
     def waveTableDrop(self, start, data, fromFile=False):
-        print(fromFile)
         self.undoStack.push(GenericValuesUndo(self, start, data, fromFile))
 
     def keyFrameSceneExternalDrop(self, dropData, data, sourceName):
@@ -2150,11 +2147,32 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             sysexList.append(sysexData)
         return sysexList
 
+    def exportWave(self, path, index=None):
+        if index:
+            if isinstance(index.model(), QtCore.QSortFilterProxyModel):
+                index = index.model().mapToSource(index)
+            raw = index.sibling(index.row(), DataColumn).data()
+            ds = (QtCore.QDataStream(raw, QtCore.QIODevice.ReadOnly))
+            ds.readInt()
+            virtualKeyFrames = VirtualKeyFrames(ds.readQVariant())
+            waves = virtualKeyFrames.fullTableValues(-1, 1, -1, export=True)
+        else:
+            waves = self.keyFrames.fullTableValues(-1, 1, -1, export=True)
+
+        res = WaveExportDialog(self, waves).exec_()
+        if res:
+            waveData, subType = res
+            soundfile.write(path, waveData, 44100, subType)
+
     def exportCurrent(self):
         path = QtWidgets.QFileDialog.getSaveFileName(self, 'Export WaveTable',  
             QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.HomeLocation) + '/{}.syx'.format(fixFileName(self.nameEdit.text())), 
-            'SysEx files (*.syx);;Bigglesworth WaveTables (*.bwt);;All files (*)')
+            'SysEx files (*.syx);;Bigglesworth WaveTables (*.bwt);;Wave files(*wav);;All files (*)')
         if not path:
+            return
+
+        if path.endswith('.wav'):
+            self.exportWave(path)
             return
 
         try:
@@ -2194,7 +2212,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         elif len(selection) == 1:
             caption = 'Export WaveTable'
             name = selection[0].sibling(selection[0].row(), 1).data().strip()
-            filters = 'SysEx files (*.syx);;Bigglesworth WaveTables (*.bwt);;All files (*)'
+            filters = 'SysEx files (*.syx);;Bigglesworth WaveTables (*.bwt);;Wave files(*wav);;All files (*)'
             extension = 'syx'
         else:
             caption = 'Export WaveTables'
@@ -2207,6 +2225,9 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         if not path:
             return
 
+        if path.endswith('.wav'):
+            self.exportWave(path, selection[0])
+            return
         try:
             file = QtCore.QFile(path)
             print('file?', file)

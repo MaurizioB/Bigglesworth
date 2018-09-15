@@ -1057,8 +1057,9 @@ class KeyFrameContainer(QtWidgets.QGraphicsWidget):
     def __init__(self):
         QtWidgets.QGraphicsWidget.__init__(self)
         layout = QtWidgets.QGraphicsLinearLayout()
-        layout.setSpacing(0)
         self.setLayout(layout)
+        layout.setContentsMargins(2, 2, 2, 2)
+        layout.setSpacing(0)
         self.keyFrames = KeyFrames(self)
         self.placeHolder = None
 
@@ -1099,7 +1100,7 @@ class KeyFrameContainer(QtWidgets.QGraphicsWidget):
         self.placeHolder = None
 
     def moveKeyFrames(self, items, targetPos, dropPos):
-        print(items)
+        print('move', items)
 #        if len(indexes) == 1:
 #            self.layout().removeItem()
 #        taken = []
@@ -2009,14 +2010,12 @@ class CurvePath(QtWidgets.QGraphicsItem):
         self.focusNode1.setPen(self.nodePen)
         self.focusNode1.setFlags(self.node1.flags())
         if self.cubic:
-            print('son cubic')
             self.focusNode1.setPos(self.line.pointAt(.33))
             self.focusNode2 = QtWidgets.QGraphicsEllipseItem(-3, -3, 6, 6, self)
             self.focusNode2.setPen(self.nodePen)
             self.focusNode2.setPos(self.line.pointAt(.66))
             self.focusNode2.setFlags(self.node1.flags())
         else:
-            print('son quad')
             self.focusNode1.setPos(self.line.pointAt(.5))
         self.initialized = False
         self.stroker = QtGui.QPainterPathStroker()
@@ -3530,7 +3529,6 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
         QtWidgets.QGraphicsScene.mouseReleaseEvent(self, event)
 
     def keyFrameSceneSelectionChanged(self):
-        print('a')
         self.currentSelection = sorted(self.keyFrameScene.selectedItems(), key=lambda k: k.index)
         if self.currentSelection:
             indexes = [k.index for k in self.currentSelection]
@@ -3548,7 +3546,6 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
         self.sliceIdItem.setVisible(False)
 
     def setSliceSelection(self, start, end):
-        print('s')
         if None in (start, end):
             self.clearSliceSelection()
             return

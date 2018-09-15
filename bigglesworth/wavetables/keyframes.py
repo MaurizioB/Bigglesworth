@@ -7,6 +7,8 @@ from Qt import QtCore
 from bigglesworth.utils import sanitize
 from bigglesworth.wavetables.utils import baseSineValues, pow20, pow22, noteFrequency
 
+sanMin = -pow20
+sanMax = pow20 - 1
 
 class KeyFrames(QtCore.QObject):
     changed = QtCore.pyqtSignal()
@@ -46,7 +48,7 @@ class KeyFrames(QtCore.QObject):
         self.clean = False
 
     def sanitize(self, value):
-        return sanitize(-pow20, value, pow20)
+        return sanitize(sanMin, value, sanMax)
 
 #    def rebuild(self):
 #        self.fullList = [None for _ in range(64)]
@@ -224,10 +226,9 @@ class KeyFrames(QtCore.QObject):
             if isinstance(item, WaveTransformItem) and not item.isValid() and \
                 not isinstance(item.prevItem, SampleItem) and item.prevWaveIndex is not None and item.prevWaveIndex in targetRange:
                     invalidTransforms[item.prevWaveIndex] = item
-        print(movedBefore, movedAfter)
+        print('drop', movedBefore, movedAfter)
         if not (movedBefore or movedAfter):
             if not overwrite or overwrite == targets:
-                print(dropValues[0])
                 self.setValuesMulti(targets[0], dropValues, fromFile)
                 return
 #                beforeItem = self.getClosestValidKeyFrame(min(targets), -1)

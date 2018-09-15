@@ -602,6 +602,15 @@ class PathCombo(QtWidgets.QComboBox):
         return QtWidgets.QComboBox.event(self, event)
 
 
+class ToolTipModel(QtGui.QStandardItemModel):
+    def data(self, index, role):
+        if role == QtCore.Qt.ToolTipRole:
+            path = QtGui.QStandardItemModel.data(self, index, PathRole)
+            if path:
+                return QtGui.QStandardItemModel.data(self, index, QtCore.Qt.DisplayRole)
+        return QtGui.QStandardItemModel.data(self, index, role)
+
+
 class AudioImportTab(QtWidgets.QWidget):
     sortedFormats = OrderedDict([(k, soundfile.available_formats()[k]) for k in ['WAV', 'AIFF', 'FLAC', 'OGG']])
     for format in sorted(soundfile.available_formats().keys()):
@@ -611,9 +620,9 @@ class AudioImportTab(QtWidgets.QWidget):
     previewMode = True
     imported = QtCore.pyqtSignal(object)
 
-    recentModel = QtGui.QStandardItemModel()
+    recentModel = ToolTipModel()
     recentLoaded = False
-    favoriteModel = QtGui.QStandardItemModel()
+    favoriteModel = ToolTipModel()
     favoriteLoaded = False
 
     defaultVolume = None
@@ -1109,6 +1118,13 @@ class AudioImportTab(QtWidgets.QWidget):
         index = self.recentView.indexAt(pos)
         menu = QtWidgets.QMenu()
         if index.isValid():
+            openPathAction = menu.addAction(QtGui.QIcon.fromTheme('document-open'), 'Show parent directory')
+            openPathAction.triggered.connect(lambda: self.setCurrentDirectory(
+                self.fileSystemModel.index(QtCore.QFileInfo(index.data(PathRole)).absolutePath())))
+            copyPathAction = menu.addAction(QtGui.QIcon.fromTheme('edit-copy'), 'Copy path')
+            copyPathAction.triggered.connect(lambda: QtWidgets.QApplication.clipboard().setText(
+                QtCore.QDir.toNativeSeparators(index.data(PathRole))))
+            menu.addSeparator()
             removeAction = menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 'Remove')
             removeAction.setData(index)
             menu.addSeparator()
@@ -1154,6 +1170,9 @@ class AudioImportTab(QtWidgets.QWidget):
                 setHome = True
                 text = 'Set as default'
             homeAction = menu.addAction(QtGui.QIcon.fromTheme('go-home'), text)
+            copyPathAction = menu.addAction(QtGui.QIcon.fromTheme('edit-copy'), 'Copy path')
+            copyPathAction.triggered.connect(lambda: QtWidgets.QApplication.clipboard().setText(
+                QtCore.QDir.toNativeSeparators(index.data(PathRole))))
             menu.addSeparator()
             removeAction = menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 'Remove')
             removeAction.setData(index)

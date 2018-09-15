@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1221</width>
+    <width>1233</width>
     <height>600</height>
    </rect>
   </property>
@@ -133,6 +133,9 @@
          <property name="title">
           <string>Recent files</string>
          </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
          <layout class="QVBoxLayout" name="verticalLayout_2">
           <item>
            <widget class="QTableView" name="recentView">
@@ -179,6 +182,9 @@
          </property>
          <property name="title">
           <string>Favorite paths</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_3">
           <item>
@@ -660,6 +666,16 @@
    <container>1</container>
   </customwidget>
   <customwidget>
+   <class>VolumeSlider</class>
+   <extends>QSlider</extends>
+   <header>bigglesworth.wavetables.widgets</header>
+  </customwidget>
+  <customwidget>
+   <class>VolumeIcon</class>
+   <extends>QLabel</extends>
+   <header>bigglesworth.wavetables.widgets</header>
+  </customwidget>
+  <customwidget>
    <class>CollapsibleGroupBox</class>
    <extends>QGroupBox</extends>
    <header>bigglesworth.wavetables.widgets</header>
@@ -669,16 +685,6 @@
    <class>WaveSourceView</class>
    <extends>QGraphicsView</extends>
    <header>bigglesworth.wavetables.audioimport</header>
-  </customwidget>
-  <customwidget>
-   <class>VolumeSlider</class>
-   <extends>QSlider</extends>
-   <header>bigglesworth.wavetables.widgets</header>
-  </customwidget>
-  <customwidget>
-   <class>VolumeIcon</class>
-   <extends>QLabel</extends>
-   <header>bigglesworth.wavetables.widgets</header>
   </customwidget>
   <customwidget>
    <class>AdvancedSplitter</class>

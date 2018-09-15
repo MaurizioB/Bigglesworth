@@ -1,115 +1,101 @@
+import numpy as np
+
 from Qt import QtCore, QtGui, QtWidgets
 
 from bigglesworth.utils import loadUi
 from bigglesworth.widgets import Waiter
 from bigglesworth.wavetables.utils import parseTime
 
-#class CurveWidget(QtWidgets.QWidget):
-#    curveType = QtCore.QEasingCurve.Linear
-#    path = QtGui.QPainterPath()
-#    path.moveTo(0, 50)
-#    path.lineTo(50, 0)
-#
-#    def __init__(self):
-#        QtWidgets.QWidget.__init__(self)
-#        self.setFixedSize(51, 51)
-#
-#    def setCurve(self, curveType):
-#        if curveType != self.curveType:
-#            self.curveType = curveType
-#            self.path = getCurvePath(curveType)
-#            self.update()
-#
-#    def paintEvent(self, event):
-#        qp = QtGui.QPainter(self)
-#        qp.setRenderHints(qp.Antialiasing)
-#        qp.setBrush(QtCore.Qt.white)
-#        qp.setPen(QtCore.Qt.NoPen)
-#        qp.drawRect(self.rect())
-#        qp.setPen(QtCore.Qt.black)
-#        qp.translate(.5, .5)
-#        qp.drawPath(self.path)
+
+class WaveExportDialog(QtWidgets.QDialog):
+    sampleShape = np.arange(.0, 128., .0625)
+    sampleRange = np.arange(129.)
+    waveShape = np.arange(0., 8192., .0625)
+    waveRange = np.arange(8193.)
+
+    serumTooltip = [
+        'Each sample will be repeated 16 times', 
+        'All sample values will be interpolated, values at the end of each ' \
+        'wave will interpolate to its beginning', 
+        'All sample values will be interpolated across the whole table, the ' \
+        'final wave will be interpolated with the first one'
+    ]
+
+    def __init__(self, parent, waveData):
+        QtWidgets.QDialog.__init__(self, parent)
+        loadUi('ui/waveexport.ui', self)
+        iconHeight = int(self.fontMetrics().height() * .8)
+        for wave in waveData:
+            for value in wave:
+                if not -32768 <= value <= 32767:
+                    self.clipLbl.setEnabled(True)
+                    self.clipLbl.setText('''
+                        <img src=":/icons/Bigglesworth/16x16/emblem-warning" 
+                        height="{}"> clipping detected!'''.format(iconHeight))
+                    break
+            else:
+                continue
+            break
+        self.waveData = [wave.astype('int32') for wave in waveData]
+
+        self.serumWhatLbl.setPixmap(QtGui.QIcon.fromTheme('question').pixmap(iconHeight))
+
+    def exec_(self):
+        if not QtWidgets.QDialog.exec_(self):
+            return
+
+        waveData = np.copy(self.waveData)
+        if self.layoutSerum.isChecked():
+            if not self.serumCombo.currentIndex():
+                waveData = np.repeat(np.concatenate(waveData), 16)
+            elif self.serumCombo.currentIndex() == 1:
+                waves = []
+                for wave in waveData:
+                    wave = np.append(wave, wave[-1])
+                    waves.append(np.interp(self.sampleShape, self.sampleRange, wave))
+                waveData = np.concatenate(waves)
+            else:
+                waves = np.append(np.concatenate(waveData), waveData[-1][-1])
+                waveData = np.interp(self.waveShape, self.waveRange, waves)
+        else:
+            waveData = np.concatenate(waveData)
+
+        if not self.bitCombo.currentIndex():
+            subType = 'PCM_16'
+            if self.s16iDecimateMax.isChecked():
+                np.clip(waveData, -32768, 32767, out=waveData)
+#            elif self.s16iDecimateMin.isChecked():
+#                np.right_shift(waveData, 5, out=waveData)
+            else:
+                np.multiply(waveData, .03125, out=waveData)
+            waveData = waveData.astype('int16')
+        elif self.bitCombo.currentIndex() == 1:
+            subType = 'PCM_24'
+            if self.s24iRound.isChecked():
+                np.multiply(waveData, 8, out=waveData)
+        elif self.bitCombo.currentIndex() == 2:
+            subType = 'PCM_32'
+            np.multiply(waveData, 2048, out=waveData)
+        elif self.bitCombo.currentIndex() == 3:
+            subType = 'FLOAT'
+            waveData = np.divide(waveData, 2.**20).astype('float32')
+
+        return waveData, subType
 
 
-#class CurveMorphDialog(QtWidgets.QDialog):
-#    curves = {
-#        QtCore.QEasingCurve.Linear: 'Linear', 
-#        QtCore.QEasingCurve.InQuad: 'Quadratic accelerating', 
-#        QtCore.QEasingCurve.OutQuad: 'Quadratic decelerating', 
-#        QtCore.QEasingCurve.InOutQuad: 'Quadratic accel/decel', 
-#        QtCore.QEasingCurve.OutInQuad: 'Quadratic decel/accel', 
-#        QtCore.QEasingCurve.InCubic: 'Cubic accelerating', 
-#        QtCore.QEasingCurve.OutCubic: 'Cubic decelerating', 
-#        QtCore.QEasingCurve.InOutCubic: 'Cubic accel/decel', 
-#        QtCore.QEasingCurve.OutInCubic: 'Cubic decel/accel', 
-#        QtCore.QEasingCurve.InQuart: 'Quartic accelerating', 
-#        QtCore.QEasingCurve.OutQuart: 'Quartic decelerating', 
-#        QtCore.QEasingCurve.InOutQuart: 'Quartic accel/decel', 
-#        QtCore.QEasingCurve.OutInQuart: 'Quartic decel/accel', 
-#        QtCore.QEasingCurve.InQuint: 'Quintic accelerating', 
-#        QtCore.QEasingCurve.OutQuint: 'Quintic decelerating', 
-#        QtCore.QEasingCurve.InOutQuint: 'Quintic accel/decel', 
-#        QtCore.QEasingCurve.OutInQuint: 'Quintic decel/accel', 
-#        QtCore.QEasingCurve.InSine: 'Sine accelerating', 
-#        QtCore.QEasingCurve.OutSine: 'Sine decelerating', 
-#        QtCore.QEasingCurve.InOutSine: 'Sine accel/decel', 
-#        QtCore.QEasingCurve.OutInSine: 'Sine decel/accel', 
-#        QtCore.QEasingCurve.InExpo: 'Exponential accelerating', 
-#        QtCore.QEasingCurve.OutExpo: 'Exponential decelerating', 
-#        QtCore.QEasingCurve.InOutExpo: 'Exponential accel/decel', 
-#        QtCore.QEasingCurve.OutInExpo: 'Exponential decel/accel', 
-#        QtCore.QEasingCurve.InCirc: 'Circular accelerating', 
-#        QtCore.QEasingCurve.OutCirc: 'Circular decelerating', 
-#        QtCore.QEasingCurve.InOutCirc: 'Circular accel/decel', 
-#        QtCore.QEasingCurve.OutInCirc: 'Circular decel/accel', 
-#        QtCore.QEasingCurve.OutInBack: 'Overshooting decel/accel', 
-#        QtCore.QEasingCurve.InBounce: 'Bounce accelerating', 
-#        QtCore.QEasingCurve.OutBounce: 'Bounce decelerating', 
-#        QtCore.QEasingCurve.InOutBounce: 'Bounce accel/decel', 
-#        QtCore.QEasingCurve.OutInBounce: 'Bounce decel/accel', 
-#    }
-#
-#    reverseDict = {}
-#
-#    def __init__(self, parent):
-#        from bigglesworth.wavetables.widgets import CurveIcon
-#        QtWidgets.QDialog.__init__(self, parent)
-#        layout = QtWidgets.QGridLayout()
-#        self.setLayout(layout)
-#        self.combo = QtWidgets.QComboBox()
-#        iconSize = self.combo.iconSize().height()
-#        for index, curve in enumerate(sorted(self.curves)):
-#            self.combo.addItem(CurveIcon(curve), self.curves[curve])
-#            pixmap = QtGui.QPixmap(iconSize, iconSize)
-#            pixmap.fill(QtCore.Qt.transparent)
-#            qp = QtGui.QPainter(pixmap)
-#            qp.setRenderHints(qp.Antialiasing)
-#            qp.setPen(QtCore.Qt.black)
-#            qp.drawPath(getCurvePath(curve, iconSize))
-#            qp.end()
-##            self.combo.model().setData(self.combo.model().index(index, 0), pixmap, QtCore.Qt.DecorationRole)
-##            self.combo.setItemData(index, pixmap, QtCore.Qt.DecorationRole)
-##            self.combo.setItemIcon(index, CurveIcon())
-#            self.combo.setItemData(index, curve)
-#            self.reverseDict[curve] = index
-#        layout.addWidget(self.combo)
-#        self.curveWidget = CurveWidget()
-#        layout.addWidget(self.curveWidget)
-#        self.combo.currentIndexChanged.connect(self.updateCurve)
-#
-#        self.buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok|QtWidgets.QDialogButtonBox.Cancel)
-#        self.buttonBox.accepted.connect(self.accept)
-#        self.buttonBox.rejected.connect(self.reject)
-#        layout.addWidget(self.buttonBox)
-#
-#    def updateCurve(self, index):
-#        self.curveWidget.setCurve(self.combo.itemData(index))
-#
-#    def exec_(self, transform):
-#        self.combo.setCurrentIndex(self.reverseDict[transform.data['curve']])
-#        res = QtWidgets.QDialog.exec_(self)
-#        if res:
-#            transform.setData({'curve': self.curveWidget.curveType})
+class UndoView(QtWidgets.QUndoView):
+    def __init__(self, undoStack):
+        QtWidgets.QUndoView.__init__(self, undoStack)
+        self.setWindowTitle('Wave table undo list')
+        self.setEmptyLabel('New wave table')
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Escape:
+            self.hide()
+
+    def show(self):
+        QtWidgets.QUndoView.show(self)
+        self.activateWindow()
 
 
 class AdvancedProgressBar(QtWidgets.QProgressBar):

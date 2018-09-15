@@ -255,6 +255,7 @@
         <file alias="8x8/checkmark.svg">icons/Bigglesworth/8x8/checkmark.svg</file>
         <file alias="16x16/checkmark.svg">icons/Bigglesworth/16x16/checkmark.svg</file>
         <file alias="22x22/checkmark.svg">icons/Bigglesworth/22x22/checkmark.svg</file>
+        <file alias="22x22/question.svg">icons/Bigglesworth/22x22/question.svg</file>
         <file alias="32x32/arrow-right-double.svg">icons/Bigglesworth/32x32/arrow-right-double.svg</file>
         <file alias="16x16/arrow-right-double.svg">icons/Bigglesworth/16x16/arrow-right-double.svg</file>
         <file alias="22x22/arrow-right-double.svg">icons/Bigglesworth/22x22/arrow-right-double.svg</file>

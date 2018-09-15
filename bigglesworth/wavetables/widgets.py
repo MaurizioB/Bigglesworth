@@ -1055,6 +1055,12 @@ class CollapsibleGroupBox(QtWidgets.QGroupBox):
 
     def resizeEvent(self, event):
         self.checkHover(self.mapFromGlobal(QtGui.QCursor.pos()))
+        self.arrowPath = QtGui.QPainterPath()
+        size = self.fontMetrics().height() * .25
+        self.arrowPath.moveTo(-size, -size)
+        self.arrowPath.lineTo(size, -size)
+        self.arrowPath.lineTo(0, size)
+        self.arrowPath.closeSubpath()
 
     def paintEvent(self, event):
         QtWidgets.QGroupBox.paintEvent(self, event)
@@ -1062,13 +1068,23 @@ class CollapsibleGroupBox(QtWidgets.QGroupBox):
         self.initStyleOption(option)
         labelRect = self.style().subControlRect(QtWidgets.QStyle.CC_GroupBox, option, QtWidgets.QStyle.SC_GroupBoxLabel)
         qp = QtGui.QPainter(self)
-        qp.setFont(QtWidgets.QApplication.font())
         arrow = self.arrows[self.collapsed]
         width = option.fontMetrics.width(arrow)
         labelRect.setLeft(labelRect.left() - width - 5)
         labelRect.setRight(labelRect.right() + width + 5)
-        qp.drawText(labelRect, QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop, arrow)
-        qp.drawText(labelRect, QtCore.Qt.AlignRight|QtCore.Qt.AlignTop, arrow)
+        if 'win32' in sys.platform:
+            qp.setRenderHints(qp.Antialiasing)
+            qp.setBrush(QtCore.Qt.darkGray)
+            qp.save()
+            qp.translate(labelRect.left(), labelRect.center().y())
+            qp.drawPath(self.arrowPath)
+            qp.restore()
+            qp.translate(labelRect.right(), labelRect.center().y())
+            qp.drawPath(self.arrowPath)
+        else:
+            qp.setFont(QtWidgets.QApplication.font())
+            qp.drawText(labelRect, QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop, arrow)
+            qp.drawText(labelRect, QtCore.Qt.AlignRight|QtCore.Qt.AlignTop, arrow)
 
 
 class AdvancedSplitterHandle(QtWidgets.QSplitterHandle):
