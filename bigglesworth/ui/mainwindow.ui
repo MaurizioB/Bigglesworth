@@ -109,12 +109,14 @@
     <property name="title">
      <string>&amp;?</string>
     </property>
-    <addaction name="updatesAction"/>
+    <addaction name="helpAction"/>
     <addaction name="showLogAction"/>
     <addaction name="showMidiChartAction"/>
     <addaction name="separator"/>
     <addaction name="aboutAction"/>
     <addaction name="aboutQtAction"/>
+    <addaction name="separator"/>
+    <addaction name="updatesAction"/>
    </widget>
    <widget class="QMenu" name="windowsMenu">
     <property name="title">
@@ -298,6 +300,14 @@
   <action name="showMidiChartAction">
    <property name="text">
     <string>MIDI implementation chart...</string>
+   </property>
+  </action>
+  <action name="helpAction">
+   <property name="icon">
+    <iconset theme="help-contents"/>
+   </property>
+   <property name="text">
+    <string>Bigglesworth Manual</string>
    </property>
   </action>
  </widget>

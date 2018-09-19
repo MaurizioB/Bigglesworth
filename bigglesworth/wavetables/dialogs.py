@@ -51,11 +51,11 @@ class WaveExportDialog(QtWidgets.QDialog):
             elif self.serumCombo.currentIndex() == 1:
                 waves = []
                 for wave in waveData:
-                    wave = np.append(wave, wave[-1])
+                    wave = np.append(wave, wave[0])
                     waves.append(np.interp(self.sampleShape, self.sampleRange, wave))
                 waveData = np.concatenate(waves)
             else:
-                waves = np.append(np.concatenate(waveData), waveData[-1][-1])
+                waves = np.append(np.concatenate(waveData), waveData[0][0])
                 waveData = np.interp(self.waveShape, self.waveRange, waves)
         else:
             waveData = np.concatenate(waveData)

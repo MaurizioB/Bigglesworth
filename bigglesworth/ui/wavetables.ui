@@ -1800,9 +1800,6 @@
    </property>
   </action>
   <action name="showDockAction">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
    <property name="icon">
     <iconset theme="file-catalog-symbolic">
      <normaloff/>

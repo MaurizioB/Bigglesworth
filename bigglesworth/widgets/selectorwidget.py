@@ -4,6 +4,10 @@ from Qt import QtCore, QtGui, QtWidgets
 class SelectorWidget(QtWidgets.QFrame):
     colors = (QtCore.Qt.white, QtCore.Qt.black), (QtCore.Qt.darkGray, QtCore.Qt.white)
     itemsChanged = QtCore.pyqtSignal(object)
+    minWidth = 120
+    minHeight = 28
+    minSize = QtCore.QSize(minWidth, minHeight)
+    shown = False
 
     def __init__(self, parent, count=16, allText='ALL', names=None):
         QtWidgets.QFrame.__init__(self, parent)
@@ -34,17 +38,20 @@ class SelectorWidget(QtWidgets.QFrame):
         self.rebuild()
 
     def rebuild(self):
+        if not self.isVisible():
+            return
         self.allFont = self.font()
-        height = self.height()
+        height = max(self.minHeight, self.height())
         self.halfHeight = height * .5
         self.allFont.setPointSize(self.halfHeight - 3)
         self.itemFont = self.font()
         itemHeight = height * .35
         self.itemFont.setPointSizeF(itemHeight)
-        self.hRatio = (self.width() - 1) / (float(self.half) + 3)
+        self.hRatio = (max(self.minWidth, self.width()) - 1) / (float(self.half) + 3)
         itemMetrics = QtGui.QFontMetricsF(self.itemFont)
+        #be very careful with this!!!
         while itemMetrics.width('16') > self.hRatio:
-            itemHeight -= .5
+            itemHeight = max(4, itemHeight - .5)
             self.itemFont.setPointSizeF(itemHeight)
             itemMetrics = QtGui.QFontMetricsF(self.itemFont)
         self.left = left = self.hRatio * 3 + 1
@@ -63,7 +70,7 @@ class SelectorWidget(QtWidgets.QFrame):
         return QtWidgets.QFrame.changeEvent(self, event)
 
     def minimumSizeHint(self):
-        return QtCore.QSize(126, 28)
+        return self.minSize
 
     def sizeHint(self):
         return QtCore.QSize(150, 40)
@@ -139,6 +146,12 @@ class SelectorWidget(QtWidgets.QFrame):
                     self.removeItem(c)
                 self.update()
                 break
+
+    def showEvent(self, event):
+        QtWidgets.QFrame.showEvent(self, event)
+        if not self.shown:
+            self.shown = True
+            self.rebuild()
 
     def paintEvent(self, event):
         qp = QtGui.QPainter(self)

@@ -342,6 +342,7 @@ class MidiToolBox(QtWidgets.QWidget):
         self.smallFont.setPointSize(self.smallFont.pointSize() * .5 + 1)
         self.smallFontMetrics = QtGui.QFontMetrics(self.smallFont)
         self.boundingRect = QtCore.QRect(0, 0, self.smallFontMetrics.width('CTRL'), self.smallFontMetrics.height() * 2)
+        self.update()
 
     def setProgState(self, state):
         self.progState = state

@@ -1,0 +1,26 @@
+body {
+}
+
+h2.subtitle .precontents {
+    font-weight: normal;
+    font-size: medium;
+}
+
+h1.title {
+    font-size: larger;
+}
+
+.subsection {
+    font-size: large;
+}
+
+.red {
+    color: red;
+}
+
+.toc li {
+    line-height: 16px;
+}
+.toc a {
+    background-color: #f2eadd;
+}

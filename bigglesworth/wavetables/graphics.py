@@ -311,9 +311,9 @@ class SampleItem(QtWidgets.QGraphicsWidget):
     borderNormalPen = QtGui.QPen(QtGui.QColor(64, 192, 216))
     borderHighlightPen = QtGui.QColor(114, 222, 246)
     borderSelectedPen = QtGui.QColor(134, 242, 255)
-    normalBrush = QtGui.QColor(211, 220, 234, 70)
+    normalBrush = QtGui.QColor(58, 60, 64)
     sampleBackground = QtGui.QColor(32, 32, 32, 120)
-    selectedBrush = QtGui.QColor(211, 220, 234, 120)
+    selectedBrush = QtGui.QColor(99, 104, 110)
     wavePen = QtGui.QPen(QtGui.QColor(64, 192, 216))
 
 #    prevTransform = nextTransform = None
@@ -321,9 +321,12 @@ class SampleItem(QtWidgets.QGraphicsWidget):
     minimizedRect = QtCore.QRectF(0, 0, 20, 60)
     minimizedShape = QtGui.QPainterPath()
     minimizedShape.addRect(minimizedRect.adjusted(-2, 0, 2, 0))
+    minimizedSize = minimizedRect.size()
+    hoverRect = QtCore.QRectF(-30, 0, 80, 60)
     normalRect = QtCore.QRectF(0, 0, 80, 60)
     normalShape = QtGui.QPainterPath()
     normalShape.addRect(normalRect.adjusted(-2, 0, 2, 0))
+    normalSize = normalRect.size()
 
 #    baseSineValues = []
     sinePreviewWavePath = QtGui.QPainterPath()
@@ -346,7 +349,7 @@ class SampleItem(QtWidgets.QGraphicsWidget):
         QtWidgets.QGraphicsWidget.__init__(self)
         self.keyFrames = keyFrames
         self.uuid = uuid if uuid is not None else uuid4()
-#        self.setAcceptsHoverEvents(True)
+        self.setAcceptsHoverEvents(True)
         self.setFlags(self.flags() | self.ItemIsSelectable)
 
         self.wavePath = QtGui.QPainterPath(self.sineWavePath)
@@ -357,6 +360,7 @@ class SampleItem(QtWidgets.QGraphicsWidget):
 #                self.wavePath.setElementPositionAt(sample, self.wavePath.elementAt(sample).x, pow20 - value)
         self._rect = self.minimizedRect
         self._shape = self.minimizedShape
+        self._size = self.minimizedSize
         font = QtWidgets.QApplication.font()
         font.setPointSizeF(font.pointSizeF() * .88)
         self.setFont(font)
@@ -402,9 +406,11 @@ class SampleItem(QtWidgets.QGraphicsWidget):
         if isFirst:
             self._rect = self.normalRect
             self._shape = self.normalShape
+            self._size = self.normalSize
         else:
             self._rect = self.minimizedRect
             self._shape = self.minimizedShape
+            self._size = self.minimizedSize
         self.updateGeometry()
 
     def actions(self):
@@ -416,11 +422,17 @@ class SampleItem(QtWidgets.QGraphicsWidget):
         self.update()
 
     def setMaximized(self, maximized):
-        if self.index in (0, 63):
-            return
-        self.keepMaximized = maximized
-        self._rect = self.normalRect if maximized else self.minimizedRect
-        self._shape = self.normalShape if maximized else self.minimizedShape
+        if self.index:
+            self.prepareGeometryChange()
+            if maximized:
+                self.maximize()
+            else:
+                self.minimize()
+#        if self.index in (0, 63):
+#            return
+#        self.keepMaximized = maximized
+#        self._rect = self.normalRect if maximized else self.minimizedRect
+#        self._shape = self.normalShape if maximized else self.minimizedShape
         self.updateGeometry()
 
     def setValue(self, sample, value):
@@ -466,29 +478,37 @@ class SampleItem(QtWidgets.QGraphicsWidget):
 ##            self.updateGeometry()
 
     def hoverEnterEvent(self, event):
-        if not self.external:
-            self.maximize()
-
-    def maximize(self):
-        self._rect = self.normalRect
-        self._shape = self.normalShape
-        self.updateGeometry()
-
-    def minimize(self):
-        self._rect = self.minimizedRect
-        self._shape = self.minimizedShape
-        self.updateGeometry()
+        if self.index and not self.scene().maximized:
+            self._rect = self.hoverRect
+            self.prepareGeometryChange()
+            self.setZValue(1)
 
     def hoverLeaveEvent(self, event):
-        if self.external or self.keepMaximized:
-            return
-        self.minimize()
+        if self.index and not self.scene().maximized:
+            self.prepareGeometryChange()
+            self.minimize()
+        self.setZValue(0)
+
+    def maximize(self):
+        if self.index:
+            self._rect = self.normalRect
+            self._shape = self.normalShape
+            self._size = self.normalSize
+            self.updateGeometry()
+
+    def minimize(self):
+        if self.index:
+            self._rect = self.minimizedRect
+            self._shape = self.minimizedShape
+            self._size = self.minimizedSize
+            self.updateGeometry()
 
     def sizeHint(self, *args):
-        return self._rect.size()
+#        return self._rect.size() if self.index else self.normalRect.size()
+        return self._size
 
     def boundingRect(self):
-        return self._rect.adjusted(-2, 0, 2, 0)
+        return self._rect.adjusted(-2, 0, 2, 0) if self.index and not self.scene().maximized else self.normalRect
 
     def shape(self):
         return self._shape
@@ -528,6 +548,7 @@ class SampleItem(QtWidgets.QGraphicsWidget):
         qp.translate(1, sampleRect.center().y())
         qp.scale(hRatio, vRatio)
         qp.save()
+        qp.translate(self._rect.left() / hRatio, 0)
         qp.setPen(self.wavePen)
         qp.drawPath(self.previewPath)
         qp.restore()
@@ -544,13 +565,16 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
 #    noneRect = QtCore.QRectF(0, 0, 5, 60)
     noneRect = QtCore.QRectF(0, 0, 0, 60)
     _rect = minimizedRect = QtCore.QRectF(0, 0, 20, 60)
+    hoverRect = QtCore.QRectF(-30, 0, 80, 60)
     normalRect = QtCore.QRectF(0, 0, 80, 60)
+    _size = minimizedSize = minimizedRect.size()
+    normalSize = normalRect.size()
 
-    borderNormalPen = QtGui.QPen(QtGui.QColor(154, 192, 216, 128), .5)
+    borderNormalPen = QtGui.QPen(QtGui.QColor(77, 96, 108), .5)
     pathPen = QtGui.QPen(QtGui.QColor(200, 212, 200))
-    normalBrush = QtGui.QColor(211, 220, 234, 70)
+    normalBrush = QtGui.QColor(58, 60, 64)
     invalidPen = QtGui.QColor(QtCore.Qt.red)
-    invalidBrush = QtGui.QColor(255, 0, 0, 96)
+    invalidBrush = QtGui.QColor(96, 0, 0)
 
     Const, CurveMorph, TransMorph, SpecMorph = range(4)
 
@@ -819,9 +843,13 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
         return self.allActions
 
     def setMaximized(self, maximized):
-        self.keepMaximized = maximized
-        self._rect = self.normalRect if maximized else self.minimizedRect
+#        self.keepMaximized = maximized
+#        self._rect = self.normalRect if maximized else self.minimizedRect
         self.minimized = not maximized
+        if maximized:
+            self.maximize()
+        else:
+            self.minimize()
         self.updateGeometry()
 
     def getIntermediatePaths(self, index):
@@ -976,27 +1004,31 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
         return self.modeLabels[self.mode]
 
     def hoverEnterEvent(self, event):
-        self.maximize()
+        if not self.scene().maximized:
+            self._rect = self.hoverRect
+            self.prepareGeometryChange()
+            self.setZValue(1)
+
+    def hoverLeaveEvent(self, event):
+        if not self.scene().maximized:
+            self.prepareGeometryChange()
+            self.minimize()
+        self.setZValue(0)
 
     def maximize(self):
         self._rect = self.normalRect
-        self.minimized = False
+        self._size = self.normalSize
         self.updateGeometry()
 
     def minimize(self):
         self._rect = self.minimizedRect
-        self.minimized = True
+        self._size = self.minimizedSize
         self.updateGeometry()
-
-    def hoverLeaveEvent(self, event):
-        if self.keepMaximized:
-            return
-        self.minimize()
 
     def sizeHint(self, *args):
 #        if self.prevItem:
 #            print(self.prevItem.index, self.isValid(), self.isContiguous())
-        return self.noneRect.size() if self.isValid() and self.isContiguous() else self._rect.size()
+        return self.noneRect.size() if self.isValid() and self.isContiguous() else self._size
 
     def boundingRect(self):
         return self.noneRect if self.isValid() and self.isContiguous() else self._rect
@@ -1027,7 +1059,9 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
             qp.setPen(QtCore.Qt.white)
         y = self._rect.center().y() - self.deltaY
         right = self._rect.width() - 2
+#        qp.translate(self._rect.left(), 0)
         if not self.mode:
+            qp.translate(self._rect.left(), 0)
             qp.drawLine(1, y, right, y)
             normY = self._rect.height() * .2
             qp.drawLine(right, y - normY, right, y + normY)
@@ -1039,12 +1073,14 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
                 qp.translate(self._rect.center().x(), self._rect.center().y() - self.deltaY)
                 ratio = (right / self.normalTransformPath.boundingRect().width())
                 qp.scale(ratio, ratio)
+                print(self._rect)
                 qp.drawPath(self.minimizedTransformPath)
             else:
                 qp.translate(self._rect.center().x(), self._rect.center().y() * .5)
 #                ratio = (y - self.deltaY) / self.normalTransformPath.boundingRect().height()
                 ratio = (y - self.deltaY) / SampleItem.previewPathMaxHeight * .8
                 qp.scale(ratio, ratio)
+                qp.translate(self._rect.left(), 0)
                 qp.drawPath(self.normalTransformPath)
             qp.restore()
         if not self.minimized:
@@ -2944,6 +2980,91 @@ class EdgeVirtualSlice(QtWidgets.QGraphicsPolygonItem):
         self.setFlags(self.flags() ^ self.ItemHasNoContents)
 
 
+class MaybeVisibleEditItem(QtWidgets.QGraphicsObject):
+    _rectF = QtCore.QRectF()
+    _rect = QtCore.QRect()
+    pen = normalPen = QtGui.QPen(QtGui.QColor(QtCore.Qt.darkGray), 1)
+    normalPen.setCosmetic(True)
+    hoverPen = QtGui.QPen(QtGui.QColor(QtCore.Qt.lightGray), 1)
+    hoverPen.setCosmetic(True)
+    plusPen = plusPenNormal = QtGui.QPen(QtGui.QColor(QtCore.Qt.darkGray), 2)
+    plusPenNormal.setCosmetic(True)
+    plusPenHover = QtGui.QPen(QtGui.QColor(QtCore.Qt.white), 2)
+    plusPenHover.setCosmetic(True)
+
+    clicked = QtCore.pyqtSignal()
+
+    def __init__(self, parent, size, view):
+        QtWidgets.QGraphicsObject.__init__(self, parent)
+        self.setFlags(self.flags() ^ self.ItemIgnoresTransformations)
+        self.viewport = view.viewport()
+        self.view = view
+        self.setAcceptsHoverEvents(True)
+        self._rectF.setSize(QtCore.QSizeF(size, size))
+        self._rect.setSize(QtCore.QSize(size, size))
+        self._rect.moveBottom(-size)
+        self._rectF.moveBottom(-size)
+        self.size = size
+        self.edit = True
+        self.editIconNormal = QtGui.QIcon.fromTheme('document-edit')
+        self.editIconHover = QtGui.QIcon.fromTheme('document-edit-bright')
+        self.editIcon = self.editIconNormal
+
+        self.plusPath = QtGui.QPainterPath()
+        half = size * .5
+        self.plusPath.moveTo(2, half)
+        self.plusPath.lineTo(size - 2, half)
+        self.plusPath.moveTo(half, 2)
+        self.plusPath.lineTo(half, size - 2)
+        self.setEdit(False)
+
+    def mousePressEvent(self, event):
+        self.clicked.emit()
+        QtWidgets.QGraphicsObject.mousePressEvent(self, event)
+
+    def hoverEnterEvent(self, event):
+        self.pen = self.hoverPen
+        self.plusPen = self.plusPenHover
+        self.editIcon = self.editIconHover
+        QtWidgets.QGraphicsObject.hoverEnterEvent(self, event)
+
+#    def hoverMoveEvent(self, event):
+#        print(event.scenePos() in self.sceneBoundingRect(), self.contains(event.scenePos()))
+#        QtWidgets.QGraphicsObject.hoverMoveEvent(self, event)
+
+    def hoverLeaveEvent(self, event):
+        self.pen = self.normalPen
+        self.plusPen = self.plusPenNormal
+        self.editIcon = self.editIconNormal
+        QtWidgets.QGraphicsObject.hoverLeaveEvent(self, event)
+
+    def boundingRect(self):
+        return self._rectF
+
+    def setEdit(self, edit=True):
+        if edit == self.edit:
+            return
+        self.edit = edit
+
+    def paint(self, qp, option, widget):
+        if widget != self.viewport:
+            return
+        qp.setPen(self.pen)
+        qp.drawRect(self._rect)
+        if self.edit:
+            qp.drawPixmap(self._rect, self.editIcon.pixmap(self.size))
+        else:
+            qp.translate(0, self._rectF.y() + 1)
+            qp.setPen(self.plusPen)
+            qp.drawPath(self.plusPath)
+
+    def contains(self, pos):
+        viewTransform = self.scene().view.viewportTransform()
+        inverted, _ = viewTransform.inverted()
+        transform = self.deviceTransform(viewTransform)
+        rect = transform.mapRect(self.boundingRect())
+        return pos in inverted.mapRect(rect)
+
 class MaybeVisibleSimpleTextItem(QtWidgets.QGraphicsSimpleTextItem):
     def __init__(self, text, font, view):
         QtWidgets.QGraphicsSimpleTextItem.__init__(self, text)
@@ -2951,6 +3072,28 @@ class MaybeVisibleSimpleTextItem(QtWidgets.QGraphicsSimpleTextItem):
         self.setFlags(self.flags() ^ self.ItemIgnoresTransformations)
         self.setBrush(QtCore.Qt.lightGray)
         self.viewport = view.viewport()
+        self.editItem = MaybeVisibleEditItem(self, self.font().pointSizeF(), view)
+        self.setVisible(False)
+        self.index = 0
+
+    def _setVisible(self, visible):
+        QtWidgets.QGraphicsSimpleTextItem.setVisible(self, visible)
+        self.editItem.setVisible(visible)
+
+    def _setPos(self, pos):
+        QtWidgets.QGraphicsSimpleTextItem.setPos(self, pos)
+        self.editItem.setPos(pos)
+
+    def _setY(self, y):
+        QtWidgets.QGraphicsSimpleTextItem.setY(self, y)
+        self.editItem.setY(y)
+
+    def setIndex(self, index, other=None):
+        self.index = index
+        if other is None:
+            self.setText(str(index + 1))
+        else:
+            self.setText('{}-{}'.format(index, other))
 
     def paint(self, qp, option, widget):
         if widget == self.viewport:
@@ -3063,9 +3206,12 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
         font = self.font()
         font.setPointSizeF(16)
 #        self.sliceIdItem = self.addSimpleText('1', font)
+#        self.sliceEditItem = $(16, self.view)
+#        self.addItem(self.sliceEditItem)
         self.sliceIdItem = MaybeVisibleSimpleTextItem('1', font, self.view)
+        self.sliceEditItem = self.sliceIdItem.editItem
+        self.sliceEditItem.clicked.connect(self.sliceEditClicked)
         self.addItem(self.sliceIdItem)
-        self.sliceIdItem.setVisible(False)
 
         sliceX = self.front.x()
         sliceY = self.front.y() + self.front.rect().height() * .5
@@ -3082,8 +3228,11 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
         self.frontSlice.setTransform(self.scaleTransform)
         self.frontSlice.setPos(self.front.x() - self.xRatio * .5, 
             self.front.y() + self.xRatio * .5)
+        clipSliceTopLeft = QtCore.QLineF(sliceTopLeft, sliceTopRight).pointAt(.15)
+        clipSliceBottomLeft = QtCore.QLineF(sliceBottomLeft, sliceBottomRight).pointAt(.15)
+        clipSlice = QtGui.QPolygonF([clipSliceBottomLeft, sliceBottomRight, sliceTopRight, clipSliceTopLeft])
         for i in range(1, 63):
-            slice = VirtualSlice(i, slicePolygon)
+            slice = VirtualSlice(i, clipSlice)
 #            slice.setPen(QtGui.QPen(QtCore.Qt.white))
             self.addItem(slice)
             self.slices.append(slice)
@@ -3124,6 +3273,14 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
         self.currentSelection = []
         self.render(qp, targetRect, sourceRect, mode=QtCore.Qt.IgnoreAspectRatio)
 
+    def sliceEditClicked(self):
+        keyFrame = (self.keyFrames.fullList[self.sliceIdItem.index])
+        if keyFrame:
+            self.waveDoubleClicked.emit(keyFrame)
+        else:
+            self.createKeyFrameRequested.emit(self.sliceIdItem.index, None, False)
+#        self.sliceEditRequested.emit(self.sliceIdItem.index)
+
     def updateSlice(self, keyFrame):
         #emitted by PreviewWaveItem.hoverEnterEvent
         if self.highlightedItem:
@@ -3135,22 +3292,24 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
             self.sliceItem.setPos(waveItem.pos())
             self.sliceItem.setZValue(waveItem.zValue() - 1)
             self.sliceItem.setVisible(True)
-            self.sliceIdItem.setText(str(keyFrame.index + 1))
+            self.sliceIdItem.setIndex(keyFrame.index)
             self.sliceIdItem.setPos(self.sliceItem.pos())
             self.sliceIdItem.setY(
                 self.sliceIdItem.y() - self.view.mapToScene(self.sliceIdItem.boundingRect().toRect()).boundingRect().height() * 1.25)
             self.sliceIdItem.setVisible(True)
+            self.sliceEditItem.setEdit(True)
         else:
 #            print('keyFrame not in previews?!')
             self.highlightedItem = None
             self.sliceItem.setPos(self.front.x() + keyFrame * self.xRatio, 
                 self.front.y() - keyFrame * self.yRatio)
-            self.sliceIdItem.setText(str(keyFrame + 1))
+            self.sliceIdItem.setIndex(keyFrame)
             self.sliceIdItem.setPos(self.sliceItem.pos())
             self.sliceIdItem.setY(
                 self.sliceIdItem.y() - self.view.mapToScene(self.sliceIdItem.boundingRect().toRect()).boundingRect().height() * 1.25)
             self.sliceItem.setVisible(True)
             self.sliceIdItem.setVisible(True)
+            self.sliceEditItem.setEdit(False)
 
     def updateKeyFrames(self):
         for item in self.keyFrameItems.values() + list(chain(*self.motionLines.values())):
@@ -3452,6 +3611,8 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
                     self.view.setCursor(QtCore.Qt.SizeBDiagCursor)
             elif event.modifiers() == QtCore.Qt.ShiftModifier:
                 self.view.setDragMode(self.view.RubberBandDrag)
+            elif self.sliceEditItem.contains(self.mousePos):
+                pass
             else:
                 self.clearSliceSelection()
                 self.currentSelection = []
@@ -3488,7 +3649,7 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
                     self.highlightedItem.setPos(self.front.x() + newIndex * self.xRatio, 
                         self.front.y() - newIndex * self.yRatio)
                     self.sliceItem.setPos(self.highlightedItem.pos())
-                    self.sliceIdItem.setText(str(newIndex + 1))
+                    self.sliceIdItem.setIndex(newIndex)
                     self.sliceIdItem.setPos(self.highlightedItem.pos())
                     self.sliceIdItem.setY(
                         self.sliceIdItem.y() - self.view.mapToScene(self.sliceIdItem.boundingRect().toRect()).boundingRect().height() * 1.25)
@@ -3559,7 +3720,7 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
             self.selectRight.setVisible(False)
             self.selectBottom.setVisible(False)
             self.selectLeft.setVisible(False)
-            self.sliceIdItem.setText(str(start + 1))
+            self.sliceIdItem.setIndex(start)
             self.sliceIdItem.setPos(self.selectStart.pos())
             self.sliceIdItem.setY(
                 self.sliceIdItem.y() - self.view.mapToScene(self.sliceIdItem.boundingRect().toRect()).boundingRect().height() * 1.25)
@@ -3580,7 +3741,7 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
             self.selectBottom.setVisible(True)
             self.selectLeft.setPolygon(QtGui.QPolygonF([startPoints.topLeft, endPoints.topLeft, endPoints.bottomLeft, startPoints.bottomLeft]))
             self.selectLeft.setVisible(True)
-            self.sliceIdItem.setText('{}-{}'.format(start + 1, end + 1))
+            self.sliceIdItem.setIndex(start, end)
             self.sliceIdItem.setPos(self.selectEnd.pos())
             refRect = self.view.mapToScene(self.sliceIdItem.boundingRect().toRect()).boundingRect()
             self.sliceIdItem.setX(

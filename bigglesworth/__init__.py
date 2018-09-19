@@ -60,6 +60,7 @@ from bigglesworth.themes import ThemeCollection
 from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, GlobalsDialog, 
     DumpReceiveDialog, DumpSendDialog, WarningMessageBox, SmallDumper, FirstRunWizard, LogWindow, 
     BlofeldDumper, FindDuplicates, SoundImport, SoundExport, SoundListExport, MidiDuplicateDialog)
+from bigglesworth.help import HelpDialog
 #from bigglesworth.utils import localPath
 from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR, LogInfo, LogWarning, factoryPresets, factoryPresetsNamesDict
 from bigglesworth.midiutils import SYSEX, CTRL, NOTEOFF, NOTEON, PROGRAM, SysExEvent
@@ -333,6 +334,7 @@ class Bigglesworth(QtWidgets.QApplication):
 #        self.mainWindow.quitAction.setIcon(QtGui.QIcon(':/icons/Bigglesworth/16x16/dialog-information.svg'))
         self.mainWindow.closed.connect(self.checkClose)
         self.mainWindow.quitAction.triggered.connect(self.quit)
+        self.mainWindow.helpAction.triggered.connect(HelpDialog(self.mainWindow).show)
         self.mainWindow.midiConnect.connect(self.midiConnect)
         self.mainWindow.showLogAction.triggered.connect(self.loggerWindow.show)
         self.mainWindow.showSettingsAction.triggered.connect(self.showSettings)
@@ -1015,6 +1017,9 @@ class Bigglesworth(QtWidgets.QApplication):
         self.globalsBlock = False
         if not res:
             return
+
+    def showHelp(self):
+        HelpDialog(self.mainWindow).show()
 
     def eventFilter(self, source, event):
         if source in self.watchedDialogs and event.type() == QtCore.QEvent.QCloseEvent:

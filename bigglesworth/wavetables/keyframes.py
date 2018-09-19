@@ -537,11 +537,11 @@ class KeyFrames(QtCore.QObject):
             transforms.add(prevTransform)
 #            prevTransform.setNextItem(keyFrame)
             if index == 63:
-                self.keyFrames[-1].setFinal(False)
+#                self.keyFrames[-1].setFinal(False)
                 self.keyFrames.append(keyFrame)
                 self.allItems.append(keyFrame)
                 self.layout.addItem(keyFrame)
-                keyFrame.setFinal(True)
+#                keyFrame.setFinal(True)
             else:
                 self.keyFrames.insert(self.keyFrames.index(prevItem) + 1, keyFrame)
                 if prevTransformIndex == self.allItems[-1]:
