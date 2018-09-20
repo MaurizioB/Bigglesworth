@@ -1,7 +1,7 @@
 #!/usr/bin/env python2.7
 # *-* encoding: utf-8 *-*
 
-import sys, os
+import sys, os, re
 from copy import deepcopy
 from itertools import chain
 from xml.etree import ElementTree as ET
@@ -1252,14 +1252,13 @@ class WaveTableWindow(QtWidgets.QMainWindow):
     def currentWaveTableName(self):
         return self.nameEdit.text()
 
-    def toggleDock(self, show):
-        if show:
-            self.waveTableDock.setVisible(True), self.waveTableDock.activateWindow()
-        else:
+    def toggleDock(self):
+        if self.waveTableDock.isVisible():
             self.waveTableDock.setVisible(False)
+        else:
+            self.waveTableDock.setVisible(True), self.waveTableDock.activateWindow()
 
     def fillWaveTableMenu(self):
-        self.showDockAction.setChecked(self.waveTableDock.isVisible())
         self.showDockAction.setText('{} library'.format('Hide' if self.waveTableDock.isVisible() else 'Show'))
         actions = self.waveTableMenu.actions()
         for action in actions[actions.index(self.waveTableMenuSeparator) + 1:]:
@@ -2675,13 +2674,62 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         byteArray = QtCore.QByteArray()
         buffer = QtCore.QBuffer(byteArray)
         pixmap.save(buffer, 'PNG', 32)
-        print('img size: {}'.format(byteArray.size()))
+#        print('img size: {}'.format(byteArray.size()))
         return byteArray
 
+    def existsWithSuffix(self, sourceName, suffix):
+        newName = sourceName[:-len(suffix)] + suffix
+        return bool(self.waveTableModel.match(self.waveTableModel.index(0, NameColumn), QtCore.Qt.DisplayRole, newName, flags=QtCore.Qt.MatchExactly))
+
     def duplicateWaveTable(self):
-        selection = [index.row() for index in self.localWaveTableList.selectionModel().selectedRows()]
-        if len(selection) != 1:
+#        selection = [index.row() for index in self.localWaveTableList.selectionModel().selectedRows()]
+        if len(self.localWaveTableList.selectionModel().selectedRows()) != 1:
             return
+        index = self.localProxy.mapToSource(self.localWaveTableList.selectionModel().selectedRows()[0])
+        sourceName = index.sibling(index.row(), NameColumn).data()
+        destName = None
+        if sourceName.endswith('    ') and not self.existsWithSuffix(sourceName, 'Copy'):
+            destName = sourceName[:10] + 'Copy'
+        elif sourceName.endswith('     '):
+            for c in range(1, 10):
+                suffix = 'Copy{}'.format(c)
+                if not self.existsWithSuffix(sourceName, suffix):
+                    destName = sourceName[:9] + suffix
+                    break
+        elif sourceName.endswith('  '):
+            destName = sourceName[:12] + ' 2'
+        elif len(re.sub(r' +', ' ', sourceName)) < 12:
+            destName = re.sub(r' +', ' ', sourceName).ljust(14, ' ')[:12] + ' 2'
+        if not destName:
+            try:
+                found = re.compile(r'\d*$').search(sourceName).group()
+                current = int(found)
+                digits = len(found)
+            except:
+                current = 2
+                digits = 0
+            number = '{:0{}}'.format(current, digits)
+            while self.existsWithSuffix(sourceName, number):
+                current += 1
+                number = '{:0{}}'.format(current, digits)
+                if current > 999:
+                    print('Exceeding maximum search number (999), keeping original name')
+                    destName = sourceName
+                    break
+            else:
+                destName = sourceName[:-len(number)] + number
+        row = self.waveTableModel.rowCount()
+        self.waveTableModel.insertRows(row, 1)
+        self.waveTableModel.setData(self.waveTableModel.index(row, UidColumn), str(uuid4()))
+        self.waveTableModel.setData(self.waveTableModel.index(row, NameColumn), destName)
+        self.waveTableModel.setData(self.waveTableModel.index(row, SlotColumn), index.sibling(index.row(), SlotColumn).data())
+        self.waveTableModel.setData(self.waveTableModel.index(row, EditedColumn), index.sibling(index.row(), EditedColumn).data())
+        self.waveTableModel.setData(self.waveTableModel.index(row, DataColumn), index.sibling(index.row(), DataColumn).data())
+        self.waveTableModel.setData(self.waveTableModel.index(row, PreviewColumn), index.sibling(index.row(), PreviewColumn).data())
+        if not self.waveTableModel.submitAll():
+            print(self.waveTableModel.lastError().databaseText())
+            return
+        self.localWaveTableList.setCurrentIndex(self.localProxy.mapFromSource(self.waveTableModel.index(row, UidColumn)))
 
     def deleteWaveTables(self):
         selection = [index.row() for index in self.localWaveTableList.selectionModel().selectedRows()]

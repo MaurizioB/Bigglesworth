@@ -67,6 +67,22 @@ def sineValues(fract, count=128):
         sineData[(fract, count)] = values
         return values
 
+triangleData = {}
+def triangleValues(fract, count=128):
+    try:
+        return triangleData[(fract, count)]
+    except:
+        values = [0]
+        ratio = fract / (count * .25)
+        value = 0
+        for i in range(1, count):
+            value += ratio
+            values.append(value)
+            if not -1 < value < 1:
+                ratio *= -1
+        triangleData[(fract, count)] = values
+        return values
+
 squareData = {}
 def squareValues(fract, count=128):
     try:
@@ -101,7 +117,7 @@ def inverseSawValues(fract, count=128):
         inverseSawData[(fract, count)] = values
         return values
 
-waveFunction = [sineValues, squareValues, sawToothValues, inverseSawValues]
+waveFunction = [sineValues, squareValues, triangleValues, sawToothValues, inverseSawValues]
 
 pow22 = 2**22
 pow21 = 2**21

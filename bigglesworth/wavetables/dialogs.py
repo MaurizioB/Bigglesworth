@@ -39,6 +39,21 @@ class WaveExportDialog(QtWidgets.QDialog):
         self.waveData = [wave.astype('int32') for wave in waveData]
 
         self.serumWhatLbl.setPixmap(QtGui.QIcon.fromTheme('question').pixmap(iconHeight))
+        self.serumWhatLbl.setToolTip('''
+        While Blofeld's wavetables are based on 128 samples per cycle, Serum uses 2048 samples.<br/>
+            Intermediate values will be computed according to this option.<br/><br/>
+            - <img src=":/icons/Bigglesworth/22x22/labplot-xy-smoothing-curve" height={s}> 
+                <b>None</b>: each sample is repeated 16 times<br/>
+            - <img src=":/icons/Bigglesworth/22x22/labplot-xy-interpolation-curve" height={s}> 
+                <b>Wave based</b>: source samples are distributed every 16 output samples, 
+                intermediate values are interpolated. The final sample of each wave is 
+                interpolated with the first sample.<br/>
+            - <img src=":/icons/Bigglesworth/22x22/labplot-xy-equation-curve" height={s}> 
+                <b>Table based</b>: same as "Wave based", but only the final value of the 
+                final wave is interpolated with the first value of the first wave.
+        '''.format(s=max(16, self.font().pointSize())))
+        self.serumCombo.currentIndexChanged.connect(lambda i: self.serumCombo.setToolTip(self.serumTooltip[i]))
+        self.serumCombo.setToolTip(self.serumTooltip[0])
 
     def exec_(self):
         if not QtWidgets.QDialog.exec_(self):

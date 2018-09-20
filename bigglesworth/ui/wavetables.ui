@@ -591,6 +591,11 @@
                </item>
                <item>
                 <property name="text">
+                 <string>Triangular</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
                  <string>Sawtooth</string>
                 </property>
                </item>

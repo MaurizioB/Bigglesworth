@@ -10,12 +10,12 @@ QtGui.QIconEngineV2 = QIconEngineV2
 from bigglesworth.utils import sanitize, loadUi, getCardinal
 from bigglesworth.dialogs.messageboxes import AdvancedMessageBox
 from bigglesworth.wavetables import UidColumn, NameColumn, SlotColumn, EditedColumn, DataColumn, PreviewColumn, DumpedColumn
-from bigglesworth.wavetables.utils import ActivateDrag, curves, getCurvePath, sineValues, waveFunction
+from bigglesworth.wavetables.utils import ActivateDrag, curves, getCurvePath, waveFunction
 from bigglesworth.wavetables.graphics import SampleItem, NextWaveScene, WaveTransformItem
 
 CurveIconType, WaveIconType = 0, 1
 
-WaveLabels = ['Sine', 'Square', 'Sawtooth', 'Inv. Saw']
+WaveLabels = ['Sine', 'Square', 'Triangle', 'Sawtooth', 'Inv. Saw']
 
 class IconEngine(QtGui.QIconEngineV2):
 
@@ -1847,9 +1847,13 @@ class WaveTableDock(QtWidgets.QDockWidget):
             self.resize(self.floatingWidth, self.height())
             self.resizing = False
         else:
-            self.resizing = True
-            self.resize(self.dockedWidth, self.height())
-            self.resizing = False
+            try:
+                self.resizing = True
+                self.resize(self.dockedWidth, self.height())
+            except:
+                return
+            finally:
+                self.resizing = False
         self.saveSettings()
 
     def saveSettings(self, visible=None):

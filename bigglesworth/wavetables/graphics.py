@@ -322,7 +322,7 @@ class SampleItem(QtWidgets.QGraphicsWidget):
     minimizedShape = QtGui.QPainterPath()
     minimizedShape.addRect(minimizedRect.adjusted(-2, 0, 2, 0))
     minimizedSize = minimizedRect.size()
-    hoverRect = QtCore.QRectF(-30, 0, 80, 60)
+    hoverRect = QtCore.QRectF(-20, 0, 60, 60)
     normalRect = QtCore.QRectF(0, 0, 80, 60)
     normalShape = QtGui.QPainterPath()
     normalShape.addRect(normalRect.adjusted(-2, 0, 2, 0))
@@ -565,7 +565,7 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
 #    noneRect = QtCore.QRectF(0, 0, 5, 60)
     noneRect = QtCore.QRectF(0, 0, 0, 60)
     _rect = minimizedRect = QtCore.QRectF(0, 0, 20, 60)
-    hoverRect = QtCore.QRectF(-30, 0, 80, 60)
+    hoverRect = QtCore.QRectF(-20, 0, 60, 60)
     normalRect = QtCore.QRectF(0, 0, 80, 60)
     _size = minimizedSize = minimizedRect.size()
     normalSize = normalRect.size()
@@ -1060,30 +1060,30 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
         y = self._rect.center().y() - self.deltaY
         right = self._rect.width() - 2
 #        qp.translate(self._rect.left(), 0)
+        qp.save()
         if not self.mode:
             qp.translate(self._rect.left(), 0)
             qp.drawLine(1, y, right, y)
             normY = self._rect.height() * .2
             qp.drawLine(right, y - normY, right, y + normY)
         else:
-            qp.save()
+#            qp.save()
             qp.setPen(self.pathPen)
             qp.setBrush(QtCore.Qt.NoBrush)
-            if self.minimized:
+            if self._rect == self.minimizedRect:
                 qp.translate(self._rect.center().x(), self._rect.center().y() - self.deltaY)
                 ratio = (right / self.normalTransformPath.boundingRect().width())
                 qp.scale(ratio, ratio)
-                print(self._rect)
                 qp.drawPath(self.minimizedTransformPath)
             else:
                 qp.translate(self._rect.center().x(), self._rect.center().y() * .5)
 #                ratio = (y - self.deltaY) / self.normalTransformPath.boundingRect().height()
                 ratio = (y - self.deltaY) / SampleItem.previewPathMaxHeight * .8
                 qp.scale(ratio, ratio)
-                qp.translate(self._rect.left(), 0)
+#                qp.translate(self._rect.left() * ratio, 0)
                 qp.drawPath(self.normalTransformPath)
-            qp.restore()
-        if not self.minimized:
+        qp.restore()
+        if self._rect != self.minimizedRect:
             qp.drawText(self._rect.adjusted(1, y, -1, 0), QtCore.Qt.AlignCenter, self.modeLabel)
 
 

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>271</width>
+    <width>278</width>
     <height>379</height>
    </rect>
   </property>
@@ -74,25 +74,36 @@
             <property name="text">
              <string>None (repeated values)</string>
             </property>
+            <property name="icon">
+             <iconset theme="labplot-xy-smoothing-curve">
+              <normaloff/>
+             </iconset>
+            </property>
            </item>
            <item>
             <property name="text">
              <string>Wave based</string>
+            </property>
+            <property name="icon">
+             <iconset theme="labplot-xy-interpolation-curve">
+              <normaloff/>
+             </iconset>
             </property>
            </item>
            <item>
             <property name="text">
              <string>Table based</string>
             </property>
+            <property name="icon">
+             <iconset theme="labplot-xy-equation-curve">
+              <normaloff/>
+             </iconset>
+            </property>
            </item>
           </widget>
          </item>
          <item>
-          <widget class="QLabel" name="serumWhatLbl">
-           <property name="toolTip">
-            <string>While Blofeld's wavetables are based on 128 samples per cycle, Serum uses 2048 samples.&lt;br/&gt;Intermediate values will be computed according to this option.</string>
-           </property>
-          </widget>
+          <widget class="QLabel" name="serumWhatLbl"/>
          </item>
         </layout>
        </widget>
@@ -372,8 +383,8 @@
   </connection>
  </connections>
  <buttongroups>
+  <buttongroup name="layoutButtonGroup"/>
   <buttongroup name="s16iButtonGroup"/>
   <buttongroup name="s24iButtonGroup"/>
-  <buttongroup name="layoutButtonGroup"/>
  </buttongroups>
 </ui>
