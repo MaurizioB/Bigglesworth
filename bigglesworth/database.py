@@ -876,6 +876,37 @@ class BlofeldDB(QtCore.QObject):
             splitted = uidList[500 * delta: 500 * (delta + 1)]
         return nameList
 
+    def getTagsForUidList(self, uidList):
+#        where = ') OR ('.join('sounds.uid="{uid}" AND reference.uid="{uid}"'.format(uid=uid) for uid in uidList)
+#        if not self.query.exec_('SELECT reference.tags FROM sounds,reference WHERE ({})'.format(where)):
+        tags = {}
+        splitted = uidList[:500]
+        delta = 0
+        while splitted:
+            for uid in splitted:
+                if not self.query.exec_('SELECT reference.tags FROM sounds,reference WHERE reference.uid = "{}"'.format(uid)):
+                    self.dbErrorLog('Error searching tags for uid list', extMessage=', '.join(splitted))
+                    return tags
+                self.query.first()
+                tags[uid] = json.loads(self.query.value(0))
+            delta += 1
+            splitted = uidList[500 * delta: 500 * (delta + 1)]
+        return tags
+
+    def setTagsForUidList(self, uidList, tags):
+        splitted = uidList[:500]
+        delta = 0
+        while splitted:
+            where = ') OR ('.join('reference.uid="{uid}"'.format(uid=uid) for uid in splitted)
+            self.query.prepare('UPDATE reference SET tags = :tags WHERE ({})'.format(where))
+            self.query.bindValue(':tags', json.dumps(tags))
+            if not self.query.exec_():
+                self.dbErrorLog('Error updating tags for uid list', extMessage='{} {}'.format(', '.join(splitted), tags))
+                return
+            delta += 1
+            splitted = uidList[500 * delta: 500 * (delta + 1)]
+        self.libraryModel.updated.emit()
+
     def updateSoundValue(self, uid, paramId, value):
         if not self.query.exec_('UPDATE sounds SET {attr} = {value} WHERE uid = "{uid}"'.format(
             attr=Parameters.parameterData[paramId].attr, 

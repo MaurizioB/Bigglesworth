@@ -5,8 +5,8 @@ from Qt import QtCore, QtGui, QtWidgets
 
 from bigglesworth.parameters import categories
 from bigglesworth.widgets import NameEdit, ContextMenu, CategoryDelegate, TagsDelegate
-from bigglesworth.utils import loadUi, getSysExContents, sanitize
-from bigglesworth.const import (TagsRole, UidColumn, LocationColumn, 
+from bigglesworth.utils import loadUi, getSysExContents, sanitize, getValidQColor
+from bigglesworth.const import (TagsRole, backgroundRole, foregroundRole, UidColumn, LocationColumn, 
     NameColumn, CatColumn, TagsColumn, FactoryColumn, chr2ord, factoryPresets)
 from bigglesworth.library import CleanLibraryProxy, BankProxy, CatProxy, NameProxy, TagsProxy, MainLibraryProxy
 from bigglesworth.dialogs import SoundTagsEditDialog, MultiSoundTagsEditDialog, RemoveSoundsMessageBox, DeleteSoundsMessageBox, DropDuplicatesMessageBox
@@ -21,146 +21,98 @@ class NameDelegate(QtWidgets.QStyledItemDelegate):
         return lineEdit
 
 
-#class CategoryDelegate(QtWidgets.QStyledItemDelegate):
-#    def createEditor(self, parent, option, index):
-#        combo = QtWidgets.QComboBox(parent)
-#        combo.addItems(Parameters.parameterData.category.values)
-#        combo.setCurrentIndex(index.data())
-#        combo.view().activated.connect(lambda index, combo=combo: self.commit(index, combo))
-#        combo.view().clicked.connect(lambda index, combo=combo: self.commit(index, combo))
-#        combo.view().pressed.connect(lambda index, combo=combo: self.commit(index, combo))
-##        self.updateEditorGeometry(combo, option, index)
-#        return combo
-#
-#    def displayText(self, value, locale):
-#        return Parameters.parameterData.category.values[value]
-#
-#    def editorEvent(self, event, model, option, index):
-#        if self.parent().editTriggers() & self.parent().EditKeyPressed and \
-#            event.type() == QtCore.QEvent.MouseButtonRelease and \
-#            event.button() == QtCore.Qt.LeftButton:
-#                self.parent().edit(index)
-#                return True
-#        return QtWidgets.QStyledItemDelegate.editorEvent(self, event, model, option, index)
-#
-##    implement this to all delegates to have single/double click editing for this only
-##    def editorEvent(self, event, model, option, index):
-##        return QtWidgets.QStyledItemDelegate.editorEvent(self, event, model, option, index)
-#
-#    def commit(self, index, combo):
-#        combo.setCurrentIndex(index.row())
-#        self.commitData.emit(combo)
-#        self.closeEditor.emit(combo, self.NoHint)
-#
-#    def setModelData(self, widget, model, index):
-#        model.setData(index, widget.currentIndex(), CatRole)
-#        QtWidgets.QStyledItemDelegate.setModelData(self, widget, model, index)
-#
-#
-#class TagsDelegate(QtWidgets.QStyledItemDelegate):
-#    defaultBackground = QtCore.Qt.darkGray
-#    defaultText = QtCore.Qt.white
-#    tagsModel = None
-#    tagClicked = QtCore.pyqtSignal(str)
-#
-#    def setTagsModel(self, tagsModel):
-#        if self.tagsModel:
-#            self.tagsModel.dataChanged.disconnect()
-#        self.tagsModel = tagsModel
-#        self.tagsModel.dataChanged.connect(self.updateTags)
-#        self.updateTags()
-#
-#    def updateTags(self, *args):
-#        self.tagColors = {}
-#        for row in range(self.tagsModel.rowCount()):
-#            tag = self.tagsModel.index(row, 0).data()
-#            bgColor = getValidQColor(self.tagsModel.index(row, 1).data(), backgroundRole)
-#            fgColor = getValidQColor(self.tagsModel.index(row, 2).data(), foregroundRole)
-#            self.tagColors[tag] = bgColor, fgColor
-#
-#    def editorEvent(self, event, model, option, index):
-#        if event.type() == QtCore.QEvent.MouseMove:
-#            model.setData(index, event.pos(), HoverRole)
-#        elif event.type() == QtCore.QEvent.Leave:
-#            model.setData(index, False, HoverRole)
-#        elif event.type() == QtCore.QEvent.MouseButtonPress and event.button() == QtCore.Qt.LeftButton and index.data():
-#            self.selectTag(event, option, index)
-##            self.showMenu(event, model, option, index)
-#        return QtWidgets.QStyledItemDelegate.editorEvent(self, event, model, option, index)
-#
-#    def selectTag(self, event, option, index):
-#        tags = json.loads(index.data())
-#        if not tags:
-#            return
-#        self.initStyleOption(option, index)
-#        pos = event.pos()
-#        delta = 1
-#        left = option.rect.x() + .5
-#        height = option.fontMetrics.height() + 4
-#        top = option.rect.y() + (option.rect.height() - height) * .5
-#        for tag in tags:
-#            width = option.fontMetrics.width(tag) + 8
-#            rect = QtCore.QRectF(left + delta + 1, top, width, height)
-#            if pos in rect:
-#                self.tagClicked.emit(tag)
-#                break
-#            delta += width + 4
-#
-#    def showMenu(self, *args):
-#        print(args)
-#
-#    def paint(self, painter, option, index):
-#        self.initStyleOption(option, index)
-#        if not option.text:
-#            QtWidgets.QApplication.style().drawControl(QtWidgets.QStyle.CE_ItemViewItem, option, painter)
-#            return
-#        tags = json.loads(option.text)
-#        option.text = ''
-##        option.state |= QtWidgets.QStyle.State_Selected
-##        option.state ^= QtWidgets.QStyle.State_Selected
-#        QtWidgets.QApplication.style().drawControl(QtWidgets.QStyle.CE_ItemViewItem, option, painter)
-##        tags = json.loads(index.data())
-#        if not tags:
-#            return
-#        painter.save()
-#        painter.setRenderHints(painter.Antialiasing)
-#        painter.translate(.5, .5)
-#
-#        pos = index.data(HoverRole) if option.state & QtWidgets.QStyle.State_MouseOver else False
-#        delta = 1
-#        left = option.rect.x() + .5
-#        height = option.fontMetrics.height() + 4
-#        top = option.rect.y() + (option.rect.height() - height) * .5
-#        stop = False
-##        painter.setBrush(self.defaultBackground)
-#        for tag in tags:
-#            bg, fg = self.tagColors.get(tag, (self.defaultBackground, self.defaultText))
-#            painter.setBrush(bg)
-#            width = option.fontMetrics.width(tag) + 8
-#            rect = QtCore.QRectF(left + delta + 1, top, width, height)
-#            if pos and pos in rect:
-#                painter.setPen(fg)
-#            else:
-#                painter.setPen(QtCore.Qt.transparent)
-#            if rect.right() > option.rect.right() or rect.left() > option.rect.right():
-#                stop = True
-#                grad = QtGui.QLinearGradient(option.rect.right() - 10, 0, option.rect.right(), 0)
-#                grad.setColorAt(0, bg)
-#                grad.setColorAt(1, QtCore.Qt.transparent)
-#                painter.setBrush(QtGui.QBrush(grad))
-#                grad.setColorAt(0, painter.pen().color())
-#                painter.setPen(QtGui.QPen(grad, 1))
-#                painter.drawRoundedRect(rect, 2, 2)
-#                grad.setColorAt(0, fg)
-#                painter.setPen(QtGui.QPen(grad, 1))
-#            else:
-#                painter.drawRoundedRect(rect, 2, 2)
-#                painter.setPen(fg)
-#            painter.drawText(rect, QtCore.Qt.AlignCenter, tag)
-#            delta += width + 4
-#            if stop:
-#                break
-#        painter.restore()
+class TagsCheckBox(QtWidgets.QCheckBox):
+    def __init__(self, tag, bgd, fgd, state):
+        QtWidgets.QCheckBox.__init__(self, tag)
+        self.bgd = bgd
+        self.fgd = fgd
+        self.edited = False
+        self.state = state
+        if state == QtCore.Qt.Checked:
+            self.setChecked(True)
+        self.clicked.connect(self.setEdited)
+
+    def mousePressEvent(self, event):
+        self.click()
+
+    def setEdited(self):
+        self.edited = True
+        self.update()
+
+    def paintEvent(self, event):
+        option = QtWidgets.QStyleOptionButton()
+        self.initStyleOption(option)
+        qp = QtWidgets.QStylePainter(self)
+        qp.setRenderHints(qp.Antialiasing)
+        labelRect = self.style().subElementRect(QtWidgets.QStyle.SE_CheckBoxContents, option, self)
+        checkRect = self.style().subElementRect(QtWidgets.QStyle.SE_CheckBoxIndicator, option, self)
+        option.rect = checkRect
+        if not self.edited and self.state == QtCore.Qt.PartiallyChecked:
+            option.state |= QtWidgets.QStyle.State_NoChange | QtWidgets.QStyle.State_On
+        qp.drawPrimitive(QtWidgets.QStyle.PE_FrameFocusRect, option)
+        qp.drawPrimitive(QtWidgets.QStyle.PE_IndicatorCheckBox, option)
+        qp.setBrush(self.bgd)
+        qp.setPen(self.fgd)
+        qp.drawRoundedRect(labelRect, 4, 4)
+        qp.drawText(labelRect, QtCore.Qt.AlignCenter, self.text())
+
+
+class TagsMiniWidget(QtWidgets.QWidget):
+    def __init__(self, uidList, widgetAction):
+        QtWidgets.QWidget.__init__(self)
+        layout = QtWidgets.QVBoxLayout()
+        self.setLayout(layout)
+        self.widgetAction = widgetAction
+
+        self.database = QtWidgets.QApplication.instance().database
+        self.tagsModel = self.database.tagsModel
+        self.uidList = uidList
+
+        currentTags = self.database.getTagsForUidList(uidList)
+        inverted = {}
+        for uid, tags in currentTags.items():
+            for tag in tags:
+                if not tag in inverted:
+                    inverted[tag] = [uid]
+                else:
+                    inverted[tag].append(uid)
+
+        self.checkboxes = []
+        for row in range(self.tagsModel.rowCount()):
+            tag = self.tagsModel.index(row, 0).data()
+            bgd = getValidQColor(self.tagsModel.index(row, 1).data(), backgroundRole)
+            fgd = getValidQColor(self.tagsModel.index(row, 2).data(), foregroundRole)
+            if tag in inverted:
+                if len(inverted[tag]) == len(uidList):
+                    state = QtCore.Qt.Checked
+                else:
+                    state = QtCore.Qt.PartiallyChecked
+            else:
+                state = QtCore.Qt.Unchecked
+            check = TagsCheckBox(tag, bgd, fgd, state)
+            layout.addWidget(check)
+            check.toggled.connect(self.activated)
+            self.checkboxes.append(check)
+
+        self.applyBtn = QtWidgets.QPushButton(QtGui.QIcon.fromTheme('dialog-ok-apply'), 'Apply')
+        self.applyBtn.setEnabled(False)
+        layout.addWidget(self.applyBtn)
+        self.applyBtn.clicked.connect(self.apply)
+
+    def activated(self):
+        self.applyBtn.setEnabled(True)
+        [check.setEdited() for check in self.checkboxes]
+
+    def apply(self):
+#        self.widgetAction.activate(self.widgetAction.Trigger)
+        self.database.setTagsForUidList(self.uidList, [c.text() for c in self.checkboxes if c.isChecked()])
+        parent = self.widgetAction.parent()
+        while isinstance(parent.parent(), QtWidgets.QMenu):
+            parent = parent.parent()
+        parent.close()
+
+    def mousePressEvent(self, event):
+        event.accept()
 
 
 class BaseLibraryView(QtWidgets.QTableView):
@@ -707,7 +659,7 @@ class BaseLibraryView(QtWidgets.QTableView):
             if selRows[0].row() != index.row():
                 index = selRows[0]
             menu.addSection(name)
-            soundEditAction = menu.addAction('Open in the sound editor')
+            soundEditAction = menu.addAction(QtGui.QIcon.fromTheme('dial'), 'Open in the sound editor')
             soundEditAction.triggered.connect(lambda _, uid=uid: self.window().soundEditRequested.emit(uid, self.collection))
 
             dumpMenu = menu.addMenu(QtGui.QIcon(':/images/dump.svg'), 'Dump')
@@ -716,7 +668,10 @@ class BaseLibraryView(QtWidgets.QTableView):
             dumpMenu.setSeparatorsCollapsible(False)
             sendSection = dumpMenu.addSection('Send')
 
-            editTagsAction = menu.addAction(QtGui.QIcon.fromTheme('tag'), 'Edit tags...')
+            tagsMenu = menu.addMenu(QtGui.QIcon.fromTheme('tag'), 'Tags')
+            tagsMenu.aboutToShow.connect(lambda: self.populateTagsMenu([uid]))
+            tagsMenu.addSeparator()
+            editTagsAction = tagsMenu.addAction(QtGui.QIcon.fromTheme('document-edit'), 'Edit tags...')
             editTagsAction.triggered.connect(lambda _, index=index: self.tagEditRequested.emit(index))
 
             duplicateAction = menu.addAction(QtGui.QIcon.fromTheme('edit-copy'), 'Duplicate')
@@ -783,8 +738,13 @@ class BaseLibraryView(QtWidgets.QTableView):
         else:
             uidList = [idx.sibling(idx.row(), UidColumn).data(QtCore.Qt.DisplayRole) for idx in selRows]
             menu.addSection('{} sounds selected'.format(len(selRows)))
-            editTagsMultiAction = menu.addAction(QtGui.QIcon.fromTheme('tag'), 'Edit tags...')
+
+            tagsMenu = menu.addMenu(QtGui.QIcon.fromTheme('tag'), 'Tags')
+            tagsMenu.aboutToShow.connect(lambda: self.populateTagsMenu(uidList))
+            tagsMenu.addSeparator()
+            editTagsMultiAction = tagsMenu.addAction(QtGui.QIcon.fromTheme('tag'), 'Edit tags...')
             editTagsMultiAction.triggered.connect(lambda: self.tagEditMultiRequested.emit(selRows))
+
             if isinstance(self, CollectionTableView):
                 deleteAction = menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 'Remove from "{}"'.format(self.collection))
                 deleteAction.setStatusTip('Remove the selected sounds from the current collection only')
@@ -807,6 +767,17 @@ class BaseLibraryView(QtWidgets.QTableView):
             if len(uidList) > 1024:
                 exportAction.setEnabled(False)
         return menu, index, name, uid
+
+    def populateTagsMenu(self, uidList):
+        menu = self.sender()
+        firstAction = menu.actions()[0]
+        if isinstance(firstAction, QtWidgets.QWidgetAction) or not self.tagsModel.rowCount():
+            return
+        action = QtWidgets.QWidgetAction(menu)
+        widget = TagsMiniWidget(uidList, action)
+        action.setDefaultWidget(widget)
+        menu.insertAction(firstAction, action)
+
 
 class LibraryTableView(BaseLibraryView):
     def __init__(self, *args, **kwargs):

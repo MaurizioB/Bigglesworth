@@ -15,9 +15,12 @@ def escapeAmp(txt):
     return _mnemonics.sub('&&', txt)
 
 class FactoryMenu(QtWidgets.QMenu):
+    @QtCore.pyqtSlot(QtGui.QIcon, str)
     @QtCore.pyqtSlot(str)
-    def addMenu(self, title):
-        menu = FactoryMenu(title, self)
+    def addMenu(self, *args):
+        menu = FactoryMenu(args[-1], self)
+        if len(args) > 1:
+            menu.setIcon(args[0])
         self.addAction(menu.menuAction())
         return menu
 
@@ -53,6 +56,7 @@ class FactoryMenu(QtWidgets.QMenu):
 class SoundsMenu(FactoryMenu):
     def __init__(self, parent):
         FactoryMenu.__init__(self, '&Library', parent)
+        self.settings = QtCore.QSettings()
         self.libraryModel = parent.libraryModel
         self.referenceModel = parent.referenceModel
         self.locationsMenu = self.addMenu('By collection')
@@ -158,8 +162,15 @@ class SoundsMenu(FactoryMenu):
             return
         self.locationsDone = True
         self.collectionMenus = {}
+        self.settings.beginGroup('CollectionIcons')
         for c, collection in enumerate(self.collections):
-            colMenu = self.locationsMenu.addMenu('')
+            if collection in factoryPresetsNamesDict:
+                icon = QtGui.QIcon(':/images/factory.svg')
+            elif collection == 'Blofeld':
+                icon = QtGui.QIcon(':/images/bigglesworth_logo.svg')
+            else:
+                icon = QtGui.QIcon.fromTheme(self.settings.value(collection))
+            colMenu = self.locationsMenu.addMenu(icon, '')
             self.collectionMenus[collection] = colMenu
             colMenu.menuAction().setData(collection)
             content = self.locations[c]
@@ -190,6 +201,7 @@ class SoundsMenu(FactoryMenu):
                 soundAction.setData(uid)
                 if c <= 2:
                     setItalic(soundAction)
+        self.settings.endGroup()
 
     def getCommonLetters(self, a, b):
         text = ''

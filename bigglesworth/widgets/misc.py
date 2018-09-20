@@ -2,6 +2,60 @@ from bisect import bisect_left
 
 from Qt import QtCore, QtGui, QtWidgets
 
+class IconSelector(QtWidgets.QToolButton):
+    dirIterator = QtCore.QDirIterator(':', QtCore.QDirIterator.Subdirectories)
+    icons = set()
+    images = {}
+    while dirIterator.hasNext():
+        dirIterator.next()
+        if dirIterator.filePath().startswith(':/icons') and dirIterator.fileInfo().isFile():
+            icons.add(dirIterator.fileInfo().completeBaseName())
+        elif dirIterator.filePath().startswith(':/images') and dirIterator.fileInfo().isFile():
+            images[dirIterator.fileName()] = dirIterator.filePath()
+    icons.discard('photo')
+    icons = sorted(icons)
+    icons.insert(0, 'photo')
+    icons.insert(0, '')
+    currentIndex = 1
+
+    iconChanged = QtCore.pyqtSignal(QtGui.QIcon)
+
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QToolButton.__init__(self, *args, **kwargs)
+        menu = QtWidgets.QMenu(self)
+        for iconName in self.icons:
+            icon = QtGui.QIcon.fromTheme(iconName)
+            if not icon.isNull() or not iconName:
+                iconAction = menu.addAction(QtGui.QIcon.fromTheme(iconName), '')
+                iconAction.triggered.connect(self.setCurrentIcon)
+        self.setMenu(menu)
+        self.clicked.connect(lambda: menu.exec_(QtGui.QCursor.pos()))
+
+    def setIconName(self, name=''):
+        try:
+            self.currentIndex = self.icons.index(name)
+            self.setIcon(QtGui.QIcon.fromTheme(name))
+        except:
+            self.currentIndex = 0
+            self.setIcon(QtGui.QIcon())
+
+    def setCurrentIcon(self):
+        icon = self.sender().icon()
+        self.setIcon(icon)
+        self.currentIndex = self.icons.index(icon.name())
+        self.iconChanged.emit(icon)
+
+    def wheelEvent(self, event):
+        if event.delta() < 0:
+            delta = 1
+        else:
+            delta = -1
+        self.currentIndex = max(0, min(self.currentIndex + delta, len(self.icons) - 1))
+        icon = QtGui.QIcon.fromTheme(self.icons[self.currentIndex])
+        self.setIcon(icon)
+        self.iconChanged.emit(icon)
+
+
 class DeltaSpin(QtWidgets.QSpinBox):
     delta = 0
 

@@ -3,6 +3,7 @@ from Qt import QtCore, QtGui, QtWidgets, QtSql
 from bigglesworth.utils import loadUi
 
 EditRole = QtCore.Qt.UserRole + 1
+IconRole = EditRole + 1
 Delete, Keep, Rename, Copy, New = -1, 0, 1, 2, 4
 
 
@@ -25,6 +26,11 @@ class NameDelegate(QtWidgets.QStyledItemDelegate):
             option.features |= option.HasDecoration
             option.icon = QtGui.QIcon.fromTheme('document-new')
         QtWidgets.QStyledItemDelegate.paint(self, qp, option, QtCore.QModelIndex())
+
+    def createEditor(self, parent, option, index):
+        if index.data() != 'Blofeld':
+            return QtWidgets.QStyledItemDelegate.createEditor(self, parent, option, index)
+        return None
 
     def setModelData(self, widget, model, index):
         name = widget.text().strip()
@@ -68,6 +74,7 @@ class ManageCollectionsDialog(QtWidgets.QDialog):
         self.model = QtGui.QStandardItemModel()
         self.pragmaQuery = QtSql.QSqlQuery()
         self.query = QtSql.QSqlQuery()
+        self.settings = QtCore.QSettings()
 
         self.applyBtn = self.buttonBox.button(self.buttonBox.Apply)
         self.applyBtn.setEnabled(False)
@@ -85,6 +92,8 @@ class ManageCollectionsDialog(QtWidgets.QDialog):
         self.addBtn.clicked.connect(self.addCollection)
         self.delBtn.clicked.connect(self.delCollection)
         self.copyBtn.clicked.connect(self.copyCollection)
+        self.iconBtn.iconChanged.connect(self.iconChanged)
+        self.iconBtn.setIconName()
 
     def dataChanged(self, *args):
         self.applyBtn.setEnabled(True)
@@ -111,6 +120,20 @@ class ManageCollectionsDialog(QtWidgets.QDialog):
             self.copyBtn.setEnabled(True)
         else:
             self.copyBtn.setEnabled(False)
+        self.iconBtn.blockSignals(True)
+        if len(selection.selectedRows()) == 1 and selection.selectedRows()[0].row() > 0:
+            index = selection.selectedRows(1)[0]
+            self.iconBtn.setIconName(index.data(IconRole))
+            self.iconBtn.setEnabled(True)
+        else:
+            self.iconBtn.setIconName()
+            self.iconBtn.setEnabled(False)
+        self.iconBtn.blockSignals(False)
+
+    def iconChanged(self, icon):
+        index = self.collectionsView.currentIndex().sibling(self.collectionsView.currentIndex().row(), 1)
+        self.model.setData(index, icon, QtCore.Qt.DecorationRole)
+        self.model.setData(index, icon.name() if not icon.isNull() else None, IconRole)
 
     def getUnique(self, name):
         subStr = ''
@@ -188,12 +211,14 @@ class ManageCollectionsDialog(QtWidgets.QDialog):
             self.model.dataChanged.disconnect(self.dataChanged)
         except:
             pass
+        self.settings.beginGroup('CollectionIcons')
         self.model.clear()
         self.model.setHorizontalHeaderLabels(['', 'Collection', 'Sounds', ''])
         self.pragmaQuery.exec_('PRAGMA table_info(reference)')
         self.collectionsView.setModel(self.model)
         self.collectionsView.setSelectionBehavior(self.collectionsView.SelectRows)
         self.pragmaQuery.seek(4)
+
         while self.pragmaQuery.next():
             collection = self.pragmaQuery.value(1)
             referenceItem = QtGui.QStandardItem(collection)
@@ -214,10 +239,20 @@ class ManageCollectionsDialog(QtWidgets.QDialog):
                 delItem.setData(False, QtCore.Qt.DisplayRole)
             else:
                 delItem.setData(True, QtCore.Qt.DisplayRole)
+
+            if self.settings.contains(collection):
+                iconName = self.settings.value(collection)
+                icon = QtGui.QIcon.fromTheme(iconName)
+                if not icon.isNull():
+                    nameItem.setIcon(icon)
+                    nameItem.setData(iconName, IconRole)
+
         self.pragmaQuery.finish()
+        self.settings.endGroup()
         self.query.finish()
         self.model.item(0, 1).setFlags(self.model.item(0, 1).flags() ^ QtCore.Qt.ItemIsEditable)
         self.model.item(0, 1).setIcon(QtGui.QIcon(':/images/bigglesworth_logo.svg'))
+
         self.collectionsView.resizeColumnToContents(2)
         self.collectionsView.resizeColumnToContents(3)
         self.collectionsView.resizeRowsToContents()
@@ -246,11 +281,13 @@ class ManageCollectionsDialog(QtWidgets.QDialog):
         new = []
         copy = {}
 
+        self.settings.beginGroup('CollectionIcons')
         for row in range(1, self.model.rowCount()):
             referenceItem = self.model.item(row, 0)
             nameItem = self.model.item(row, 1)
             if not nameItem.flags() & QtCore.Qt.ItemIsEnabled:
                 delete.append(referenceItem.text())
+                self.settings.remove(nameItem.text())
                 continue
             status = nameItem.data(EditRole)
             if status & Copy:
@@ -261,6 +298,13 @@ class ManageCollectionsDialog(QtWidgets.QDialog):
                 new.append(nameItem.text())
             newSchema.append(nameItem.text())
 
+            iconName = nameItem.data(IconRole)
+            if not iconName:
+                self.settings.remove(nameItem.text())
+            else:
+                self.settings.setValue(nameItem.text(), iconName)
+
+        self.settings.endGroup()
         if not any((new, delete, rename, copy)):
             self.applyBtn.setEnabled(False)
             return True

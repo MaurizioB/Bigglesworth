@@ -80,6 +80,8 @@ class SideTabBarWidget(QtWidgets.QWidget):
         self.removeTab = self.tabBar.removeTab
         self.setCurrentIndex = self.tabBar.setCurrentIndex
         self.moveTab = self.tabBar.moveTab
+        self.setTabIcon = self.tabBar.setTabIcon
+        self.count = self.tabBar.count
 
     def tabs(self):
         for index in range(self.tabBar.count()):
@@ -160,6 +162,7 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         tabBar = LibraryTabBar()
         self.setTabBar(tabBar)
 #        self.referenceModel = QtSql.QSqlTableModel()
+        self.settings = QtCore.QSettings()
         self.menu = QtWidgets.QMenu(self)
 
         metrics = {}
@@ -238,12 +241,19 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         index = QtWidgets.QTabWidget.addTab(self, widget, name)
         if sys.platform == 'darwin':
             self.setTabToolTip(index, 'ctrl+click or right click for menu')
+        icon = QtGui.QIcon()
         if widget.collection is None:
-            self.setTabIcon(index, QtGui.QIcon.fromTheme('go-home'))
+            icon = QtGui.QIcon.fromTheme('go-home')
         elif widget.collection == 'Blofeld':
-            self.setTabIcon(index, QtGui.QIcon(':/images/bigglesworth_logo.svg'))
+            icon = QtGui.QIcon(':/images/bigglesworth_logo.svg')
         elif widget.collection in factoryPresetsNamesDict:
-            self.setTabIcon(index, QtGui.QIcon(':/images/factory.svg'))
+            icon = QtGui.QIcon(':/images/factory.svg')
+        else:
+            self.settings.beginGroup('CollectionIcons')
+            icon = QtGui.QIcon.fromTheme(self.settings.value(name, ''))
+            self.settings.endGroup()
+        if not icon.isNull():
+            self.setTabIcon(index, icon)
         try:
             self.tabBar().tabButton(0, self.tabBar().RightSide).setVisible(False if self.count() == 1 else True)
         except:
@@ -264,6 +274,10 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         if self.count() <= 1:
             self.setMovable(False)
         return widget
+
+    def setTabIcon(self, index, icon):
+        QtWidgets.QTabWidget.setTabIcon(self, index, icon)
+        self.sideTabBar.setTabIcon(index, icon)
 
     def showMenu(self, index, pos):
         self.menu.clear()
@@ -314,6 +328,7 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         menu = QtWidgets.QMenu('Open collection', self)
         menu.setSeparatorsCollapsible(False)
         menu.addSection('Custom collections')
+        self.settings.beginGroup('CollectionIcons')
         for collection in self.referenceModel.collections:
             action = menu.addAction(factoryPresetsNamesDict.get(collection, collection))
             action.triggered.connect(lambda state, collection=collection: self.openCollection.emit(collection))
@@ -322,6 +337,9 @@ class BaseTabWidget(QtWidgets.QTabWidget):
             if collection == 'Blofeld':
                 setBold(action)
                 action.setIcon(QtGui.QIcon(':/images/bigglesworth_logo.svg'))
+            elif self.settings.contains(collection):
+                action.setIcon(QtGui.QIcon.fromTheme(self.settings.value(collection)))
+        self.settings.endGroup()
         menu.addSection('Factory presets')
         for factory in self.referenceModel.factoryPresets:
             action = menu.addAction(QtGui.QIcon(':/images/factory.svg'), factoryPresetsNamesDict[factory])
@@ -343,6 +361,16 @@ class BaseTabWidget(QtWidgets.QTabWidget):
 
     def openCollectionMenu(self):
         self.getOpenCollectionMenu().exec_(self.cornerWidget().mapToGlobal(self.cornerWidget().addBtn.geometry().bottomLeft()))
+
+    def checkIcons(self):
+        self.settings.beginGroup('CollectionIcons')
+        for index in range(self.count()):
+            widget = self.widget(index)
+            if widget.collection and widget.editable and widget.collection != 'Blofeld':
+                iconName = self.settings.value(widget.collection, '')
+                self.setTabIcon(index, QtGui.QIcon.fromTheme(iconName))
+        self.settings.endGroup()
+
 
 
 class LeftTabWidget(BaseTabWidget):

@@ -30,6 +30,7 @@ class MainWindow(QtWidgets.QMainWindow):
         loadUi('ui/mainwindow.ui', self)
 #        QtGui.QIcon.setThemeName('iconTheme')
         self.main = parent
+        self.settings = self.main.settings
         self.main.midiConnChanged.connect(lambda inConn, outConn: self.showGlobalsAction.setEnabled(True if all((inConn, outConn)) else False))
         self.database = parent.database
         self.database.tagsModel.dataChanged.connect(self.checkTagFilters)
@@ -137,10 +138,16 @@ class MainWindow(QtWidgets.QMainWindow):
         blofeldAction.triggered.connect(lambda: self.openCollection('Blofeld', self.leftTabWidget))
 
         self.collections = {'Blofeld': blofeldAction}
+        self.settings.beginGroup('CollectionIcons')
         for collection in self.referenceModel.collections[1:]:
-            action = self.openCollectionMenu.addAction(collection)
+            if self.settings.contains(collection):
+                icon = QtGui.QIcon.fromTheme(self.settings.value(collection))
+            else:
+                icon = QtGui.QIcon()
+            action = self.openCollectionMenu.addAction(icon, collection)
             action.triggered.connect(lambda state, collection=collection: self.openCollection(collection, self.leftTabWidget))
             self.collections[collection] = action
+        self.settings.endGroup()
 
         self.openCollectionMenu.addSection('Factory presets')
         for collection in self.referenceModel.factoryPresets:
@@ -163,17 +170,23 @@ class MainWindow(QtWidgets.QMainWindow):
 #        self.openCollectionMenu.clear()
 #        self.referenceModel.setTable('reference')
         exists = []
+        self.settings.beginGroup('CollectionIcons')
         for collection in self.referenceModel.collections:
             exists.append(collection)
             if collection in self.collections:
                 continue
-            action = self.openCollectionMenu.addAction(collection)
+            if self.settings.contains(collection):
+                icon = QtGui.QIcon.fromTheme(self.settings.value(collection))
+            else:
+                icon = QtGui.QIcon()
+            action = self.openCollectionMenu.addAction(icon, collection)
             action.triggered.connect(lambda state, collection=collection: self.openCollection(collection, self.leftTabWidget))
             self.collections[collection] = action
         for collection, action in self.collections.items():
             if collection not in exists:
                 self.openCollectionMenu.removeAction(action)
                 self.collections.pop(collection)
+        self.settings.endGroup()
         return
 
 #        self.referenceModel.refresh()
@@ -264,12 +277,16 @@ class MainWindow(QtWidgets.QMainWindow):
                 'Error creating collection', 
                 'An error occured while trying to create the collection.\nThis is the message returned:\n\n{}'.format(self.database.query.lastError().databaseText()))
             return
+        self.main.settings.beginGroup('CollectionIcons')
+        self.main.settings.setValue(collection, dialog.currentIconName())
+        self.main.settings.endGroup()
         self.openCollection(collection, dest)
 
     def manageCollections(self):
         dialog = ManageCollectionsDialog(self, self.leftTabWidget.collections + self.rightTabWidget.collections)
         res = dialog.exec_()
-        print(res)
+        self.leftTabWidget.checkIcons()
+        self.rightTabWidget.checkIcons()
 
     def closeCollection(self, index):
         if self.sender().count() <= 1:

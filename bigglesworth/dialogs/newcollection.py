@@ -3,6 +3,7 @@ from Qt import QtCore, QtGui, QtWidgets, QtSql
 from bigglesworth.utils import loadUi
 from bigglesworth.const import factoryPresets, factoryPresetsNamesDict
 
+
 class NewCollectionDialog(QtWidgets.QDialog):
     def __init__(self, parent):
         QtWidgets.QDialog.__init__(self, parent)
@@ -13,6 +14,9 @@ class NewCollectionDialog(QtWidgets.QDialog):
         self.cloneChk.toggled.connect(lambda state: self.cloneSet(self.cloneCombo.currentIndex()) if state else None)
         self.validator = QtGui.QRegExpValidator(QtCore.QRegExp(r'^(?!.* {2})(?=\S)[a-zA-Z0-9\ \-\_]+$'))
         self.nameEdit.setValidator(self.validator)
+
+    def currentIconName(self):
+        return self.iconBtn.icon().name()
 
     def cloneSet(self, index):
         if any((self.nameEdit.isUndoAvailable(), self.nameEdit.isRedoAvailable())):
