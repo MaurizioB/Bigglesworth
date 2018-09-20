@@ -1,21 +1,86 @@
 #!/usr/bin/env python2.7
 
 import sys, os
+from xml.etree import ElementTree as et
 
 os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
 
 from Qt import QtCore, QtGui, QtWidgets, QtHelp
+QtCore.pyqtProperty = QtCore.Property
 
-if __name__ == '__main__':
+if __name__ == '__main__' or 'blofeld/docs/../bigglesworth/help.py' in __file__:
     from PyQt4.uic import loadUi
     sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
-    helpPath = 'help.qhc'
+    currentPath = os.path.dirname(os.path.realpath(__file__))
+    helpPath = os.path.join(currentPath,'help.qhc')
+    uiPath = os.path.join(currentPath, 'ui/help.ui')
 else:
     from bigglesworth.utils import loadUi, localPath
+    uiPath = 'ui/help.ui'
     helpPath = localPath('help.qhc')
 
 
 class HelpBrowser(QtWidgets.QTextBrowser):
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QTextBrowser.__init__(self, *args, **kwargs)
+        self.sourceChanged.connect(self.checkAnchor)
+
+        self._highlightBgd = QtGui.QColor(209, 232, 246)
+#        self._highlightBgd = QtGui.QColor('yellow')
+        self.highlightAnimation = QtCore.QPropertyAnimation(self, b'highlightBgd')
+        self.highlightAnimation.setDuration(2500)
+        self.highlightAnimation.setStartValue(self._highlightBgd)
+        self.highlightAnimation.setEndValue(QtGui.QColor(QtCore.Qt.transparent))
+        self.highlightAnimation.setEasingCurve(QtCore.QEasingCurve(QtCore.QEasingCurve.InExpo))
+
+    def checkAnchor(self, url):
+        self.highlightAnimation.stop()
+        anchor = url.fragment()
+        if not anchor:
+            return
+        block = self.document().begin()
+        while block != self.document().end():
+            fmt = block.charFormat()
+            if fmt.isAnchor() and anchor in fmt.anchorNames():
+                break
+            fragIter = block.begin()
+            while not fragIter.atEnd():
+                fragment = fragIter.fragment()
+                fmt = fragment.charFormat()
+                if fmt.isAnchor() and anchor in fmt.anchorNames():
+                    break
+                fragIter += 1
+            else:
+                block = block.next()
+                continue
+            break
+        else:
+            return
+        cursor = QtGui.QTextCursor(block)
+#        cursor.select(cursor.BlockUnderCursor)
+        background = block.charFormat().background().color()
+#        self.highlightAnimation.setStartValue(background.darker(150))
+        self.highlightAnimation.setEndValue(background)
+        self.currentHighlight = cursor, block.blockFormat()
+        self.highlightAnimation.start()
+
+    @QtCore.pyqtProperty(QtGui.QColor)
+    def highlightBgd(self):
+        return self._highlightBgd
+
+    @highlightBgd.setter
+    def highlightBgd(self, color):
+        self._highlightBgd = color
+        cursor, blockFmt = self.currentHighlight
+#        fmt.setBackground(color)
+#        blockFmt = block.blockFormat()
+        blockFmt.setBackground(color)
+        cursor.setBlockFormat(blockFmt)
+#        fmt.setForeground(QtGui.QColor('red'))
+#        cursor.setBlockCharFormat(fmt)
+#        cursor.setCharFormat(fmt)
+
+
     def loadResource(self, rType, url):
         if url.scheme() == 'qthelp':
             return self.help.fileData(url)
@@ -32,18 +97,53 @@ class HelpBrowser(QtWidgets.QTextBrowser):
         QtWidgets.QTextBrowser.mousePressEvent(self, event)
 
 
+class ContentProxy(QtCore.QSortFilterProxyModel):
+    def __init__(self, help):
+        QtCore.QSortFilterProxyModel.__init__(self)
+        self.help = help
+        self.nameSpace = help.namespaceName(helpPath)
+        self.help.setupFinished.connect(lambda: self.setSourceModel(self.help.contentModel()))
+        self.iconCache = {}
+
+    def data(self, index, role):
+        if role == QtCore.Qt.DecorationRole:
+            try:
+                icon = self.iconCache[index.row(), index.column(), index.parent()]
+                return icon
+            except:
+                root = et.fromstring(self.help.fileData(self.contentItemAt(index).url()))
+                head = root.getiterator('{http://www.w3.org/1999/xhtml}head')[0]
+                for meta in head.findall('{http://www.w3.org/1999/xhtml}meta'):
+                    if meta.get('name') == 'icon':
+                        icon = QtGui.QIcon.fromTheme(meta.get('content'))
+                        break
+                else:
+                    icon = None
+                self.iconCache[index.row(), index.column(), index.parent()] = icon
+                return icon
+#            return QtGui.QIcon.fromTheme('document-edit')
+        return QtCore.QSortFilterProxyModel.data(self, index, role)
+
+    def contentItemAt(self, index):
+#        print(self.help.metaData(helpPath, 'version'))
+#        print(self.help.files(self.help.namespaceName(helpPath), ['Bigglesworth']))
+        return self.sourceModel().contentItemAt(self.mapToSource(index))
+
+
 class HelpDialog(QtWidgets.QDialog):
     shown = False
     def __init__(self, parent=None):
         QtWidgets.QDialog.__init__(self, parent)
-        loadUi('ui/help.ui', self)
+        loadUi(uiPath, self)
         self.help = QtHelp.QHelpEngine(helpPath)
         self.loaded = False
         self.help.setupFinished.connect(self.setLoaded)
+        self.proxy = ContentProxy(self.help)
         self.help.setupData()
 
-        self.contentWidget = self.help.contentWidget()
-        self.splitter.insertWidget(0, self.contentWidget)
+#        self.contentWidget = self.help.contentWidget()
+        self.contentWidget.setModel(self.proxy)
+#        self.splitter.insertWidget(0, self.contentWidget)
         self.splitter.setStretchFactor(0, 2)
         self.splitter.setStretchFactor(1, 5)
         self.splitter.setCollapsible(1, False)
@@ -77,7 +177,7 @@ class HelpDialog(QtWidgets.QDialog):
         if parent is None:
             self.helpBrowser.setSource(url)
             parent = QtCore.QModelIndex()
-        model = self.help.contentModel()
+        model = self.proxy
         for row in range(model.rowCount(parent)):
             index = model.index(row, 0, parent)
             if model.contentItemAt(index).url().toString() == url.toString():
@@ -90,7 +190,7 @@ class HelpDialog(QtWidgets.QDialog):
                     return True
 
     def openLinkFromIndex(self, index):
-        url = self.help.contentModel().contentItemAt(index).url()
+        url = self.help.contentModel().contentItemAt(self.proxy.mapToSource(index)).url()
         print(url)
         self.helpBrowser.setSource(url)
 

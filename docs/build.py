@@ -56,8 +56,7 @@ qhfContents = '''<?xml version="1.0" encoding="UTF-8"?>
 '''
 
 
-_Template = '''
-%(head_prefix)s
+_Template = '''%(head_prefix)s
 %(head)s
 %(stylesheet)s
 %(body_prefix)s
@@ -65,7 +64,7 @@ _Template = '''
 %(body_pre_docinfo)s
 %(docinfo)s
 {prebody}
-%(body)s
+%(body)s<br/>
 %(body_suffix)s
 '''
 
@@ -105,12 +104,17 @@ def getRootContents():
     for section in sections:
         contents += '<li><a href="{0}/index.html">{0}</a>\n<ol>\n'.format(section)
         for fileName, title in indexContents[section]:
-            contents += '<li><a href="{}/{}">{}</a></li>\n'.format(
+            contents += '\t<li><a href="{}/{}">{}</a></li>\n'.format(
             section,  
             fileName, 
             title
             )
         contents += '</ol>\n</li>\n'
+    for fileName, title in indexContents['Bigglesworth']:
+        contents += '\t<li><a href="{}">{}</a></li>\n'.format(
+        fileName, 
+        title
+        )
     contents += '</ul>\n'
     return contents
 
@@ -193,6 +197,11 @@ for section in sections:
         fileName
         )
     qhfSections += '\t\t\t\t</section>\n'
+for fileName, title in indexContents['Bigglesworth']:
+    qhfSections += '\t\t\t\t\t<section title="{}" ref="{}"/>\n'.format(
+    title,  
+    fileName
+    )
 
 qhfFiles = ''
 for f in filePaths:
@@ -208,5 +217,16 @@ print(getoutput('qcollectiongenerator bigglesworth.qhcp -o bigglesworth.qhc'))
 shutil.copyfile('bigglesworth.qhc', '../bigglesworth/help.qhc')
 shutil.copyfile('help.qch', '../bigglesworth/help.qch')
 
-import helpTest
+print(indexContents)
+
+#import helpTest
+import sys
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../bigglesworth'))
+from help import HelpDialog
+os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
+from Qt import QtWidgets
+app = QtWidgets.QApplication(sys.argv)
+w = HelpDialog()
+w.show()
+sys.exit(app.exec_())
 

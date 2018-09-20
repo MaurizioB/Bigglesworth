@@ -1,8 +1,10 @@
 Bigglesworth Manual
 ===================
 
-.. role:: precontents
+.. role:: summary
 
-:precontents:`Welcome to the inline help!`
+:summary:`Welcome to the inline help!`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. meta::
+    :icon: address-book-new

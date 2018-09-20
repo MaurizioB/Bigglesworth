@@ -1,7 +1,8 @@
 body {
+    margin-bottom: 20px;
 }
 
-h2.subtitle .precontents {
+h2.subtitle .summary {
     font-weight: normal;
     font-size: medium;
 }
@@ -11,7 +12,14 @@ h1.title {
 }
 
 .subsection {
+    width: 100%;
     font-size: large;
+}
+
+.section H1 {
+    width: 100%;
+    font-size: large;
+    background: orange;
 }
 
 .red {

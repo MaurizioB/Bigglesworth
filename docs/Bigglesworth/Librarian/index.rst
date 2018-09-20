@@ -1,9 +1,9 @@
 Librarian
 ---------
 
-.. role:: precontents
+.. role:: summary
 
-:precontents:`The librarian allows you to manage all your sounds`.
+:summary:`The librarian allows you to manage all your sounds`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
@@ -37,5 +37,8 @@ The "*Blofeld*" collection is usually empty the first time you start Biggleswort
 be used to "mirror" the contents of your beloved synthesizer.
 
 
-.. _main library: 00-main-library.html
-.. _collections: 10-collections.html
+.. _main library: main-library.html
+.. _collections: collections.html
+
+.. meta::
+    :icon: bigglesworth
