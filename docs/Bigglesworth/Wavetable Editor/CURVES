@@ -1,0 +1,39 @@
+.. raw:: html
+    
+    <br/><table width="100%" class="curvetable" cellspacing="0" cellpadding="4">
+        <tr><td align="center" width="5%"><img src=":/images/curves/Linear"/></td><td><span class="curve">Linear</span><br/>Linear (constant) transition: <span class="formula">x = y</span></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/InQuad"/></td><td><span class="curve">Quadratic accelerating</span><br/>Quadratic (<span class="formula">t<sup>2</sup></span>) accelerating</td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/OutQuad"/></td><td><span class="curve">Quadratic decelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/InOutQuad"/></td><td><span class="curve">Quadratic accelerating/decelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/OutInQuad"/></td><td><span class="curve">Quadratic decelerating/accelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/InCubic"/></td><td><span class="curve">Cubic accelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/OutCubic"/></td><td><span class="curve">Cubic decelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/InOutCubic"/></td><td><span class="curve">Cubic accelerating/decelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/OutInCubic"/></td><td><span class="curve">Cubic decelerating/accelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/InQuart"/></td><td><span class="curve">Quartic accelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/OutQuart"/></td><td><span class="curve">Quartic decelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/InOutQuart"/></td><td><span class="curve">Quartic accelerating/decelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/OutInQuart"/></td><td><span class="curve">Quartic decelerating/accelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/InQuint"/></td><td><span class="curve">Quintic accelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/OutQuint"/></td><td><span class="curve">Quintic decelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/InOutQuint"/></td><td><span class="curve">Quintic accelerating/decelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/OutInQuint"/></td><td><span class="curve">Quintic decelerating/accelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/InSine"/></td><td><span class="curve">Sine accelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/OutSine"/></td><td><span class="curve">Sine decelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/InOutSine"/></td><td><span class="curve">Sine accelerating/decelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/OutInSine"/></td><td><span class="curve">Sine decelerating/accelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/InExpo"/></td><td><span class="curve">Exponential accelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/OutExpo"/></td><td><span class="curve">Exponential decelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/InOutExpo"/></td><td><span class="curve">Exponential accelerating/decelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/OutInExpo"/></td><td><span class="curve">Exponential decelerating/accelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/InCirc"/></td><td><span class="curve">Circular accelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/OutCirc"/></td><td><span class="curve">Circular decelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/InOutCirc"/></td><td><span class="curve">Circular accelerating/decelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/OutInCirc"/></td><td><span class="curve">Circular decelerating/accelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/OutInBack"/></td><td><span class="curve">Overshooting decelerating/accelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/InBounce"/></td><td><span class="curve">Bounce accelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/OutBounce"/></td><td><span class="curve">Bounce decelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/InOutBounce"/></td><td><span class="curve">Bounce accelerating/decelerating</span><br/></td></tr>
+        <tr><td align="center" width="5%"><img src=":/images/curves/OutInBounce"/></td><td><span class="curve">Bounce decelerating/accelerating</span><br/></td></tr>
+    </table>
+

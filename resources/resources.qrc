@@ -30,6 +30,40 @@
         <file>midiiconoutputactive.svg</file>
         <file>midimoon.svg</file>
         <file>circuit.svg</file>
+        <file>curves/InCirc.png</file>
+        <file>curves/OutExpo.png</file>
+        <file>curves/InOutQuint.png</file>
+        <file>curves/OutCirc.png</file>
+        <file>curves/OutBounce.png</file>
+        <file>curves/OutSine.png</file>
+        <file>curves/InOutBounce.png</file>
+        <file>curves/OutInSine.png</file>
+        <file>curves/OutCubic.png</file>
+        <file>curves/OutInBounce.png</file>
+        <file>curves/OutInQuint.png</file>
+        <file>curves/Linear.png</file>
+        <file>curves/InOutCirc.png</file>
+        <file>curves/InQuart.png</file>
+        <file>curves/InCubic.png</file>
+        <file>curves/InQuint.png</file>
+        <file>curves/OutInBack.png</file>
+        <file>curves/OutInCubic.png</file>
+        <file>curves/InOutCubic.png</file>
+        <file>curves/InSine.png</file>
+        <file>curves/OutQuad.png</file>
+        <file>curves/OutInCirc.png</file>
+        <file>curves/InExpo.png</file>
+        <file>curves/OutInExpo.png</file>
+        <file>curves/InBounce.png</file>
+        <file>curves/InOutQuad.png</file>
+        <file>curves/OutQuint.png</file>
+        <file>curves/OutInQuad.png</file>
+        <file>curves/InOutQuart.png</file>
+        <file>curves/OutInQuart.png</file>
+        <file>curves/InOutExpo.png</file>
+        <file>curves/InOutSine.png</file>
+        <file>curves/OutQuart.png</file>
+        <file>curves/InQuad.png</file>
     </qresource>
     <qresource prefix="icons/Bigglesworth">
         <file alias="index.theme">icons/Bigglesworth/index.theme</file>

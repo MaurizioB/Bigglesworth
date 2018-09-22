@@ -11,9 +11,37 @@ h1.title {
     font-size: larger;
 }
 
+blockquote {
+    font-style: italic;
+}
+
 .subsection {
+    font-size: x-large;
+}
+
+table {
     width: 100%;
+}
+
+table.curvetable {
+    border-width: 1px;
+    border-style: solid;
+    border-color: lightGray;
+}
+
+.curve {
     font-size: large;
+    font-weight: 600;
+}
+
+.formula {
+    font-size: x-large;
+    font-family: Georgia;
+    margin-left: 20px;
+}
+
+.subsection-italic {
+    font-style: italic;
 }
 
 .section H1 {

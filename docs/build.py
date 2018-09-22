@@ -1,11 +1,26 @@
 #!/usr/bin/env python2.7
 
-import os, shutil, glob
+import os, shutil, glob, sys
 from commands import getoutput
+
+os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
+from Qt import QtWidgets
+app = QtWidgets.QApplication(sys.argv)
+
+from makecurves import buildHtml, doCurves
 
 pwd = os.path.dirname(os.path.realpath(__file__)) + '/'
 srcPath = os.path.join(pwd, 'Bigglesworth/')
 destPath = os.path.join(pwd, 'html/')
+curvePath = os.path.join(pwd, '../resources/curves')
+
+with open(os.path.join(srcPath, 'Wavetable Editor', 'CURVES'), 'w') as CURVES:
+    CURVES.write(buildHtml())
+
+curveFiles = doCurves()
+for cf in curveFiles:
+    os.remove(os.path.join(curvePath, cf))
+    shutil.move(cf, curvePath)
 
 if os.path.exists(destPath):
     shutil.rmtree(destPath)
@@ -178,7 +193,7 @@ for dirPath, dirs, files in os.walk(srcPath):
     for f in files:
         if f == 'index.rst':
             htmlPath = os.path.join(os.path.join(destPath, *docPath[1:]), 'index.html')
-            output = getoutput('rst2html.py --template "{t}" --stylesheet=/html/main.css --link-stylesheet "{src}" "{dest}"'.format(
+            output = getoutput('rst2html.py --template "{t}" --stylesheet=/html/main.css --table-style="borderless" --link-stylesheet "{src}" "{dest}"'.format(
                 t=templatePath, 
                 src=os.path.join(dirPath, f), 
                 dest=htmlPath
@@ -220,12 +235,8 @@ shutil.copyfile('help.qch', '../bigglesworth/help.qch')
 print(indexContents)
 
 #import helpTest
-import sys
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../bigglesworth'))
 from help import HelpDialog
-os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
-from Qt import QtWidgets
-app = QtWidgets.QApplication(sys.argv)
 w = HelpDialog()
 w.show()
 sys.exit(app.exec_())
