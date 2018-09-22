@@ -1,16 +1,30 @@
+# *-* encoding: utf-8 *-*
+
 import json
 from string import uppercase
+from unidecode import unidecode as _unidecode
 
 from Qt import QtCore, QtGui, QtWidgets
 
 from bigglesworth.parameters import categories
 from bigglesworth.widgets import NameEdit, ContextMenu, CategoryDelegate, TagsDelegate
-from bigglesworth.utils import loadUi, getSysExContents, sanitize, getValidQColor
+from bigglesworth.utils import loadUi, getSysExContents, sanitize, getValidQColor, getQtFlags
 from bigglesworth.const import (TagsRole, backgroundRole, foregroundRole, UidColumn, LocationColumn, 
     NameColumn, CatColumn, TagsColumn, FactoryColumn, chr2ord, factoryPresets)
 from bigglesworth.library import CleanLibraryProxy, BankProxy, CatProxy, NameProxy, TagsProxy, MainLibraryProxy
 from bigglesworth.dialogs import SoundTagsEditDialog, MultiSoundTagsEditDialog, RemoveSoundsMessageBox, DeleteSoundsMessageBox, DropDuplicatesMessageBox
 from bigglesworth.libs import midifile
+
+def unidecode(text):
+    output = ''
+    for l in text:
+        if l == u'°':
+            output += l
+        else:
+            output += _unidecode(l)
+    return output
+
+validChars = set(' !#$%&()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~')
 
 
 class NameDelegate(QtWidgets.QStyledItemDelegate):
@@ -22,10 +36,11 @@ class NameDelegate(QtWidgets.QStyledItemDelegate):
 
 
 class TagsCheckBox(QtWidgets.QCheckBox):
-    def __init__(self, tag, bgd, fgd, state):
+    def __init__(self, tag, bgd=QtGui.QColor(QtCore.Qt.darkGray), fgd=QtGui.QColor(QtCore.Qt.white), state=QtCore.Qt.Unchecked):
         QtWidgets.QCheckBox.__init__(self, tag)
-        self.bgd = bgd
-        self.fgd = fgd
+        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed))
+        self.brush = bgd
+        self.pen = QtGui.QPen(fgd, 1)
         self.edited = False
         self.state = state
         if state == QtCore.Qt.Checked:
@@ -33,7 +48,25 @@ class TagsCheckBox(QtWidgets.QCheckBox):
         self.clicked.connect(self.setEdited)
 
     def mousePressEvent(self, event):
-        self.click()
+        #workaround to set entire area as clickable, as QCheckBox only maps the label width
+        if event.button() == QtCore.Qt.LeftButton:
+            self.pen.setWidth(2)
+            self.setDown(True)
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() == QtCore.Qt.LeftButton:
+            if event.pos() in self.rect():
+                self.pen.setWidth(2)
+                self.setDown(True)
+            else:
+                self.pen.setWidth(1)
+                self.setDown(False)
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == QtCore.Qt.LeftButton and event.pos() in self.rect():
+            self.pen.setWidth(1)
+            self.click()
+            self.setDown(False)
 
     def setEdited(self):
         self.edited = True
@@ -47,21 +80,76 @@ class TagsCheckBox(QtWidgets.QCheckBox):
         labelRect = self.style().subElementRect(QtWidgets.QStyle.SE_CheckBoxContents, option, self)
         checkRect = self.style().subElementRect(QtWidgets.QStyle.SE_CheckBoxIndicator, option, self)
         option.rect = checkRect
+#        print(int(option.state), getQtFlags(option.state, QtWidgets.QStyle.State, QtWidgets.QStyle))
         if not self.edited and self.state == QtCore.Qt.PartiallyChecked:
             option.state |= QtWidgets.QStyle.State_NoChange | QtWidgets.QStyle.State_On
         qp.drawPrimitive(QtWidgets.QStyle.PE_FrameFocusRect, option)
         qp.drawPrimitive(QtWidgets.QStyle.PE_IndicatorCheckBox, option)
-        qp.setBrush(self.bgd)
-        qp.setPen(self.fgd)
+        qp.setBrush(self.brush)
+        qp.setPen(self.pen)
         qp.drawRoundedRect(labelRect, 4, 4)
         qp.drawText(labelRect, QtCore.Qt.AlignCenter, self.text())
+
+
+class TagValidator(QtGui.QValidator):
+    def __init__(self, tagsModel):
+        QtGui.QValidator.__init__(self)
+        self.tagsModel = tagsModel
+
+    def validate(self, text, pos):
+        text = unidecode(text)
+        if not text or len(text) > 32 and not set(text).issubset(validChars):
+            return self.Intermediate, text, pos
+        res = self.tagsModel.match(self.tagsModel.index(0, 0), QtCore.Qt.DisplayRole, text, hits=-1, flags=QtCore.Qt.MatchFixedString)
+#        res = list(filter(lambda index: index.row() != self.current.row() and index.flags() & QtCore.Qt.ItemIsEnabled, res))
+        if not res and text.lstrip() == text:
+            return self.Acceptable, text, pos
+        return self.Intermediate, text, pos
+
+
+class NewTagEdit(QtWidgets.QLineEdit):
+    accepted = QtCore.pyqtSignal(str)
+    ignored = QtCore.pyqtSignal()
+
+    def __init__(self, tagsModel):
+        QtWidgets.QLineEdit.__init__(self)
+        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed))
+        self.tagsModel = tagsModel
+        self.textChanged.connect(self.isValid)
+        self.setValidator(TagValidator(tagsModel))
+        self.setMaxLength(32)
+
+    def isValid(self, text):
+        valid, _, _ = self.validator().validate(text, 0)
+        if valid == QtGui.QValidator.Intermediate:
+            self.setStyleSheet('color: red')
+        else:
+            self.setStyleSheet('')
+        return valid
+
+    def focusOutEvent(self, event):
+        self.ignored.emit()
+        QtWidgets.QLineEdit.focusOutEvent(self, event)
+
+    def keyPressEvent(self, event):
+        if event.key() in (QtCore.Qt.Key_Enter, QtCore.Qt.Key_Return):
+            if self.isValid(self.text()) == QtGui.QValidator.Acceptable:
+                self.accepted.emit(self.text().strip())
+            return event.accept()
+        elif event.key() == QtCore.Qt.Key_Escape:
+            self.ignored.emit()
+            return event.accept()
+        QtWidgets.QLineEdit.keyPressEvent(self, event)
 
 
 class TagsMiniWidget(QtWidgets.QWidget):
     def __init__(self, uidList, widgetAction):
         QtWidgets.QWidget.__init__(self)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum)
+        self.setSizePolicy(sizePolicy)
         layout = QtWidgets.QVBoxLayout()
         self.setLayout(layout)
+        layout.setSpacing(1)
         self.widgetAction = widgetAction
 
         self.database = QtWidgets.QApplication.instance().database
@@ -94,12 +182,75 @@ class TagsMiniWidget(QtWidgets.QWidget):
             check.toggled.connect(self.activated)
             self.checkboxes.append(check)
 
+        self.addTagEdit = NewTagEdit(self.tagsModel)
+        layout.addWidget(self.addTagEdit)
+#        self.addTagEdit.setVisible(False)
+        self.addTagEdit.ignored.connect(self.hideAddTag)
+        self.addTagEdit.accepted.connect(self.addTag)
+
+        self.newBtn = QtWidgets.QPushButton(QtGui.QIcon.fromTheme('document-new'), 'New tag')
+        self.newBtn.setFlat(True)
+        self.newBtn.setVisible(False)
+        layout.addWidget(self.newBtn)
+        self.newBtn.clicked.connect(self.showAddTag)
+        self.newBtn.setSizePolicy(sizePolicy)
+
         self.applyBtn = QtWidgets.QPushButton(QtGui.QIcon.fromTheme('dialog-ok-apply'), 'Apply')
         self.applyBtn.setEnabled(False)
         layout.addWidget(self.applyBtn)
         self.applyBtn.clicked.connect(self.apply)
+#        self.applyBtn.setSizePolicy(sizePolicy)
+        self.applyBtn.setFixedHeight(self.applyBtn.sizeHint().height())
+        self.canApply = False
+
+    def addTag(self, tag):
+        row = self.tagsModel.rowCount()
+        self.tagsModel.insertRows(row, 1)
+        self.tagsModel.setData(self.tagsModel.index(row, 0), tag)
+        self.tagsModel.submitAll()
+
+        self.setMinimumWidth(self.width())
+        oldWidth = self.width()
+        menu = self.parent()
+        menuSize = menu.size()
+        check = TagsCheckBox(tag)
+        check.setChecked(True)
+        self.setMinimumHeight(self.height() + check.minimumSizeHint().height() + self.layout().spacing())
+        self.setMinimumWidth(max(oldWidth, check.minimumSizeHint().width() + 10))
+        self.hideAddTag()
+        self.layout().insertWidget(self.layout().indexOf(self.addTagEdit), check)
+        check.toggled.connect(self.activated)
+        self.checkboxes.append(check)
+        menuSize.setHeight(menuSize.height() + check.minimumSizeHint().height() + self.layout().spacing())
+        menuSize.setWidth(menuSize.width() + self.width() - oldWidth)
+        menu.resize(menuSize)
+
+        desktop = QtWidgets.QApplication.desktop().availableGeometry(menu)
+        x = menu.pos().x()
+        y = menu.pos().y()
+        if y + menuSize.height() > desktop.bottom():
+            y = desktop.bottom() - menuSize.height()
+        if x + menuSize.width() > desktop.right():
+            x = desktop.right() - menuSize.width()
+        menu.move(x, y)
+
+        self.activated()
+
+    def showAddTag(self):
+        self.applyBtn.setEnabled(False)
+        self.addTagEdit.setVisible(True)
+        self.addTagEdit.setFocus()
+        self.newBtn.setVisible(False)
+        self.adjustSize()
+
+    def hideAddTag(self):
+        self.addTagEdit.setVisible(False)
+        self.addTagEdit.setText('')
+        self.applyBtn.setEnabled(self.canApply)
+        self.newBtn.setVisible(True)
 
     def activated(self):
+        self.canApply = True
         self.applyBtn.setEnabled(True)
         [check.setEdited() for check in self.checkboxes]
 
@@ -113,6 +264,9 @@ class TagsMiniWidget(QtWidgets.QWidget):
 
     def mousePressEvent(self, event):
         event.accept()
+
+    def showEvent(self, event):
+        self.hideAddTag()
 
 
 class BaseLibraryView(QtWidgets.QTableView):
@@ -742,7 +896,7 @@ class BaseLibraryView(QtWidgets.QTableView):
             tagsMenu = menu.addMenu(QtGui.QIcon.fromTheme('tag'), 'Tags')
             tagsMenu.aboutToShow.connect(lambda: self.populateTagsMenu(uidList))
             tagsMenu.addSeparator()
-            editTagsMultiAction = tagsMenu.addAction(QtGui.QIcon.fromTheme('tag'), 'Edit tags...')
+            editTagsMultiAction = tagsMenu.addAction(QtGui.QIcon.fromTheme('document-edit'), 'Edit tags...')
             editTagsMultiAction.triggered.connect(lambda: self.tagEditMultiRequested.emit(selRows))
 
             if isinstance(self, CollectionTableView):

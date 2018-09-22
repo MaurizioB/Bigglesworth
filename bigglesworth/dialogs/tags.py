@@ -1,12 +1,23 @@
 # *-* encoding: utf-8 *-*
 
 import json
+from unidecode import unidecode as _unidecode
 
 from Qt import QtCore, QtGui, QtWidgets, QtSql
 
 from bigglesworth.utils import loadUi, getValidQColor
 from bigglesworth.const import nameRole, backgroundRole, foregroundRole
 
+def unidecode(text):
+    output = ''
+    for l in text:
+        if l == u'°':
+            output += l
+        else:
+            output += _unidecode(l)
+    return output
+
+validChars = set(' !#$%&()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~')
 
 #class ShadowWidget(QtWidgets.QWidget):
 #    def __init__(self, parent):
@@ -125,7 +136,8 @@ class TagsDialog(QtWidgets.QDialog):
         res = QtWidgets.QDialog.exec_(self)
         self.tagsView.model().layoutChanged.disconnect(self.enableAppy)
         self.tagsModel.dataChanged.disconnect(self.enableAppy)
-        return res
+        return self.changed | res
+
 
 class DeleteTagsMessageBox(QtWidgets.QMessageBox):
     def __init__(self, parent, tags):
@@ -327,11 +339,12 @@ class TagValidator(QtGui.QValidator):
         return text.strip()
 
     def validate(self, text, pos):
-        if not text:
+        text = unidecode(text)
+        if not text or len(text) > 32 and not set(text).issubset(validChars):
             return self.Intermediate, text, pos
         res = self.model.match(self.model.index(0, 1), QtCore.Qt.DisplayRole, text, hits=-1, flags=QtCore.Qt.MatchFixedString)
         res = list(filter(lambda index: index.row() != self.current.row() and index.flags() & QtCore.Qt.ItemIsEnabled, res))
-        if not res and text.strip() == text:
+        if not res and text.lstrip() == text:
             return self.Acceptable, text, pos
         return self.Intermediate, text, pos
 

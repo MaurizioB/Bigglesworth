@@ -82,6 +82,7 @@ class SideTabBarWidget(QtWidgets.QWidget):
         self.moveTab = self.tabBar.moveTab
         self.setTabIcon = self.tabBar.setTabIcon
         self.count = self.tabBar.count
+        self.iconSize = self.tabBar.iconSize
 
     def tabs(self):
         for index in range(self.tabBar.count()):
@@ -277,7 +278,20 @@ class BaseTabWidget(QtWidgets.QTabWidget):
 
     def setTabIcon(self, index, icon):
         QtWidgets.QTabWidget.setTabIcon(self, index, icon)
-        self.sideTabBar.setTabIcon(index, icon)
+#        pixmap = icon.pixmap(self.sideTabBar.iconSize())
+        size = self.sideTabBar.iconSize()
+        pixmap = QtGui.QPixmap(size)
+        pixmap.fill(QtCore.Qt.transparent)
+        qp = QtGui.QPainter(pixmap)
+        if self.side == Left:
+            qp.rotate(90)
+            qp.translate(0, -size.height())
+        else:
+            qp.rotate(-90)
+            qp.translate(-size.height(), 0)
+        qp.drawPixmap(pixmap.rect(), icon.pixmap(size))
+        qp.end()
+        self.sideTabBar.setTabIcon(index, QtGui.QIcon(pixmap))
 
     def showMenu(self, index, pos):
         self.menu.clear()
