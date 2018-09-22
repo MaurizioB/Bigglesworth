@@ -244,6 +244,7 @@ class Bigglesworth(QtWidgets.QApplication):
                     print('porcozzio', self.database.lastError)
             else:
                 print(self.database.lastError)
+        self.tagsModel = self.database.tagsModel
 
         try:
             WaveTableWindow.waveTableModel = QtSql.QSqlTableModel()

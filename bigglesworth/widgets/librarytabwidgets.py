@@ -4,7 +4,7 @@ from Qt import QtCore, QtGui, QtWidgets, QtSql
 from bigglesworth.const import factoryPresetsNamesDict, NameColumn
 from bigglesworth.utils import setBold
 
-Left, Right = 0, 1
+Left, Right = 1, 2
 NumKeys = {getattr(QtCore.Qt, 'Key_{}'.format(n)):n for n in range(10)}
 
 class BaseCornerBtn(QtWidgets.QToolButton):
@@ -143,14 +143,14 @@ class LibraryTabBar(QtWidgets.QTabBar):
 
 
 class BaseTabWidget(QtWidgets.QTabWidget):
-    minimize = QtCore.pyqtSignal()
     newCollection = QtCore.pyqtSignal()
     openCollection = QtCore.pyqtSignal(str)
     exportRequested = QtCore.pyqtSignal(object, object)
     exportListRequested = QtCore.pyqtSignal(str)
     manageCollections = QtCore.pyqtSignal()
     tabMoveRequested = QtCore.pyqtSignal(int, object)
-    tabSwapRequested = QtCore.pyqtSignal()
+    panelSwapRequested = QtCore.pyqtSignal()
+    minimizePanelRequested = QtCore.pyqtSignal()
     fullDumpCollectionToBlofeldRequested = QtCore.pyqtSignal(str, bool)
     fullDumpBlofeldToCollectionRequested = QtCore.pyqtSignal(str, bool)
     findDuplicatesRequested = QtCore.pyqtSignal(object, object)
@@ -299,8 +299,8 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         closeAction = self.menu.addAction(QtGui.QIcon.fromTheme('window-close'), 'Close collection')
         closeAction.triggered.connect(lambda: self.tabCloseRequested.emit(index))
         side = 'right' if self.side == Left else 'left'
-        tabSwapAction = self.menu.addAction(QtGui.QIcon.fromTheme('document-swap'), 'Swap views')
-        tabSwapAction.triggered.connect(self.tabSwapRequested)
+        tabSwapAction = self.menu.addAction(QtGui.QIcon.fromTheme('document-swap'), 'Swap panel')
+        tabSwapAction.triggered.connect(self.panelSwapRequested)
         moveTabAction = self.menu.addAction(QtGui.QIcon.fromTheme('arrow-{}'.format(side)), 'Move to {} panel'.format(side))
         moveTabAction.triggered.connect(lambda: self.tabMoveRequested.emit(index, self.siblingTabWidget))
         if self.count() <= 1:
@@ -330,18 +330,19 @@ class BaseTabWidget(QtWidgets.QTabWidget):
             exportListAction.setEnabled(False)
 
         self.menu.addSeparator()
-        collectionMenu = self.menu.addMenu(self.getOpenCollectionMenu())
-        collectionMenu.setIcon(QtGui.QIcon.fromTheme('document-open'))
+        self.menu.addMenu(self.getOpenCollectionMenu())
         self.menu.addSeparator()
         findDuplicatesAction = self.menu.addAction(QtGui.QIcon.fromTheme('edit-find'), 'Find duplicates...')
         findDuplicatesAction.triggered.connect(lambda: self.findDuplicatesRequested.emit(None, collection))
         self.menu.exec_(pos)
 
     def getOpenCollectionMenu(self):
-        opened = self.collections + self.siblingTabWidget.collections
         menu = QtWidgets.QMenu('Open collection', self)
+        menu.setIcon(QtGui.QIcon.fromTheme('document-open'))
         menu.setSeparatorsCollapsible(False)
         menu.addSection('Custom collections')
+
+        opened = self.collections + self.siblingTabWidget.collections
         self.settings.beginGroup('CollectionIcons')
         for collection in self.referenceModel.collections:
             action = menu.addAction(factoryPresetsNamesDict.get(collection, collection))
@@ -385,6 +386,18 @@ class BaseTabWidget(QtWidgets.QTabWidget):
                 self.setTabIcon(index, QtGui.QIcon.fromTheme(iconName))
         self.settings.endGroup()
 
+    def contextMenuEvent(self, event):
+        menu = QtWidgets.QMenu(self)
+        tabSwapAction = menu.addAction(QtGui.QIcon.fromTheme('document-swap'), 'Swap panels')
+        tabSwapAction.triggered.connect(self.panelSwapRequested)
+        iconName = 'arrow-left-double' if self.side == Left else 'arrow-right-double'
+        hideAction = menu.addAction(QtGui.QIcon.fromTheme(iconName), 'Minimize panel')
+        hideAction.triggered.connect(self.minimizePanelRequested)
+        if self.window().panelLayout < 3:
+            hideAction.setEnabled(False)
+        menu.addSeparator()
+        menu.addMenu(self.getOpenCollectionMenu())
+        menu.exec_(event.globalPos())
 
 
 class LeftTabWidget(BaseTabWidget):
@@ -392,7 +405,7 @@ class LeftTabWidget(BaseTabWidget):
         BaseTabWidget.__init__(self, *args, **kwargs)
         cornerWidget = TabCornerWidget(Left)
         cornerWidget.addBtn.clicked.connect(self.openCollectionMenu)
-        cornerWidget.minimizeBtn.clicked.connect(self.minimize)
+        cornerWidget.minimizeBtn.clicked.connect(self.minimizePanelRequested)
         self.minimizeBtn = cornerWidget.minimizeBtn
         self.setCornerWidget(cornerWidget, QtCore.Qt.TopRightCorner)
         self.side = Left
@@ -403,7 +416,7 @@ class RightTabWidget(BaseTabWidget):
         BaseTabWidget.__init__(self, *args, **kwargs)
         cornerWidget = TabCornerWidget(Right)
         cornerWidget.addBtn.clicked.connect(self.openCollectionMenu)
-        cornerWidget.minimizeBtn.clicked.connect(self.minimize)
+        cornerWidget.minimizeBtn.clicked.connect(self.minimizePanelRequested)
         self.minimizeBtn = cornerWidget.minimizeBtn
         self.setCornerWidget(cornerWidget, QtCore.Qt.TopRightCorner)
         self.side = Right

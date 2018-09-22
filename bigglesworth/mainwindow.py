@@ -49,10 +49,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.leftTabWidget.setSiblings(self.leftTabBar, self.rightTabWidget)
         self.rightTabWidget.setSiblings(self.rightTabBar, self.leftTabWidget)
         self.leftTabBar.hide()
-        self.leftTabWidget.minimize.connect(lambda: self.setLeftVisible(False))
+        self.leftTabWidget.minimizePanelRequested.connect(lambda: self.setLeftVisible(False))
         self.leftTabBar.maximize.connect(lambda tab: self.setLeftVisible(True, tab))
         self.rightTabBar.hide()
-        self.rightTabWidget.minimize.connect(lambda: self.setRightVisible(False))
+        self.rightTabWidget.minimizePanelRequested.connect(lambda: self.setRightVisible(False))
         self.rightTabBar.maximize.connect(lambda tab: self.setRightVisible(True, tab))
 
         #TODO: load previous session (check if collection exists!)
@@ -93,12 +93,15 @@ class MainWindow(QtWidgets.QMainWindow):
                     continue
                 self.openCollection(collection, tab)
 
-#        if self.leftTabWidget.count() < 1:
-#            collectionWidget = CollectionWidget(self, 'Blofeld')
-#            self.leftTabWidget.addTab(collectionWidget, 'Blofeld')
-#        if self.rightTabWidget.count() < 1:
-#            libraryWidget = LibraryWidget(self)
-#            self.rightTabWidget.addTab(libraryWidget, 'Main library')
+        panelLayout = self.settings.value('sessionPanelLayout', 3, int)
+        if panelLayout == 1:
+            self.setRightVisible(False)
+        elif panelLayout == 2:
+            self.setLeftVisible(False)
+        else:
+            sizes = self.settings.value('sessionPanelSizes', None)
+            if sizes:
+                self.splitter.restoreState(sizes)
 
         self.splitter.moved.connect(self.checkSplitter)
 
@@ -109,13 +112,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.leftTabWidget.manageCollections.connect(self.manageCollections)
         self.leftTabWidget.tabCloseRequested.connect(self.closeCollection)
         self.leftTabWidget.tabMoveRequested.connect(self.moveCollection)
-        self.leftTabWidget.tabSwapRequested.connect(self.tabSwap)
+        self.leftTabWidget.panelSwapRequested.connect(self.panelSwap)
         self.rightTabWidget.openCollection.connect(self.openCollection)
         self.rightTabWidget.newCollection.connect(self.newCollection)
         self.rightTabWidget.newCollection.connect(self.manageCollections)
         self.rightTabWidget.tabCloseRequested.connect(self.closeCollection)
         self.rightTabWidget.tabMoveRequested.connect(self.moveCollection)
-        self.rightTabWidget.tabSwapRequested.connect(self.tabSwap)
+        self.rightTabWidget.panelSwapRequested.connect(self.panelSwap)
 
         self.editTagsAction.triggered.connect(self.editTags)
         self.manageCollectionsAction.triggered.connect(self.manageCollections)
@@ -161,6 +164,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def activate(self):
         self.show()
         self.activateWindow()
+
+    @property
+    def panelLayout(self):
+        return int(not self.leftTabBar.isVisible()) | (not self.rightTabBar.isVisible()) << 1
 
     @property
     def editorWindow(self):
@@ -302,7 +309,7 @@ class MainWindow(QtWidgets.QMainWindow):
         index = dest.addTab(widget, name)
         dest.setCurrentIndex(index)
 
-    def tabSwap(self):
+    def panelSwap(self):
         leftTabs = []
         rightTabs = []
         leftIndex = self.leftTabWidget.currentIndex()
@@ -365,6 +372,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def closeEvent(self, event):
         self.main.settings.setValue('sessionLayoutLeft', self.leftTabWidget.collections)
         self.main.settings.setValue('sessionLayoutRight', self.rightTabWidget.collections)
+        self.main.settings.setValue('sessionPanelLayout', self.panelLayout)
+        if self.panelLayout == 3:
+            self.main.settings.setValue('sessionPanelSizes', self.splitter.saveState())
+        else:
+            self.main.settings.remove('sessionPanelSizes')
         QtWidgets.QMainWindow.closeEvent(self, event)
         self.closed.emit()
 

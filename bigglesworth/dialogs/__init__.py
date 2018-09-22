@@ -2,8 +2,8 @@ from bigglesworth.dialogs.logger import LogWindow
 from bigglesworth.dialogs.wizard import FirstRunWizard, AutoconnectPage, ImportOldPage
 from bigglesworth.dialogs.themeeditor import ThemeEditor
 from bigglesworth.dialogs.templatemanager import TemplateManager
-from bigglesworth.dialogs.tags import TagsDialog, TagsTableView
-from bigglesworth.dialogs.soundtagsedit import SoundTagsEditDialog, MultiSoundTagsEditDialog
+from bigglesworth.dialogs.tags import TagsDialog, TagsTableView, SoundTagsEditDialog, MultiSoundTagsEditDialog
+#from bigglesworth.dialogs.soundtagsedit import SoundTagsEditDialog, MultiSoundTagsEditDialog
 from bigglesworth.dialogs.newcollection import NewCollectionDialog
 from bigglesworth.dialogs.managecollections import ManageCollectionsDialog
 from bigglesworth.dialogs.messageboxes import (RemoveSoundsMessageBox, DeleteSoundsMessageBox, DropDuplicatesMessageBox, 

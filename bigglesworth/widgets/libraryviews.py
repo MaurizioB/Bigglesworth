@@ -13,6 +13,7 @@ from bigglesworth.const import (TagsRole, backgroundRole, foregroundRole, UidCol
     NameColumn, CatColumn, TagsColumn, FactoryColumn, chr2ord, factoryPresets)
 from bigglesworth.library import CleanLibraryProxy, BankProxy, CatProxy, NameProxy, TagsProxy, MainLibraryProxy
 from bigglesworth.dialogs import SoundTagsEditDialog, MultiSoundTagsEditDialog, RemoveSoundsMessageBox, DeleteSoundsMessageBox, DropDuplicatesMessageBox
+from bigglesworth.dialogs.tags import TagEdit
 from bigglesworth.libs import midifile
 
 def unidecode(text):
@@ -91,57 +92,6 @@ class TagsCheckBox(QtWidgets.QCheckBox):
         qp.drawText(labelRect, QtCore.Qt.AlignCenter, self.text())
 
 
-class TagValidator(QtGui.QValidator):
-    def __init__(self, tagsModel):
-        QtGui.QValidator.__init__(self)
-        self.tagsModel = tagsModel
-
-    def validate(self, text, pos):
-        text = unidecode(text)
-        if not text or len(text) > 32 and not set(text).issubset(validChars):
-            return self.Intermediate, text, pos
-        res = self.tagsModel.match(self.tagsModel.index(0, 0), QtCore.Qt.DisplayRole, text, hits=-1, flags=QtCore.Qt.MatchFixedString)
-#        res = list(filter(lambda index: index.row() != self.current.row() and index.flags() & QtCore.Qt.ItemIsEnabled, res))
-        if not res and text.lstrip() == text:
-            return self.Acceptable, text, pos
-        return self.Intermediate, text, pos
-
-
-class NewTagEdit(QtWidgets.QLineEdit):
-    accepted = QtCore.pyqtSignal(str)
-    ignored = QtCore.pyqtSignal()
-
-    def __init__(self, tagsModel):
-        QtWidgets.QLineEdit.__init__(self)
-        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed))
-        self.tagsModel = tagsModel
-        self.textChanged.connect(self.isValid)
-        self.setValidator(TagValidator(tagsModel))
-        self.setMaxLength(32)
-
-    def isValid(self, text):
-        valid, _, _ = self.validator().validate(text, 0)
-        if valid == QtGui.QValidator.Intermediate:
-            self.setStyleSheet('color: red')
-        else:
-            self.setStyleSheet('')
-        return valid
-
-    def focusOutEvent(self, event):
-        self.ignored.emit()
-        QtWidgets.QLineEdit.focusOutEvent(self, event)
-
-    def keyPressEvent(self, event):
-        if event.key() in (QtCore.Qt.Key_Enter, QtCore.Qt.Key_Return):
-            if self.isValid(self.text()) == QtGui.QValidator.Acceptable:
-                self.accepted.emit(self.text().strip())
-            return event.accept()
-        elif event.key() == QtCore.Qt.Key_Escape:
-            self.ignored.emit()
-            return event.accept()
-        QtWidgets.QLineEdit.keyPressEvent(self, event)
-
-
 class TagsMiniWidget(QtWidgets.QWidget):
     def __init__(self, uidList, widgetAction):
         QtWidgets.QWidget.__init__(self)
@@ -182,7 +132,7 @@ class TagsMiniWidget(QtWidgets.QWidget):
             check.toggled.connect(self.activated)
             self.checkboxes.append(check)
 
-        self.addTagEdit = NewTagEdit(self.tagsModel)
+        self.addTagEdit = TagEdit(notifyLostFocus=True)
         layout.addWidget(self.addTagEdit)
 #        self.addTagEdit.setVisible(False)
         self.addTagEdit.ignored.connect(self.hideAddTag)
@@ -925,7 +875,7 @@ class BaseLibraryView(QtWidgets.QTableView):
     def populateTagsMenu(self, uidList):
         menu = self.sender()
         firstAction = menu.actions()[0]
-        if isinstance(firstAction, QtWidgets.QWidgetAction) or not self.tagsModel.rowCount():
+        if isinstance(firstAction, QtWidgets.QWidgetAction):
             return
         action = QtWidgets.QWidgetAction(menu)
         widget = TagsMiniWidget(uidList, action)
