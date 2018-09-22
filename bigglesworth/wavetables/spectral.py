@@ -1065,7 +1065,7 @@ class EnvelopeScene(QtWidgets.QGraphicsScene):
             node.setPos(pos)
             self.addItem(node)
             self.main.currentPath.insertComplete(node)
-            self.main.currentPath.redraw()
+            self.main.currentPath.redraw(True)
             node.setSelected(True)
         QtWidgets.QGraphicsScene.mouseDoubleClickEvent(self, event)
 

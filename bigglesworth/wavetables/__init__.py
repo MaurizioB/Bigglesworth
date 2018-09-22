@@ -1041,7 +1041,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.duplicateBtn.clicked.connect(self.duplicateWaveTable)
         self.deleteBtn.clicked.connect(self.deleteWaveTables)
 
-        self.waveTableMenu.aboutToShow.connect(self.fillWaveTableMenu)
+        self.waveTableMenu.aboutToShow.connect(self.populateWaveTableMenu)
         self.waveTableMenuSeparator = self.waveTableMenu.addSection('Recent wavetables')
         self.showDockAction.triggered.connect(self.toggleDock)
         self.audioSettingsAction = QtWidgets.QAction('Audio settings', self)
@@ -1258,7 +1258,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         else:
             self.waveTableDock.setVisible(True), self.waveTableDock.activateWindow()
 
-    def fillWaveTableMenu(self):
+    def populateWaveTableMenu(self):
         self.showDockAction.setText('{} library'.format('Hide' if self.waveTableDock.isVisible() else 'Show'))
         actions = self.waveTableMenu.actions()
         for action in actions[actions.index(self.waveTableMenuSeparator) + 1:]:
@@ -1281,7 +1281,8 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 found.sibling(found.row(), SlotColumn).data())
             action = self.waveTableMenu.addAction(text)
             action.triggered.connect(lambda _, found=found: self.openFromModel(found))
-            existing.insert(0, uid)
+#            existing.insert(0, uid)
+            existing.append(uid)
             if count >= 10:
                 break
         if existing != recentLoaded:
@@ -2620,6 +2621,8 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.localWaveTableList.setCurrentIndex(viewIndex)
         self.localWaveTableList.scrollTo(viewIndex)
 
+        self.setCurrentKeyFrame(self.keyFrames[0])
+
         self.settings.beginGroup('WaveTables')
         recent = self.settings.value('Recent', [])
         if uid in recent:
@@ -2627,7 +2630,6 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         recent.insert(0, uid)
         self.settings.setValue('Recent', recent[:10])
         self.settings.endGroup()
-        self.setCurrentKeyFrame(self.keyFrames[0])
 
 
     def createNewWindow(self):

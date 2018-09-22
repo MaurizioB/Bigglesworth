@@ -428,6 +428,7 @@
         <file alias="32x32/audio-x-flac+ogg.svg">icons/Bigglesworth/32x32/audio-x-flac+ogg.svg</file>
         <file alias="32x32/audio-x-mpeg.svg">icons/Bigglesworth/32x32/audio-x-mpeg.svg</file>
         <file alias="32x32/audio-x-generic.svg">icons/Bigglesworth/32x32/audio-x-generic.svg</file>
+        <file alias="32x32/dial.svg">icons/Bigglesworth/32x32/dial.svg</file>
         <file alias="32x32/wavetables.svg">icons/Bigglesworth/32x32/wavetables.svg</file>
         <file alias="32x32/audio-x-speex+ogg.svg">icons/Bigglesworth/32x32/audio-x-speex+ogg.svg</file>
         <file alias="32x32/audio-x-wav.svg">icons/Bigglesworth/32x32/audio-x-wav.svg</file>

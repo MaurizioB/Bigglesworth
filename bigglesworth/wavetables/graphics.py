@@ -935,14 +935,14 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
         return QtCore.QEasingCurve(self.curve).valueForProgress
 
     def getHarmonicsArray(self):
-        if self.cache:
-            return self.cache
         start = self.prevItem.index
         end = self.nextItem.index
         if end == 0:
             end = 64
         arrays = []
         indexRange = end - start
+        if self.cache and len(self.cache) == indexRange:
+            return self.cache
         posRatio = 1. / indexRange
         for index in range(indexRange):
             pos = index * posRatio
@@ -2939,7 +2939,7 @@ class PreviewWaveItem(QtWidgets.QGraphicsPathItem):
 
     def hoverEnterEvent(self, event):
         self.setPen(self.hoverPen)
-        self.scene().highlight.emit(self.keyFrame)
+#        self.scene().highlight.emit(self.keyFrame)
         self.keyFrame.setHighlighted(True)
 
     def hoverLeaveEvent(self, event):
@@ -3283,7 +3283,7 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
 
     def updateSlice(self, keyFrame):
         #emitted by PreviewWaveItem.hoverEnterEvent
-        if self.highlightedItem:
+        if self.highlightedItem and self.highlightedItem != keyFrame:
             self.highlightedItem.setHighlighted(False)
         waveItem = self.keyFrameItems.get(keyFrame)
         if waveItem:
@@ -3407,6 +3407,7 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
             return
         scaleX = self.invertedScale.m11() * self.xRatio
         scaleY = self.invertedScale.m22() * self.yRatio
+        print(transform.prevItem, transform.nextItem)
         print('indexes: {} {}'.format(transform.prevItem.index, transform.nextItem.index))
         prevItem = transform.prevItem
         nextItem = transform.nextItem
@@ -3494,12 +3495,12 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
 #                    path.translate(prevX, prevY)
 #                    lines.append(path)
         elif transform.mode == WaveTransformItem.SpecMorph:
-            if diff < 3:
-                for sample in range(128):
-                    p0 = prevItem.wavePath.elementAt(sample)
-                    p1 = nextItem.wavePath.elementAt(sample)
-                    lines.append(QtCore.QLineF(p0.x + prevX, p0.y + prevY, p0.x + nextX, p1.y + nextY))
-            else:
+#            if diff < 3:
+#                for sample in range(128):
+#                    p0 = prevItem.wavePath.elementAt(sample)
+#                    p1 = nextItem.wavePath.elementAt(sample)
+#                    lines.append(QtCore.QLineF(p0.x + prevX, p0.y + prevY, p0.x + nextX, p1.y + nextY))
+#            else:
                 harmonicsArrays = np.swapaxes(transform.getHarmonicsArray(), 0, 1)
                 curveFunction = transform.curveFunction
                 for sample in range(128):
@@ -3512,7 +3513,10 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
                     ratio = 1. / diff
                     yDiff = p1.y - p0.y
                     for p in range(1, diff):
-                        path.lineTo(p0.x + p * scaleX, sanitize(0, p0.y - harmonicArray[p], pow21) - p * scaleY)
+#                        value = p0.y - p * scaleY + yDiff * p * ratio
+#                        path.lineTo(p0.x + p * scaleX, sanitize(0, p0.y - harmonicArray[p], pow21) - p * scaleY)
+                        value = p0.y + yDiff * p * ratio - harmonicArray[p]
+                        path.lineTo(p0.x + p * scaleX, sanitize(0, value, pow21) - p * scaleY)
                     path.translate(prevX, prevY)
                     lines.append(path)
 
@@ -3590,32 +3594,48 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
                         break
                     else:
                         self.moveRangeNext = 64
-            elif self.highlightedItem:
-                if self.currentSelection:
-                    self.clearSelection()
-                    self.currentSelection = []
-                if self.highlightedItem.keyFrame.index:
-                    self.moveRangePrev = 0
-                    self.moveRangeNext = current = self.highlightedItem.keyFrame.index
-                    for keyFrame in self.keyFrames:
-                        if keyFrame.index < current:
-                            self.moveRangePrev = keyFrame.index
-                        elif keyFrame.index > current:
-                            self.moveRangeNext = keyFrame.index
-                            break
-                    else:
-                        self.moveRangeNext = 64
-                else:
-                    self.moveRangePrev = self.moveRangeNext = 0
-                if self.moveRangeNext - self.moveRangePrev > 2:
-                    self.view.setCursor(QtCore.Qt.SizeBDiagCursor)
-            elif event.modifiers() == QtCore.Qt.ShiftModifier:
-                self.view.setDragMode(self.view.RubberBandDrag)
-            elif self.sliceEditItem.contains(self.mousePos):
-                pass
             else:
-                self.clearSliceSelection()
-                self.currentSelection = []
+                item = self.itemAt(self.mousePos)
+                if not self.highlightedItem:
+                    if isinstance(item, PreviewWaveItem):
+                        self.highlightedItem = item
+                        item.setHighlighted(True)
+                    elif isinstance(item, VirtualSlice):
+#                        keyFrame = self.keyFrames.get(item.index)
+                        waveItem = self.keyFrameItems.get(self.keyFrames.get(item.index))
+                        if waveItem:
+                            self.highlightedItem = waveItem
+                            waveItem.setHighlighted(True)
+#                    elif item == self.front:
+#                        self.highlightedItem = self.keyFrameItems.get(self.keyFrames[0])
+#                        self.highlightedItem.setHighlighted(True)
+                print(item, self.highlightedItem)
+                if self.highlightedItem:
+                    if self.currentSelection:
+                        self.clearSelection()
+                        self.currentSelection = []
+                    if self.highlightedItem.keyFrame.index:
+                        self.moveRangePrev = 0
+                        self.moveRangeNext = current = self.highlightedItem.keyFrame.index
+                        for keyFrame in self.keyFrames:
+                            if keyFrame.index < current:
+                                self.moveRangePrev = keyFrame.index
+                            elif keyFrame.index > current:
+                                self.moveRangeNext = keyFrame.index
+                                break
+                        else:
+                            self.moveRangeNext = 64
+                    else:
+                        self.moveRangePrev = self.moveRangeNext = 0
+                    if self.moveRangeNext - self.moveRangePrev > 2:
+                        self.view.setCursor(QtCore.Qt.SizeBDiagCursor)
+                elif event.modifiers() == QtCore.Qt.ShiftModifier:
+                    self.view.setDragMode(self.view.RubberBandDrag)
+                elif self.sliceEditItem.contains(self.mousePos):
+                    pass
+                else:
+                    self.clearSliceSelection()
+                    self.currentSelection = []
         QtWidgets.QGraphicsScene.mousePressEvent(self, event)
 
     def mouseDoubleClickEvent(self, event):
@@ -3660,10 +3680,8 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
                     self.highlightedItem.setHighlighted(False)
                     self.highlightedItem = None
                 if not self.highlightedItem and isinstance(item, VirtualSlice):
-                    self.highlight.emit(item.index)
-#                elif item is None:
-#                    self.sliceItem.setVisible(False)
-#                    self.sliceIdItem.setVisible(False)
+                    keyFrame = self.keyFrames.get(item.index)
+                    self.highlight.emit(keyFrame if keyFrame else item.index)
                 elif event.scenePos() in self.back.sceneBoundingRect():
                     self.highlight.emit(63)
                 else:
@@ -3671,6 +3689,12 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
                         if isinstance(item, VirtualSlice):
                             self.highlight.emit(item.index)
                             break
+                    else:
+                        if event.scenePos() in self.front.sceneBoundingRect():
+                            self.highlight.emit(0)
+            else:
+                if self.highlightedItem != item:
+                    self.highlight.emit(item.keyFrame)
         QtWidgets.QGraphicsScene.mouseMoveEvent(self, event)
 
     def mouseReleaseEvent(self, event):
@@ -3768,17 +3792,24 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
         self.setSliceSelection(min(selectedIndexes), max(selectedIndexes))
 
     def contextMenuEvent(self, event):
-        keyFrame = None
+        keyFrame = index = None
         if self.highlightedItem:
             keyFrame = self.highlightedItem.keyFrame
             index = keyFrame.index
         elif isinstance(self.itemAt(event.scenePos()), VirtualSlice):
             index = self.itemAt(event.scenePos()).index
         else:
-            if event.scenePos() in self.back.sceneBoundingRect():
-                index = 63
+            for item in self.items(event.scenePos()):
+                if isinstance(item, VirtualSlice):
+                    index = item.index
+                    break
             else:
-                return
+                if event.scenePos() in self.back.sceneBoundingRect():
+                    index = 63
+                else:
+                    return
+        if not keyFrame:
+            keyFrame = self.keyFrames.get(index)
         menu = QtWidgets.QMenu()
         clipboardValid = QtWidgets.QApplication.clipboard().mimeData().hasFormat('bigglesworth/WaveValues')
         editAction = newAction = insertBeforeAction = insertAfterAction = pasteAction = deleteSelectedAction = False

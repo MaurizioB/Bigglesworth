@@ -69,7 +69,7 @@ _Template = '''%(head_prefix)s
 '''
 
 rootTemplate = _Template.format(top='{docPath}<br/>', prebody='''
-<h4 class="section">Contents of {section}</h4>
+<h4 class="section">Contents:</h4>
 <div class="toc">{subIndex}</div>
 ''')
 
