@@ -248,16 +248,19 @@ class MergeWavesUndo(KeyFrameUndo):
 
 
 class BounceWavesUndo(KeyFrameUndo):
-    def __init__(self, main, start, end):
-        KeyFrameUndo.__init__(self, main, 'Waves {} to {} bounced'.format(start + 1, end + 1))
-        self.start = start
-        self.end = end
+    def __init__(self, main, transform):
+        start = transform.prevItem.index + 1
+        end = transform.nextItem.index + 1
+        if end == 1:
+            end = 'wavetable beginning'
+        KeyFrameUndo.__init__(self, main, 'Waves {} to {} bounced'.format(start, end))
+        self.transform = transform
 
     def redo(self):
         if not self.done:
             self.oldIndexes = self.keyFrames.getUuidDict()
             self.oldState = self.keyFrames.getSnapshot()
-            self.keyFrames.bounce(self.start, self.end)
+            self.keyFrames.bounce(self.transform)
             self.newState = self.keyFrames.getSnapshot()
             self.done = True
             self.newIndexes = self.keyFrames.getUuidDict()
@@ -1093,6 +1096,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.waveTableScene.waveDoubleClicked.connect(lambda keyFrame: self.setCurrentKeyFrame(keyFrame, True))
         self.waveTableScene.highlight.connect(self.updateMiniWave)
         self.waveTableScene.createKeyFrameRequested.connect(self.createKeyFrame)
+        self.waveTableScene.copyVirtualRequested.connect(self.copyVirtualKeyFrame)
         self.waveTableScene.deleteRequested.connect(self.deleteRequested)
 #        self.waveTableScene.moveKeyFrameRequested.connect(self.moveKeyFrame)
         self.waveTableScene.moveKeyFramesRequested.connect(self.moveKeyFrames)
@@ -1704,13 +1708,18 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             return
         self.undoStack.push(MergeWavesUndo(self, start, end))
 
-    def bounceRequested(self, items):
-        indexes = [item.index for item in items]
-        first = min(indexes)
-        last = max(indexes)
-        if last - first < 2:
+    def bounceRequested(self, transform):
+        if not transform.isValid():
             return
-        self.undoStack.push(BounceWavesUndo(self, first, last))
+        self.undoStack.push(BounceWavesUndo(self, transform))
+
+    def copyVirtualKeyFrame(self, index):
+        mimeData = QtCore.QMimeData()
+        byteArray = QtCore.QByteArray()
+        stream = QtCore.QDataStream(byteArray, QtCore.QIODevice.WriteOnly)
+        stream.writeQVariant(self.keyFrames.computeValuesForIndex(index))
+        mimeData.setData('bigglesworth/WaveValues', byteArray)
+        QtWidgets.QApplication.clipboard().setMimeData(mimeData)
 
     def pasteTransform(self, transform, values):
         #create undoCommand here

@@ -127,7 +127,7 @@ class MainWindow(QtWidgets.QMainWindow):
 #        self.openCollectionAction.triggered.connect(self.openCollection)
 
         self.showEditorAction.setIcon(QtGui.QIcon.fromTheme('dial'))
-        self.showWavetableAction.setIcon(QtGui.QIcon.fromTheme('wavetable'))
+        self.showWavetableAction.setIcon(QtGui.QIcon.fromTheme('wavetables'))
         self.importAction.triggered.connect(lambda: self.importRequested.emit(None, None))
         self.exportAction.triggered.connect(lambda: self.exportRequested.emit([], None))
         self.showGlobalsAction.setIcon(QtGui.QIcon(':/images/circuit.svg'))

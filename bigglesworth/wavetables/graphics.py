@@ -559,6 +559,7 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
     deleteRequested = QtCore.pyqtSignal()
     copyTransform = QtCore.pyqtSignal()
     pasteTransform = QtCore.pyqtSignal()
+    bounceRequested = QtCore.pyqtSignal(object)
     changed = QtCore.pyqtSignal()
     pressed = QtCore.pyqtSignal(bool)
 
@@ -664,7 +665,9 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
         copyAction.triggered.connect(self.copyTransform)
         self.pasteAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('edit-paste'), 'Paste transformation', self)
         self.pasteAction.triggered.connect(self.pasteTransform)
-        self.allActions = self.morphActions + [sep, copyAction, self.pasteAction]
+        self.bounceAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('timeline-insert'), 'Create intermediate waves', self)
+        self.bounceAction.triggered.connect(lambda: self.bounceRequested.emit(self))
+        self.allActions = self.morphActions + [sep, copyAction, self.pasteAction, self.bounceAction]
 
         self.deleteAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('edit-delete'), 'Remove', self)
         self.deleteAction.triggered.connect(self.deleteRequested)
@@ -720,6 +723,12 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
             #data format is ([(x, y), ], {node:curve}])
             self.data['harmonics'] = {1: ([(0, 0)], )}
             return self.data['harmonics']
+
+    @property
+    def harmonicsOverride(self):
+        if not self.mode:
+            return False
+        return self.data.get('harmonicsOverride', False)
 
     def clone(self, prevItem, nextItem=None):
         return WaveTransformItem(self.keyFrames, self.mode, prevItem, nextItem)
@@ -1267,6 +1276,7 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
         transform.deleteRequested.connect(lambda t=transform: self.deleteRequested.emit(transform))
         transform.copyTransform.connect(self.copyTransform)
         transform.pasteTransform.connect(self.pasteTransform)
+        transform.bounceRequested.connect(self.bounceRequested)
         transform.pressed.connect(lambda doubleClicked: self.transformSelected.emit(transform, doubleClicked))
         transform.geometryChanged.connect(lambda: self.keyFrameContainer.layout().invalidate())
 #        self.changed.emit()
@@ -1388,6 +1398,9 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
                 insertAfterAction = menu.addAction(QtGui.QIcon.fromTheme('arrow-right'), 'Insert wave after')
                 insertAfterAction.setData(after)
                 menu.addSeparator()
+#            elif isinstance(underMouse, WaveTransformItem) and underMouse.isValid():
+#                bounceAction = menu.addAction(QtGui.QIcon.fromTheme('timeline-insert'), 'Create intermediate waves')
+#                bounceAction.setData(underMouse)
             menu.addActions(underMouse.actions())
             underMouse.setMaximized(True)
             menu.addSeparator()
@@ -1396,6 +1409,8 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
             indexes = [i.index for i in selected]
             if len(indexes) != 2 or max(indexes) - min(indexes) < 2:
                 bounceAction.setEnabled(False)
+            else:
+                bounceAction.setData(self.keyFrames[min(indexes)].nextTransform)
             joinMorphAction = menu.addAction(QtGui.QIcon.fromTheme('curve-connector'), 'Join and morph')
             if len(selected) <= 2:
                 joinMorphAction.setEnabled(False)
@@ -1426,7 +1441,7 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
             elif res == joinMorphAction:
                 self.mergeRequested.emit(selected)
             elif res == bounceAction:
-                self.bounceRequested.emit(selected)
+                self.bounceRequested.emit(bounceAction.data())
         if isinstance(underMouse, (SampleItem, WaveTransformItem)):
             if not self.maximized and \
                 (isinstance(underMouse, WaveTransformItem) or (underMouse.index and not underMouse.final)):
@@ -3106,6 +3121,7 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
     createKeyFrameRequested = QtCore.pyqtSignal(int, object, bool)
 #    moveKeyFrameRequested = QtCore.pyqtSignal(object, int)
     moveKeyFramesRequested = QtCore.pyqtSignal(object, int)
+    copyVirtualRequested = QtCore.pyqtSignal(int)
     deleteRequested = QtCore.pyqtSignal(object)
     waveDrop = QtCore.pyqtSignal(int, object, object)
 
@@ -3812,7 +3828,7 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
             keyFrame = self.keyFrames.get(index)
         menu = QtWidgets.QMenu()
         clipboardValid = QtWidgets.QApplication.clipboard().mimeData().hasFormat('bigglesworth/WaveValues')
-        editAction = newAction = insertBeforeAction = insertAfterAction = pasteAction = deleteSelectedAction = False
+        editAction = newAction = insertBeforeAction = insertAfterAction = pasteAction = deleteSelectedAction = copyVirtualAction = False
         if keyFrame:
             editAction = menu.addAction(QtGui.QIcon.fromTheme('document-edit'), 'Edit wave {}'.format(keyFrame.index + 1))
             menu.addSeparator()
@@ -3834,7 +3850,7 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
         else:
             newAction = menu.addAction(QtGui.QIcon.fromTheme('document-new'), 'Create wave at index {}'.format(index + 1))
             if clipboardValid:
-                pasteAction = menu.addAction(QtGui.QIcon.fromTheme('edit-paste'), 'Paste wave at index {}'.format(index + 1))
+                pasteAction = menu.addAction(QtGui.QIcon.fromTheme('edit-paste'), 'Paste wave values at index {}'.format(index + 1))
                 pasteAction.setData((index, True))
             if self.keyFrames.previous(index).nextTransform:
                 transform = self.keyFrames.previous(index).nextTransform
@@ -3844,14 +3860,16 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
                         text += '{}'.format(transform.nextItem.index + 1)
                     else:
                         text += 'table beginning'
-                    menu.addSeparator().setText(text)
+                    menu.addSection(text)
                 else:
                     menu.addSeparator()
                 menu.addActions(self.keyFrames.previous(index).nextTransform.actions())
+                copyVirtualAction = menu.addAction(QtGui.QIcon.fromTheme('edit-copy'), 'Copy computed values at index {}'.format(index + 1))
         if self.isOverSelection() and len(self.currentSelection) > 1:
             if not menu.actions()[-1].isSeparator():
                 menu.addSeparator()
             deleteSelectedAction = menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 'Remove {} selected waves'.format(len(self.currentSelection)))
+
         res = menu.exec_(QtGui.QCursor.pos())
         if not res:
             return
@@ -3861,6 +3879,8 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
             self.createKeyFrameRequested.emit(index, None, False)
         elif res == deleteSelectedAction:
             self.deleteRequested.emit(self.currentSelection)
+        elif res == copyVirtualAction:
+            self.copyVirtualRequested.emit(index)
         elif res.data():
             if res.parent() == menu:
                 index, useClipboard = res.data()

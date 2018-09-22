@@ -293,54 +293,62 @@ class KeyFrames(QtCore.QObject):
         firstTransform.setMode(1)
         self.changed.emit()
 
-    def bounce(self, firstIndex, lastIndex):
-        firstItem = self.fullList[firstIndex]
-        transform = firstItem.nextTransform
+    def computeValuesForIndex(self, index):
+        if self.fullList[index]:
+            return self.fullValues[index]
+        if not index:
+            previous = self.keyFrames[-1]
+        else:
+            previous = self.previous(index)
+        transform = previous.nextTransform
+        values = self.bounce(transform, False)
+        firstIndex = self.index(previous)
+        return values[index - firstIndex]
+
+    def bounce(self, transform, setValues=True):
+#        firstItem = self.fullList[firstIndex]
+##        transform = firstItem.nextTransform
+        firstIndex = transform.prevItem.index
+        lastIndex = transform.nextItem.index
         firstValues = self.fullValues[firstIndex][:]
         data = []
+        diff = (lastIndex if lastIndex else 64) - firstIndex
         if not transform.mode:
-            for i in range(lastIndex - firstIndex):
+            for i in range(diff):
                 data.append(firstValues)
-        elif transform.isLinear():
+        else:
             firstValues = np.array(firstValues)
-            lastValues = np.array(self.fullValues[lastIndex])
-            diff = lastIndex - firstIndex
+            lastValues = np.array(self.fullValues[lastIndex if lastIndex else 0])
             ratio = 1. / diff
-            for index in range(lastIndex - firstIndex + 1):
-                percent = index * ratio
-                deltaArray = (1 - percent) * firstValues + percent * lastValues
-                data.append(deltaArray.tolist())
-        elif transform.mode == transform.CurveMorph:
-            firstValues = np.array(firstValues)
-            lastValues = np.array(self.fullValues[lastIndex])
-            diff = lastIndex - firstIndex
-            ratio = 1. / diff
-            curveFunc = transform.curveFunction
-            for index in range(diff):
-                percent = curveFunc(index * ratio)
-                deltaArray = (1 - percent) * firstValues + percent * lastValues
-                data.append(deltaArray.tolist())
-        elif transform.mode == transform.TransMorph:
-            firstValues = np.array(firstValues)
-            lastValues = np.roll(np.array(self.fullValues[lastIndex]), -transform.translate)
-            diff = lastIndex - firstIndex
-            ratio = 1. / diff
-            for index in range(lastIndex - firstIndex + 1):
-                percent = index * ratio
-                deltaArray = np.roll((1 - percent) * firstValues + percent * lastValues, int(transform.translate * percent))
-                data.append(deltaArray.tolist())
-        elif transform.mode == transform.SpecMorph:
-            firstValues = np.array(firstValues)
-            lastValues = np.array(self.fullValues[lastIndex])
-            diff = lastIndex - firstIndex
-            ratio = 1. / diff
-            harmonicsArrays = transform.getHarmonicsArray()
-            for index in range(diff):
-                percent = index * ratio
-                deltaArray = (1 - percent) * firstValues + percent * lastValues
-                np.clip(np.add(deltaArray, harmonicsArrays[index]), -pow20, pow20, out=deltaArray)
-                data.append(deltaArray.tolist())
-        self.setValuesMulti(firstIndex, data)
+            if transform.isLinear():
+                for index in range(diff):
+                    percent = index * ratio
+                    deltaArray = (1 - percent) * firstValues + percent * lastValues
+                    data.append(deltaArray.tolist())
+            elif transform.mode == transform.CurveMorph:
+                curveFunc = transform.curveFunction
+                for index in range(diff):
+                    percent = curveFunc(index * ratio)
+                    deltaArray = (1 - percent) * firstValues + percent * lastValues
+                    data.append(deltaArray.tolist())
+            elif transform.mode == transform.TransMorph:
+                lastValues = np.roll(lastValues, -transform.translate)
+                for index in range(diff):
+                    percent = index * ratio
+                    deltaArray = np.roll((1 - percent) * firstValues + percent * lastValues, int(transform.translate * percent))
+                    data.append(deltaArray.tolist())
+            elif transform.mode == transform.SpecMorph:
+                harmonicsArrays = transform.getHarmonicsArray()
+                for index in range(diff):
+                    percent = index * ratio
+                    deltaArray = (1 - percent) * firstValues + percent * lastValues
+                    np.clip(np.add(deltaArray, harmonicsArrays[index]), -pow20, pow20, out=deltaArray)
+                    data.append(deltaArray.tolist())
+
+        if setValues:
+            self.setValuesMulti(firstIndex, data)
+        else:
+            return data
 
     def reverse(self, start, end):
         if (start, end) == (0, 64):
@@ -498,8 +506,9 @@ class KeyFrames(QtCore.QObject):
             oldFirst.setFirst(False)
             keyFrame.setFirst(True)
         else:
+            if values is None and not self.fullList[index]:
+                values = self.computeValuesForIndex(index)
             if self.fullList[index] is not None:
-#                print(self.fullList)
                 #checking if there is actually room for the requested action
                 if after:
                     for item in self.fullList[index:]:
