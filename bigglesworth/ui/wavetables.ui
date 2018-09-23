@@ -1340,7 +1340,28 @@
                    <verstretch>0</verstretch>
                   </sizepolicy>
                  </property>
-                 <widget class="QWidget" name="noTransform"/>
+                 <widget class="QWidget" name="noTransform">
+                  <layout class="QHBoxLayout" name="horizontalLayout_16">
+                   <item>
+                    <widget class="QLabel" name="label_6">
+                     <property name="enabled">
+                      <bool>false</bool>
+                     </property>
+                     <property name="font">
+                      <font>
+                       <italic>true</italic>
+                      </font>
+                     </property>
+                     <property name="text">
+                      <string>No parameters</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignCenter</set>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
                  <widget class="QWidget" name="curveTransformPage">
                   <layout class="QHBoxLayout" name="horizontalLayout_12">
                    <property name="margin">

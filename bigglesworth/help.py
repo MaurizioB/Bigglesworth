@@ -167,7 +167,7 @@ class HelpDialog(QtWidgets.QDialog):
         if not (self.loaded and self.shown):
             QtCore.QTimer.singleShot(10, self.checkExpanded)
         else:
-            self.contentWidget.expandAll()
+            self.contentWidget.expand(self.proxy.index(0, 0))
 
     def anchorClicked(self, url, parent=None):
         if url.scheme() != 'qthelp':

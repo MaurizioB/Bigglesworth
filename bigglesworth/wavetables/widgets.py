@@ -411,6 +411,7 @@ class HarmonicsSlider(QtWidgets.QWidget):
 
     def contextMenuEvent(self, event):
         if not self.interactive:
+            event.ignore()
             return
         self.menuActionGroup.actions()[abs(self.fract) >> 7].setChecked(True)
         self.menu.exec_(QtGui.QCursor.pos())
@@ -591,9 +592,9 @@ class HarmonicsWidget(QtWidgets.QWidget):
 
     def setSelection(self, selected):
         if selected:
-            self.selection.add(self.sender().fract)
+            self.selection.add(self.sender().fract - 1)
         else:
-            self.selection.discard(self.sender().fract)
+            self.selection.discard(self.sender().fract - 1)
 
     def selectAll(self):
         [s.setSelected(True) for s in self.sliders]

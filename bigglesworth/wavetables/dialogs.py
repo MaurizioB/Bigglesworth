@@ -107,6 +107,8 @@ class UndoView(QtWidgets.QUndoView):
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape:
             self.hide()
+        else:
+            QtWidgets.QUndoView.keyPressEvent(self, event)
 
     def show(self):
         QtWidgets.QUndoView.show(self)

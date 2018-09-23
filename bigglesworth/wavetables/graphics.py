@@ -918,6 +918,12 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
                 else:
                     self.minimizedTransformPath.moveTo(0, -y)
                     self.minimizedTransformPath.lineTo(0, y)
+            elif self.mode == self.SpecMorph:
+                self.minimizedTransformPath.moveTo(-x * .7, y * .5)
+                self.minimizedTransformPath.lineTo(-x * .3, -y * .5)
+                self.minimizedTransformPath.lineTo(0, -y * .1)
+                self.minimizedTransformPath.lineTo(x * .5, -y * .1)
+                self.minimizedTransformPath.lineTo(x * .7, y * .5)
             else:
                 self.minimizedTransformPath.moveTo(-x * .3, -y)
                 self.minimizedTransformPath.lineTo(-x * .7, y)
@@ -1093,7 +1099,9 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
                 qp.drawPath(self.normalTransformPath)
         qp.restore()
         if self._rect != self.minimizedRect:
-            qp.drawText(self._rect.adjusted(1, y, -1, 0), QtCore.Qt.AlignCenter, self.modeLabel)
+            qp.drawText(self._rect.adjusted(1, 0, -1, 0), QtCore.Qt.AlignHCenter|QtCore.Qt.AlignBottom, self.modeLabel)
+        elif self.mode:
+            qp.drawText(self._rect.adjusted(1, 0, -1, 0), QtCore.Qt.AlignHCenter|QtCore.Qt.AlignBottom, self.modeLabel[0])
 
 
 class KeyFrameContainer(QtWidgets.QGraphicsWidget):
@@ -1377,7 +1385,7 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
         underMouse = None
         for underMouse in self.items(event.scenePos()):
             if isinstance(underMouse, (SampleItem, WaveTransformItem)):
-                underMouse.maximize()
+#                underMouse.maximize()
                 break
 
         menu = QtWidgets.QMenu()
@@ -1402,7 +1410,7 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
 #                bounceAction = menu.addAction(QtGui.QIcon.fromTheme('timeline-insert'), 'Create intermediate waves')
 #                bounceAction.setData(underMouse)
             menu.addActions(underMouse.actions())
-            underMouse.setMaximized(True)
+#            underMouse.setMaximized(True)
             menu.addSeparator()
         elif selected:
             bounceAction = menu.addAction(QtGui.QIcon.fromTheme('timeline-insert'), 'Create intermediate waves')
@@ -2326,7 +2334,12 @@ class WaveScene(QtWidgets.QGraphicsScene):
             [node.setVisible(False) for node in self.nodes]
 
     def randomize(self):
-        values = [randrange(-pow20, pow20) for _ in range(128)]
+        selected = self.selectedItems()
+        if not selected:
+            selected = self.nodes
+        samples = [node.sample for node in selected]
+        values = {sample:randrange(-pow20, pow20) for sample in samples}
+#        values = [randrange(-pow20, pow20) for _ in range(128)]
 #        self.currentKeyFrame.setValues(values)
         self.waveTransform.emit(self.Randomize, self.currentKeyFrame, values)
 
@@ -2337,6 +2350,7 @@ class WaveScene(QtWidgets.QGraphicsScene):
             [n.setSelected(True) for n in selected]
         elif len(selected) < 3:
             return
+        selected.sort(key=lambda n: n.sample)
         basePath = self.currentWavePath.path()
         newPath = QtGui.QPainterPath()
         first = basePath.elementAt(0)
@@ -2352,6 +2366,14 @@ class WaveScene(QtWidgets.QGraphicsScene):
                 continue
             tempPath.quadTo(ref.x, ref.y, last.x, last.y)
             newPath.lineTo((p + 1) * 16384, tempPath.pointAtPercent(.5).y())
+        if selected[0] != self.nodes[0]:
+            tempPath = QtGui.QPainterPath()
+            first = basePath.elementAt(self.nodes[selected[0].sample - 1].sample)
+            tempPath.moveTo(first.x, first.y)
+            ref = basePath.elementAt(selected[0].sample)
+            last = basePath.elementAt(selected[0].sample + 1)
+            tempPath.quadTo(ref.x, ref.y, last.x, last.y)
+            newPath.setElementPositionAt(selected[0].sample, selected[0].sample, tempPath.pointAtPercent(.5).y())
         if edges:
             if self.nodes[0] in selected:
                 tempPath = QtGui.QPainterPath()

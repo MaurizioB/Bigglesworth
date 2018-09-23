@@ -1074,6 +1074,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 
         self.keyFrameScene = KeyFrameScene(self.keyFrameView)
         self.keyFrameView.setScene(self.keyFrameScene)
+        self.keyFrameView.keyFrames = self.keyFrameScene.keyFrames
         self.keyFrameScene.setIndexRequested.connect(self.setKeyFrameIndex)
         self.keyFrameScene.highlight.connect(self.setCurrentKeyFrame)
 #        self.keyFrameScene.transformSelected.connect(self.selectTransform)
@@ -1149,7 +1150,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             lambda waveType: self.waveScene.harmonicsChanged(self.harmonicsWidget.values, waveType, self.addHarmonicsChk.isChecked()))
         self.applyHarmonicsBtn.clicked.connect(self.applyHarmonics)
         self.harmonicsPanel.setVisible(False)
-        self.waveScene.selectionChanged.connect(self.setQuantizeRatio)
+        self.waveScene.selectionChanged.connect(self.checkWaveSceneSelection)
 
         self.undoStack.indexesChanged.connect(self.waveScene.indexesChanged)
 
@@ -1466,8 +1467,10 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 #        self.harmonicsWidget.reset()
         self.noMouseModeBtn.setChecked(True)
 
-    def setQuantizeRatio(self):
+    def checkWaveSceneSelection(self):
         selected = self.waveScene.selectedItems()
+        indexes = [n.sample for n in selected]
+        indexes.sort()
         if len(selected) < 1:
             valid = True
             count = 128
@@ -1475,17 +1478,15 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             valid = False
             count = 0
         else:
-            indexes = [n.sample for n in selected]
-            indexes.sort()
             count = len(indexes)
             valid = max(indexes) - min(indexes) + 1 == count
         self.quantizeBtn.setEnabled(valid)
         self.quantizeSpin.setEnabled(valid)
-#        print(count)
         if valid:
             self.quantizeSpin.setMaximum(count / 2)
             self.quantizeSpin.setValue(count / 4)
             self.quantizeSpin.setPrefix('{}/'.format(count))
+        self.smoothEdgesChk.setEnabled(bool(set((0, 127)) & set(indexes)) or not indexes)
 
     #UndoStack
 
