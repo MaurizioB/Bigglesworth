@@ -1089,7 +1089,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.audioSettingsAction.triggered.connect(self.setAudioDevice)
         if sys.platform == 'darwin':
             self.windowsMenu.insertAction(self.showLibrarianAction, self.audioSettingsAction)
-            self.windowsMenu.inserSeparator(self.showLibrarianAction)
+            self.windowsMenu.insertSeparator(self.showLibrarianAction)
         else:
             self.menubar.addAction(self.audioSettingsAction)
 

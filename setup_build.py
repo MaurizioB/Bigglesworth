@@ -77,6 +77,7 @@ files = [
     'bigglesworth/presets/blofeld_fact_200802.mid', 
     'bigglesworth/presets/blofeld_fact_201200.mid', 
     'bigglesworth/help.qch', 
+    'bigglesworth/help.qhc', 
     ]
 
 files.extend(glob('bigglesworth/ui/*.ui'))
