@@ -1087,7 +1087,11 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.showDockAction.triggered.connect(self.toggleDock)
         self.audioSettingsAction = QtWidgets.QAction('Audio settings', self)
         self.audioSettingsAction.triggered.connect(self.setAudioDevice)
-        self.menubar.addAction(self.audioSettingsAction)
+        if sys.platform == 'darwin':
+            self.windowsMenu.insertAction(self.showLibrarianAction, self.audioSettingsAction)
+            self.windowsMenu.inserSeparator(self.showLibrarianAction)
+        else:
+            self.menubar.addAction(self.audioSettingsAction)
 
         self.undoStack = UndoStack()
         self.undoStack.canUndoChanged.connect(lambda state: [self.mainUndoBtn.setEnabled(state), self.waveUndoBtn.setEnabled(state)])
