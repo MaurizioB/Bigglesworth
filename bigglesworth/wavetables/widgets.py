@@ -314,6 +314,7 @@ class AddMultiEnvWidget(QtWidgets.QWidget):
         parity = self.parityCombo.currentIndex()
         if not parity:
             self.parentBtn.addRequested.emit([None for _ in range(self.countSpin.value())], wave)
+            return
         elif parity == 1:
             items = range(3, self.countSpin.value() * 2 + 3, 2)
         else:

@@ -12,11 +12,18 @@ FractRole = QtCore.Qt.UserRole + 1
 
 
 class StatusBar(QtWidgets.QLabel):
+    shown = False
+
     def __init__(self, *args, **kwargs):
         QtWidgets.QLabel.__init__(self, *args, **kwargs)
         self.timer = QtCore.QTimer()
         self.timer.setSingleShot(True)
         self.timer.timeout.connect(self.clear)
+
+    def showEvent(self, event):
+        if not self.shown:
+            self.shown = True
+            self.setFixedSize(self.size())
 
     def showMessage(self, message, timeout=0):
         if message == self.text():
