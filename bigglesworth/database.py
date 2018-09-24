@@ -400,44 +400,45 @@ class BlofeldDB(QtCore.QObject):
         if soundCreate and not refCreate:
             raise BaseException('Database reference mismatch!!!')
 
-        self.query.exec_('PRAGMA journal_mode=OFF')
-        soundsPre = 'INSERT INTO sounds('
-        soundsPost = 'VALUES('
-        for p in soundsColumns[:-1]:
-            soundsPre += p + ', '
-            soundsPost += ':{}, '.format(p)
-        soundsPrepare = soundsPre + 'uid) ' + soundsPost + ':uid)'
-        for preset in factoryPresets:
-            self.logger.append(LogDebug, 'Preparing preset {}'.format(preset))
-            print('preparing preset "{}"'.format(preset))
-            _pattern = midifile.read_midifile(localPath('presets/{}.mid'.format(preset)))
-            _track = _pattern[0]
-            for i, event in enumerate(_track):
-                if isinstance(event, midifile.SysexEvent):
-                    self.query.prepare(soundsPrepare)
-                    data = event.data[6:391]
-                    for p, d in zip(Parameters.parameterData, data[2:]):
-                        self.query.bindValue(':' + p.attr, p.range.sanitize(d))
-                    uid = str(uuid.uuid4())
-                    self.query.bindValue(':uid', uid)
-                    if not self.query.exec_():
-                        self.dbErrorLog('Sound cannot be added.', extMessage='break at {}'.format(i))
-                        break
-                    self.query.prepare('INSERT INTO reference(uid, tags, {}) VALUES(:uid, :tags, :location)'.format(preset))
-                    self.query.bindValue(':uid', uid)
-                    self.query.bindValue(':tags', json.dumps([]))
-                    self.query.bindValue(':location', (data[0] << 7) + data[1])
-                    if not self.query.exec_():
-                        self.dbErrorLog('Sound cannot be referenced', extMessage='break at {}'.format(i))
-                        break
+        if refCreate:
+            self.query.exec_('PRAGMA journal_mode=OFF')
+            soundsPre = 'INSERT INTO sounds('
+            soundsPost = 'VALUES('
+            for p in soundsColumns[:-1]:
+                soundsPre += p + ', '
+                soundsPost += ':{}, '.format(p)
+            soundsPrepare = soundsPre + 'uid) ' + soundsPost + ':uid)'
+            for preset in factoryPresets:
+                self.logger.append(LogDebug, 'Preparing preset {}'.format(preset))
+                print('preparing preset "{}"'.format(preset))
+                _pattern = midifile.read_midifile(localPath('presets/{}.mid'.format(preset)))
+                _track = _pattern[0]
+                for i, event in enumerate(_track):
+                    if isinstance(event, midifile.SysexEvent):
+                        self.query.prepare(soundsPrepare)
+                        data = event.data[6:391]
+                        for p, d in zip(Parameters.parameterData, data[2:]):
+                            self.query.bindValue(':' + p.attr, p.range.sanitize(d))
+                        uid = str(uuid.uuid4())
+                        self.query.bindValue(':uid', uid)
+                        if not self.query.exec_():
+                            self.dbErrorLog('Sound cannot be added.', extMessage='break at {}'.format(i))
+                            break
+                        self.query.prepare('INSERT INTO reference(uid, tags, {}) VALUES(:uid, :tags, :location)'.format(preset))
+                        self.query.bindValue(':uid', uid)
+                        self.query.bindValue(':tags', json.dumps([]))
+                        self.query.bindValue(':location', (data[0] << 7) + data[1])
+                        if not self.query.exec_():
+                            self.dbErrorLog('Sound cannot be referenced', extMessage='break at {}'.format(i))
+                            break
 
-                    if data[1] == 0:
-                        bank = string.ascii_uppercase[data[0]]
-                        self.logger.append(LogDebug, 'starting bank ' + bank)
-                        self.factoryStatus.emit(preset, data[0])
-                        print('starting bank ' + bank)
-        self.query.exec_('PRAGMA journal_mode=DELETE')
-        self.referenceModel.refresh()
+                        if data[1] == 0:
+                            bank = string.ascii_uppercase[data[0]]
+                            self.logger.append(LogDebug, 'starting bank ' + bank)
+                            self.factoryStatus.emit(preset, data[0])
+                            print('starting bank ' + bank)
+            self.query.exec_('PRAGMA journal_mode=DELETE')
+            self.referenceModel.refresh()
 
         if createBit & self.WaveTablesEmpty:
             self.initializeWavetables()

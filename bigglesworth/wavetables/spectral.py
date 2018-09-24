@@ -23,7 +23,8 @@ class StatusBar(QtWidgets.QLabel):
     def showEvent(self, event):
         if not self.shown:
             self.shown = True
-            self.setFixedSize(self.size())
+            if sys == 'darwin':
+                self.setMinimumHeight(self.fontMetrics().height() * 2)
 
     def showMessage(self, message, timeout=0):
         if message == self.text():

@@ -70,7 +70,7 @@ class SplashScreen(QtWidgets.QSplashScreen):
         else:
             self.timer.stop()
         self.repaint()
-#        QtWidgets.QApplication.processEvents()
+        QtWidgets.QApplication.processEvents()
 
     def start(self):
         self.timerThread.start()
