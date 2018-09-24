@@ -242,6 +242,12 @@
      <property name="statusTip">
       <string>Double click to create new nodes, Shift+click to remove, middle click to switch to node envelope; right click on an active node/line to edit curve type</string>
      </property>
+     <property name="verticalScrollBarPolicy">
+      <enum>Qt::ScrollBarAlwaysOff</enum>
+     </property>
+     <property name="horizontalScrollBarPolicy">
+      <enum>Qt::ScrollBarAlwaysOff</enum>
+     </property>
      <property name="backgroundBrush">
       <brush brushstyle="SolidPattern">
        <color alpha="255">

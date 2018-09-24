@@ -535,6 +535,7 @@ class Selector(QtWidgets.QPushButton):
 class EnvelopeSelector(Selector):
     def __init__(self, main):
         Selector.__init__(self, True)
+        self.setAttribute(QtCore.Qt.WA_LayoutUsesWidgetRect, True)
         self.main = main
         self.menu = QtWidgets.QMenu()
         self.copyAction = self.menu.addAction(QtGui.QIcon.fromTheme('edit-copy'), 'Copy envelope')
@@ -557,6 +558,7 @@ class WaveWidget(QtWidgets.QWidget):
 
     def __init__(self, fract, value):
         QtWidgets.QWidget.__init__(self)
+        self.setAttribute(QtCore.Qt.WA_LayoutUsesWidgetRect, True)
         self.value = value
         self.setFract(fract)
         self.setFixedHeight(self.fontMetrics().height() * 1.5 - 4)
@@ -615,6 +617,7 @@ class WaveWidget(QtWidgets.QWidget):
 class FakeCombo(QtWidgets.QComboBox):
     def __init__(self, sourceModel, fract):
         QtWidgets.QComboBox.__init__(self)
+        self.setAttribute(QtCore.Qt.WA_LayoutUsesWidgetRect, True)
         model = FractProxy()
         model.setSourceModel(sourceModel)
         self.wave = abs(fract) >> 7
@@ -672,6 +675,7 @@ class EnvelopeHarmonicsSlider(QtWidgets.QWidget):
 
     def __init__(self, fract, model):
         QtWidgets.QWidget.__init__(self)
+        self.setAttribute(QtCore.Qt.WA_LayoutUsesWidgetRect, True)
         layout = QtWidgets.QVBoxLayout()
         layout.setSpacing(2)
         self.setLayout(layout)

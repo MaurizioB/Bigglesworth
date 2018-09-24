@@ -133,6 +133,7 @@ else:
 
     files.extend([
 #        (os.path.join(pkgDir, '_soundfile_data'), '_soundfile_data'), 
+        ('/opt/local/lib/libsndfile.dylib', '_soundfile_data/libsndfile.dylib'), 
         (os.path.join(pkgDir, '_soundfile.py'), '_soundfile.py'), 
         (os.path.join(pkgDir, 'soundfile.py'), 'soundfile.py'), 
         (os.path.join(pkgDir, '_soundfile.pyc'), '_soundfile.pyc'), 
