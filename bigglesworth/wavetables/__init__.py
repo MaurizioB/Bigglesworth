@@ -1245,12 +1245,14 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 #        self.mainTabWidget.setTabBar(self.mainTabBar)
 
         try:
+            #just detect if there is actually a button, damn you OSX...
+            assert self.mainTabBar.tabButton(0, self.mainTabBar.RightSide) is not None
             for tabId in range(2):
                 self.mainTabBar.setTabButton(tabId, self.mainTabBar.RightSide, None)
             self.tabCloseButtonSide = self.mainTabBar.RightSide
         except:
             for tabId in range(2):
-                self.mainTabBar.tabButton(tabId, self.mainTabBar.LeftSide, None)
+                self.mainTabBar.setTabButton(tabId, self.mainTabBar.LeftSide, None)
             self.tabCloseButtonSide = self.mainTabBar.LeftSide
         self.addAudioImportTab()
 #        self.mainTabWidget.setCurrentIndex(self.mainTabWidget.count() - 1)
@@ -1735,7 +1737,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 #            self.keyFrames.deleteTransform(items)
             self.undoStack.push(RemoveTransformUndo(self, items))
         elif QtWidgets.QMessageBox.question(self, 'Remove wave?', 
-            'Remove wave {} from the wavetable?'.format(items.index), 
+            'Remove wave {} from the wavetable?'.format(items.index + 1), 
             QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel) == QtWidgets.QMessageBox.Ok:
 #                self.keyFrames.deleteKeyFrame(items)
                 self.undoStack.push(RemoveWavesUndo(self, [items]))

@@ -87,7 +87,7 @@ files.extend(glob('resources/*.png'))
 files = zip(files, files)
 files.append(('bigglesworth/editorWidgets/pianokbmap.json', 'pianokbmap.json'))
 
-includes = ['atexit', 'PyQt4.QtSql', 
+includes = ['atexit', 'PyQt4.QtSql', 'PyQt4.QtHelp', 'PyQt4.QtMultimedia', 
 #    required by soundfile
     'enum', 
     'cffi', 
@@ -127,8 +127,20 @@ if platform == WIN:
 
 else:
     base = None
+    pkgDir = '/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/'
 
-    files.append(('/opt/local/libexec/qt4/share/plugins/sqldrivers', 'sqldrivers'))
+    files.extend([
+#        (os.path.join(pkgDir, '_soundfile_data'), '_soundfile_data'), 
+        (os.path.join(pkgDir, '_soundfile.py'), '_soundfile.py'), 
+        (os.path.join(pkgDir, 'soundfile.py'), 'soundfile.py'), 
+        (os.path.join(pkgDir, '_soundfile.pyc'), '_soundfile.pyc'), 
+        (os.path.join(pkgDir, 'soundfile.pyc'), 'soundfile.pyc'), 
+        (os.path.join(pkgDir, 'samplerate'), 'samplerate'), 
+        ('/opt/local/libexec/qt4/share/plugins/sqldrivers', 'sqldrivers'), 
+    ])
+
+
+#    files.append(('/opt/local/libexec/qt4/share/plugins/sqldrivers', 'sqldrivers'))
 
     executables = [
         Executable('Bigglesworth.py', base=base, targetName = 'BigglesworthApp'), 
