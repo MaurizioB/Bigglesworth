@@ -270,6 +270,8 @@
         <file alias="16x16/dialog-ok-apply.svg">icons/Bigglesworth/16x16/dialog-ok-apply.svg</file>
         <file alias="22x22/dialog-ok-apply.svg">icons/Bigglesworth/22x22/dialog-ok-apply.svg</file>
         <file alias="24x24/dialog-ok-apply.svg">icons/Bigglesworth/24x24/dialog-ok-apply.svg</file>
+        <file alias="22x22/input-mouse.svg">icons/Bigglesworth/22x22/input-mouse.svg</file>
+        <file alias="64x64/input-mouse.svg">icons/Bigglesworth/64x64/input-mouse.svg</file>
         <file alias="32x32/arrow-up.svg">icons/Bigglesworth/32x32/arrow-up.svg</file>
         <file alias="16x16/arrow-up.svg">icons/Bigglesworth/16x16/arrow-up.svg</file>
         <file alias="22x22/arrow-up.svg">icons/Bigglesworth/22x22/arrow-up.svg</file>

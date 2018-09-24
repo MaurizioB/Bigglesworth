@@ -1,4 +1,4 @@
-Terminology reference
+Reference terminology
 =====================
 
 .. role:: subsection

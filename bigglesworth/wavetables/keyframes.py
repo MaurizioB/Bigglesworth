@@ -193,6 +193,9 @@ class KeyFrames(QtCore.QObject):
         self.clean = False
         self.changed.emit()
 
+    def itemAt(self, index):
+        return self.layout.itemAt(index)
+
     def getLayoutIndex(self, item):
         for index in range(self.layout.count()):
             _item = self.layout.itemAt(index)

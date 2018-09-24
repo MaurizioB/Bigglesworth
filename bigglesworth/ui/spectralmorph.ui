@@ -302,13 +302,12 @@
    <item row="1" column="0" colspan="2">
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <widget class="QPushButton" name="addBtn">
-       <property name="text">
-        <string>Add envelope</string>
-       </property>
+      <widget class="AddToolButton" name="addToolBtn">
        <property name="icon">
-        <iconset theme="list-add">
-         <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
+        <iconset theme="list-add"/>
+       </property>
+       <property name="popupMode">
+        <enum>QToolButton::MenuButtonPopup</enum>
        </property>
       </widget>
      </item>
@@ -318,7 +317,7 @@
         <bool>false</bool>
        </property>
        <property name="text">
-        <string>Remove envelope</string>
+        <string>Delete current envelope</string>
        </property>
        <property name="icon">
         <iconset theme="edit-delete">
@@ -341,57 +340,61 @@
       </spacer>
      </item>
      <item>
-      <widget class="Line" name="line_2">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
+      <widget class="QFrame" name="frame">
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
        </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="label">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
+       <property name="frameShadow">
+        <enum>QFrame::Sunken</enum>
        </property>
-       <property name="text">
-        <string>Snap to</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCheckBox" name="waveSnapChk">
-       <property name="statusTip">
-        <string>Vertical snap to wave positions</string>
-       </property>
-       <property name="text">
-        <string>wave indexes</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCheckBox" name="valueSnapChk">
-       <property name="statusTip">
-        <string>Horizontal snap to 5% grid</string>
-       </property>
-       <property name="text">
-        <string>values</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCheckBox" name="envSnapChk">
-       <property name="text">
-        <string>envelopes</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="Line" name="line">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
-       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <property name="topMargin">
+         <number>2</number>
+        </property>
+        <property name="bottomMargin">
+         <number>2</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="label">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Snap to</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="waveSnapChk">
+          <property name="statusTip">
+           <string>Vertical snap to wave positions</string>
+          </property>
+          <property name="text">
+           <string>wave indexes</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="valueSnapChk">
+          <property name="statusTip">
+           <string>Horizontal snap to 5% grid</string>
+          </property>
+          <property name="text">
+           <string>values</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="envSnapChk">
+          <property name="text">
+           <string>envelopes</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
      </item>
      <item>
@@ -461,6 +464,11 @@
    <extends>QScrollArea</extends>
    <header>bigglesworth.wavetables.spectral</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>AddToolButton</class>
+   <extends>QToolButton</extends>
+   <header>bigglesworth.wavetables.widgets</header>
   </customwidget>
  </customwidgets>
  <resources/>

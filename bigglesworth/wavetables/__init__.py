@@ -15,6 +15,43 @@ sys.path.append('../..')
 
 from Qt import QtCore, QtGui, QtWidgets, QtSql
 
+def colorAdjusted(color, **kwargs):
+    if not kwargs:
+        raise ValueError('Color arguments expected')
+    newColor = QtGui.QColor(color)
+    if set(('r', 'g', 'b')) & set(kwargs):
+        r = kwargs.get('b', color.red())
+        if isinstance(r, float):
+            r *= 255
+        g = kwargs.get('g', color.green())
+        if isinstance(g, float):
+            g *= 255
+        b = kwargs.get('b', color.blue())
+        if isinstance(b, float):
+            b *= 255
+        newColor.setRgb(r, g, b)
+    elif set(('c', 'm', 'y', 'k')) & set(kwargs):
+        c = kwargs.get('c', color.cyan())
+        if isinstance(c, float):
+            c *= 255
+        m = kwargs.get('m', color.magenta())
+        if isinstance(m, float):
+            m *= 255
+        y = kwargs.get('y', color.yellow())
+        if isinstance(y, float):
+            y *= 255
+        k = kwargs.get('k', color.black())
+        if isinstance(k, float):
+            k *= 255
+        newColor.setCmyk(c, m, y, k)
+    a = kwargs.get('a', color.alpha())
+    if isinstance(a, float):
+        a *= 255
+    newColor.setAlpha(a)
+    return newColor
+
+QtGui.QColor.adjusted = colorAdjusted
+
 #from PyQt4.uic import loadUi
 #from dial import _Dial
 
@@ -959,6 +996,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             self.waveTableDock.setFloating(True)
             self.waveTableDock.setVisible(False)
             self.waveTableDock.setFloating(False)
+        hoverMode = self.settings.value('hoverMode', True, bool)
         self.settings.endGroup()
 
         if __name__ == '__main__':
@@ -1073,6 +1111,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 #        self.undoAction.setShortcutContext(QtCore.Qt.)
 
         self.keyFrameScene = KeyFrameScene(self.keyFrameView)
+        self.keyFrameScene.setHoverMode(hoverMode)
         self.keyFrameView.setScene(self.keyFrameScene)
         self.keyFrameView.keyFrames = self.keyFrameScene.keyFrames
         self.keyFrameScene.setIndexRequested.connect(self.setKeyFrameIndex)
@@ -1759,6 +1798,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         if not self.waveScene.currentKeyFrame in self.keyFrames:
             try:
                 keyFrame = self.keyFrames.get(self.waveScene.currentIndex)
+                assert keyFrame is not None
             except:
                 keyFrame = self.keyFrames.previous(self.waveScene.currentIndex)
             self.setCurrentKeyFrame(keyFrame)
@@ -2641,6 +2681,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.settings.setValue('Recent', recent[:10])
         self.settings.endGroup()
 
+        QtCore.QTimer.singleShot(1, lambda: self.keyFrameView.setSceneRect(self.keyFrames.container.geometry()))
 
     def createNewWindow(self):
         for window in self.openedWindows:

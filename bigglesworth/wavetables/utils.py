@@ -129,6 +129,14 @@ baseSineValues = []
 for sine in sineValues(1):
     baseSineValues.append(int(sine*pow19))
 
+waveColors = (
+    QtGui.QColor(64, 192, 216), 
+    QtGui.QColor(221, 255, 25), 
+    QtGui.QColor(114, 255, 173), 
+    QtGui.QColor(255, 183, 68), 
+    QtGui.QColor(255, 134, 186), 
+)
+
 curves = {
     QtCore.QEasingCurve.Linear: 'Linear', 
     QtCore.QEasingCurve.InQuad: 'Quadratic accelerating', 
@@ -316,7 +324,7 @@ def getOscPaths():
 
 class Envelope(object):
     def __init__(self, nodes=None, curves=None, waveType=0):
-        self.nodes = nodes[:] if nodes is not None else [(0, .5)]
+        self.nodes = nodes[:] if nodes is not None else [(0, 0)]
         self.curves = curves.copy() if curves is not None else {}
         self.waveType = waveType
 

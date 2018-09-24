@@ -5,8 +5,8 @@ import numpy as np
 from Qt import QtCore, QtGui, QtWidgets
 
 from bigglesworth.utils import loadUi, getCardinal, getQtFlags, sanitize
-from bigglesworth.wavetables.widgets import HarmonicsSlider, CurveIcon
-from bigglesworth.wavetables.utils import curves, waveFunction, cubicTranslation, getCurveFunc, Envelope
+from bigglesworth.wavetables.widgets import HarmonicsSlider, CurveIcon, EnvelopeHarmonicsSlider, AddSliderButton
+from bigglesworth.wavetables.utils import curves, waveFunction, cubicTranslation, getCurveFunc, Envelope, waveColors
 
 FractRole = QtCore.Qt.UserRole + 1
 
@@ -62,12 +62,12 @@ class StartRangeLabel(RangeLabel):
         self.path.closeSubpath()
 
 
-
 class EndRangeLabel(RangeLabel):
     def setNum(self, num):
         if num <= 64:
             self.resizeEvent = self.resizeEventNormal
         else:
+            self.setToolTip('This morph ends at the beginning of the wavetable')
             num = 1
             self.resizeEvent = self.resizeEventFinal
         RangeLabel.setNum(self, num)
@@ -137,129 +137,129 @@ class ToolTipSlider(QtWidgets.QSlider):
 #        qp.translate(.5, .5)
 #        qp.drawRect(grooveRect)
 
-class FakeCombo(QtWidgets.QComboBox):
-    def paintEvent(self, event):
-        pass
-
-class Selector(QtWidgets.QPushButton):
-
-    def __init__(self, main):
-        QtWidgets.QPushButton.__init__(self, QtGui.QIcon.fromTheme('document-edit'), '')
-        self.main = main
-        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum))
-        self.setMaximumHeight(16)
-        self.setCheckable(True)
-        self.setStyleSheet('''
-            Selector {
-                background: darkGray;
-                border: 1px solid palette(dark);
-                border-style: outset;
-                border-radius: 1px;
-            }
-            Selector:on {
-                background: rgb(50, 255, 50);
-                border-style: inset;
-            }
-        ''')
-
-        self.menu = QtWidgets.QMenu()
-        self.copyAction = self.menu.addAction(QtGui.QIcon.fromTheme('edit-copy'), 'Copy envelope')
-        self.pasteAction = self.menu.addAction(QtGui.QIcon.fromTheme('edit-paste'), 'Paste envelope')
-        self.menu.addSeparator()
-        self.removeAction = self.menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 'Remove')
-
-    def mousePressEvent(self, event):
-        self.click()
-
-    def contextMenuEvent(self, event):
-        self.click()
-        self.pasteAction.setEnabled(QtWidgets.QApplication.clipboard().mimeData().hasFormat('bigglesworth/EnvelopeData'))
-        if len(self.main.envelopes) == 1:
-            self.removeAction.setEnabled(False)
-        self.menu.exec_(QtGui.QCursor.pos())
-
-
-class SliderContainer(QtWidgets.QWidget):
-    triggered = QtCore.pyqtSignal()
-    fractChanged = QtCore.pyqtSignal(int)
-    polarityChanged = QtCore.pyqtSignal(int)
-    valueChanged = QtCore.pyqtSignal(float, float)
-    removeRequested = QtCore.pyqtSignal()
-    copyRequested = QtCore.pyqtSignal()
-    pasteRequested = QtCore.pyqtSignal()
-
-    def __init__(self, main, fract, model):
-        QtWidgets.QWidget.__init__(self)
-        self.main = main
-        layout = QtWidgets.QVBoxLayout()
-        self.setLayout(layout)
-        layout.setContentsMargins(1, 2, 1, 2)
-
-        self.selector = Selector(main)
-        layout.addWidget(self.selector)
-
-        self.slider = HarmonicsSlider(fract, True)
-        self.slider.valueChanged[float, float].connect(self.valueChanged)
-        self.slider.polarityChanged.connect(self.polarityChanged)
-        layout.addWidget(self.slider)
-#        self.setValue = self.slider.setValue
-        self.setSliderEnabled = self.slider.setSliderEnabled
-
-        self.selector.setMaximumWidth(self.slider.sizeHint().width())
-        self.selector.copyAction.triggered.connect(self.copyRequested)
-        self.selector.pasteAction.triggered.connect(self.pasteRequested)
-        self.selector.removeAction.triggered.connect(self.removeRequested)
-
-        self.fakeCombo = FakeCombo(self)
-        self.fakeCombo.setModel(model)
-        self.fakeCombo.view().setMinimumWidth(self.fakeCombo.view().sizeHintForColumn(0))
-        self.fakeCombo.setFixedSize(self.slider.labelRect.size())
-        self.fakeCombo.setCurrentIndex(abs(fract) - 1)
-        self.fakeCombo.currentIndexChanged.connect(self.setFractFromCombo)
-
-    def setFractFromCombo(self, index):
-        available = self.fakeCombo.itemData(index, FractRole)
-        if not available:
-            print('errore fract disponibili?!')
-            return
-        newIndex = index + 1
-        if abs(self.fract & 127) == abs(newIndex):
-            return
-        if self.fract > 0:
-            if not available & 1:
-                newIndex *= -1
-        else:
-            if not available & 2:
-                newIndex *= -1
-        self.setFract(newIndex + (self.fract >> 7))
-        QtWidgets.QApplication.sendEvent(self.window(), QtGui.QStatusTipEvent(self.slider.statusTip()))
-
-    def setFract(self, fract):
-        self.fract = fract
-        self.fractChanged.emit(fract)
-
-    def resizeEvent(self, event):
-        self.fakeCombo.move(self.slider.mapTo(self, self.slider.labelRect.topLeft()))
-
-#    def setModel(self, model):
+#class FakeCombo(QtWidgets.QComboBox):
+#    def paintEvent(self, event):
+#        pass
+#
+#class Selector(QtWidgets.QPushButton):
+#
+#    def __init__(self, main):
+#        QtWidgets.QPushButton.__init__(self, QtGui.QIcon.fromTheme('document-edit'), '')
+#        self.main = main
+#        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum))
+#        self.setMaximumHeight(16)
+#        self.setCheckable(True)
+#        self.setStyleSheet('''
+#            Selector {
+#                background: darkGray;
+#                border: 1px solid palette(dark);
+#                border-style: outset;
+#                border-radius: 1px;
+#            }
+#            Selector:on {
+#                background: rgb(50, 255, 50);
+#                border-style: inset;
+#            }
+#        ''')
+#
+#        self.menu = QtWidgets.QMenu()
+#        self.copyAction = self.menu.addAction(QtGui.QIcon.fromTheme('edit-copy'), 'Copy envelope')
+#        self.pasteAction = self.menu.addAction(QtGui.QIcon.fromTheme('edit-paste'), 'Paste envelope')
+#        self.menu.addSeparator()
+#        self.removeAction = self.menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 'Remove')
+#
+#    def mousePressEvent(self, event):
+#        self.click()
+#
+#    def contextMenuEvent(self, event):
+#        self.click()
+#        self.pasteAction.setEnabled(QtWidgets.QApplication.clipboard().mimeData().hasFormat('bigglesworth/EnvelopeData'))
+#        if len(self.main.envelopes) == 1:
+#            self.removeAction.setEnabled(False)
+#        self.menu.exec_(QtGui.QCursor.pos())
+#
+#
+#class SliderContainer(QtWidgets.QWidget):
+#    triggered = QtCore.pyqtSignal()
+#    fractChanged = QtCore.pyqtSignal(int)
+#    polarityChanged = QtCore.pyqtSignal(int)
+#    valueChanged = QtCore.pyqtSignal(float, float)
+#    removeRequested = QtCore.pyqtSignal()
+#    copyRequested = QtCore.pyqtSignal()
+#    pasteRequested = QtCore.pyqtSignal()
+#
+#    def __init__(self, main, fract, model):
+#        QtWidgets.QWidget.__init__(self)
+#        self.main = main
+#        layout = QtWidgets.QVBoxLayout()
+#        self.setLayout(layout)
+#        layout.setContentsMargins(1, 2, 1, 2)
+#
+#        self.selector = Selector(main)
+#        layout.addWidget(self.selector)
+#
+#        self.slider = HarmonicsSlider(fract, True)
+#        self.slider.valueChanged[float, float].connect(self.valueChanged)
+#        self.slider.polarityChanged.connect(self.polarityChanged)
+#        layout.addWidget(self.slider)
+##        self.setValue = self.slider.setValue
+#        self.setSliderEnabled = self.slider.setSliderEnabled
+#
+#        self.selector.setMaximumWidth(self.slider.sizeHint().width())
+#        self.selector.copyAction.triggered.connect(self.copyRequested)
+#        self.selector.pasteAction.triggered.connect(self.pasteRequested)
+#        self.selector.removeAction.triggered.connect(self.removeRequested)
+#
+#        self.fakeCombo = FakeCombo(self)
 #        self.fakeCombo.setModel(model)
 #        self.fakeCombo.view().setMinimumWidth(self.fakeCombo.view().sizeHintForColumn(0))
 #        self.fakeCombo.setFixedSize(self.slider.labelRect.size())
-#        self.fakeCombo.setFixedSize(QtCore.QSize(self.slider.labelRect.width(), 1))
-
-    @property
-    def fract(self):
-        return self.slider.fract
-
-    @fract.setter
-    def fract(self, fract):
-        self.slider.setFract(fract)
-        self.fakeCombo.setStatusTip(self.slider.statusTip())
-#        self.setStatusTip(self.slider.statusTip())
-
-    def setValue(self, *args):
-        self.slider.setValue(*args)
-        self.fakeCombo.setStatusTip(self.slider.statusTip())
+#        self.fakeCombo.setCurrentIndex(abs(fract) - 1)
+#        self.fakeCombo.currentIndexChanged.connect(self.setFractFromCombo)
+#
+#    def setFractFromCombo(self, index):
+#        available = self.fakeCombo.itemData(index, FractRole)
+#        if not available:
+#            print('errore fract disponibili?!')
+#            return
+#        newIndex = index + 1
+#        if abs(self.fract & 127) == abs(newIndex):
+#            return
+#        if self.fract > 0:
+#            if not available & 1:
+#                newIndex *= -1
+#        else:
+#            if not available & 2:
+#                newIndex *= -1
+#        self.setFract(newIndex + (self.fract >> 7))
+#        QtWidgets.QApplication.sendEvent(self.window(), QtGui.QStatusTipEvent(self.slider.statusTip()))
+#
+#    def setFract(self, fract):
+#        self.fract = fract
+#        self.fractChanged.emit(fract)
+#
+#    def resizeEvent(self, event):
+#        self.fakeCombo.move(self.slider.mapTo(self, self.slider.labelRect.topLeft()))
+#
+##    def setModel(self, model):
+##        self.fakeCombo.setModel(model)
+##        self.fakeCombo.view().setMinimumWidth(self.fakeCombo.view().sizeHintForColumn(0))
+##        self.fakeCombo.setFixedSize(self.slider.labelRect.size())
+##        self.fakeCombo.setFixedSize(QtCore.QSize(self.slider.labelRect.width(), 1))
+#
+#    @property
+#    def fract(self):
+#        return self.slider.fract
+#
+#    @fract.setter
+#    def fract(self, fract):
+#        self.slider.setFract(fract)
+#        self.fakeCombo.setStatusTip(self.slider.statusTip())
+##        self.setStatusTip(self.slider.statusTip())
+#
+#    def setValue(self, *args):
+#        self.slider.setValue(*args)
+#        self.fakeCombo.setStatusTip(self.slider.statusTip())
 
 
 class NodeItem(QtWidgets.QGraphicsItem):
@@ -459,13 +459,25 @@ class NodeItem(QtWidgets.QGraphicsItem):
 
 
 class EnvelopePath(QtWidgets.QGraphicsPathItem):
-    normalPen = QtGui.QPen(QtGui.QColor(169, 214, 255, 125), 1)
-#    normalPen = QtGui.QPen(QtGui.QColor(237, 255, 120, 201), 1)
-    normalPen.setCosmetic(True)
-    selectPen = QtGui.QPen(QtGui.QColor(64, 192, 216), 1.5)
-#    selectPen = QtGui.QPen(QtGui.QColor(255, 116, 255), 1)
-    selectPen.setCosmetic(True)
-    pens = normalPen, selectPen
+#    normalPen = QtGui.QPen(QtGui.QColor(169, 214, 255, 125), 1)
+#    normalPen = QtGui.QPen(QtGui.QColor(64, 192, 216, 128), 1)
+##    normalPen = QtGui.QPen(QtGui.QColor(237, 255, 120, 201), 1)
+#    normalPen.setCosmetic(True)
+#    selectPen = QtGui.QPen(QtGui.QColor(64, 192, 216), 1.5)
+##    selectPen = QtGui.QPen(QtGui.QColor(255, 116, 255), 1)
+#    selectPen.setCosmetic(True)
+#    pens = normalPen, selectPen
+
+    wavePens = []
+    for color in waveColors:
+        _normalPen = QtGui.QPen(color.adjusted(a=125), 1)
+        _normalPen.setCosmetic(True)
+        _selectPen = QtGui.QPen(color, 1.5)
+        _selectPen.setCosmetic(True)
+        wavePens.append((_normalPen, _selectPen))
+    pens = wavePens[0]
+    
+
     stroker = QtGui.QPainterPathStroker()
     stroker.setWidth(4)
     nearStroker = QtGui.QPainterPathStroker()
@@ -482,7 +494,7 @@ class EnvelopePath(QtWidgets.QGraphicsPathItem):
         self.nodes = []
         self.closed = False
         self.selectable = False
-        self.setPen(self.normalPen)
+        self.setPen(self.pens[0])
 
         self.menu = QtWidgets.QMenu()
         self.menu.aboutToShow.connect(self.checkCurveMenu)
@@ -531,6 +543,8 @@ class EnvelopePath(QtWidgets.QGraphicsPathItem):
     def setFract(self, fract):
         [n.setFract(fract) for n in self.nodes]
         QtWidgets.QGraphicsPathItem.setZValue(self, -abs(fract) * .01)
+        self.pens = self.wavePens[abs(fract) >> 7]
+        self.setPen(self.pens[self.selectable])
 #        self.setZValue(-fract * .01)
 
     def setSelectable(self, selectable):
@@ -771,7 +785,7 @@ class ToolTipItem(QtWidgets.QGraphicsItem):
     def setItem(self, item, pos=None):
         if self.item == item:
             return
-        self.title = getCardinal(item.fract)
+        self.title = getCardinal(abs(item.fract) & 127)
         if not pos:
             self.posText = ''
             self._rect = self.baseRect
@@ -984,7 +998,9 @@ class EnvelopeScene(QtWidgets.QGraphicsScene):
 #            value /= slider.fract * 2
 #            value *= .5
             fract = abs(slider.fract)
-            np.add(values, np.multiply(waveFunction[fract >> 7](fract & 127, self.previewResolution), value), out=values)
+            polarity = 1 if slider.fract > 0 else -1
+            np.add(values, np.multiply(waveFunction[fract >> 7](fract & 127, self.previewResolution), value * polarity), out=values)
+#        self.waveValues.emit(np.clip(values, -1, 1))
         self.waveValues.emit(values)
 
     def setWaveSnap(self, waveSnap):
@@ -1110,13 +1126,6 @@ class SpecHarmonicsScrollArea(QtWidgets.QScrollArea):
             self.addEnvelopeRequest.emit()
 
 
-class FractModel(QtGui.QStandardItemModel):
-    def flags(self, index):
-        if index.data(FractRole):
-            return QtCore.Qt.ItemIsSelectable|QtCore.Qt.ItemIsEnabled
-        return QtCore.Qt.ItemIsSelectable
-
-
 class SpecTransformDialog(QtWidgets.QDialog):
     shown = False
 
@@ -1137,21 +1146,30 @@ class SpecTransformDialog(QtWidgets.QDialog):
         self.selectors = QtWidgets.QButtonGroup()
 
         self.scrollArea.addEnvelopeRequest.connect(self.addEnvelope)
-        self.addBtn.clicked.connect(self.addEnvelope)
         self.deleteBtn.clicked.connect(self.removeEnvelope)
         self.waveSnapChk.toggled.connect(self.envelopeScene.setWaveSnap)
         self.valueSnapChk.toggled.connect(self.envelopeScene.setValueSnap)
         self.envSnapChk.toggled.connect(self.envelopeScene.setEnvSnap)
 
-        self.sliderModel = FractModel()
+        self.sliderModel = QtGui.QStandardItemModel()
         for h, l in enumerate(HarmonicsSlider.names):
             item = QtGui.QStandardItem('{}. {}'.format(h + 1, l))
             item.setData(2, FractRole)
-            self.sliderModel.appendRow(item)
+            items = [item]
+            for w in range(1, 5):
+                item = QtGui.QStandardItem()
+                item.setData(2, FractRole)
+                items.append(item)
+            self.sliderModel.appendRow(items)
         for h in range(h + 1, 50):
             item = QtGui.QStandardItem('{} harmonic'.format(getCardinal(h + 1)))
             item.setData(2, FractRole)
-            self.sliderModel.appendRow(item)
+            items = [item]
+            for w in range(1, 5):
+                item = QtGui.QStandardItem()
+                item.setData(2, FractRole)
+                items.append(item)
+            self.sliderModel.appendRow(items)
 
         self.updatePaths = self.envelopeScene.updatePaths
         self.selectors.buttonClicked.connect(self.setCurrentEnvelope)
@@ -1214,11 +1232,17 @@ class SpecTransformDialog(QtWidgets.QDialog):
         self.startLbl.setNum(self.start + 1)
         self.endLbl.setNum(self.end + 1)
 
+        self.addBtn = AddSliderButton()
+        self.hLayout.addWidget(self.addBtn)
+        self.addBtn.clicked.connect(self.addEnvelope)
+        self.addBtn.setToolTip('Add envelope')
+
         self.transformData = transform.data['harmonics']
         for h, data in self.transformData.items():
             self.addEnvelope(h, *data)
 
         self.updatePaths()
+        self.addToolBtn.addRequested.connect(self.addMultiEnvelopes)
 
     @property
     def currentSlider(self):
@@ -1236,7 +1260,7 @@ class SpecTransformDialog(QtWidgets.QDialog):
     def sortedSliders(self):
         #sort by harmonic, negative fractions are after positive
 #        return sorted(self.envelopes.keys(), key=lambda s: (abs(s.fract), -s.fract))
-        return sorted(self.envelopes.keys(), key=lambda s: abs(s.fract & 127))
+        return sorted(self.envelopes.keys(), key=lambda s: (abs(s.fract) & 127, abs(s.fract) >> 7))
 
     def movePlayHead(self, value):
         x = float(value - self.start) / (self.end - self.start)
@@ -1274,12 +1298,14 @@ class SpecTransformDialog(QtWidgets.QDialog):
         fracts = [s.fract for s in sliders]
 #        self.sliderModel.blockSignals(True)
         for h in range(1, 51):
-            available = 3
-            if h in fracts:
-                available -= 1
-            if -h in fracts:
-                available -= 2
-            self.sliderModel.setData(self.sliderModel.index(h - 1, 0), available, FractRole)
+            for wave in range(5):
+                available = 3
+                fract = h + (wave << 7)
+                if fract in fracts:
+                    available -= 1
+                if -fract in fracts:
+                    available -= 2
+                self.sliderModel.setData(self.sliderModel.index(h - 1, wave), available, FractRole)
 #        self.sliderModel.blockSignals(False)
         for newIndex, slider in enumerate(sliders):
             oldIndex = self.hLayout.indexOf(slider)
@@ -1291,7 +1317,7 @@ class SpecTransformDialog(QtWidgets.QDialog):
         if self.sender() == self.deleteBtn:
             slider = self.currentSlider
             if QtWidgets.QMessageBox.question(self, 'Delete envelope', 
-                'Delete envelope for {} harmonic?'.format(getCardinal(slider.fract & 127)), 
+                'Delete envelope for {} harmonic?'.format(getCardinal(abs(slider.fract) & 127)), 
                 QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel) != QtWidgets.QMessageBox.Ok:
                     return
         else:
@@ -1310,24 +1336,41 @@ class SpecTransformDialog(QtWidgets.QDialog):
         slider.deleteLater()
         self.resetFractions()
         self.addBtn.setEnabled(len(self.envelopes) < 50)
+        self.addToolBtn.setEnabled(len(self.envelopes) < 50)
         self.deleteBtn.setEnabled(len(self.envelopes) > 1)
 #        print([(s.fract, e) for s, e in self.envelopes.items()])
 
+    def addMultiEnvelopes(self, items, wave):
+        [self.addEnvelope(fract=fract, wave=wave) for fract in items]
+
     @QtCore.pyqtSlot()
-    def addEnvelope(self, fract=None, nodes=None, curves=None, update=True):
+    def addEnvelope(self, fract=None, nodes=None, curves=None, update=True, wave=None):
         fracts = [s.fract for s in self.envelopes]
-        if len(fracts) == 50:
+        if len(fracts) >= 50:
             self.addBtn.setEnabled(False)
+            self.addToolBtn.setEnabled(False)
             return
         if fract is None:
+            if wave is None:
+                wave = 0
             for fract in range(1, 51):
+                fract = fract + (wave << 7)
                 if fract not in fracts:
                     break
-        slider = SliderContainer(self, fract, self.sliderModel)
+            else:
+                return
+        else:
+            if wave is not None:
+                fract = fract + (wave << 7)
+            if fract in fracts:
+                return
+#            fract += wave << 7
+        slider = EnvelopeHarmonicsSlider(fract, self.sliderModel)
 #        slider.triggered.connect(self.changeFract)
 #        slider.setModel(self.sliderModel)
+        slider.fractChanged.connect(self.checkPolarities)
         slider.fractChanged.connect(self.resetFractions)
-        slider.polarityChanged.connect(self.checkPolarities)
+#        slider.polarityChanged.connect(self.checkPolarities)
         slider.removeRequested.connect(self.removeEnvelope)
         slider.copyRequested.connect(self.copyEnvelope)
         slider.pasteRequested.connect(self.pasteEnvelope)
@@ -1346,15 +1389,15 @@ class SpecTransformDialog(QtWidgets.QDialog):
             self.updatePaths()
 
         self.selectors.addButton(slider.selector)
-        if len(self.envelopes) == 1 or self.sender() in (self.addBtn, self.scrollArea):
+        if len(self.envelopes) == 1 or self.sender() in (self.addBtn, self.addToolBtn, self.scrollArea):
             slider.selector.click()
         slider.blockSignals(True)
         slider.setValue(envelope[0])
         slider.blockSignals(False)
 
-        self.deleteBtn.setEnabled(True)
+        self.deleteBtn.setEnabled(len(self.envelopes) > 1)
         QtWidgets.QApplication.processEvents()
-        self.scrollArea.ensureWidgetVisible(slider)
+        self.scrollArea.ensureWidgetVisible(self.addBtn)
 
     def setEnvelope(self, slider, values, curves):
 #        print(slider.fract, values)

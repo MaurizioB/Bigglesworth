@@ -578,33 +578,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QComboBox" name="waveTypeCombo">
-               <item>
-                <property name="text">
-                 <string>Sine</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Square</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Triangular</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Sawtooth</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Inverted Saw</string>
-                </property>
-               </item>
-              </widget>
+              <widget class="WaveSelectionCombo" name="waveTypeCombo"/>
              </item>
              <item>
               <widget class="QPushButton" name="applyHarmonicsBtn">
@@ -1937,6 +1911,11 @@
    <extends>QWidget</extends>
    <header>bigglesworth.wavetables.widgets</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>WaveSelectionCombo</class>
+   <extends>QComboBox</extends>
+   <header>bigglesworth.wavetables.widgets</header>
   </customwidget>
  </customwidgets>
  <resources/>

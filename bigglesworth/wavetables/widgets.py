@@ -10,8 +10,11 @@ QtGui.QIconEngineV2 = QIconEngineV2
 from bigglesworth.utils import sanitize, loadUi, getCardinal
 from bigglesworth.dialogs.messageboxes import AdvancedMessageBox
 from bigglesworth.wavetables import UidColumn, NameColumn, SlotColumn, EditedColumn, DataColumn, PreviewColumn, DumpedColumn
-from bigglesworth.wavetables.utils import ActivateDrag, curves, getCurvePath, waveFunction
+from bigglesworth.wavetables.utils import ActivateDrag, curves, getCurvePath, waveFunction, waveColors
 from bigglesworth.wavetables.graphics import SampleItem, NextWaveScene, WaveTransformItem
+
+
+FractRole = QtCore.Qt.UserRole + 1
 
 CurveIconType, WaveIconType = 0, 1
 
@@ -105,6 +108,14 @@ class CurveTransformCombo(QtWidgets.QComboBox):
 
     def setCurrentCurve(self, curve):
         self.setCurrentIndex(self.curveDict[curve])
+
+
+class WaveSelectionCombo(QtWidgets.QComboBox):
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QComboBox.__init__(self, *args, **kwargs)
+        for wave, label in enumerate(WaveLabels):
+            self.addItem(WaveIcon(wave), label)
+
 
 class PositiveSpin(QtWidgets.QSpinBox):
     def textFromValue(self, value):
@@ -276,6 +287,550 @@ class PositionWidgetIcon(IconWidget):
         self.entered.emit()
 
 
+class AddMultiEnvWidget(QtWidgets.QWidget):
+    def __init__(self, parentBtn):
+        QtWidgets.QWidget.__init__(self)
+        layout = QtWidgets.QVBoxLayout()
+        self.parentBtn = parentBtn
+        self.setLayout(layout)
+        layout.setSpacing(2)
+        self.setContentsMargins(1, 1, 1, 1)
+        self.countSpin = QtWidgets.QSpinBox()
+        self.countSpin.setRange(1, 32)
+        layout.addWidget(self.countSpin)
+        self.parityCombo = QtWidgets.QComboBox()
+        layout.addWidget(self.parityCombo)
+        self.parityCombo.addItem('Incrementally')
+        self.parityCombo.addItem('Odd harmonics')
+        self.parityCombo.addItem('Even harmonics')
+        for wave, label in enumerate(WaveLabels):
+            waveBtn = QtWidgets.QPushButton(WaveIcon(wave), label)
+            layout.addWidget(waveBtn)
+            waveBtn.clicked.connect(lambda _, wave=wave: self.emitRequest(wave))
+#            waveBtn.clicked.connect(lambda _, wave=wave: parentBtn.addRequested.emit(
+#                self.countSpin.value(), wave))
+
+    def emitRequest(self, wave):
+        parity = self.parityCombo.currentIndex()
+        if not parity:
+            self.parentBtn.addRequested.emit([None for _ in range(self.countSpin.value())], wave)
+        elif parity == 1:
+            items = range(3, self.countSpin.value() * 2 + 3, 2)
+        else:
+            items = range(2, self.countSpin.value() * 2 + 2, 2)
+        self.parentBtn.addRequested.emit(items, wave)
+
+#        self.addBtn.clicked.connect(lambda: button.addRequested.emit(self.countSpin.value(), self.waveCombo.currentIndex()))
+
+    def showEvent(self, event):
+        self.countSpin.setValue(1)
+        self.parityCombo.setCurrentIndex(0)
+
+
+class AddToolButton(QtWidgets.QToolButton):
+    addRequested = QtCore.pyqtSignal(object, int)
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QToolButton.__init__(self, *args, **kwargs)
+        menu = QtWidgets.QMenu()
+        actionWidget = QtWidgets.QWidgetAction(menu)
+        actionWidget.setDefaultWidget(AddMultiEnvWidget(self))
+        menu.addAction(actionWidget)
+        self.setMenu(menu)
+        self.clicked.connect(lambda: self.addRequested.emit((None, ), 0))
+        self.addRequested.connect(menu.close)
+
+
+
+class GraphicsSlider(QtWidgets.QWidget):
+    sliderRect = QtCore.QRect(0, 0, 24, 80)
+    baseSize = sliderRect.size()
+
+    sineGradColors = QtGui.QColor(0, 128, 192, 64), QtGui.QColor(0, 128, 192, 192)
+    squareGradColors = QtGui.QColor(225, 255, 99, 64), QtGui.QColor(225, 255, 99, 192)
+    triangleGradColors = QtGui.QColor(89, 206, 138, 64), QtGui.QColor(89, 206, 138, 192)
+    sawGradColors = QtGui.QColor(180, 160, 60, 64), QtGui.QColor(180, 160, 60, 192)
+    invSawGradColors = QtGui.QColor(159, 42, 107, 64), QtGui.QColor(159, 42, 107, 192)
+    gradColors = sineGradColors, squareGradColors, triangleGradColors, sawGradColors, invSawGradColors
+
+    initialized = False
+    sliderEnabled = True
+    value = 0
+    fract = None
+
+    names = [
+        'Fundamental', 
+        '1st octave', 
+        '5th above 1st octave', 
+        '2nd octave', 
+        '3rd above 2nd octave', 
+        '5th above 2nd octave', 
+        '~7th above 2nd octave', 
+        '4th octave', 
+        '2nd above 4th octave', 
+        'maj 3rd above 4th octave', 
+        '~4th above 4th octave', 
+        '5th above 4th octave', 
+        '~min 6th above 4th octave', 
+        '~min 7th above 4th octave', 
+        'maj 7th above 4th octave', 
+        '5th octave'
+    ]
+
+    valueChanged = QtCore.pyqtSignal([int, float], [float, float])
+    polarityChanged = QtCore.pyqtSignal(int)
+    drag = QtCore.pyqtSignal(float)
+    triggered = QtCore.pyqtSignal()
+
+    def __init__(self, fract):
+        QtWidgets.QWidget.__init__(self)
+        if not self.__class__.initialized:
+            self.initColors()
+
+        self.setMouseTracking(True)
+        self.setFixedSize(self.baseSize)
+        self.setFract(fract)
+
+    def initColors(self):
+        cls = self.__class__
+        cls.initialized = True
+        cls.colors = []
+        for f, (color, (gradColor0, gradColor1)) in enumerate(zip(waveColors, cls.gradColors)):
+            borderPenEnabled = QtGui.QPen(color)
+            borderPenDisabled = QtGui.QPen(color.adjusted(a=128))
+            valuePenEnabled = QtGui.QPen(color, 2)
+            valuePenDisabled = QtGui.QPen(color.adjusted(a=128), 2)
+            brushEnabled = QtGui.QLinearGradient(0, 0, 0, 1)
+            brushEnabled.setCoordinateMode(brushEnabled.ObjectBoundingMode)
+#            gradColor0, gradColor1 = gradColors
+            brushEnabled.setColorAt(0, gradColor0)
+            brushEnabled.setColorAt(1, gradColor1)
+            brushDisabled = QtGui.QLinearGradient(0, 0, 0, 1)
+            brushDisabled.setCoordinateMode(brushDisabled.ObjectBoundingMode)
+            brushDisabled.setColorAt(0, gradColor0.adjusted(a=gradColor0.alphaF() * .5))
+            brushDisabled.setColorAt(1, gradColor1.adjusted(a=gradColor1.alphaF() * .5))
+            cls.colors.append(((borderPenDisabled, borderPenEnabled), (valuePenDisabled, valuePenEnabled), (brushDisabled, brushEnabled)))
+#        (cls.borderPenEnabled, cls.borderPenDisabled), (cls.valuePenEnabled, cls.valuePenDisabled), (cls.brushEnabled, cls.brushDisabled) = cls.colors[0]
+        cls.borderPens, cls.valuePens, cls.brushes = cls.colors[0]
+        cls.borderPen = cls.borderPens[1]
+        cls.valuePen = cls.valuePens[1]
+        cls.brush = cls.brushes[1]
+
+    def setFract(self, fract):
+        if fract == self.fract:
+            return
+        self.fract = fract
+        waveForm = abs(fract) >> 7
+        self.borderPens, self.valuePens, self.brushes = self.colors[waveForm]
+        self.borderPen = self.borderPens[self.sliderEnabled]
+        self.valuePen = self.valuePens[self.sliderEnabled]
+        self.brush = self.brushes[self.sliderEnabled]
+        self.update()
+
+    def setSliderEnabled(self, enabled):
+        self.sliderEnabled = enabled
+        self.borderPen = self.borderPens[self.sliderEnabled]
+        self.valuePen = self.valuePens[self.sliderEnabled]
+        self.brush = self.brushes[self.sliderEnabled]
+        self.update()
+
+    def getValueFromY(self, y):
+        y = sanitize(0, y - self.sliderRect.top(), self.sliderRect.bottom())
+        return (1 - float(y) / (self.sliderRect.height() - 1))
+
+    def mousePressEvent(self, event):
+        if event.buttons() == QtCore.Qt.LeftButton:
+            if not self.sliderEnabled:
+                return event.accept()
+            self.setValue(self.getValueFromY(event.pos().y()))
+        elif event.buttons() == QtCore.Qt.MiddleButton and self.sliderEnabled:
+            self.setValue(1. / (abs(self.fract) & 127))
+        self.drag.emit(self.value)
+        event.ignore()
+
+    def setValue(self, value, emit=True):
+        if value == self.value:
+            return
+        oldValue = self.value
+        self.value = sanitize(0, value, 1)
+        if emit:
+            self.valueChanged.emit(self.fract, self.value)
+            self.valueChanged[float, float].emit(self.value, oldValue)
+        self.update()
+
+    def mouseMoveEvent(self, event, ignore=False, override=.5):
+        if event.buttons() == QtCore.Qt.LeftButton and (ignore or event.pos() in self.rect()) and not event.modifiers():
+            if not self.sliderEnabled:
+                return event.accept()
+            self.setValue(self.getValueFromY(event.pos().y()))
+        elif (event.buttons() == QtCore.Qt.MiddleButton or 
+            (event.buttons() == QtCore.Qt.LeftButton and event.modifiers() == QtCore.Qt.ShiftModifier)) and \
+            (ignore or event.pos() in self.rect()):
+                self.setValue(override if event.modifiers() == QtCore.Qt.ShiftModifier else .5)
+        if event.pos() not in self.rect():
+            event.ignore()
+
+    def mouseReleaseEvent(self, event):
+        self.drag.emit(-1)
+        QtWidgets.QWidget.mouseReleaseEvent(self, event)
+
+    def changeEvent(self, event):
+        if event.type() == QtCore.QEvent.EnabledChange:
+            self.setSliderEnabled(self.isEnabled())
+
+    def wheelEvent(self, event):
+        if self.sliderEnabled:
+            multi = .2 if event.modifiers() == QtCore.Qt.ShiftModifier else 1
+            self.setValue(self.value + (.05 if event.delta() > 0 else -.05) * multi)
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter(self)
+        qp.translate(.5, .5)
+        qp.setRenderHints(qp.Antialiasing)
+
+        qp.setPen(QtCore.Qt.NoPen)
+        qp.setBrush(QtCore.Qt.black)
+        rect = self.rect().adjusted(0, 0, -1, -1)
+        qp.drawRect(rect)
+
+        qp.save()
+        qp.setPen(QtCore.Qt.NoPen)
+        qp.setBrush(self.brush)
+        valueRect = rect.adjusted(0, rect.height() * (1 - self.value) + 1, 0, 0)
+        qp.drawRect(valueRect)
+        qp.setPen(self.valuePen)
+        qp.drawLine(valueRect.left(), valueRect.top() - 1, valueRect.right(), valueRect.top() - 1)
+        qp.restore()
+
+        qp.setPen(self.borderPen)
+        qp.setBrush(QtCore.Qt.NoBrush)
+        qp.drawRect(rect)
+        y = rect.height() - float(rect.height()) / (abs(self.fract) & 127)
+        qp.drawLine(1, y, self.width() - 2, y)
+
+
+class Selector(QtWidgets.QPushButton):
+
+    def __init__(self, selectable=False):
+        QtWidgets.QPushButton.__init__(self, QtGui.QIcon.fromTheme('document-edit' if selectable else 'edit-select-all'), '')
+        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum))
+        self.setMaximumHeight(16)
+        self.setCheckable(True)
+        self.setStyleSheet('''
+            Selector {
+                background: darkGray;
+                border: 1px solid palette(dark);
+                border-style: outset;
+                border-radius: 1px;
+            }
+            Selector:on {
+                background: rgb(50, 255, 50);
+                border-style: inset;
+            }
+        ''')
+
+    def mousePressEvent(self, event):
+        self.click()
+
+
+class EnvelopeSelector(Selector):
+    def __init__(self, main):
+        Selector.__init__(self, True)
+        self.main = main
+        self.menu = QtWidgets.QMenu()
+        self.copyAction = self.menu.addAction(QtGui.QIcon.fromTheme('edit-copy'), 'Copy envelope')
+        self.pasteAction = self.menu.addAction(QtGui.QIcon.fromTheme('edit-paste'), 'Paste envelope')
+        self.menu.addSeparator()
+        self.removeAction = self.menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 'Remove')
+
+
+    def _contextMenuEvent(self, event):
+        self.click()
+        self.pasteAction.setEnabled(QtWidgets.QApplication.clipboard().mimeData().hasFormat('bigglesworth/EnvelopeData'))
+        if len(self.main.envelopes) == 1:
+            self.removeAction.setEnabled(False)
+        self.menu.exec_(QtGui.QCursor.pos())
+
+
+class WaveWidget(QtWidgets.QWidget):
+    fract = None
+    polarityChanged = QtCore.pyqtSignal(int)
+
+    def __init__(self, fract, value):
+        QtWidgets.QWidget.__init__(self)
+        self.value = value
+        self.setFract(fract)
+        self.setFixedHeight(self.fontMetrics().height() * 1.5 - 4)
+        self.rebuildPaths()
+
+    def setValue(self, value):
+        if value != self.value:
+            self.value = value
+            self.rebuildPaths()
+            self.update()
+
+    def setFract(self, fract):
+        if fract == self.fract:
+            return
+        self.fract = fract
+        self.rebuildPaths()
+        self.update()
+
+    def rebuildPaths(self):
+        self.positivePath = QtGui.QPainterPath()
+        self.negativePath = QtGui.QPainterPath()
+        y = (self.height() - 1) / 2
+        count = self.width() - 4
+        values = waveFunction[abs(self.fract) >> 7](1, count)
+        for x, v in zip(range(count), values):
+            self.positivePath.lineTo(x, -v * y * self.value)
+            self.negativePath.lineTo(x, v * y * self.value)
+        self.negativePath.translate(2, y)
+        self.positivePath.translate(2, y)
+
+    def mousePressEvent(self, event):
+        if event.buttons() == QtCore.Qt.MiddleButton:
+            self.setFract(self.fract * -1)
+            self.polarityChanged.emit(self.fract)
+        elif event.buttons() == QtCore.Qt.LeftButton:
+            self.parent().showWaveMenu()
+
+    def resizeEvent(self, event):
+        self.rebuildPaths()
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter(self)
+        qp.setRenderHints(qp.Antialiasing)
+        qp.translate(.5, .5)
+        if self.fract > 0:
+            qp.setPen(QtCore.Qt.white)
+            qp.drawPath(self.positivePath)
+        else:
+            qp.setBrush(QtCore.Qt.black)
+            qp.setPen(QtCore.Qt.NoPen)
+            qp.drawRect(self.rect())
+            qp.setPen(QtCore.Qt.white)
+            qp.drawPath(self.negativePath)
+
+
+class FakeCombo(QtWidgets.QComboBox):
+    def __init__(self, sourceModel, fract):
+        QtWidgets.QComboBox.__init__(self)
+        model = FractProxy()
+        model.setSourceModel(sourceModel)
+        self.wave = abs(fract) >> 7
+        model.wave = self.wave
+        self.setModel(model)
+
+    def fractData(self, index):
+        return self.model().data(self.model().index(index, self.wave), FractRole)
+
+    def setFract(self, fract):
+        self.wave = abs(fract) >> 7
+        self.model().wave = self.wave
+        self.model().invalidateFilter()
+
+    def paintEvent(self, event):
+        pass
+
+
+class FractProxy(QtCore.QSortFilterProxyModel):
+    wave = 0
+
+    def flags(self, index):
+        if index.sibling(index.row(), self.wave).data(FractRole):
+            return QtCore.Qt.ItemIsSelectable|QtCore.Qt.ItemIsEnabled
+        return QtCore.Qt.ItemIsSelectable
+
+
+class EnvelopeHarmonicsSlider(QtWidgets.QWidget):
+    triggered = QtCore.pyqtSignal()
+    fractChanged = QtCore.pyqtSignal(int)
+    polarityChanged = QtCore.pyqtSignal(int)
+    valueChanged = QtCore.pyqtSignal(float, float)
+    removeRequested = QtCore.pyqtSignal()
+    copyRequested = QtCore.pyqtSignal()
+    pasteRequested = QtCore.pyqtSignal()
+
+    names = [
+        'Fundamental', 
+        '1st octave', 
+        '5th above 1st octave', 
+        '2nd octave', 
+        '3rd above 2nd octave', 
+        '5th above 2nd octave', 
+        '~7th above 2nd octave', 
+        '4th octave', 
+        '2nd above 4th octave', 
+        'maj 3rd above 4th octave', 
+        '~4th above 4th octave', 
+        '5th above 4th octave', 
+        '~min 6th above 4th octave', 
+        '~min 7th above 4th octave', 
+        'maj 7th above 4th octave', 
+        '5th octave'
+    ]
+
+    def __init__(self, fract, model):
+        QtWidgets.QWidget.__init__(self)
+        layout = QtWidgets.QVBoxLayout()
+        layout.setSpacing(2)
+        self.setLayout(layout)
+        layout.setContentsMargins(1, 2, 1, 2)
+
+        self.arrowPath = QtGui.QPainterPath()
+        size = self.fontMetrics().height() * .2
+        self.arrowPath.moveTo(-size, -size)
+        self.arrowPath.lineTo(size, -size)
+        self.arrowPath.lineTo(0, size)
+        self.arrowPath.closeSubpath()
+        self.arrowWidth = self.arrowPath.boundingRect().width() + 2
+
+        self.selector = EnvelopeSelector(self)
+        layout.addWidget(self.selector)
+
+        self.fakeCombo = FakeCombo(model, fract)
+        layout.addWidget(self.fakeCombo)
+        self.fakeCombo.view().setMinimumWidth(self.fakeCombo.view().sizeHintForColumn(0))
+        self.fakeCombo.view().setResizeMode(QtWidgets.QListView.Adjust)
+        self.fakeCombo.setFixedSize(24, self.fontMetrics().height())
+        self.fakeCombo.setCurrentIndex((abs(fract) & 127) - 1)
+        self.fakeCombo.currentIndexChanged.connect(self.setFractFromCombo)
+
+        self.waveWidget = WaveWidget(fract, 0)
+        self.waveWidget.polarityChanged.connect(self.setFract)
+        layout.addWidget(self.waveWidget)
+
+        self.slider = GraphicsSlider(fract)
+        layout.addWidget(self.slider)
+        self.slider.valueChanged[float, float].connect(self.sliderValueChanged)
+        self.setSliderEnabled = self.slider.setSliderEnabled
+
+        self.menu = QtWidgets.QMenu()
+        switchAction = self.menu.addAction(QtGui.QIcon.fromTheme('reverse'), 'Switch polarity')
+        switchAction.triggered.connect(self.switchPolarity)
+        self.menuActionGroup = QtWidgets.QActionGroup(self.menu)
+        for wave, label in enumerate(WaveLabels):
+            action = self.menu.addAction(WaveIcon(wave), label)
+            action.setData(wave)
+            action.setCheckable(True)
+            self.menuActionGroup.addAction(action)
+
+    @property
+    def fract(self):
+        return self.slider.fract
+
+    @fract.setter
+    def fract(self, fract):
+        self.slider.setFract(fract)
+        self.waveWidget.setFract(fract)
+        self.fakeCombo.setFract(fract)
+        self.setStatusTip()
+
+    def setFract(self, fract):
+        self.fract = fract
+        self.fractChanged.emit(fract)
+
+    def setValue(self, *args):
+        self.slider.setValue(*args)
+        self.waveWidget.setValue(args[0])
+        self.setStatusTip()
+
+    def switchPolarity(self):
+        self.setFract(self.fract * -1)
+
+    def setFractFromCombo(self, index):
+        wave = abs(self.fract) >> 7
+        available = self.fakeCombo.fractData(index)
+        if not available:
+            print('errore fract disponibili?!')
+            return
+        newIndex = index + 1
+        if abs(self.fract) & 127 == newIndex:
+            return
+        if self.fract > 0:
+            if not available & 1:
+                newIndex *= -1
+        else:
+            if not available & 2:
+                newIndex *= -1
+        if wave:
+            if newIndex < 0:
+                newIndex = -(abs(newIndex) + (wave << 7))
+            else:
+                newIndex += wave << 7
+        self.setFract(newIndex)
+        self.setStatusTip()
+#        QtWidgets.QApplication.sendEvent(self.window(), QtGui.QStatusTipEvent(self.slider.statusTip()))
+
+    def sliderValueChanged(self, value, oldValue):
+        self.waveWidget.setValue(value)
+        self.valueChanged.emit(value, oldValue)
+        self.setStatusTip()
+
+    def setStatusTip(self):
+        realFract = (abs(self.fract) & 127)
+#        cardinal = getCardinal(realFract + 1)
+        if realFract <= len(self.names):
+            label = self.names[realFract - 1]
+        else:
+            label = '{} harmonic'.format(getCardinal(realFract))
+        statusText = '{} ({:.02f}%)'.format(label, self.slider.value * 100)
+        QtWidgets.QWidget.setStatusTip(self, statusText)
+        if isinstance(self.sender(), TransformWidget) and not self.selector.isChecked():
+            return
+        QtWidgets.QApplication.sendEvent(self.window(), QtGui.QStatusTipEvent(self.statusTip()))
+ 
+    def contextMenuEvent(self, event):
+        event.accept()
+        if event.pos() in self.waveWidget.geometry():
+            self.showWaveMenu()
+
+    def showWaveMenu(self):
+        self.menuActionGroup.actions()[abs(self.fract) >> 7].setChecked(True)
+        res = self.menu.exec_(self.mapToGlobal(self.waveWidget.geometry().bottomLeft()))
+        if res is not None and res.data() is not None:
+            fract = (abs(self.fract) & 127) + (res.data() << 7)
+            if self.fract < 0:
+                fract *= -1
+            self.setFract(fract)
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter(self)
+        qp.setPen(QtCore.Qt.white)
+        qp.setBrush(QtCore.Qt.white)
+        qp.drawText(self.fakeCombo.geometry().adjusted(0, 0, -self.arrowWidth, 0), QtCore.Qt.AlignCenter, '/{}'.format(abs(self.fract) & 127))
+        qp.setRenderHints(qp.Antialiasing)
+        qp.translate(self.rect().right() - self.arrowWidth / 2 - .5, self.fakeCombo.geometry().center().y() + .5)
+        qp.drawPath(self.arrowPath)
+
+
+class AddSliderButton(QtWidgets.QPushButton):
+    def __init__(self):
+        QtWidgets.QPushButton.__init__(self, ' + ')
+        palette = self.palette()
+        palette.setColor(palette.ButtonText, QtCore.Qt.white)
+        font = self.font()
+        font.setPointSizeF(font.pointSize() * 1.5)
+        self.setFont(font)
+        self.setPalette(palette)
+        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Expanding))
+        self.setStyleSheet('''
+            QPushButton {{
+                border: 1px solid rgba({});
+                border-style: outset;
+                border-radius: 4px;
+                margin: 4px;
+                background: rgba(128, 128, 128, 128);
+            }}
+            QPushButton:hover {{
+                background: rgba(128, 128, 128, 192);
+            }}
+            QPushButton:pressed {{
+                border-style: inset;
+            }}
+        '''.format(', '.join(str(c) for c in waveColors[0].getRgb()[:3])))
+
+
 class HarmonicsSlider(QtWidgets.QWidget):
     baseSize = QtCore.QSize(24, 80)
     basePen = basePenEnabled = QtGui.QPen(QtGui.QColor(64, 192, 216))
@@ -326,15 +881,12 @@ class HarmonicsSlider(QtWidgets.QWidget):
         self.setMouseTracking(True)
         self.interactive = interactive
         self.arrow = False
-#        self.polarity = polarity
         self.setFract(fract)
-#        self.value = 0
         self.labelFont = self.font()
         self._selected = False
         fontHeight = self.fontMetrics().height() * 1.5
         self.baseSize = QtCore.QSize(self.baseSize)
         self.sliderRect = QtCore.QRect(QtCore.QPoint(0, 0), self.baseSize)
-#        self.curvePath = QtGui.QPainterPath()
         if not interactive:
             self.baseSize.setHeight(self.baseSize.height() + fontHeight)
             self.setMinimumSize(self.baseSize)
@@ -381,8 +933,8 @@ class HarmonicsSlider(QtWidgets.QWidget):
     def setStatusTip(self, emit=False):
 #        strValue = '{:.02f}'.format(self.value * 50).rstrip('0').rstrip('.')
         statusText = '{} ({:.02f}%)'.format(self.statusName, self.value * 100)
-        if self.fract >> 7:
-            statusText += WaveLabels[abs(self.fract >> 7)]
+        if abs(self.fract) >> 7:
+            statusText += ' ' + WaveLabels[abs(self.fract >> 7)].lower()
         if self.fract < 0:
             statusText += ' negative'
         QtWidgets.QWidget.setStatusTip(self, statusText)
@@ -501,7 +1053,7 @@ class HarmonicsSlider(QtWidgets.QWidget):
 #        self.curvePath = self.positivePath if self.polarity > 0 else self.negativePath
         y = self.panelRect.height() / 2.
         count = self.panelRect.width() - 4
-        values = waveFunction[self.fract >> 7](1, count)
+        values = waveFunction[abs(self.fract) >> 7](1, count)
 #        ratio = self.value / 2.
         for x, v in zip(range(count), values):
             self.positivePath.lineTo(x, -v * y * self.value)
@@ -1141,6 +1693,7 @@ class KeyFrameView(QtWidgets.QGraphicsView):
     startMouse = currentItem = None
     selectionPen = QtGui.QPen(QtGui.QColor(40, 120, 255, 192), 2)
     selectionBrush = QtGui.QColor(40, 60, 220, 128)
+    microRect = QtCore.QRectF(0, 0, 10, 60)
 
     def __init__(self, *args, **kwargs):
         QtWidgets.QGraphicsView.__init__(self, *args, **kwargs)
@@ -1168,6 +1721,8 @@ class KeyFrameView(QtWidgets.QGraphicsView):
         if isinstance(item, SampleItem):
             self.currentItem = item
         QtWidgets.QGraphicsView.mousePressEvent(self, event)
+        if not self.scene().maximized and self.scene().hoverMode:
+            self.viewport().update()
 
     def mouseMoveEvent(self, event):
         if event.buttons() & QtCore.Qt.LeftButton and self.startMouse:
@@ -1182,6 +1737,8 @@ class KeyFrameView(QtWidgets.QGraphicsView):
                     self.viewport().update()
                 elif self.scene().selectedItems():
                     self.startDrag()
+        elif not self.scene().maximized and self.scene().hoverMode:
+            self.viewport().update()
         QtWidgets.QGraphicsView.mouseMoveEvent(self, event)
 
     def mouseReleaseEvent(self, event):
@@ -1189,6 +1746,11 @@ class KeyFrameView(QtWidgets.QGraphicsView):
         self.setDragMode(self.NoDrag)
         QtWidgets.QGraphicsView.mouseReleaseEvent(self, event)
         self.viewport().update()
+
+    def focusInEvent(self, event):
+        if not self.scene().maximized and self.scene().hoverMode:
+            self.viewport().update()
+        QtWidgets.QGraphicsView.focusInEvent(self, event)
 
     def startDrag(self):
         ratio = self.transform().m11()
@@ -1227,6 +1789,11 @@ class KeyFrameView(QtWidgets.QGraphicsView):
         self.dragObject.setMimeData(mimeData)
         self.dragObject.exec_(QtCore.Qt.CopyAction|QtCore.Qt.MoveAction)
 
+    def wheelEvent(self, event):
+        event = QtGui.QWheelEvent(event.pos(), -event.delta(), event.buttons(), event.modifiers(), QtCore.Qt.Horizontal)
+        QtWidgets.QApplication.sendEvent(self.horizontalScrollBar(), event)
+#        self.horizontalScrollBar().wheelEvent(event)
+
     def paintEvent(self, event):
         QtWidgets.QGraphicsView.paintEvent(self, event)
         if self.dragMode() == self.RubberBandDrag:
@@ -1234,6 +1801,80 @@ class KeyFrameView(QtWidgets.QGraphicsView):
             qp.setPen(self.selectionPen)
             qp.setBrush(self.selectionBrush)
             qp.drawPath(self.scene().selectionArea())
+        elif self.scene().hoverMode:
+            localPos = self.mapFromGlobal(QtGui.QCursor.pos())
+            item = self.itemAt(localPos)
+            first = self.keyFrames[0]
+            if isinstance(item, (WaveTransformItem, SampleItem)):
+                index = self.keyFrames.getLayoutIndex(item)
+                if not item.boundingRect().width():
+                    index -= 1
+                    item = self.keyFrames.itemAt(index)
+                if not index:
+                    return
+                qp = QtGui.QPainter(self.viewport())
+                qp.setRenderHints(qp.Antialiasing)
+                scenePos = self.mapToScene(localPos)
+                delta = (item.mapFromScene(scenePos).x() - item.hoverRect.center().x()) * 2
+                
+                qp.translate(-delta + self.mapFromScene(item.pos()).x(), item.y())
+                item.paint(qp, None, None, item.hoverRect)
+                if index > 1:
+                    qp.save()
+#                    qp.setOpacity((20 - delta) / 20.)
+                    qp.translate(-60, 0)
+                    beforeIndex = index - 1
+                    item = self.keyFrames.itemAt(beforeIndex)
+                    if not item.boundingRect().width():
+                        beforeIndex -= 1
+                        item = self.keyFrames.itemAt(beforeIndex)
+                    item.paint(qp, None, None, item.hoverRect.adjusted(20 + delta, 0, 0, 0))
+                    qp.restore()
+                    qp.save()
+                    try:
+#                        qp.setOpacity((20 - delta) / 40.)
+                        qp.translate(delta - 70, 0)
+                        for _ in range(4):
+                            beforeIndex -= 1
+                            item = self.keyFrames.itemAt(beforeIndex)
+                            if not item.boundingRect().width():
+                                beforeIndex -= 1
+                                item = self.keyFrames.itemAt(beforeIndex)
+                            if item == first:
+                                break
+                            item.paint(qp, None, None, self.microRect)
+                            qp.translate(-10, 0)
+                    except:
+                        pass
+                    qp.restore()
+                try:
+#                    qp.setOpacity((20 + delta) / 20.)
+                    restored = False
+                    qp.save()
+                    qp.translate(60, 0)
+                    index += 1
+                    item = self.keyFrames.itemAt(index)
+                    if not item.boundingRect().width():
+                        index += 1
+                        item = self.keyFrames.itemAt(index)
+                    item.paint(qp, None, None, item.hoverRect.adjusted(0, 0, -20 + delta, 0))
+                    qp.restore()
+                    restored = True
+                    qp.translate(80 + delta, 0)
+                    try:
+                        for _ in range(4):
+                            index += 1
+                            item = self.keyFrames.itemAt(index)
+                            if not item.boundingRect().width():
+                                index += 1
+                                item = self.keyFrames.itemAt(index)
+                            item.paint(qp, None, None, self.microRect)
+                            qp.translate(10, 0)
+                    except:
+                        pass
+                except:
+                    if not restored:
+                        qp.restore()
 
 
 class WaveView(QtWidgets.QGraphicsView):

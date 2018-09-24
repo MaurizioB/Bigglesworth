@@ -478,13 +478,13 @@ class SampleItem(QtWidgets.QGraphicsWidget):
 ##            self.updateGeometry()
 
     def hoverEnterEvent(self, event):
-        if self.index and not self.scene().maximized:
+        if self.index and not self.scene().maximized and not self.scene().hoverMode:
             self._rect = self.hoverRect
             self.prepareGeometryChange()
             self.setZValue(1)
 
     def hoverLeaveEvent(self, event):
-        if self.index and not self.scene().maximized:
+        if self.index and not self.scene().maximized and not self.scene().hoverMode:
             self.prepareGeometryChange()
             self.minimize()
         self.setZValue(0)
@@ -508,13 +508,15 @@ class SampleItem(QtWidgets.QGraphicsWidget):
         return self._size
 
     def boundingRect(self):
-        return self._rect.adjusted(-2, 0, 2, 0) if self.index and not self.scene().maximized else self.normalRect
+        return self._rect.adjusted(-2, 0, 2, 0) if self.index and not self.scene().maximized and not self.scene().hoverMode else self.normalRect
 
     def shape(self):
         return self._shape
 
-    def paint(self, qp, option=None, widget=None):
+    def paint(self, qp, option=None, widget=None, hoverRect=False):
 #        qp.setPen(QtGui.QPen(QtCore.Qt.red, 2, QtCore.Qt.DotLine))
+        rect = hoverRect if hoverRect else self._rect
+        qp.save()
         qp.save()
         if self.highlighted:
             qp.setPen(self.borderHighlightPen)
@@ -525,13 +527,13 @@ class SampleItem(QtWidgets.QGraphicsWidget):
         else:
             qp.setPen(self.borderNormalPen)
             qp.setBrush(self.normalBrush)
-        qp.drawRect(self._rect)
+        qp.drawRect(rect)
         qp.restore()
-        sampleRect = self._rect.adjusted(1, 1, -1, - self.fontHeight - 2)
+        sampleRect = rect.adjusted(1, 1, -1, - self.fontHeight - 2)
         qp.setBrush(self.sampleBackground)
         qp.drawRect(sampleRect)
         qp.setBrush(QtCore.Qt.NoBrush)
-        indexRect = self._rect.adjusted(1, sampleRect.height() + 1, -1, -1)
+        indexRect = rect.adjusted(1, sampleRect.height() + 1, -1, -1)
         qp.setFont(self.font())
         qp.setPen(QtCore.Qt.white)
         index = self.index
@@ -543,15 +545,20 @@ class SampleItem(QtWidgets.QGraphicsWidget):
         else:
             text = 'START'
         qp.drawText(indexRect, QtCore.Qt.AlignCenter, text)
-        hRatio = (self._rect.width() - 2) / self.previewPath.boundingRect().width()
+        hRatio = (rect.width() - 2) / self.previewPath.boundingRect().width()
         vRatio = (sampleRect.height() - 2) / self.previewPathMaxHeight
         qp.translate(1, sampleRect.center().y())
         qp.scale(hRatio, vRatio)
         qp.save()
-        qp.translate(self._rect.left() / hRatio, 0)
+        try:
+            qp.translate(rect.left() / hRatio, 0)
+        except:
+            pass
         qp.setPen(self.wavePen)
         qp.drawPath(self.previewPath)
         qp.restore()
+        qp.restore()
+
 
 
 
@@ -1019,13 +1026,13 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
         return self.modeLabels[self.mode]
 
     def hoverEnterEvent(self, event):
-        if not self.scene().maximized:
+        if not self.scene().maximized and not self.scene().hoverMode:
             self._rect = self.hoverRect
             self.prepareGeometryChange()
             self.setZValue(1)
 
     def hoverLeaveEvent(self, event):
-        if not self.scene().maximized:
+        if not self.scene().maximized and not self.scene().hoverMode:
             self.prepareGeometryChange()
             self.minimize()
         self.setZValue(0)
@@ -1058,50 +1065,52 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
         self.pressed.emit(True)
         QtWidgets.QGraphicsWidget.mouseDoubleClickEvent(self, event)
 
-    def paint(self, qp, option, widget):
+    def paint(self, qp, option, widget, hoverRect=False):
         if self.isValid() and self.isContiguous():
             return
+
+        rect = hoverRect if hoverRect else self._rect
 
         if not self.isValid() and self.nextItem is not None:
             qp.setPen(self.invalidPen)
             qp.setBrush(self.invalidBrush)
-            qp.drawRect(self._rect)
+            qp.drawRect(rect)
         else:
             #TODO: full paint necessario post rimozione di SampleItem, quindi disegna comunque
             qp.setPen(self.borderNormalPen)
             qp.setBrush(self.normalBrush)
-            qp.drawRect(self._rect.adjusted(0, -1, 0, 1))
+            qp.drawRect(rect.adjusted(0, -1, 0, 1))
             qp.setPen(QtCore.Qt.white)
-        y = self._rect.center().y() - self.deltaY
-        right = self._rect.width() - 2
-#        qp.translate(self._rect.left(), 0)
+        y = rect.center().y() - self.deltaY
+        right = rect.width() - 2
+#        qp.translate(rect.left(), 0)
         qp.save()
         if not self.mode:
-            qp.translate(self._rect.left(), 0)
+            qp.translate(rect.left(), 0)
             qp.drawLine(1, y, right, y)
-            normY = self._rect.height() * .2
+            normY = rect.height() * .2
             qp.drawLine(right, y - normY, right, y + normY)
         else:
 #            qp.save()
             qp.setPen(self.pathPen)
             qp.setBrush(QtCore.Qt.NoBrush)
-            if self._rect == self.minimizedRect:
-                qp.translate(self._rect.center().x(), self._rect.center().y() - self.deltaY)
+            if rect == self.minimizedRect:
+                qp.translate(rect.center().x(), rect.center().y() - self.deltaY)
                 ratio = (right / self.normalTransformPath.boundingRect().width())
                 qp.scale(ratio, ratio)
                 qp.drawPath(self.minimizedTransformPath)
             else:
-                qp.translate(self._rect.center().x(), self._rect.center().y() * .5)
+                qp.translate(rect.center().x(), rect.center().y() * .5)
 #                ratio = (y - self.deltaY) / self.normalTransformPath.boundingRect().height()
                 ratio = (y - self.deltaY) / SampleItem.previewPathMaxHeight * .8
                 qp.scale(ratio, ratio)
-#                qp.translate(self._rect.left() * ratio, 0)
+#                qp.translate(rect.left() * ratio, 0)
                 qp.drawPath(self.normalTransformPath)
         qp.restore()
-        if self._rect != self.minimizedRect:
-            qp.drawText(self._rect.adjusted(1, 0, -1, 0), QtCore.Qt.AlignHCenter|QtCore.Qt.AlignBottom, self.modeLabel)
+        if rect != self.minimizedRect:
+            qp.drawText(rect.adjusted(1, 0, -1, 0), QtCore.Qt.AlignHCenter|QtCore.Qt.AlignBottom, self.modeLabel)
         elif self.mode:
-            qp.drawText(self._rect.adjusted(1, 0, -1, 0), QtCore.Qt.AlignHCenter|QtCore.Qt.AlignBottom, self.modeLabel[0])
+            qp.drawText(rect.adjusted(1, 0, -1, 0), QtCore.Qt.AlignHCenter|QtCore.Qt.AlignBottom, self.modeLabel[0])
 
 
 class KeyFrameContainer(QtWidgets.QGraphicsWidget):
@@ -1255,6 +1264,7 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
         self.currentDropPos = self.OnItem
         self.currentSelection = None
         self.maximized = False
+        self.hoverMode = True
 
     def keyFrameAdded(self, keyFrame):
         keyFrame.deleteRequested.connect(lambda: self.deleteRequested.emit(keyFrame))
@@ -1431,15 +1441,20 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
             minimizeAction = menu.addAction(QtGui.QIcon.fromTheme('zoom-out'), 'Minimize all items')
         else:
             minimizeAction = menu.addAction(QtGui.QIcon.fromTheme('zoom-in'), 'Maximize all items')
+        disableHoverMode = menu.addAction(QtGui.QIcon.fromTheme('input-mouse'), '{}able hover mode'.format('Dis' if self.hoverMode else 'En'))
+        if self.maximized:
+            disableHoverMode.setEnabled(False)
 
         res = menu.exec_(QtGui.QCursor.pos())
-        if res == minimizeAction:
+        if res == disableHoverMode:
+            self.setHoverMode(not self.hoverMode)
+        elif res == minimizeAction:
             self.maximized = not self.maximized
             self.keyFrameContainer.setMaximized(self.maximized)
             if not self.maximized:
                 self.view.ensureVisible(self.keyFrames[0], yMargin=yMargin)
-                QtCore.QTimer.singleShot(0, lambda: self.setSceneRect(self.keyFrameContainer.geometry()))
             self.view.viewport().update()
+            QtCore.QTimer.singleShot(1, lambda: self.view.setSceneRect(self.keyFrameContainer.geometry()))
         elif res in (insertBeforeAction, insertAfterAction):
 #            self.createKeyFrameAtLayoutIndex(res.data())
             self.createKeyFrameRequested.emit(res.data(), None, res == insertAfterAction)
@@ -1454,6 +1469,10 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
             if not self.maximized and \
                 (isinstance(underMouse, WaveTransformItem) or (underMouse.index and not underMouse.final)):
                     QtCore.QTimer.singleShot(500, underMouse.minimize)
+
+    def setHoverMode(self, mode):
+        self.hoverMode = mode
+        self.view.viewport().update()
 
 #    def getTransformValues(self, index, keyFrameIndex):
 #        layout = self.keyFrameContainer.layout()
