@@ -369,7 +369,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             AboutDialog(self).exec_()
 
-    def closeEvent(self, event):
+    def saveLayout(self):
         self.main.settings.setValue('sessionLayoutLeft', self.leftTabWidget.collections)
         self.main.settings.setValue('sessionLayoutRight', self.rightTabWidget.collections)
         self.main.settings.setValue('sessionPanelLayout', self.panelLayout)
@@ -377,6 +377,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.main.settings.setValue('sessionPanelSizes', self.splitter.saveState())
         else:
             self.main.settings.remove('sessionPanelSizes')
+        self.main.settings.sync()
+
+    def closeEvent(self, event):
+        self.saveLayout()
         QtWidgets.QMainWindow.closeEvent(self, event)
         self.closed.emit()
 
