@@ -2,6 +2,30 @@ from bisect import bisect_left
 
 from Qt import QtCore, QtGui, QtWidgets
 
+
+class ShrinkButton(QtWidgets.QPushButton):
+    _text = ''
+    shrunk = False
+
+    def setText(self, text):
+        self._text = text
+        self.checkShrink()
+#        QtWidgets.QPushButton.setText(self, text)
+
+    def setShrunk(self, shrunk):
+        if shrunk == self.shrunk and ((shrunk and not self.text()) or (not shrunk and self.text())):
+            return
+        QtWidgets.QPushButton.setText(self, self._text if not shrunk else '')
+
+    def checkShrink(self):
+        possible = self.fontMetrics().boundingRect(self.rect(), QtCore.Qt.AlignCenter, self._text).width() + self.iconSize().width() * 2
+        self.setShrunk(possible > self.width())
+
+    def resizeEvent(self, event):
+        if self.isVisible():
+            self.checkShrink()
+
+
 class IconSelector(QtWidgets.QToolButton):
     dirIterator = QtCore.QDirIterator(':', QtCore.QDirIterator.Subdirectories)
     icons = set()

@@ -1071,7 +1071,7 @@ class Bigglesworth(QtWidgets.QApplication):
         factoryIndex = factoryPresets.index(factory)
         pos = (factoryIndex * 8 + bank + 1) / .24
         status = '{} ({} of 3) {}%'.format(factoryPresetsNamesDict[factory], factoryIndex + 1, int(pos))
-        self.splash.showMessage('Creating factory database, please wait... {}'.format(status), QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .25 + pos * .0025)
+        self.splash.showMessage('Creating factory database, please wait...\n{}'.format(status), QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .25 + pos * .0025)
 
     def exec_(self):
         #TODO: fix, maybe with some polished signal from the splash?

@@ -995,6 +995,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         else:
             self.waveTableDock.setFloating(True)
             self.waveTableDock.setVisible(False)
+        if sys.platform == 'darwin':
             self.waveTableDock.setFloating(False)
         hoverMode = self.settings.value('hoverMode', True, bool)
         self.settings.endGroup()

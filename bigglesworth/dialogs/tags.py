@@ -406,12 +406,17 @@ class DeleteDelegate(QtWidgets.QStyledItemDelegate):
         QtWidgets.QStyledItemDelegate.__init__(self, *args, **kwargs)
         self.delIcon = QtGui.QIcon.fromTheme('edit-delete')
 
+    def sizeHint(self, option, index):
+        hint = QtWidgets.QStyledItemDelegate.sizeHint(self, option, index)
+        hint.setWidth(20)
+        return hint
+
     def paint(self, qp, option, index):
         self.initStyleOption(option, index)
-        iconSize = option.decorationSize.width()
         QtWidgets.QStyledItemDelegate.paint(self, qp, option, index)
         if not index.flags() & QtCore.Qt.ItemIsEnabled:
             return
+        iconSize = option.decorationSize.width()
         iconRect = QtCore.QRect((option.rect.width() - iconSize) / 2, (option.rect.height() - iconSize) / 2, iconSize, iconSize)
         qp.save()
         qp.translate(option.rect.x(), option.rect.y())

@@ -1567,6 +1567,12 @@
         <bool>true</bool>
        </property>
        <widget class="QWidget" name="localWaveTableTab">
+        <property name="minimumSize">
+         <size>
+          <width>150</width>
+          <height>0</height>
+         </size>
+        </property>
         <attribute name="title">
          <string>Local</string>
         </attribute>
@@ -1601,8 +1607,11 @@
          </item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_8">
+           <property name="sizeConstraint">
+            <enum>QLayout::SetMaximumSize</enum>
+           </property>
            <item>
-            <widget class="QPushButton" name="newBtn">
+            <widget class="ShrinkButton" name="newBtn">
              <property name="text">
               <string>New</string>
              </property>
@@ -1613,7 +1622,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="duplicateBtn">
+            <widget class="ShrinkButton" name="duplicateBtn">
              <property name="enabled">
               <bool>false</bool>
              </property>
@@ -1627,7 +1636,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="deleteBtn">
+            <widget class="ShrinkButton" name="deleteBtn">
              <property name="enabled">
               <bool>false</bool>
              </property>
@@ -1674,6 +1683,12 @@
         </layout>
        </widget>
        <widget class="QWidget" name="blofeldWaveTableTab">
+        <property name="minimumSize">
+         <size>
+          <width>150</width>
+          <height>0</height>
+         </size>
+        </property>
         <attribute name="title">
          <string>Blofeld</string>
         </attribute>
@@ -1722,7 +1737,7 @@
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_10">
            <item>
-            <widget class="QPushButton" name="applyBtn">
+            <widget class="ShrinkButton" name="applyBtn">
              <property name="enabled">
               <bool>false</bool>
              </property>
@@ -1736,12 +1751,12 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="dumpAllBtn">
+            <widget class="ShrinkButton" name="dumpAllBtn">
              <property name="enabled">
               <bool>false</bool>
              </property>
              <property name="text">
-              <string>Dump all wavetables</string>
+              <string>Dump all tables</string>
              </property>
             </widget>
            </item>
@@ -1916,6 +1931,11 @@
    <class>WaveSelectionCombo</class>
    <extends>QComboBox</extends>
    <header>bigglesworth.wavetables.widgets</header>
+  </customwidget>
+  <customwidget>
+   <class>ShrinkButton</class>
+   <extends>QPushButton</extends>
+   <header>bigglesworth.widgets</header>
   </customwidget>
  </customwidgets>
  <resources/>

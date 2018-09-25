@@ -661,6 +661,7 @@ class AudioImportTab(QtWidgets.QWidget):
         self.fileSystemView.setColumnHidden(3, True)
         self.fileSystemView.horizontalHeader().setResizeMode(0, QtWidgets.QHeaderView.Stretch)
         self.fileSystemView.horizontalHeader().setResizeMode(1, QtWidgets.QHeaderView.Fixed)
+        self.fileSystemView.setColumnWidth(1, self.fontMetrics().width(' Size ') * 2)
         self.fileSystemView.doubleClicked.connect(self.setCurrentDirectory)
         self.fileSystemView.clicked.connect(self.fileSelected)
         self.fileSystemView.customContextMenuRequested.connect(self.fileSystemMenu)

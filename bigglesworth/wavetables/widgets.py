@@ -2178,6 +2178,8 @@ class IndexSlider(QtWidgets.QSlider):
         self.updateTicks()
 
     def paintEvent(self, event):
+        if sys.platform == 'darwin':
+            QtWidgets.QSlider.paintEvent(self, event)
         qp = QtGui.QPainter(self)
         qp.setRenderHints(qp.Antialiasing)
         qp.setClipRegion(self.ticksRegion)
@@ -2186,7 +2188,8 @@ class IndexSlider(QtWidgets.QSlider):
         for x in self.tickPositions:
             qp.drawLine(x, 0, x, self.height() + 1)
 
-        QtWidgets.QSlider.paintEvent(self, event)
+        if sys.platform != 'darwin':
+            QtWidgets.QSlider.paintEvent(self, event)
 
 
 class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
@@ -2474,6 +2477,8 @@ class WaveTableDock(QtWidgets.QDockWidget):
         QtWidgets.QDockWidget.__init__(self, *args, **kwargs)
         self.topLevelChanged.connect(self.setState)
         self.settings = QtCore.QSettings()
+        if sys.platform == 'darwin':
+            self.setFeatures((self.features()|self.DockWidgetFloatable) ^ self.DockWidgetFloatable)
 
     @property
     def localWaveTableList(self):

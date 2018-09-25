@@ -16,6 +16,12 @@
   <layout class="QHBoxLayout" name="horizontalLayout">
    <item>
     <widget class="QWidget" name="browsePanel" native="true">
+     <property name="minimumSize">
+      <size>
+       <width>150</width>
+       <height>0</height>
+      </size>
+     </property>
      <layout class="QGridLayout" name="gridLayout">
       <item row="0" column="0">
        <widget class="AdvancedSplitter" name="fileSplitter">
@@ -660,12 +666,6 @@
  <layoutdefault spacing="2" margin="2"/>
  <customwidgets>
   <customwidget>
-   <class>SwitchablePanel</class>
-   <extends>QWidget</extends>
-   <header>bigglesworth.wavetables.widgets</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>VolumeSlider</class>
    <extends>QSlider</extends>
    <header>bigglesworth.wavetables.widgets</header>
@@ -674,6 +674,12 @@
    <class>VolumeIcon</class>
    <extends>QLabel</extends>
    <header>bigglesworth.wavetables.widgets</header>
+  </customwidget>
+  <customwidget>
+   <class>SwitchablePanel</class>
+   <extends>QWidget</extends>
+   <header>bigglesworth.wavetables.widgets</header>
+   <container>1</container>
   </customwidget>
   <customwidget>
    <class>CollapsibleGroupBox</class>

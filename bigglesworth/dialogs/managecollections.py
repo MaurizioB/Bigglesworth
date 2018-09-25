@@ -51,6 +51,11 @@ class DeleteDelegate(QtWidgets.QStyledItemDelegate):
     def displayText(self, *args):
         return ''
 
+    def sizeHint(self, option, index):
+        hint = QtWidgets.QStyledItemDelegate.sizeHint(self, option, index)
+        hint.setWidth(20)
+        return hint
+
     def paint(self, qp, option, index):
         self.initStyleOption(option, index)
         QtWidgets.QStyledItemDelegate.paint(self, qp, option, QtCore.QModelIndex())
