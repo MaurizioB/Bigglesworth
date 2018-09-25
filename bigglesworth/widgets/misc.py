@@ -1,3 +1,4 @@
+import sys
 from bisect import bisect_left
 
 from Qt import QtCore, QtGui, QtWidgets
@@ -42,7 +43,7 @@ class IconSelector(QtWidgets.QToolButton):
     icons.insert(0, '')
     currentIndex = 1
 
-    iconChanged = QtCore.pyqtSignal(QtGui.QIcon)
+    iconChanged = QtCore.pyqtSignal([QtGui.QIcon], [str])
 
     def __init__(self, *args, **kwargs):
         QtWidgets.QToolButton.__init__(self, *args, **kwargs)
@@ -52,8 +53,12 @@ class IconSelector(QtWidgets.QToolButton):
             if not icon.isNull() or not iconName:
                 iconAction = menu.addAction(QtGui.QIcon.fromTheme(iconName), '')
                 iconAction.triggered.connect(self.setCurrentIcon)
+                iconAction.setData(iconName)
         self.setMenu(menu)
         self.clicked.connect(lambda: menu.exec_(QtGui.QCursor.pos()))
+
+    def iconName(self):
+        return self.icons[self.currentIndex]
 
     def setIconName(self, name=''):
         try:
@@ -66,8 +71,11 @@ class IconSelector(QtWidgets.QToolButton):
     def setCurrentIcon(self):
         icon = self.sender().icon()
         self.setIcon(icon)
-        self.currentIndex = self.icons.index(icon.name())
-        self.iconChanged.emit(icon)
+        self.currentIndex = self.icons.index(self.sender().data())
+        if sys.platform == 'darwin':
+            self.iconChanged[str].emit(self.icons[self.currentIndex])
+        else:
+            self.iconChanged.emit(icon)
 
     def wheelEvent(self, event):
         if event.delta() < 0:
@@ -77,7 +85,10 @@ class IconSelector(QtWidgets.QToolButton):
         self.currentIndex = max(0, min(self.currentIndex + delta, len(self.icons) - 1))
         icon = QtGui.QIcon.fromTheme(self.icons[self.currentIndex])
         self.setIcon(icon)
-        self.iconChanged.emit(icon)
+        if sys.platform == 'darwin':
+            self.iconChanged[str].emit(self.icons[self.currentIndex])
+        else:
+            self.iconChanged.emit(icon)
 
 
 class DeltaSpin(QtWidgets.QSpinBox):

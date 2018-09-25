@@ -16,7 +16,7 @@ class NewCollectionDialog(QtWidgets.QDialog):
         self.nameEdit.setValidator(self.validator)
 
     def currentIconName(self):
-        return self.iconBtn.icon().name()
+        return self.iconBtn.iconName()
 
     def cloneSet(self, index):
         if any((self.nameEdit.isUndoAvailable(), self.nameEdit.isRedoAvailable())):

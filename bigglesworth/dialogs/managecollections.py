@@ -1,3 +1,4 @@
+import sys
 from Qt import QtCore, QtGui, QtWidgets, QtSql
 
 from bigglesworth.utils import loadUi
@@ -97,7 +98,10 @@ class ManageCollectionsDialog(QtWidgets.QDialog):
         self.addBtn.clicked.connect(self.addCollection)
         self.delBtn.clicked.connect(self.delCollection)
         self.copyBtn.clicked.connect(self.copyCollection)
-        self.iconBtn.iconChanged.connect(self.iconChanged)
+        if sys.platform == 'darwin':
+            self.iconBtn.iconChanged[str].connect(self.iconChanged)
+        else:
+            self.iconBtn.iconChanged.connect(self.iconChanged)
         self.iconBtn.setIconName()
 
     def dataChanged(self, *args):
@@ -137,8 +141,13 @@ class ManageCollectionsDialog(QtWidgets.QDialog):
 
     def iconChanged(self, icon):
         index = self.collectionsView.currentIndex().sibling(self.collectionsView.currentIndex().row(), 1)
+        if sys.platform == 'darwin':
+            iconName = icon
+            icon = QtGui.QIcon.fromTheme(icon)
+        else:
+            iconName = icon.name()
         self.model.setData(index, icon, QtCore.Qt.DecorationRole)
-        self.model.setData(index, icon.name() if not icon.isNull() else None, IconRole)
+        self.model.setData(index, iconName if not icon.isNull() else None, IconRole)
 
     def getUnique(self, name):
         subStr = ''
