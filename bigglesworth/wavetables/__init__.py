@@ -134,6 +134,8 @@ class GenericDrawUndo(QtWidgets.QUndoCommand):
         QtWidgets.QUndoCommand.__init__(self)
         self.main = main
         self.keyFrames = main.keyFrames
+        if mouseMode & WaveScene.Clip:
+            mouseMode = WaveScene.Clip
         self.mouseMode = mouseMode
         self.index = keyFrame.index
         self.oldValues = keyFrame.values[:]
@@ -875,6 +877,22 @@ class TestMidiDevice(QtCore.QObject):
         outputEvent(mdSysExEvent(1, event.sysex))
 
 
+class MiniButton(QtWidgets.QPushButton):
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QPushButton.__init__(self, *args, **kwargs)
+        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum))
+        self.setStyleSheet('''
+            MiniButton {
+                border: 1px solid darkGray;
+                border-style: outset;
+                border-radius: 2px;
+            }
+            MiniButton:pressed {
+                border-style: inset;
+            }
+        ''')
+
+
 class WaveTableWindow(QtWidgets.QMainWindow):
     midiDevice = None
     shown = False
@@ -1186,13 +1204,44 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.waveScene.genericDraw.connect(self.genericDraw)
         self.waveScene.genericDraw[int, object, object, object].connect(self.genericDraw)
         self.waveScene.waveTransform.connect(self.waveTransform)
+
+        self.clipPanel.setVisible(False)
+        self.clipModeGroup.setId(self.clipVerticalBtn, 1)
+        self.clipModeGroup.setId(self.clipFreeBtn, 2)
+
+        self.selectionPanel.setVisible(False)
+        self.selectionPlusBtn = MiniButton('+')
+        self.plusMinusLayout.addWidget(self.selectionPlusBtn)
+        self.selectionMinusBtn = MiniButton('-')
+        self.plusMinusLayout.addWidget(self.selectionMinusBtn)
+        width = max(self.selectionMinusBtn.minimumSizeHint().width(), self.selectionPlusBtn.minimumSizeHint().width()) + 4
+        self.selectionMinusBtn.setFixedWidth(width)
+        self.selectionPlusBtn.setFixedWidth(width)
+        self.selectionPanelModel = QtGui.QStandardItemModel()
+        self.selectionListView.setModel(self.selectionPanelModel)
+        self.selectionDelegate = CheckBoxDelegate(tinyNumber=True)
+        self.selectionDelegate.sizeHint = lambda *args: QtCore.QSize(20, 20)
+        self.selectionListView.setItemDelegate(self.selectionDelegate)
+        self.selectionListView.setSpacing(2)
+        self.selectAllBtn.clicked.connect(self.selectAll)
+        self.selectNoneBtn.clicked.connect(self.selectNone)
+        self.selectEvenBtn.clicked.connect(self.selectEven)
+        self.selectOddBtn.clicked.connect(self.selectOdd)
+        self.selectionPlusBtn.clicked.connect(self.addSelectionItem)
+        self.selectionMinusBtn.clicked.connect(self.delSelectionItem)
+        sb = self.selectionListView.horizontalScrollBar()
+        self.selectionLeftBtn.clicked.connect(lambda: sb.triggerAction(sb.SliderSingleStepSub))
+        self.selectionRightBtn.clicked.connect(lambda: sb.triggerAction(sb.SliderSingleStepAdd))
+        sb.actionTriggered.connect(self.checkSelectionScroll)
+        sb.rangeChanged.connect(self.checkSelectionScroll)
+
         self.harmonicsWidget.harmonicsChanged.connect(
             lambda harmonics: self.waveScene.harmonicsChanged(harmonics, self.waveTypeCombo.currentIndex(), self.addHarmonicsChk.isChecked()))
         self.addHarmonicsChk.toggled.connect(
             lambda state: self.waveScene.harmonicsChanged(self.harmonicsWidget.values, self.waveTypeCombo.currentIndex(), state))
         self.waveTypeCombo.currentIndexChanged.connect(
             lambda waveType: self.waveScene.harmonicsChanged(self.harmonicsWidget.values, waveType, self.addHarmonicsChk.isChecked()))
-        self.applyHarmonicsBtn.clicked.connect(self.applyHarmonics)
+        self.applyHarmonicsBtn.clicked.connect(self.applyAction)
         self.harmonicsPanel.setVisible(False)
         self.waveScene.selectionChanged.connect(self.checkWaveSceneSelection)
 
@@ -1216,6 +1265,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.mouseModeGroup.setId(self.shiftBtn, self.waveScene.Shift)
         self.mouseModeGroup.setId(self.gainBtn, self.waveScene.Gain)
         self.mouseModeGroup.setId(self.harmonicsBtn, self.waveScene.Harmonics)
+        self.mouseModeGroup.setId(self.clipBtn, self.waveScene.Clip + 1)
         self.noMouseModeBtn = QtWidgets.QPushButton()
         self.noMouseModeBtn.setCheckable(True)
         self.mouseModeGroup.addButton(self.noMouseModeBtn)
@@ -1223,9 +1273,18 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.harmonicsBtn.toggled.connect(lambda state: [self.harmonicsPanel.setVisible(state), self.harmonicsWidget.reset() if not state else None])
         self.discardHarmonicsBtn.clicked.connect(lambda: [self.noMouseModeBtn.setChecked(True), self.waveScene.setMouseMode(0)])
 
+        self.clipBtn.toggled.connect(self.activateClipMode)
+        self.clipTopBtn.toggled.connect(self.activateClipMode)
+        self.clipBottomBtn.toggled.connect(self.activateClipMode)
+        self.clipRestoreBtn.clicked.connect(self.waveScene.restoreNodes)
+        self.clipDiscardBtn.clicked.connect(lambda: self.noMouseModeBtn.setChecked(True))
+        self.clipApplyBtn.clicked.connect(self.applyAction)
+
+        self.selectBtn.toggled.connect(self.activateSelectPanel)
+
         self.showCrosshairChk.toggled.connect(self.waveScene.setCrosshair)
         self.snapCombo.currentIndexChanged.connect(self.waveScene.setSnapMode)
-        self.showNodesChk.toggled.connect(self.waveScene.setNodes)
+        self.showNodesChk.toggled.connect(self.waveScene.setNodesVisible)
 
         self.miniView.setScene(self.waveTableView.scene())
         self.miniView.setTransform(self.waveTableView.transform())
@@ -1491,6 +1550,93 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             self.player.setAudioDevice(device)
         self.player.setSampleRateConversion(conversion)
 
+    def activateClipMode(self):
+        activate = self.clipBtn.isChecked()
+        self.clipPanel.setVisible(activate)
+        mode = activate & self.clipModeGroup.checkedId()
+        if mode & WaveScene.ClipVertical:
+            if self.clipTopBtn.isChecked():
+                mode |= WaveScene.ClipTop
+            if self.clipBottomBtn.isChecked():
+                mode |= WaveScene.ClipBottom
+            if not mode & (WaveScene.ClipTop | WaveScene.ClipBottom):
+                if self.sender() == self.clipBottomBtn:
+                    self.clipTopBtn.blockSignals(True)
+                    self.clipTopBtn.setChecked(True)
+                    self.clipTopBtn.blockSignals(False)
+                    mode |= WaveScene.ClipTop
+                else:
+                    self.clipBottomBtn.blockSignals(True)
+                    self.clipBottomBtn.setChecked(True)
+                    self.clipBottomBtn.blockSignals(False)
+                    mode |= WaveScene.ClipBottom
+        self.waveScene.setClipMode(mode)
+
+    def addSelectionItem(self):
+        if self.selectionPanelModel.rowCount() < 16:
+            item = QtGui.QStandardItem()
+            item.setCheckState(0)
+            self.selectionPanelModel.appendRow(item)
+            QtWidgets.QApplication.processEvents()
+            self.selectionListView.horizontalScrollBar().triggerAction(QtWidgets.QScrollBar.SliderToMaximum)
+            self.checkSelectionPanel()
+        if self.selectionPanelModel.rowCount() >= 16:
+            self.selectionPlusBtn.setEnabled(False)
+        self.selectionMinusBtn.setEnabled(True)
+
+    def delSelectionItem(self):
+        if self.selectionPanelModel.rowCount() > 2:
+            self.selectionPanelModel.takeRow(self.selectionPanelModel.rowCount() - 1)
+            self.checkSelectionPanel()
+        if self.selectionPanelModel.rowCount() <= 2:
+            self.selectionMinusBtn.setEnabled(False)
+        self.selectionPlusBtn.setEnabled(True)
+
+    def activateSelectPanel(self, activate):
+        self.selectionPanel.setVisible(activate)
+        if activate:
+            for i in range(2):
+                item = QtGui.QStandardItem()
+                item.setCheckState(0)
+                self.selectionPanelModel.appendRow(item)
+            self.selectionPanelModel.dataChanged.connect(self.checkSelectionPanel)
+            self.selectionMinusBtn.setEnabled(False)
+        else:
+            try:
+                self.selectionPanelModel.dataChanged.disconnect(self.checkSelectionPanel)
+            except:
+                pass
+            self.selectionPanelModel.clear()
+
+    def selectAll(self):
+        [self.selectionPanelModel.item(r).setCheckState(2) for r in range(self.selectionPanelModel.rowCount())]
+
+    def selectNone(self):
+        [self.selectionPanelModel.item(r).setCheckState(0) for r in range(self.selectionPanelModel.rowCount())]
+
+    def selectEven(self):
+        if self.selectionPanelModel.rowCount() & 1:
+            self.addSelectionItem()
+        [self.selectionPanelModel.item(r).setCheckState(2 if r & 1 else 0) for r in range(self.selectionPanelModel.rowCount())]
+
+    def selectOdd(self):
+        if self.selectionPanelModel.rowCount() & 1:
+            self.addSelectionItem()
+        [self.selectionPanelModel.item(r).setCheckState(2 if not r & 1 else 0) for r in range(self.selectionPanelModel.rowCount())]
+
+    def checkSelectionPanel(self):
+#        if self.sender() in (self.selectionPlusBtn, self.selectionMinusBtn, self.selectionPanelModel):
+            self.waveScene.selectItems(self.selectionPanelModel.item(r).data(QtCore.Qt.CheckStateRole) for r in range(self.selectionPanelModel.rowCount()))
+
+    def checkSelectionScroll(self, action):
+        sb = self.sender()
+        if sb.minimum() == sb.maximum():
+            self.selectionLeftBtn.setEnabled(False)
+            self.selectionRightBtn.setEnabled(False)
+        else:
+            self.selectionLeftBtn.setEnabled(sb.value() > sb.minimum())
+            self.selectionRightBtn.setEnabled(sb.value() < sb.maximum())
+
     def midiEventReceived(self, event):
         if not event.type in (NOTEOFF, NOTEON) or not self.pianoIcon.state:
             return
@@ -1508,9 +1654,8 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.checkDumps(bool(len(output)))
         self.pianoIcon.setEnabled(bool(len(input)))
 
-    def applyHarmonics(self):
-        self.waveScene.applyHarmonics()
-#        self.harmonicsWidget.reset()
+    def applyAction(self):
+        self.waveScene.applyAction()
         self.noMouseModeBtn.setChecked(True)
 
     def checkWaveSceneSelection(self):
@@ -3057,6 +3202,10 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         if not self.shown:
             self.shown = True
             self.fullTableMiniView.setFixedHeight(self.fullTableMiniView.width() * .4)
+            self.selectionLeftBtn.setMaximumHeight(self.selectionMinusBtn.geometry().bottom() - self.selectionPlusBtn.geometry().top())
+            self.selectionRightBtn.setMaximumHeight(self.selectionLeftBtn.maximumHeight())
+            self.selectionListView.setFixedHeight(self.fontMetrics().height() * 3.5)
+
 #            self.fullTableMiniView.fitInView(self.fullTableMiniScene.sceneRect())
             self.setCurrentKeyFrame(self.keyFrames[0])
             self.updateMiniWave(self.keyFrames[0])
@@ -3114,6 +3263,7 @@ GenericDrawUndo.labels = {
     WaveScene.Harmonics: 'Harmonics drawn on wave {}', 
     WaveScene.Paste: 'Samples pasted to wave {}', 
     WaveScene.Drop: 'Samples dropped to wave {}', 
+    WaveScene.Clip: 'Samples clipped on wave {}', 
     }
 
 if __name__ == '__main__':

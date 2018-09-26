@@ -2223,11 +2223,22 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
             self.editable = kwargs.pop('editable')
         else:
             self.editable = True
+        if 'tristate' in kwargs:
+            self.tristate = kwargs.pop('tristate')
+        else:
+            self.tristate = False
+        if 'tinyNumber' in kwargs:
+            self.tinyNumber = kwargs.pop('tinyNumber')
+        else:
+            self.tinyNumber = False
         QtWidgets.QStyledItemDelegate.__init__(self, *args, **kwargs)
         self.squareSize = QtWidgets.QApplication.fontMetrics().height()
         self.square = QtCore.QRectF(0, 0, self.squareSize, self.squareSize)
         scale = self.squareSize / 7.
         self.path = self._path.toFillPolygon(QtGui.QTransform().scale(scale, scale))
+        if self.tinyNumber:
+            self.tinyFont = QtWidgets.QApplication.font()
+            self.tinyFont.setPointSizeF(self.squareSize - 2)
 
     def paint(self, painter, style, index):
         QtWidgets.QStyledItemDelegate.paint(self, painter, style, QtCore.QModelIndex())
@@ -2252,6 +2263,9 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
         painter.setRenderHints(QtGui.QPainter.Antialiasing)
         painter.save()
         painter.translate(option.rect.x() + (option.rect.width() - self.squareSize) / 2, option.rect.y() + (option.rect.height() - self.squareSize) / 2)
+        painter.save()
+        if self.tinyNumber:
+            painter.translate(0, -6)
         painter.setPen(self.squarePen)
         painter.drawRect(self.square)
         checked = index.data(QtCore.Qt.CheckStateRole)
@@ -2264,18 +2278,38 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
             painter.setPen(QtCore.Qt.red)
             painter.drawText(self.square, QtCore.Qt.AlignCenter, '?')
         painter.restore()
+        if self.tinyNumber:
+            painter.save()
+            painter.translate(0, self.squareSize)
+            painter.setFont(self.tinyFont)
+            painter.setPen(QtCore.Qt.darkGray)
+            painter.drawText(self.square, QtCore.Qt.AlignCenter, str(index.row() + 1))
+            painter.restore()
+        painter.restore()
+
+    def setTriState(self, tristate):
+        self.tristate = tristate
+
+    def nextState(self, state):
+        if self.tristate:
+            state += 1
+            if state > 2:
+                state = 0
+        else:
+            state = bool(not state) * 2
+        return state
 
     def editorEvent(self, event, model, option, index):
         if not self.editable or not index.flags() & QtCore.Qt.ItemIsEditable:
             return False
         if index.flags() & QtCore.Qt.ItemIsEnabled:
             if event.type() == QtCore.QEvent.MouseButtonPress and event.button() == QtCore.Qt.LeftButton:
-                model.itemFromIndex(index).setData(not index.data(QtCore.Qt.CheckStateRole), QtCore.Qt.CheckStateRole)
+                model.itemFromIndex(index).setData(self.nextState(index.data(QtCore.Qt.CheckStateRole)), QtCore.Qt.CheckStateRole)
                 if self.parent():
                     selection = self.parent().selectionModel()
                     selection.setCurrentIndex(index, selection.NoUpdate)
             elif event.type() == QtCore.QEvent.KeyPress and event.key() in (QtCore.Qt.Key_Space, QtCore.Qt.Key_Enter):
-                model.itemFromIndex(index).setData(not index.data(QtCore.Qt.CheckStateRole), QtCore.Qt.CheckStateRole)
+                model.itemFromIndex(index).setData(self.nextState(index.data(QtCore.Qt.CheckStateRole)), QtCore.Qt.CheckStateRole)
         return True
 
 

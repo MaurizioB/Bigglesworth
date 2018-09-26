@@ -29,16 +29,19 @@ class HoverCursor(QtWidgets.QWidget):
         self.timer.timeout.connect(self.setPos)
         self.delta = QtCore.QPoint(16, 16)
         self.pixmap = None
+        self.current = None
 
     def setCursor(self, iconName=None):
+        if iconName == self.current:
+            return
+        self.current = iconName
         if iconName is None:
             self.pixmap = None
             return
         data = self.iconCache.get(iconName)
         if data:
             mask, self.pixmap = data
-            self.setMask(mask)
-        if not data:
+        else:
             icon = QtGui.QIcon.fromTheme(iconName)
             iconPixmap = icon.pixmap(16)
             region = QtGui.QRegion(iconPixmap.mask())
@@ -55,8 +58,10 @@ class HoverCursor(QtWidgets.QWidget):
             qp.drawPixmap(0, 0, iconPixmap)
             qp.end()
             mask = self.pixmap.mask()
-            self.setMask(mask)
             self.iconCache[iconName] = mask, self.pixmap
+        self.clearMask()
+        self.setMask(mask)
+        self.update()
 
     def setPos(self):
         self.move(QtGui.QCursor.pos() + self.delta)
@@ -2182,6 +2187,19 @@ class WaveScene(QtWidgets.QGraphicsScene):
     wavePen = QtGui.QPen(QtGui.QColor(64, 192, 216), 1.2, cap=QtCore.Qt.RoundCap)
     wavePen.setCosmetic(True)
 
+    clipColor0 = QtGui.QColor(27, 103, 86, 200)
+    clipColor1 = QtGui.QColor(25, 75, 80, 188)
+    clipTopBrush = QtGui.QLinearGradient(0, 0, 0, 1)
+    clipTopBrush.setCoordinateMode(clipTopBrush.ObjectBoundingMode)
+    clipTopBrush.setColorAt(0, clipColor0)
+    clipTopBrush.setColorAt(1, clipColor1)
+    clipPen = QtGui.QPen(QtGui.QColor(200, 200, 200, 128))
+
+    clipBottomBrush = QtGui.QLinearGradient(0, 0, 0, 1)
+    clipBottomBrush.setCoordinateMode(clipBottomBrush.ObjectBoundingMode)
+    clipBottomBrush.setColorAt(0, clipColor1)
+    clipBottomBrush.setColorAt(1, clipColor0)
+
     mouseVGrad = QtGui.QLinearGradient(0, 0, 1, 0)
     mouseVGrad.setCoordinateMode(mouseVGrad.ObjectBoundingMode)
     mouseVGrad.setSpread(mouseVGrad.PadSpread)
@@ -2206,7 +2224,9 @@ class WaveScene(QtWidgets.QGraphicsScene):
     FreeDraw, LineDraw = 1, 2
     QuadCurveDraw, CubicCurveDraw = 4, 8
     CurveDraw = QuadCurveDraw | CubicCurveDraw
-    Shift, Gain = 64, 128
+    Shift, Gain, Clip = 64, 128, 256
+    ClipVertical, ClipFree = 1, 2
+    ClipTop, ClipBottom = 16, 32
     Select, HLock, VLock, Drag = 512, 1024, 2048, 4096
     Harmonics = 8192
     Paste = 16384
@@ -2228,6 +2248,10 @@ class WaveScene(QtWidgets.QGraphicsScene):
         VLock: 'transform-move-horizontal', 
         Gain: 'audio-volume-high', 
         Shift: 'resizecol', 
+        Clip | ClipFree: 'edit-clear-all-symbolic', 
+        Clip | ClipVertical | ClipTop | ClipBottom: 'format-align-vertical-center', 
+        Clip | ClipVertical | ClipTop: 'format-align-vertical-bottom', 
+        Clip | ClipVertical | ClipBottom: 'format-align-vertical-top', 
     }
 
     statusMessages = {
@@ -2286,6 +2310,14 @@ class WaveScene(QtWidgets.QGraphicsScene):
             self.nodes.append(node)
             self.addItem(node)
 
+        self.clipBarTop = self.addRect(QtCore.QRectF())
+        self.clipBarBottom = self.addRect(QtCore.QRectF())
+        self.clipBarFree = self.addLine(QtCore.QLineF())
+        self.clipBarTop.setPen(self.clipPen)
+        self.clipBarTop.setBrush(self.clipTopBrush)
+        self.clipBarBottom.setPen(self.clipPen)
+        self.clipBarBottom.setBrush(self.clipBottomBrush)
+
         self.backgroundPath = self.addPath(QtGui.QPainterPath())
         self.backgroundPath.setPen(QtGui.QPen(QtCore.Qt.NoPen))
         self.backgroundPath.setBrush(self.waveBackground)
@@ -2311,6 +2343,9 @@ class WaveScene(QtWidgets.QGraphicsScene):
         self.cursorPosition = CursorPositionItem(self)
         self.addItem(self.cursorPosition)
         self.cursorPosition.setVisible(False)
+        self.outerRect = self.sceneRect().adjusted(-pow16, -pow16, pow16, pow16)
+        self.innerRect = self.sceneRect().adjusted(-pow16, 0, pow16, 0)
+        self.setSceneRect(self.sceneRect())
 
     @property
     def currentKeyFrame(self):
@@ -2322,6 +2357,17 @@ class WaveScene(QtWidgets.QGraphicsScene):
         self.currentUuid = keyFrame.uuid
         self.previousIndex = self.currentIndex
         self.currentIndex = keyFrame.index
+
+    def selectItems(self, pattern):
+        pattern = list(pattern)
+        patternIterator = iter(pattern)
+        for node in self.nodes:
+            try:
+                state = patternIterator.next()
+            except:
+                patternIterator = iter(pattern)
+                state = patternIterator.next()
+            node.setSelected(bool(state))
 
     def indexesChanged(self, changed):
 #        print('changed', changed)
@@ -2342,7 +2388,7 @@ class WaveScene(QtWidgets.QGraphicsScene):
             self.xLine.setVisible(show)
             self.yLine.setVisible(show)
 
-    def setNodes(self, show):
+    def setNodesVisible(self, show):
         self.showNodes = show
         if show:
             for sample, (value, node) in enumerate(zip(self.currentKeyFrame.values, self.nodes)):
@@ -2458,26 +2504,58 @@ class WaveScene(QtWidgets.QGraphicsScene):
     def setSnapMode(self, snap):
         self.vSnap, self.hSnap = self.snapModes[snap]
 
+    def restoreNodes(self):
+        for sample, (value, node) in enumerate(zip(self.currentKeyFrame.values, self.nodes)):
+            element = self.currentKeyFrame.wavePath.elementAt(sample)
+            node.setPos(element.x, element.y)
+
+    def restorePath(self):
+        path = self.currentWavePath.path()
+        for sample in range(128):
+            path.setElementPositionAt(sample, path.elementAt(sample).x, pow20 - self.currentKeyFrame.values[sample])
+        self.currentWavePath.setPath(path)
+
     def setMouseMode(self, mode):
+        #check clipmode to prevent override by buttongroup
+        if mode & self.Clip and self.mouseMode & self.Clip and isinstance(self.sender(), QtWidgets.QButtonGroup):
+            return
         if mode == self.Select:
             self.view.setDragMode(self.view.RubberBandDrag)
         else:
             self.view.setDragMode(self.view.NoDrag)
         if mode != self.mouseMode and self.mouseMode & (self.CurveDraw | self.Harmonics):
-            path = self.currentWavePath.path()
-            for sample in range(128):
-                path.setElementPositionAt(sample, path.elementAt(sample).x, pow20 - self.currentKeyFrame.values[sample])
-            self.currentWavePath.setPath(path)
+            self.restorePath()
             if self.curvePath:
                 self.removeItem(self.curvePath)
                 self.curvePath = None
-        if not self.showNodes:
-            for sample, (value, node) in enumerate(zip(self.currentKeyFrame.values, self.nodes)):
-                element = self.currentKeyFrame.wavePath.elementAt(sample)
-                node.setPos(element.x, element.y)
+#        if not self.showNodes:
+        if not mode & self.Clip:
+            self.restoreNodes()
         self.statusMessage = self.statusMessages.get(mode), 0
         self.hoverCursor.setCursor(self.cursors.get(mode))
         self.mouseMode = mode
+
+    def setClipMode(self, mode):
+        if not mode:
+            self.clipBarFree.setVisible(False)
+            self.clipBarTop.setVisible(False)
+            self.clipBarBottom.setVisible(False)
+            self.restoreNodes()
+            self.restorePath()
+        else:
+            if mode & self.ClipVertical:
+                self.clipBarFree.setVisible(False)
+                #if previous mode is not clip, assume it's been just selected, so reset them
+                if not self.mouseMode & self.Clip:
+                    self.clipBarTop.setRect(QtCore.QRectF(self.outerRect.topLeft(), self.innerRect.topRight()))
+                    self.clipBarBottom.setRect(QtCore.QRectF(self.innerRect.bottomLeft(), self.outerRect.bottomRight()))
+                self.clipBarTop.setVisible(mode & self.ClipTop)
+                self.clipBarBottom.setVisible(mode & self.ClipBottom)
+            else:
+                self.clipBarFree.setVisible(True)
+                self.clipBarTop.setVisible(False)
+                self.clipBarBottom.setVisible(False)
+            self.setMouseMode(self.Clip|mode)
 
     def getSampleCoordinates(self, pos):
         x = min(int(round(pos.x() / self.hSnap) * self.hSnap), 2080768)
@@ -2494,6 +2572,13 @@ class WaveScene(QtWidgets.QGraphicsScene):
         if event.buttons() == QtCore.Qt.LeftButton:
             self.buttonTimer = QtCore.QElapsedTimer()
             self.buttonTimer.start()
+#            if self.mouseMode & self.Clip:
+#                if self.mouseMode & self.ClipVertical and self.mouseMode != self.ClipVerticalLock:
+#                    if self.mousePos.y() < self.sceneRect().center().y():
+#                        self.mouseMode |= self.ClipTop
+#                    else:
+#                        self.mouseMode |= self.ClipBottom
+#                    self.hoverCursor.setCursor(self.cursors.get(self.mouseMode))
             if self.mouseMode & self.Drawing:
                 x, y, sample, value = self.getSampleCoordinates(self.mousePos)
                 if self.mouseMode == self.FreeDraw:
@@ -2611,6 +2696,46 @@ class WaveScene(QtWidgets.QGraphicsScene):
                     self.cursorPosition.setPos(x, y)
                     self.cursorPosition.update()
 
+        elif self.mouseMode & self.Clip:
+            self.xLine.setVisible(False)
+            self.yLine.setVisible(False)
+            self.cursorPosition.setVisible(False)
+            if self.mouseMode & self.ClipVertical:
+                if event.buttons() == QtCore.Qt.LeftButton:
+                    if not self.selectedItems():
+                        [n.setSelected(True) for n in self.nodes]
+                    selected = self.selectedItems()
+                else:
+                    selected = []
+                if self.mouseMode & self.ClipVertical:
+                    y = sanitize(0, pos.y(), self.sceneRect().height())
+                    if self.vSnap:
+                        y = int(round(pos.y() / self.vSnap) * self.vSnap)
+                    clipTop = 0
+                    clipBottom = pow21
+                    if self.mouseMode & self.ClipTop:
+                        if not self.mouseMode & self.ClipBottom:
+                            y = min(pow20, y)
+                        elif y > self.sceneRect().center().y():
+                            y = pow21 - y
+                        bottomRight = QtCore.QPointF(self.innerRect.right(), y)
+                        self.clipBarTop.setRect(QtCore.QRectF(self.outerRect.topLeft(), bottomRight))
+                        clipTop = y
+                    if self.mouseMode & self.ClipBottom:
+                        if not self.mouseMode & self.ClipTop:
+                            y = max(pow20, y)
+                        elif y <= self.sceneRect().center().y():
+                            y = pow21 - y
+                        topLeft = QtCore.QPointF(self.innerRect.left(), y)
+                        self.clipBarBottom.setRect(QtCore.QRectF(topLeft, self.outerRect.bottomRight()))
+                        clipBottom = y
+                    if selected:
+                        path = self.currentWavePath.path()
+                        for node in selected:
+                            node.setY(sanitize(clipTop, node.y(), clipBottom))
+                            path.setElementPositionAt(node.sample, node.x(), node.y())
+                        self.currentWavePath.setPath(path)
+
         elif pos not in self.sceneRect() and not (self.curvePath and self.curvePath.initialized):
             self.xLine.setVisible(False)
             self.yLine.setVisible(False)
@@ -2718,6 +2843,8 @@ class WaveScene(QtWidgets.QGraphicsScene):
                     values.append(pow20 - path.elementAt(sample).y)
 #                self.currentKeyFrame.setValues(values)
                 
+#            elif self.mouseMode & (self.Clip | self.ClipVertical) and self.mouseMode != self.ClipVerticalLock:
+#                self.mouseMode = self.Clip | self.ClipVertical
             elif self.selectedNodes:
                 firstNode, firstX, firstY = self.selectedNodes[0]
                 lastNode, lastX, lastY = self.selectedNodes[-1]
@@ -2843,10 +2970,7 @@ class WaveScene(QtWidgets.QGraphicsScene):
                 self.removeItem(self.curvePath)
                 self.curvePath = None
             elif event.key() == QtCore.Qt.Key_Escape:
-                path = self.currentWavePath.path()
-                for sample in range(128):
-                    path.setElementPositionAt(sample, path.elementAt(sample).x, pow20 - self.currentKeyFrame.values[sample])
-                self.currentWavePath.setPath(path)
+                self.restorePath()
                 self.removeItem(self.curvePath)
                 self.curvePath = None
         QtWidgets.QGraphicsScene.keyPressEvent(self, event)
@@ -2866,12 +2990,15 @@ class WaveScene(QtWidgets.QGraphicsScene):
             path.setElementPositionAt(sample, path.elementAt(sample).x, value)
         self.currentWavePath.setPath(path)
 
-    def applyHarmonics(self):
+    def applyAction(self):
         path = self.currentWavePath.path()
         values = []
         for sample in range(128):
             values.append(pow20 - path.elementAt(sample).y)
         self.genericDraw.emit(self.mouseMode, self.currentKeyFrame, values)
+        self.hoverCursor.setCursor(None)
+        self.restoreNodes()
+        self.restorePath()
 
     def enter(self):
         self.restoreStatusMessage()
