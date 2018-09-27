@@ -2195,6 +2195,13 @@ class WaveScene(QtWidgets.QGraphicsScene):
     clipTopBrush.setColorAt(1, clipColor1)
     clipPen = QtGui.QPen(QtGui.QColor(200, 200, 200, 128))
 
+    clipFreeBrush = QtGui.QLinearGradient(0, 0, 0, 1)
+    clipFreeBrush.setCoordinateMode(clipFreeBrush.ObjectBoundingMode)
+    clipFreeBrush.setColorAt(0, clipColor0)
+    clipFreeBrush.setColorAt(1, clipColor0.adjusted(a=0))
+    clipFreePen = QtGui.QPen(clipPen.color(), 2)
+    clipFreePen.setCosmetic(True)
+
     clipBottomBrush = QtGui.QLinearGradient(0, 0, 0, 1)
     clipBottomBrush.setCoordinateMode(clipBottomBrush.ObjectBoundingMode)
     clipBottomBrush.setColorAt(0, clipColor1)
@@ -2221,20 +2228,20 @@ class WaveScene(QtWidgets.QGraphicsScene):
         (snapMain, snapMain)
     )
 
-    FreeDraw, LineDraw = 1, 2
-    QuadCurveDraw, CubicCurveDraw = 4, 8
+    FreeDraw, LineDraw = 128, 256
+    QuadCurveDraw, CubicCurveDraw = 512, 1024
     CurveDraw = QuadCurveDraw | CubicCurveDraw
-    Shift, Gain, Clip = 64, 128, 256
+    Shift, Gain, Clip = 2048, 4096, 8192
     ClipVertical, ClipFree = 1, 2
     ClipTop, ClipBottom = 16, 32
-    Select, HLock, VLock, Drag = 512, 1024, 2048, 4096
-    Harmonics = 8192
-    Paste = 16384
-    Drop = 32768
+    Select, HLock, VLock, Drag = 16384, 32768, 65536, 131072
+    Harmonics = 262144
+    Paste = pow19 #524288
+    Drop = pow20 #1048576
     Drawing = FreeDraw | LineDraw | CurveDraw
     Moving = Gain | HLock | VLock | Drag
 
-    WaveTransformEnum = 524288
+    WaveTransformEnum = pow21 #2097152
     Randomize, Smoothen, Quantize, HorizontalReverse, VerticalReverse = [WaveTransformEnum + 2 ** e for e in range(5)]
 
     cursors = {
@@ -2310,9 +2317,14 @@ class WaveScene(QtWidgets.QGraphicsScene):
             self.nodes.append(node)
             self.addItem(node)
 
+        self.clipBarFree = self.addPath(QtGui.QPainterPath())
+        self.clipBarFree.setPen(QtGui.QPen(QtCore.Qt.NoPen))
+        self.clipBarFree.setBrush(self.clipFreeBrush)
+        self.clipBarFreeLine = self.addLine(QtCore.QLineF())
+        self.clipBarFreeLine.setPen(self.clipFreePen)
+
         self.clipBarTop = self.addRect(QtCore.QRectF())
         self.clipBarBottom = self.addRect(QtCore.QRectF())
-        self.clipBarFree = self.addLine(QtCore.QLineF())
         self.clipBarTop.setPen(self.clipPen)
         self.clipBarTop.setBrush(self.clipTopBrush)
         self.clipBarBottom.setPen(self.clipPen)
@@ -2516,8 +2528,8 @@ class WaveScene(QtWidgets.QGraphicsScene):
         self.currentWavePath.setPath(path)
 
     def setMouseMode(self, mode):
-        #check clipmode to prevent override by buttongroup
-        if mode & self.Clip and self.mouseMode & self.Clip and isinstance(self.sender(), QtWidgets.QButtonGroup):
+        #check actual mode to prevent override by buttongroup
+        if mode < 0:
             return
         if mode == self.Select:
             self.view.setDragMode(self.view.RubberBandDrag)
@@ -2552,10 +2564,66 @@ class WaveScene(QtWidgets.QGraphicsScene):
                 self.clipBarTop.setVisible(mode & self.ClipTop)
                 self.clipBarBottom.setVisible(mode & self.ClipBottom)
             else:
-                self.clipBarFree.setVisible(True)
                 self.clipBarTop.setVisible(False)
                 self.clipBarBottom.setVisible(False)
             self.setMouseMode(self.Clip|mode)
+
+    def setClipSlope(self, angle, count, direction):
+        if direction <= 0:
+            return
+        width = count * 16384
+        height = int(pow21 * count * angle / 2)
+        print(angle, height)
+        if direction & self.ClipBottom:
+            height *= -1
+
+        p1 = self.view.mapFromScene(QtCore.QPointF(width, height))
+        p1 -= self.view.mapFromScene(QtCore.QPointF(0, 0))
+        print('p0: {} angle: {}'.format(self.view.mapFromScene(QtCore.QPointF(0, 0)), QtCore.QLineF(0, 0, p1.x(), p1.y()).angle()))
+        if direction & self.ClipBottom:
+            p2 = QtCore.QPointF(p1.x() - p1.y(), p1.y() + p1.x())
+        else:
+            p2 = QtCore.QPointF(p1.x() + p1.y(), p1.y() - p1.x())
+        p3 = QtCore.QPointF(p2.x() - p1.x(), p2.y() - p1.y())
+        viewPath = QtGui.QPainterPath()
+        viewPath.lineTo(p1)
+        viewPath.lineTo(p2)
+        viewPath.lineTo(p3)
+
+        if direction == self.ClipTop:
+            if p1.y() < 0:
+                refX1 = float(abs(p1.y())) / (p1.x() + abs(p1.y()))
+                refY1 = 1
+                refX2 = 0
+                refY2 = float(abs(p1.y())) / (p1.x() + abs(p1.y()))
+            else:
+                refX1 = 0
+                refY1 = float(abs(p1.x())) / (p1.x() + abs(p1.y()))
+                refX2 = float(abs(p1.y())) / (p1.x() + abs(p1.y()))
+                refY2 = 0
+        else:
+            if p1.y() < 0:
+                refX1 = 0
+                refY1 = float(abs(p1.y())) / (p1.x() + abs(p1.y()))
+                refX2 = float(abs(p1.y())) / (p1.x() + abs(p1.y()))
+                refY2 = 1
+            else:
+                refX1 = float(abs(p1.y())) / (p1.x() + abs(p1.y()))
+                refY1 = 0
+                refX2 = 0
+                refY2 = float(abs(p1.x())) / (p1.x() + abs(p1.y()))
+
+        self.clipFreeBrush.setStart(refX1, refY1)
+        self.clipFreeBrush.setFinalStop(refX2, refY2)
+        self.clipBarFree.setBrush(self.clipFreeBrush)
+
+        transPath = self.view.mapToScene(viewPath)
+        transPath.translate(-width / 2, -height / 2)
+        self.clipBarFree.setPath(transPath)
+#        self.clipBarFree.setPos(self.sceneRect().center())
+        self.clipBarFreeLine.setLine(QtCore.QLineF(transPath.elementAt(0).x, transPath.elementAt(0).y, 
+            transPath.elementAt(1).x, transPath.elementAt(1).y))
+#        self.clipBarFreeLine.setPos(self.clipBarFree.pos())
 
     def getSampleCoordinates(self, pos):
         x = min(int(round(pos.x() / self.hSnap) * self.hSnap), 2080768)
@@ -2735,6 +2803,9 @@ class WaveScene(QtWidgets.QGraphicsScene):
                             node.setY(sanitize(clipTop, node.y(), clipBottom))
                             path.setElementPositionAt(node.sample, node.x(), node.y())
                         self.currentWavePath.setPath(path)
+            else:
+                self.clipBarFree.setPos(pos)
+                self.clipBarFreeLine.setPos(pos)
 
         elif pos not in self.sceneRect() and not (self.curvePath and self.curvePath.initialized):
             self.xLine.setVisible(False)
@@ -3002,6 +3073,12 @@ class WaveScene(QtWidgets.QGraphicsScene):
 
     def enter(self):
         self.restoreStatusMessage()
+        if self.mouseMode & (self.Clip | self.ClipFree) == (self.Clip | self.ClipFree):
+            self.view.setCursor(QtCore.Qt.BlankCursor)
+            if self.mouseMode & self.ClipFree:
+                self.clipBarFree.setVisible(True)
+                self.clipBarFreeLine.setVisible(True)
+            return
         self.hoverCursor.show()
         if not self.mouseMode & self.Drawing:
             return
@@ -3011,9 +3088,12 @@ class WaveScene(QtWidgets.QGraphicsScene):
         self.cursorPosition.setVisible(True)
 
     def leave(self):
+        self.view.unsetCursor()
         self.hoverCursor.hide()
         self.xLine.setVisible(False)
         self.yLine.setVisible(False)
+        self.clipBarFree.setVisible(False)
+        self.clipBarFreeLine.setVisible(False)
         self.cursorPosition.setVisible(False)
         self.clearStatusMessage()
 

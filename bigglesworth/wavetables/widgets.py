@@ -88,6 +88,155 @@ class WaveIcon(QtGui.QIcon):
         QtGui.QIcon.__init__(self, IconEngine(WaveIconType, waveType))
 
 
+class MiniButton(QtWidgets.QPushButton):
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QPushButton.__init__(self, *args, **kwargs)
+        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum))
+        self.setStyleSheet('''
+            MiniButton {
+                border: 1px solid darkGray;
+                border-style: outset;
+                border-radius: 2px;
+            }
+            MiniButton:pressed {
+                border-style: inset;
+            }
+        ''')
+
+
+class MiniSlider(QtWidgets.QWidget):
+    valueChanged = QtCore.pyqtSignal(int)
+    value = 0
+    arrowWidth = 8
+
+    def setSibling(self, spin):
+        self.spin = spin
+        self.setRange(spin.minimum(), spin.maximum())
+        spin.valueChanged.connect(self.setValue)
+        self.value = spin.value()
+        self.valueChanged.connect(spin.setValue)
+
+    def setRange(self, minimum, maximum):
+        self.minimum = minimum
+        self.maximum = maximum
+
+    def setValue(self, value):
+        if value == self.value:
+            return
+        self.value = sanitize(self.minimum, value, self.maximum)
+        self.valueChanged.emit(value)
+        self.update()
+
+    def minimumSizeHint(self):
+        hint = QtWidgets.QWidget.minimumSizeHint(self)
+        hint.setHeight(8)
+        return hint
+
+    def sizeHint(self):
+        hint = QtWidgets.QWidget.sizeHint(self)
+        hint.setHeight(16)
+        return hint
+
+    def setValueFromPos(self, pos):
+        v = (pos.x() - float(self.arrowWidth)) / (self.width() - self.arrowWidth * 2)
+        self.setValue(sanitize(self.minimum, int(self.minimum + v * (self.maximum - self.minimum)), self.maximum))
+
+    def wheelEvent(self, event):
+        if event.delta() > 0:
+            self.setValue(self.value + 1)
+        else:
+            self.setValue(self.value - 1)
+
+    def mousePressEvent(self, event):
+        if event.buttons() == QtCore.Qt.LeftButton:
+            self.setValueFromPos(event.pos())
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() == QtCore.Qt.LeftButton:
+            self.setValueFromPos(event.pos())
+
+    def resizeEvent(self, event):
+        self.arrow = QtGui.QPainterPath()
+        self.arrowWidth = self.height()
+        self.arrow.lineTo(-self.arrowWidth + 1, self.arrowWidth - 2)
+        self.arrow.lineTo(self.arrowWidth - 1, self.arrowWidth - 2)
+        self.arrow.closeSubpath()
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter(self)
+        qp.setRenderHints(qp.Antialiasing)
+        left = int(self.arrowWidth + (float(self.value) / (self.maximum - self.minimum)) * (self.width() - self.arrowWidth * 2)) + .5
+        qp.translate(left, .5)
+        qp.setPen(QtCore.Qt.NoPen)
+        qp.setBrush(QtCore.Qt.darkGray)
+        qp.drawPath(self.arrow)
+
+
+class ClipSlider(QtWidgets.QSlider):
+    slopeChanged = QtCore.pyqtSignal(float)
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QSlider.__init__(self, *args, **kwargs)
+        self.previous = 0
+        self.valueChanged.connect(self.setValue)
+        self._zeroRange = 50
+        self.slope = None
+
+    @QtCore.pyqtProperty(int)
+    def zeroRange(self):
+        return self._zeroRange
+
+    @zeroRange.setter
+    def zeroRange(self, zeroRange):
+        self._zeroRange = zeroRange
+
+    def mousePressEvent(self, event):
+        if event.buttons() == QtCore.Qt.LeftButton:
+            self.computePos(event.pos())
+        else:
+            QtWidgets.QSlider.mousePressEvent(self, event)
+
+    def mouseMoveEvent(self, event):
+        self.computePos(event.pos())
+
+    def computePos(self, pos):
+        option = QtWidgets.QStyleOptionSlider()
+        self.initStyleOption(option)
+        handleRect = self.style().subControlRect(QtWidgets.QStyle.CC_Slider, option, QtWidgets.QStyle.SC_SliderHandle, self)
+        left = handleRect.width() / 2
+        value = self.style().sliderValueFromPosition(self.minimum(), self.maximum(), pos.x() - left, self.width() - handleRect.width())
+        if not value or value <= -self.zeroRange or value >= self.zeroRange:
+            return self.setValue(value)
+        if value < -self.zeroRange / 2:
+            value = -self.zeroRange
+        elif -self.zeroRange / 2 <= value <= self.zeroRange / 2:
+            value = 0
+        else:
+            value = self.zeroRange
+        self.setValue(value)
+
+    def setValue(self, value):
+        if not value or value <= -self.zeroRange or value >= self.zeroRange:
+            pass
+        elif value < 0:
+            if self.previous >= 0:
+                value = -self.zeroRange
+            else:
+                value = 0
+        else:
+            if self.previous <= 0:
+                value = self.zeroRange
+            else:
+                value = 0
+        self.previous = value
+        QtWidgets.QSlider.setValue(self, value)
+        if value:
+            self.slope = float(abs(value) - self.zeroRange + 1) / ((self.maximum() - self.minimum()) / 2 + 1 - self.zeroRange)
+            self.slope *= 1 if value > 0 else -1
+        else:
+            self.slope = 0
+        self.slopeChanged.emit(self.slope)
+
+
 class ExpandingView(QtWidgets.QListView):
     def showEvent(self, event):
         QtWidgets.QListView.showEvent(self, event)

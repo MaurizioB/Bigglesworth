@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>843</width>
-    <height>695</height>
+    <width>913</width>
+    <height>680</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -1523,6 +1523,12 @@
            </property>
            <item>
             <widget class="QPushButton" name="selectAllBtn">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="toolTip">
               <string>Select all nodes</string>
              </property>
@@ -1534,6 +1540,12 @@
            </item>
            <item>
             <widget class="QPushButton" name="selectNoneBtn">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="toolTip">
               <string>Deselect all nodes</string>
              </property>
@@ -1545,6 +1557,12 @@
            </item>
            <item>
             <widget class="QPushButton" name="selectOddBtn">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="toolTip">
               <string>Select odd nodes</string>
              </property>
@@ -1556,8 +1574,16 @@
            </item>
            <item>
             <widget class="QPushButton" name="selectEvenBtn">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="icon">
-              <iconset theme="harmonics-even"/>
+              <iconset theme="harmonics-even">
+               <normaloff/>
+              </iconset>
              </property>
             </widget>
            </item>
@@ -1586,12 +1612,41 @@
              <property name="spacing">
               <number>2</number>
              </property>
+             <property name="margin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="MiniButton" name="selectionPlusBtn">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>+</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="MiniButton" name="selectionMinusBtn">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>-</string>
+               </property>
+              </widget>
+             </item>
             </layout>
            </item>
            <item>
             <widget class="QListView" name="selectionListView">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
+              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
@@ -1660,12 +1715,33 @@
             <number>2</number>
            </property>
            <item>
-            <widget class="QPushButton" name="clipVerticalBtn">
-             <property name="text">
-              <string>Vertical</string>
-             </property>
+            <widget class="QComboBox" name="clipModeCombo">
+             <item>
+              <property name="text">
+               <string>Vertical</string>
+              </property>
+              <property name="icon">
+               <iconset theme="format-align-vertical-center">
+                <normaloff/>
+               </iconset>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Free</string>
+              </property>
+              <property name="icon">
+               <iconset theme="edit-clear-all-symbolic">
+                <normaloff/>
+               </iconset>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="clipTopBtn">
              <property name="icon">
-              <iconset theme="format-align-vertical-center">
+              <iconset theme="format-align-vertical-bottom">
                <normaloff/>
               </iconset>
              </property>
@@ -1676,27 +1752,16 @@
               <bool>true</bool>
              </property>
              <attribute name="buttonGroup">
-              <string notr="true">clipModeGroup</string>
+              <string notr="true">clipDirGroup</string>
              </attribute>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="clipTopBtn">
-             <property name="icon">
-              <iconset theme="format-align-vertical-bottom"/>
-             </property>
-             <property name="checkable">
-              <bool>true</bool>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
             </widget>
            </item>
            <item>
             <widget class="QPushButton" name="clipBottomBtn">
              <property name="icon">
-              <iconset theme="format-align-vertical-top"/>
+              <iconset theme="format-align-vertical-top">
+               <normaloff/>
+              </iconset>
              </property>
              <property name="checkable">
               <bool>true</bool>
@@ -1704,6 +1769,9 @@
              <property name="checked">
               <bool>true</bool>
              </property>
+             <attribute name="buttonGroup">
+              <string notr="true">clipDirGroup</string>
+             </attribute>
             </widget>
            </item>
            <item>
@@ -1714,24 +1782,99 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="clipFreeBtn">
+            <widget class="QWidget" name="clipFreeWidget" native="true">
              <property name="enabled">
               <bool>false</bool>
              </property>
-             <property name="text">
-              <string>Free</string>
+             <property name="minimumSize">
+              <size>
+               <width>50</width>
+               <height>0</height>
+              </size>
              </property>
-             <property name="icon">
-              <iconset theme="edit-clear-all-symbolic">
-               <normaloff/>
-              </iconset>
-             </property>
-             <property name="checkable">
-              <bool>true</bool>
-             </property>
-             <attribute name="buttonGroup">
-              <string notr="true">clipModeGroup</string>
-             </attribute>
+             <layout class="QHBoxLayout" name="horizontalLayout_18">
+              <property name="spacing">
+               <number>4</number>
+              </property>
+              <property name="margin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QLabel" name="label_8">
+                <property name="text">
+                 <string>Range</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_7">
+                <property name="spacing">
+                 <number>0</number>
+                </property>
+                <property name="margin">
+                 <number>0</number>
+                </property>
+                <item>
+                 <widget class="QSpinBox" name="clipFreeRangeSpin">
+                  <property name="minimum">
+                   <number>2</number>
+                  </property>
+                  <property name="maximum">
+                   <number>128</number>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="MiniSlider" name="clipFreeRangeSlider" native="true">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_9">
+                <property name="text">
+                 <string>Slope</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="ClipSlider" name="clipFreeSlopeSlider">
+                <property name="minimumSize">
+                 <size>
+                  <width>150</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="minimum">
+                 <number>-150</number>
+                </property>
+                <property name="maximum">
+                 <number>150</number>
+                </property>
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="tickPosition">
+                 <enum>QSlider::TicksBothSides</enum>
+                </property>
+                <property name="tickInterval">
+                 <number>150</number>
+                </property>
+                <property name="zeroRange" stdset="0">
+                 <number>20</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="clipFreeSlopeIcon"/>
+              </item>
+             </layout>
             </widget>
            </item>
            <item>
@@ -1774,14 +1917,18 @@
            <item>
             <widget class="QPushButton" name="clipRestoreBtn">
              <property name="icon">
-              <iconset theme="edit-undo"/>
+              <iconset theme="edit-undo">
+               <normaloff/>
+              </iconset>
              </property>
             </widget>
            </item>
            <item>
             <widget class="QPushButton" name="clipDiscardBtn">
              <property name="icon">
-              <iconset theme="dialog-cancel"/>
+              <iconset theme="dialog-cancel">
+               <normaloff/>
+              </iconset>
              </property>
             </widget>
            </item>
@@ -1799,7 +1946,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>843</width>
+     <width>913</width>
      <height>24</height>
     </rect>
    </property>
@@ -2242,13 +2389,28 @@
   <customwidget>
    <class>MiniButton</class>
    <extends>QPushButton</extends>
-   <header>bigglesworth.wavetables</header>
+   <header>bigglesworth.wavetables.widgets</header>
+  </customwidget>
+  <customwidget>
+   <class>ClipSlider</class>
+   <extends>QSlider</extends>
+   <header>bigglesworth.wavetables.widgets</header>
+  </customwidget>
+  <customwidget>
+   <class>MiniSlider</class>
+   <extends>QWidget</extends>
+   <header>bigglesworth.wavetables.widgets</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>
  <connections/>
  <buttongroups>
   <buttongroup name="mouseModeGroup"/>
-  <buttongroup name="clipModeGroup"/>
+  <buttongroup name="clipDirGroup">
+   <property name="exclusive">
+    <bool>false</bool>
+   </property>
+  </buttongroup>
  </buttongroups>
 </ui>
