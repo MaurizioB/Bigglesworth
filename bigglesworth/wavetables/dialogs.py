@@ -305,19 +305,43 @@ class Loader(QtWidgets.QDialog):
 
 
 class SetIndexDialog(QtWidgets.QDialog):
-    def __init__(self, parent, itemIndex, start, end):
+    def __init__(self, parent, start, current, end):
+        from bigglesworth.wavetables.widgets import MiniSlider
         QtWidgets.QDialog.__init__(self, parent)
+        self.setWindowTitle('Move wave within range')
+
+        self.current = current
+
         l = QtWidgets.QGridLayout()
         self.setLayout(l)
-        l.addWidget(QtWidgets.QLabel('Set new index:'))
+        l.addWidget(QtWidgets.QLabel('Set new index ({}-{}):'.format(start, end)))
+
         self.indexSpin = QtWidgets.QSpinBox()
-        self.indexSpin.setRange(start, end)
-        self.indexSpin.setValue(itemIndex)
         l.addWidget(self.indexSpin, 0, 1)
+        self.indexSpin.setRange(start, end)
+        self.indexSpin.setValue(current)
+
+        self.deltaLabel = QtWidgets.QLabel()
+        l.addWidget(self.deltaLabel, 0, 2)
+        self.deltaLabel.setFixedWidth(self.fontMetrics().width('+88'))
+        self.indexSpin.valueChanged.connect(self.setDelta)
+
+        self.miniSlider = MiniSlider()
+        l.addWidget(self.miniSlider, 1, 1)
+        self.miniSlider.setSibling(self.indexSpin)
+        self.miniSlider.setMaximumHeight(8)
+        self.miniSlider.setDefault(current)
+
         self.buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok|QtWidgets.QDialogButtonBox.Cancel)
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
-        l.addWidget(self.buttonBox, 1, 0, 1, 2)
+        l.addWidget(self.buttonBox, l.rowCount(), 0, 1, l.columnCount())
+
+    def setDelta(self, value):
+        if value == self.current:
+            self.deltaLabel.setText('')
+        else:
+            self.deltaLabel.setText('{:+}'.format(value - self.current))
 
     def exec_(self):
         if QtWidgets.QDialog.exec_(self):

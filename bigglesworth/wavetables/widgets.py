@@ -98,16 +98,98 @@ class MiniButton(QtWidgets.QPushButton):
                 border-style: outset;
                 border-radius: 2px;
             }
-            MiniButton:pressed {
+            MiniButton:pressed, MiniButton:checked {
                 border-style: inset;
             }
         ''')
+
+
+class MultiStateButton(QtWidgets.QPushButton):
+    stateChanged = QtCore.pyqtSignal(int)
+    idChanged = QtCore.pyqtSignal(int)
+
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QPushButton.__init__(self, *args, **kwargs)
+        self.states = []
+        self.ids = {}
+        self.setEnabled(False)
+        self.currentState = -1
+        self.blocked = set()
+        self.clicked.connect(self.cycle)
+
+    @property
+    def currentId(self):
+        try:
+            return self.ids.keys()[self.ids.values().index(self.currentState)]
+        except:
+            return None
+
+    @property
+    def blockedStates(self):
+        return [self.ids[i] for i in self.blocked]
+
+    def blockId(self, id):
+        self.blocked.add(id)
+        if self.currentId == id:
+            self.cycle()
+
+    def unblockId(self, id):
+        self.blocked.discard(id)
+        if self.blocked == set(self.ids.keys()):
+            self.setEnabled(False)
+
+    def release(self):
+        self.blocked.clear()
+        self.setEnabled(True)
+
+    def addState(self, text, icon=None, id=None):
+        if isinstance(icon, str):
+            icon = QtGui.QIcon.fromTheme(icon)
+        elif icon is None:
+            icon = QtGui.QIcon()
+        self.states.append((text, icon))
+        if id is not None:
+            self.ids[id] = len(self.states) - 1
+        if len(self.states) == 1:
+            self.setEnabled(True)
+            self.setState(0)
+
+    def addStates(self, states):
+        for state in states:
+            self.addState(*state)
+
+    def cycle(self):
+        nextState = self.currentState + 1
+        if nextState >= len(self.states):
+            nextState = 0
+        while nextState in self.blockedStates:
+            nextState += 1
+            if nextState >= len(self.states):
+                nextState = 0
+        self.setState(nextState)
+
+    def setId(self, id):
+        if id == self.currentId:
+            return
+        state = self.ids.get(id, 0)
+        self.setState(state)
+
+    def setState(self, state):
+        if state in self.blockedStates:
+            return
+        self.currentState = state
+        text, icon = self.states[state]
+        self.setText(text)
+        self.setIcon(icon)
+        self.stateChanged.emit(state)
+        self.idChanged.emit(self.ids.keys()[self.ids.values().index(state)])
 
 
 class MiniSlider(QtWidgets.QWidget):
     valueChanged = QtCore.pyqtSignal(int)
     value = 0
     arrowWidth = 8
+    default = None
 
     def setSibling(self, spin):
         self.spin = spin
@@ -119,6 +201,10 @@ class MiniSlider(QtWidgets.QWidget):
     def setRange(self, minimum, maximum):
         self.minimum = minimum
         self.maximum = maximum
+
+    def setDefault(self, default=None):
+        self.default = default
+        self.update()
 
     def setValue(self, value):
         if value == self.value:
@@ -137,9 +223,13 @@ class MiniSlider(QtWidgets.QWidget):
         hint.setHeight(16)
         return hint
 
-    def setValueFromPos(self, pos):
+    def setValueFromPos(self, pos, checkDefault=False):
         v = (pos.x() - float(self.arrowWidth)) / (self.width() - self.arrowWidth * 2)
-        self.setValue(sanitize(self.minimum, int(self.minimum + v * (self.maximum - self.minimum)), self.maximum))
+        value = sanitize(self.minimum, int(self.minimum + v * (self.maximum - self.minimum)), self.maximum)
+        if self.default is not None and checkDefault:
+            if value - 2 <= self.default <= value + 2:
+                value = self.default
+        self.setValue(value)
 
     def wheelEvent(self, event):
         if event.delta() > 0:
@@ -149,7 +239,7 @@ class MiniSlider(QtWidgets.QWidget):
 
     def mousePressEvent(self, event):
         if event.buttons() == QtCore.Qt.LeftButton:
-            self.setValueFromPos(event.pos())
+            self.setValueFromPos(event.pos(), True)
 
     def mouseMoveEvent(self, event):
         if event.buttons() == QtCore.Qt.LeftButton:
@@ -165,14 +255,27 @@ class MiniSlider(QtWidgets.QWidget):
     def paintEvent(self, event):
         qp = QtGui.QPainter(self)
         qp.setRenderHints(qp.Antialiasing)
-        left = int(self.arrowWidth + (float(self.value) / (self.maximum - self.minimum)) * (self.width() - self.arrowWidth * 2)) + .5
-        qp.translate(left, .5)
+        width = self.width() - self.arrowWidth * 2
+        qp.translate(.5, .5)
+        color = self.palette().color(QtGui.QPalette.ButtonText)
+        qp.setPen(color.adjusted(a=128))
+        left = self.arrowWidth + 1
+        qp.drawLine(left, 0, left, self.arrowWidth / 2)
+        qp.drawLine(left, 0, left + width, 0)
+        qp.drawLine(left + width, 0, left + width, self.arrowWidth / 2)
+        if self.default is not None:
+            qp.setPen(QtGui.QPen(color, 2))
+            defaultPos = int(self.arrowWidth + (float(self.default - self.minimum) / (self.maximum - self.minimum)) * width)
+            qp.drawLine(defaultPos, 0, defaultPos, self.arrowWidth / 2)
+
+        arrowPos = int(self.arrowWidth + (float(self.value - self.minimum) / (self.maximum - self.minimum)) * width)
+        qp.translate(arrowPos, 0)
         qp.setPen(QtCore.Qt.NoPen)
-        qp.setBrush(QtCore.Qt.darkGray)
+        qp.setBrush(color)
         qp.drawPath(self.arrow)
 
 
-class ClipSlider(QtWidgets.QSlider):
+class ClipSlopeSlider(QtWidgets.QSlider):
     slopeChanged = QtCore.pyqtSignal(float)
     def __init__(self, *args, **kwargs):
         QtWidgets.QSlider.__init__(self, *args, **kwargs)
@@ -214,6 +317,9 @@ class ClipSlider(QtWidgets.QSlider):
             value = self.zeroRange
         self.setValue(value)
 
+    def flip(self):
+        self.setValue(-self.value())
+
     def setValue(self, value):
         if not value or value <= -self.zeroRange or value >= self.zeroRange:
             pass
@@ -237,10 +343,26 @@ class ClipSlider(QtWidgets.QSlider):
         self.slopeChanged.emit(self.slope)
 
 
+class ClipSlopeIcon(QtWidgets.QLabel):
+    clicked = QtCore.pyqtSignal()
+
+    def mousePressEvent(self, event):
+        if event.buttons() == QtCore.Qt.LeftButton:
+            self.clicked.emit()
+
+    def setSibling(self, slider):
+        self.slider = slider
+
+    def wheelEvent(self, event):
+        event = QtGui.QWheelEvent(event.pos(), -event.delta(), event.buttons(), event.modifiers(), QtCore.Qt.Horizontal)
+        QtWidgets.QApplication.sendEvent(self.slider, event)
+
+
 class ExpandingView(QtWidgets.QListView):
     def showEvent(self, event):
         QtWidgets.QListView.showEvent(self, event)
         self.setMinimumWidth(self.sizeHintForColumn(0) + self.parent().parent().iconSize().width())
+
 
 class CurveTransformCombo(QtWidgets.QComboBox):
     def __init__(self, *args, **kwargs):
@@ -1973,7 +2095,12 @@ class KeyFrameView(QtWidgets.QGraphicsView):
                 
                 qp.translate(-delta + self.mapFromScene(item.pos()).x(), item.y())
                 item.paint(qp, None, None, item.hoverRect)
-                if index > 1:
+                if index == 1:
+                    qp.save()
+                    qp.translate(-80 + delta, 0)
+                    first.paint(qp, None, None, first.normalRect.adjusted(0, 0, -20 - delta, 0))
+                    qp.restore()
+                else:
                     qp.save()
 #                    qp.setOpacity((20 - delta) / 20.)
                     qp.translate(-60, 0)
@@ -1982,19 +2109,25 @@ class KeyFrameView(QtWidgets.QGraphicsView):
                     if not item.boundingRect().width():
                         beforeIndex -= 1
                         item = self.keyFrames.itemAt(beforeIndex)
-                    item.paint(qp, None, None, item.hoverRect.adjusted(20 + delta, 0, 0, 0))
+                    if item == first:
+                        qp.translate(-20, 0)
+                        item.paint(qp, None, None, item.hoverRect.adjusted(20 + delta, 0, 20, 0))
+                    else:
+                        item.paint(qp, None, None, item.hoverRect.adjusted(20 + delta, 0, 0, 0))
                     qp.restore()
                     qp.save()
                     try:
 #                        qp.setOpacity((20 - delta) / 40.)
                         qp.translate(delta - 70, 0)
-                        for _ in range(4):
+                        for count in range(4):
                             beforeIndex -= 1
                             item = self.keyFrames.itemAt(beforeIndex)
                             if not item.boundingRect().width():
                                 beforeIndex -= 1
                                 item = self.keyFrames.itemAt(beforeIndex)
                             if item == first:
+                                qp.translate(-70 + count * 10 + (3 - count) * 20, 0)
+                                item.paint(qp, None, None, item.hoverRect.adjusted(0, 0, -(3 - count) * 10 + 10, 0))
                                 break
                             item.paint(qp, None, None, self.microRect)
                             qp.translate(-10, 0)
@@ -2032,8 +2165,16 @@ class KeyFrameView(QtWidgets.QGraphicsView):
 
 
 class WaveView(QtWidgets.QGraphicsView):
+    resized = QtCore.pyqtSignal()
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Escape:
+            self.scene().clearSelection()
+        QtWidgets.QGraphicsView.keyPressEvent(self, event)
+
     def resizeEvent(self, event):
         self.fitInView(self.scene().sceneRect())
+        self.resized.emit()
 
     def enterEvent(self, event):
         self.scene().enter()

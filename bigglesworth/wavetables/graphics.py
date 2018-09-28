@@ -27,7 +27,7 @@ class HoverCursor(QtWidgets.QWidget):
         self.timer = QtCore.QTimer()
         self.timer.setInterval(25)
         self.timer.timeout.connect(self.setPos)
-        self.delta = QtCore.QPoint(16, 16)
+        self.defaultDelta = self.delta = QtCore.QPoint(16, 16)
         self.pixmap = None
         self.current = None
 
@@ -37,6 +37,7 @@ class HoverCursor(QtWidgets.QWidget):
         self.current = iconName
         if iconName is None:
             self.pixmap = None
+            self.timer.stop()
             return
         data = self.iconCache.get(iconName)
         if data:
@@ -63,6 +64,14 @@ class HoverCursor(QtWidgets.QWidget):
         self.setMask(mask)
         self.update()
 
+    def setDelta(self, *args):
+        if len(args) > 1 and isinstance(args[0], (int, float)):
+            self.delta = QtCore.QPoint(*args)
+        elif args:
+            self.delta = args[0]
+        else:
+            self.delta = self.defaultDelta
+
     def setPos(self):
         self.move(QtGui.QCursor.pos() + self.delta)
 
@@ -70,6 +79,8 @@ class HoverCursor(QtWidgets.QWidget):
         if self.pixmap:
             QtWidgets.QWidget.show(self)
             self.timer.start()
+        else:
+            self.timer.stop()
 
     def hide(self):
         QtWidgets.QWidget.hide(self)
@@ -376,16 +387,16 @@ class SampleItem(QtWidgets.QGraphicsWidget):
 
         self.changed.connect(self.update)
 
-        setIndexAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('document-swap'), 'Change position', self)
-        setIndexAction.triggered.connect(self.setIndexRequested)
+        self.setIndexAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('document-swap'), 'Change position', self)
+        self.setIndexAction.triggered.connect(self.setIndexRequested)
         copyAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('edit-copy'), 'Copy wave values', self)
         copyAction.triggered.connect(self.copyWave)
         self.pasteAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('edit-paste'), 'Paste wave values', self)
         self.pasteAction.triggered.connect(self.pasteWave)
-        removeAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('edit-delete'), 'Remove wave', self)
-        removeAction.triggered.connect(self.deleteRequested)
+        self.removeAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('edit-delete'), 'Remove wave', self)
+        self.removeAction.triggered.connect(self.deleteRequested)
 
-        self.addActions([setIndexAction, copyAction, self.pasteAction, removeAction])
+        self.addActions([self.setIndexAction, copyAction, self.pasteAction, self.removeAction])
 
     @property
     def index(self):
@@ -419,6 +430,18 @@ class SampleItem(QtWidgets.QGraphicsWidget):
         self.updateGeometry()
 
     def actions(self):
+        currentIndex = self.index
+        if not currentIndex:
+            self.setIndexAction.setEnabled(False)
+            self.removeAction.setEnabled(False)
+        else:
+            self.removeAction.setEnabled(True)
+            prevIndex = self.keyFrames.previousIndex(self)
+            nextIndex = self.keyFrames.nextIndex(self)
+            if nextIndex < 0:
+                nextIndex = 63
+            self.setIndexAction.setEnabled(nextIndex - prevIndex > 2)
+
         self.pasteAction.setEnabled(QtWidgets.QApplication.clipboard().mimeData().hasFormat('bigglesworth/WaveValues'))
         return QtWidgets.QGraphicsWidget.actions(self)
 
@@ -1076,6 +1099,7 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
 
         rect = hoverRect if hoverRect else self._rect
 
+        qp.save()
         if not self.isValid() and self.nextItem is not None:
             qp.setPen(self.invalidPen)
             qp.setBrush(self.invalidBrush)
@@ -1099,7 +1123,7 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
 #            qp.save()
             qp.setPen(self.pathPen)
             qp.setBrush(QtCore.Qt.NoBrush)
-            if rect == self.minimizedRect:
+            if rect == self.minimizedRect or rect.width() <= self.minimizedRect.width():
                 qp.translate(rect.center().x(), rect.center().y() - self.deltaY)
                 ratio = (right / self.normalTransformPath.boundingRect().width())
                 qp.scale(ratio, ratio)
@@ -1112,10 +1136,11 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
 #                qp.translate(rect.left() * ratio, 0)
                 qp.drawPath(self.normalTransformPath)
         qp.restore()
-        if rect != self.minimizedRect:
+        if rect.width() > self.minimizedRect.width():
             qp.drawText(rect.adjusted(1, 0, -1, 0), QtCore.Qt.AlignHCenter|QtCore.Qt.AlignBottom, self.modeLabel)
         elif self.mode:
             qp.drawText(rect.adjusted(1, 0, -1, 0), QtCore.Qt.AlignHCenter|QtCore.Qt.AlignBottom, self.modeLabel[0])
+        qp.restore()
 
 
 class KeyFrameContainer(QtWidgets.QGraphicsWidget):
@@ -2283,6 +2308,7 @@ class WaveScene(QtWidgets.QGraphicsScene):
         QtWidgets.QGraphicsScene.__init__(self)
         self.waveTableWindow = waveTableWindow
         self.view = waveTableWindow.waveView
+        self.view.resized.connect(self.viewResized)
         self.keyFrameScene = waveTableWindow.keyFrameScene
         self.keyFrames = self.keyFrameScene.keyFrames
         self.waveTableScene = waveTableWindow.waveTableScene
@@ -2309,6 +2335,7 @@ class WaveScene(QtWidgets.QGraphicsScene):
         self.showNodes = False
         self.mouseMode = 0
         self.previousIndex = self.currentIndex = 0
+        self.currentSlopeData = None, None, None
 
         self.nodes = []
         for sample in range(128):
@@ -2380,6 +2407,10 @@ class WaveScene(QtWidgets.QGraphicsScene):
                 patternIterator = iter(pattern)
                 state = patternIterator.next()
             node.setSelected(bool(state))
+
+    def viewResized(self):
+        if self.mouseMode & self.Clip and self.mouseMode & self.ClipFree:
+            self.setClipSlope()
 
     def indexesChanged(self, changed):
 #        print('changed', changed)
@@ -2516,6 +2547,10 @@ class WaveScene(QtWidgets.QGraphicsScene):
     def setSnapMode(self, snap):
         self.vSnap, self.hSnap = self.snapModes[snap]
 
+    def restore(self):
+        self.restoreNodes()
+        self.restorePath()
+
     def restoreNodes(self):
         for sample, (value, node) in enumerate(zip(self.currentKeyFrame.values, self.nodes)):
             element = self.currentKeyFrame.wavePath.elementAt(sample)
@@ -2552,8 +2587,8 @@ class WaveScene(QtWidgets.QGraphicsScene):
             self.clipBarFree.setVisible(False)
             self.clipBarTop.setVisible(False)
             self.clipBarBottom.setVisible(False)
-            self.restoreNodes()
-            self.restorePath()
+            self.restore()
+            self.setMouseMode(0)
         else:
             if mode & self.ClipVertical:
                 self.clipBarFree.setVisible(False)
@@ -2568,17 +2603,22 @@ class WaveScene(QtWidgets.QGraphicsScene):
                 self.clipBarBottom.setVisible(False)
             self.setMouseMode(self.Clip|mode)
 
-    def setClipSlope(self, angle, count, direction):
+    def setClipSlope(self, angle=None, count=None, direction=None):
+        if angle is None:
+            angle, count, direction = self.currentSlopeData
+        else:
+            self.currentSlopeData = angle, count, direction
         if direction <= 0:
             return
         width = count * 16384
-        height = int(pow21 * count * angle / 2)
+        height = int(pow21 * count * angle / 16)
         print(angle, height)
         if direction & self.ClipBottom:
             height *= -1
 
+        p0 = self.view.mapFromScene(QtCore.QPointF(0, 0))
         p1 = self.view.mapFromScene(QtCore.QPointF(width, height))
-        p1 -= self.view.mapFromScene(QtCore.QPointF(0, 0))
+        p1 -= p0
         print('p0: {} angle: {}'.format(self.view.mapFromScene(QtCore.QPointF(0, 0)), QtCore.QLineF(0, 0, p1.x(), p1.y()).angle()))
         if direction & self.ClipBottom:
             p2 = QtCore.QPointF(p1.x() - p1.y(), p1.y() + p1.x())
@@ -2617,7 +2657,7 @@ class WaveScene(QtWidgets.QGraphicsScene):
         self.clipFreeBrush.setFinalStop(refX2, refY2)
         self.clipBarFree.setBrush(self.clipFreeBrush)
 
-        transPath = self.view.mapToScene(viewPath)
+        transPath = self.view.mapToScene(viewPath.translated(p0))
         transPath.translate(-width / 2, -height / 2)
         self.clipBarFree.setPath(transPath)
 #        self.clipBarFree.setPos(self.sceneRect().center())
@@ -2804,8 +2844,43 @@ class WaveScene(QtWidgets.QGraphicsScene):
                             path.setElementPositionAt(node.sample, node.x(), node.y())
                         self.currentWavePath.setPath(path)
             else:
-                self.clipBarFree.setPos(pos)
-                self.clipBarFreeLine.setPos(pos)
+                x, y, sample, value = self.getSampleCoordinates(pos)
+                angle, count, direction = self.currentSlopeData
+                start = sample - count / 2
+                if not count & 1:
+                    x += 8192
+                    start += 1
+                self.clipBarFree.setPos(x, y)
+                self.clipBarFreeLine.setPos(x, y)
+                if event.buttons() == QtCore.Qt.LeftButton:
+                    if not self.selectedItems():
+                        [n.setSelected(True) for n in self.nodes]
+                    selected = self.selectedItems()
+                    end = start + count
+                    start = max(0, start)
+                    end = min(end, 127)
+                    translated = self.clipBarFreeLine.line().translated(x, y)
+                    ratio = 1. / count
+                    path = self.currentWavePath.path()
+                    if direction == self.ClipTop:
+                        for sample in range(start, end):
+                            node = self.nodes[sample]
+                            if node not in selected:
+                                continue
+                            clipValue = min(pow21, translated.pointAt(ratio * (sample - start)).y())
+                            if node.y() < clipValue:
+                                node.setY(clipValue)
+                                path.setElementPositionAt(sample, node.x(), node.y())
+                    else:
+                        for sample in range(start, end):
+                            node = self.nodes[sample]
+                            if node not in selected:
+                                continue
+                            clipValue = max(0, translated.pointAt(ratio * (sample - start)).y())
+                            if node.y() > clipValue:
+                                node.setY(clipValue)
+                                path.setElementPositionAt(sample, node.x(), node.y())
+                    self.currentWavePath.setPath(path)
 
         elif pos not in self.sceneRect() and not (self.curvePath and self.curvePath.initialized):
             self.xLine.setVisible(False)
@@ -3068,17 +3143,15 @@ class WaveScene(QtWidgets.QGraphicsScene):
             values.append(pow20 - path.elementAt(sample).y)
         self.genericDraw.emit(self.mouseMode, self.currentKeyFrame, values)
         self.hoverCursor.setCursor(None)
-        self.restoreNodes()
-        self.restorePath()
+        self.restore()
 
     def enter(self):
         self.restoreStatusMessage()
         if self.mouseMode & (self.Clip | self.ClipFree) == (self.Clip | self.ClipFree):
-            self.view.setCursor(QtCore.Qt.BlankCursor)
+#            self.view.setCursor(QtCore.Qt.BlankCursor)
             if self.mouseMode & self.ClipFree:
                 self.clipBarFree.setVisible(True)
                 self.clipBarFreeLine.setVisible(True)
-            return
         self.hoverCursor.show()
         if not self.mouseMode & self.Drawing:
             return
@@ -3265,8 +3338,8 @@ class MaybeVisibleEditItem(QtWidgets.QGraphicsObject):
         self.setAcceptsHoverEvents(True)
         self._rectF.setSize(QtCore.QSizeF(size, size))
         self._rect.setSize(QtCore.QSize(size, size))
-        self._rect.moveBottom(-size)
-        self._rectF.moveBottom(-size)
+        self._rect.moveBottom(-size / 3)
+        self._rectF.moveBottom(-size / 3)
         self.size = size
         self.edit = True
         self.editIconNormal = QtGui.QIcon.fromTheme('document-edit')
@@ -3308,6 +3381,7 @@ class MaybeVisibleEditItem(QtWidgets.QGraphicsObject):
         if edit == self.edit:
             return
         self.edit = edit
+        self.update()
 
     def paint(self, qp, option, widget):
         if widget != self.viewport:
@@ -3543,6 +3617,7 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
             self.waveDoubleClicked.emit(keyFrame)
         else:
             self.createKeyFrameRequested.emit(self.sliceIdItem.index, None, False)
+            self.sliceEditItem.setEdit(True)
 #        self.sliceEditRequested.emit(self.sliceIdItem.index)
 
     def updateSlice(self, keyFrame):
@@ -4082,7 +4157,7 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
             menu.addSeparator()
             if len(self.keyFrames) < 64:
                 newAction = menu.addAction(QtGui.QIcon.fromTheme('arrow-left'), 'Insert wave before')
-                newAction.setData((index - 1, False))
+                newAction.setData(index - 1)
                 if clipboardValid:
                     insertBeforeAction = menu.addAction(QtGui.QIcon.fromTheme('edit-paste'), 'Paste wave before')
                     insertBeforeAction.setData((index - 1, True))
@@ -4097,6 +4172,7 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
             menu.addActions(keyFrame.actions())
         else:
             newAction = menu.addAction(QtGui.QIcon.fromTheme('document-new'), 'Create wave at index {}'.format(index + 1))
+            newAction.setData(index)
             if clipboardValid:
                 pasteAction = menu.addAction(QtGui.QIcon.fromTheme('edit-paste'), 'Paste wave values at index {}'.format(index + 1))
                 pasteAction.setData((index, True))
@@ -4124,7 +4200,7 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
         elif res == editAction:
             self.waveDoubleClicked.emit(keyFrame)
         elif res == newAction:
-            self.createKeyFrameRequested.emit(index, None, False)
+            self.createKeyFrameRequested.emit(res.data(), None, False)
         elif res == deleteSelectedAction:
             self.deleteRequested.emit(self.currentSelection)
         elif res == copyVirtualAction:

@@ -456,7 +456,10 @@ class KeyFrames(QtCore.QObject):
                 return item
 
     def previousIndex(self, index):
-        return self.index(self.previous(index))
+        prevItem = self.previous(index)
+        if prevItem is None:
+            return -1
+        return self.index(prevItem)
 
     def next(self, index):
         if isinstance(index, SampleItem):
@@ -629,7 +632,7 @@ class KeyFrames(QtCore.QObject):
         if nextValidIndex < 0:
             nextValidIndex = 64
         if not prevValidIndex < newIndex < nextValidIndex:
-            print('wtf?!')
+            print('wtf?!', prevValidIndex, nextValidIndex, newIndex)
             raise BaseException('Invalid index range?')
             return
         prevIndex = self.index(keyFrame)
@@ -814,6 +817,7 @@ class KeyFrames(QtCore.QObject):
             self.scene.removeItem(item)
             #important!!!
             del item
+        self.keyFrames[0].setFirst(True)
         self.allItems[:] = allItems
         for item in self.allItems:
             self.layout.addItem(item)

@@ -1127,7 +1127,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.keyFrameView.keyFrames = self.keyFrameScene.keyFrames
         self.keyFrameScene.setIndexRequested.connect(self.setKeyFrameIndex)
         self.keyFrameScene.highlight.connect(self.setCurrentKeyFrame)
-#        self.keyFrameScene.transformSelected.connect(self.selectTransform)
+        self.keyFrameScene.transformSelected.connect(self.selectTransform)
         self.keyFrameScene.deleteRequested.connect(self.deleteRequested)
         self.keyFrameScene.mergeRequested.connect(self.mergeRequested)
         self.keyFrameScene.bounceRequested.connect(self.bounceRequested)
@@ -1179,6 +1179,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.indexSpin.setMaximumWidth(spinButtonWidth + self.fontMetrics().width('8888'))
         self.slotSpin.setMaximumWidth(spinButtonWidth + self.fontMetrics().width('888'))
         self.quantizeSpin.setMaximumWidth(spinButtonWidth + self.fontMetrics().width('888888'))
+        self.clipFreeRangeSpin.setMaximumWidth(spinButtonWidth + self.fontMetrics().width('8888'))
 
         self.reverseBtn.clicked.connect(self.reverseWaveTable)
         self.distributeBtn.clicked.connect(self.distributeWaveTable)
@@ -1207,12 +1208,14 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.prevClipFreeStatus = WaveScene.ClipTop
         self.clipModeCombo.currentIndexChanged.connect(self.checkClipMode)
         self.clipDirGroup.buttonClicked.connect(self.setClipMode)
-        self.clipRestoreBtn.clicked.connect(self.waveScene.restoreNodes)
+        self.clipRestoreBtn.clicked.connect(self.waveScene.restore)
         self.clipDiscardBtn.clicked.connect(lambda: self.noMouseModeBtn.setChecked(True))
         self.clipApplyBtn.clicked.connect(self.applyAction)
         self.clipFreeSlopeSlider.slopeChanged.connect(self.setClipFree)
         self.clipFreeRangeSpin.valueChanged.connect(self.setClipFree)
         self.clipFreeRangeSlider.setSibling(self.clipFreeRangeSpin)
+        self.clipFreeSlopeIcon.setSibling(self.clipFreeSlopeSlider)
+        self.clipFreeSlopeIcon.clicked.connect(self.clipFreeSlopeSlider.flip)
 
         self.selectionPanel.setVisible(False)
         self.selectBtn.toggled.connect(self.activateSelectPanel)
@@ -1569,7 +1572,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.clipDirGroup.blockSignals(False)
         self.setClipMode()
 
-    def setClipMode(self):
+    def setClipMode(self, button=None):
         activate = self.clipBtn.isChecked()
         self.clipPanel.setVisible(activate)
         mode = self.clipModeCombo.itemData(self.clipModeCombo.currentIndex()) if activate else 0
@@ -1582,7 +1585,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             if self.clipBottomBtn.isChecked():
                 mode |= WaveScene.ClipBottom
             if not mode & (WaveScene.ClipTop | WaveScene.ClipBottom):
-                if self.sender() == self.clipBottomBtn:
+                if button == self.clipBottomBtn:
                     self.clipTopBtn.blockSignals(True)
                     self.clipTopBtn.setChecked(True)
                     self.clipTopBtn.blockSignals(False)
@@ -1593,6 +1596,10 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                     self.clipBottomBtn.blockSignals(False)
                     mode |= WaveScene.ClipBottom
         elif mode & WaveScene.ClipFree:
+            if self.sender() == self.clipDirGroup:
+                self.clipFreeSlopeSlider.blockSignals(True)
+                self.clipFreeSlopeSlider.flip()
+                self.clipFreeSlopeSlider.blockSignals(False)
             self.setClipFree()
         self.waveScene.setClipMode(mode)
 
@@ -1811,7 +1818,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             pass
         self.player.stop()
         if state:
-            if self.harmonicsWidget.isVisible():
+            if self.harmonicsWidget.isVisible() or True:
                 wavePath = self.waveScene.currentWavePath.path()
                 index = [-wavePath.elementAt(s).y + pow20 for s in range(128)]
             else:
@@ -1934,6 +1941,8 @@ class WaveTableWindow(QtWidgets.QMainWindow):
     def createKeyFrame(self, index, values, after):
         self.undoStack.push(CreateKeyFrameUndo(self, index, values, after))
         self.setWaveEditBtn(index)
+        self.keyFrameScene.clearSelection()
+        self.waveTableScene.clearSliceSelection()
 
 #    def moveKeyFrame(self, keyFrame, index):
 #        if keyFrame.index == index:
@@ -2033,7 +2042,16 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             self.mainTabWidget.setCurrentWidget(self.waveEditTab)
         self.waveScene.setKeyFrame(keyFrame)
         self.setNextKeyFrame()
-        self.mainTransformWidget.setTransform(self.keyFrames[0])
+        self.mainTransformWidget.setTransform(keyFrame)
+        if self.sender() == self.keyFrameScene:
+            index = keyFrame.index
+            self.indexSlider.blockSignals(True)
+            self.indexSlider.setValue(keyFrame.index)
+            self.indexSlider.blockSignals(False)
+            self.indexSpin.blockSignals(True)
+            self.indexSpin.setValue(index + 1)
+            self.indexSpin.blockSignals(False)
+            self.setWaveEditBtn(index)
 
     def setCurrentTransformMode(self, mode):
         if self.sender() == self.mainTransformWidget:
@@ -2115,6 +2133,17 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         except Exception as e:
             print('no update?', e)
 
+    def selectTransform(self, transform, activate=False):
+        #TODO: fai selezione
+        if transform.isValid():
+            first = transform.prevItem
+            self.setCurrentKeyFrame(first)
+            if transform.nextItem == self.keyFrames[0]:
+                lastIndex = 63
+            else:
+                lastIndex = transform.nextItem.index
+            self.waveTableScene.setSliceSelection(first.index, lastIndex)
+
     def _selectTransform(self, transform, activate=False):
         if not transform.isValid() or transform.isContiguous() or not transform.mode or len(self.keyFrames) == 1:
             self.mainTabWidget.setHidden(2, True)
@@ -2124,20 +2153,16 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 self.mainTabWidget.setCurrentIndex(2)
             self.transformTab.setTransform(transform)
 
-    def setKeyFrameIndex(self, item):
-        prev = 0
-        next = item.index
-        for keyFrame in self.keyFrameScene.keyFrames:
-            if keyFrame.index < item.index:
-                prev = keyFrame.index
-            elif keyFrame.index > item.index:
-                next = keyFrame.index
-                break
-        if item.final:
-            next = 128
-        res = SetIndexDialog(self, item.index + 1, prev + 2, next).exec_()
+    def setKeyFrameIndex(self, keyFrame):
+        currentIndex = keyFrame.index
+        prevIndex = self.keyFrames.previousIndex(keyFrame) if currentIndex else 0
+        nextIndex = self.keyFrames.nextIndex(keyFrame)
+        if nextIndex < 0:
+            nextIndex = 64
+        #indexes set and return as shown (not zero-index)
+        res = SetIndexDialog(self, prevIndex + 2, currentIndex + 1, nextIndex).exec_()
         if res is not None:
-            item.setIndex(res - 1)
+            self.moveKeyFrames([keyFrame], res - 1)
 
     def importFiles(self):
         files = QtWidgets.QFileDialog.getOpenFileNames(self, 'Import WaveTable(s)', 
