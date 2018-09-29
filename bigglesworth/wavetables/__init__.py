@@ -984,7 +984,11 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 
         self.settings = QtCore.QSettings()
         self.dumpTimer.setInterval(self.settings.value('DumpInterval', 100))
+        print('settings request device: "{}"\nConversion: "{}"'.format(
+            self.settings.value('AudioDevice'), 
+            self.settings.value('SampleRateConversion', 2)))
         self.player = Player(self, self.settings.value('AudioDevice'), self.settings.value('SampleRateConversion', 2))
+        print('output created, sampleSize: {}, sampleRate: {}'.format(self.player.sampleSize, self.player.sampleRate))
 
         self.settings.beginGroup('WaveTables')
         if self.openedWindows[0] == self:
