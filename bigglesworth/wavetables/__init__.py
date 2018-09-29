@@ -1960,6 +1960,9 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.setWaveEditBtn(index)
         self.keyFrameScene.clearSelection()
         self.waveTableScene.clearSliceSelection()
+        keyFrame = self.keyFrames.get(index)
+        if keyFrame:
+            self.setCurrentKeyFrame(keyFrame)
 
 #    def moveKeyFrame(self, keyFrame, index):
 #        if keyFrame.index == index:

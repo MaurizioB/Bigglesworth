@@ -755,7 +755,9 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
         try:
             return self.data['harmonics']
         except:
-            #data format is ([(x, y), ], {node:curve}])
+            # data format is {H: ([(x, y), ...], {node:curve}])}
+            # where H is Harmonic + [waveForm << 7]
+            # see Envelope() in utils
             self.data['harmonics'] = {1: ([(0, 0)], )}
             return self.data['harmonics']
 
@@ -998,7 +1000,7 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
             pos = index * posRatio
             values = np.copy(self.silentWave)
             for harmonic, envData in self.harmonics.items():
-                envelope = Envelope(*envData)
+                envelope = Envelope(harmonic, *envData)
                 prevX = prevY = 0
                 if not pos:
                     value = envelope[0]

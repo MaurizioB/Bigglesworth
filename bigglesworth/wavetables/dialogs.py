@@ -277,10 +277,7 @@ class Loader(QtWidgets.QProgressDialog):
         QtWidgets.QProgressDialog.__init__(self, parent)
         self.setWindowModality(QtCore.Qt.WindowModal)
         self.setMinimumDuration(0)
-        cancelBtn = self.findChild(QtWidgets.QAbstractButton)
-        if cancelBtn:
-            cancelBtn.setVisible(False)
-            self.adjustSize()
+        self.setCancelButton(None)
 
     def finalize(self):
         self.setValue(self.maximum())

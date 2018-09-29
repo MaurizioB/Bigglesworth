@@ -837,20 +837,14 @@ class EnvelopeSelector(Selector):
 class WaveWidget(QtWidgets.QWidget):
     fract = None
     polarityChanged = QtCore.pyqtSignal(int)
+    shown = False
 
-    def __init__(self, fract, value):
+    def __init__(self, fract):
         QtWidgets.QWidget.__init__(self)
         self.setAttribute(QtCore.Qt.WA_LayoutUsesWidgetRect, True)
-        self.value = value
         self.setFract(fract)
         self.setFixedHeight(self.fontMetrics().height() * 1.5 - 4)
         self.rebuildPaths()
-
-    def setValue(self, value):
-        if value != self.value:
-            self.value = value
-            self.rebuildPaths()
-            self.update()
 
     def setFract(self, fract):
         if fract == self.fract:
@@ -862,14 +856,18 @@ class WaveWidget(QtWidgets.QWidget):
     def rebuildPaths(self):
         self.positivePath = QtGui.QPainterPath()
         self.negativePath = QtGui.QPainterPath()
-        y = (self.height() - 1) / 2
+        if not self.isVisible():
+            return
+        y = (self.height() - 5) / 2
         count = self.width() - 4
         values = waveFunction[abs(self.fract) >> 7](1, count)
+        self.positivePath.moveTo(0, -values[0] * y)
+        self.negativePath.moveTo(0, values[0] * y)
         for x, v in zip(range(count), values):
-            self.positivePath.lineTo(x, -v * y * self.value)
-            self.negativePath.lineTo(x, v * y * self.value)
-        self.negativePath.translate(2, y)
-        self.positivePath.translate(2, y)
+            self.positivePath.lineTo(x, -v * y)
+            self.negativePath.lineTo(x, v * y)
+        self.negativePath.translate(2.5, y + 1)
+        self.positivePath.translate(2.5, y + 1)
 
     def mousePressEvent(self, event):
         if event.buttons() == QtCore.Qt.MiddleButton:
@@ -880,6 +878,11 @@ class WaveWidget(QtWidgets.QWidget):
 
     def resizeEvent(self, event):
         self.rebuildPaths()
+
+    def showEvent(self, event):
+        if not self.shown:
+            self.shown = True
+            self.rebuildPaths()
 
     def paintEvent(self, event):
         qp = QtGui.QPainter(self)
@@ -974,6 +977,7 @@ class EnvelopeHarmonicsSlider(QtWidgets.QWidget):
         self.selector = EnvelopeSelector(self)
         layout.addWidget(self.selector)
 
+        self.baseModel = model
         self.fakeCombo = FakeCombo(model, fract)
         layout.addWidget(self.fakeCombo)
         self.fakeCombo.view().setMinimumWidth(self.fakeCombo.view().sizeHintForColumn(0))
@@ -982,7 +986,7 @@ class EnvelopeHarmonicsSlider(QtWidgets.QWidget):
         self.fakeCombo.setCurrentIndex((abs(fract) & 127) - 1)
         self.fakeCombo.currentIndexChanged.connect(self.setFractFromCombo)
 
-        self.waveWidget = WaveWidget(fract, 0)
+        self.waveWidget = WaveWidget(fract)
         self.waveWidget.polarityChanged.connect(self.setFract)
         layout.addWidget(self.waveWidget)
 
@@ -1018,7 +1022,7 @@ class EnvelopeHarmonicsSlider(QtWidgets.QWidget):
 
     def setValue(self, *args):
         self.slider.setValue(*args)
-        self.waveWidget.setValue(args[0])
+#        self.waveWidget.setValue(args[0])
         self.setStatusTip()
 
     def switchPolarity(self):
@@ -1072,7 +1076,17 @@ class EnvelopeHarmonicsSlider(QtWidgets.QWidget):
             self.showWaveMenu()
 
     def showWaveMenu(self):
-        self.menuActionGroup.actions()[abs(self.fract) >> 7].setChecked(True)
+        currentWave = abs(self.fract) >> 7
+        harmonicIndex = (abs(self.fract) & 127) - 1
+
+        #check that it is actually possible to change wave
+        for wave, action in enumerate(self.menuActionGroup.actions()):
+            if wave == currentWave:
+                action.setEnabled(True)
+                action.setChecked(True)
+                continue
+            action.setEnabled(bool(self.baseModel.index(harmonicIndex, wave).data(FractRole)))
+
         res = self.menu.exec_(self.mapToGlobal(self.waveWidget.geometry().bottomLeft()))
         if res is not None and res.data() is not None:
             fract = (abs(self.fract) & 127) + (res.data() << 7)

@@ -323,10 +323,16 @@ def getOscPaths():
     return shapes
 
 class Envelope(object):
-    def __init__(self, nodes=None, curves=None, waveType=0):
+    '''
+    Format of Envelope data is:
+    ([(x, y), ...], {node:curve}])
+    
+    '''
+    def __init__(self, harmonic, nodes=None, curves=None):
         self.nodes = nodes[:] if nodes is not None else [(0, 0)]
         self.curves = curves.copy() if curves is not None else {}
-        self.waveType = waveType
+        self.harmonic = harmonic
+        self.waveType = harmonic >> 7
 
     def fullIter(self):
         for i, (x, y) in enumerate(self.nodes):

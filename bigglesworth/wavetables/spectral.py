@@ -502,7 +502,8 @@ class EnvelopePath(QtWidgets.QGraphicsPathItem):
         self.nodes = []
         self.closed = False
         self.selectable = False
-        self.setPen(self.pens[0])
+        self.pens = self.wavePens[abs(slider.fract) >> 7]
+        self.setPen(self.pens[self.selectable])
 
         self.menu = QtWidgets.QMenu()
         self.menu.aboutToShow.connect(self.checkCurveMenu)
@@ -1268,7 +1269,9 @@ class SpecTransformDialog(QtWidgets.QDialog):
     def sortedSliders(self):
         #sort by harmonic, negative fractions are after positive
 #        return sorted(self.envelopes.keys(), key=lambda s: (abs(s.fract), -s.fract))
-        return sorted(self.envelopes.keys(), key=lambda s: (abs(s.fract) & 127, abs(s.fract) >> 7))
+#        return sorted(self.envelopes.keys(), key=lambda s: (abs(s.fract) & 127, abs(s.fract) >> 7))
+        #changed. sorting by harmonic, ignoring sign or wave
+        return sorted(self.envelopes.keys(), key=lambda s: abs(s.fract) & 127)
 
     def movePlayHead(self, value):
         x = float(value - self.start) / (self.end - self.start)
@@ -1382,7 +1385,7 @@ class SpecTransformDialog(QtWidgets.QDialog):
         slider.removeRequested.connect(self.removeEnvelope)
         slider.copyRequested.connect(self.copyEnvelope)
         slider.pasteRequested.connect(self.pasteEnvelope)
-        envelope = Envelope(nodes, curves)
+        envelope = Envelope(fract, nodes, curves)
 
 #        if not self.envelopes or (fracts and fract > max(fracts)):
 #            self.hLayout.addWidget(slider)
