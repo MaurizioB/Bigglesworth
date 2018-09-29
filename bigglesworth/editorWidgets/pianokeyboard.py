@@ -250,7 +250,6 @@ class WhiteKey(MetaKey):
                 self.ungrabMouse()
 
     def paint(self, qp, *args, **kwargs):
-#        self.prevBlackShadow()
         qp.translate(.5, .5)
         qp.setRenderHints(QtGui.QPainter.Antialiasing)
         qp.setPen(QtCore.Qt.darkGray)
@@ -362,12 +361,14 @@ class BlackKey(MetaKey):
         self.keyBody = self.keyBodyPressed
         self.shadowPaint = self.pressedShadowPaint
         self.bottomPaint = self.pressedBottomPaint
+        self.nextWhite.update()
         MetaKey.mousePressEvent(self, event)
 
     def mouseReleaseEvent(self, event):
         self.keyBody = self.keyBodyNormal
         self.shadowPaint = self.normalWhiteNormalShadowPaint
         self.bottomPaint = self.normalBottomPaint
+        self.nextWhite.update()
         MetaKey.mouseReleaseEvent(self, event)
 
     def triggerNoteEvent(self, eventType, velocity):
@@ -389,6 +390,7 @@ class BlackKey(MetaKey):
             self.update()
             if self.scene().mouseGrabberItem() == self:
                 self.ungrabMouse()
+        self.nextWhite.update()
 
     def paint(self, qp, *args, **kwargs):
         qp.translate(.5, .5)
@@ -430,7 +432,6 @@ class BlackKey(MetaKey):
 
     def pressedShadowPaint(self, qp):
         qp.drawRoundedRect(self.x + 1, 0, self.width + 1, self.height + 1, 2, 2)
-        self.nextWhite.update()
 
     def pressedBottomPaint(self, qp):
         qp.setPen(QtCore.Qt.NoPen)

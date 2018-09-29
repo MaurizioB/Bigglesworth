@@ -3372,6 +3372,8 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             self.selectionLeftBtn.setMaximumHeight(self.selectionMinusBtn.geometry().bottom() - self.selectionPlusBtn.geometry().top())
             self.selectionRightBtn.setMaximumHeight(self.selectionLeftBtn.maximumHeight())
             self.selectionListView.setFixedHeight(self.fontMetrics().height() * 3.5)
+            #This is necessary as changing the icon invalidates the *whole* layout. we don't want that...
+            self.waveEditBtn.setFixedSize(self.waveEditBtn.size())
 
 #            self.fullTableMiniView.fitInView(self.fullTableMiniScene.sceneRect())
             self.setCurrentKeyFrame(self.keyFrames[0])

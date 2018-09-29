@@ -601,7 +601,9 @@
                 <string>Discard</string>
                </property>
                <property name="icon">
-                <iconset theme="dialog-cancel"/>
+                <iconset theme="dialog-cancel">
+                 <normaloff/>
+                </iconset>
                </property>
               </widget>
              </item>
@@ -1979,7 +1981,9 @@
            <item>
             <widget class="QPushButton" name="clipDiscardBtn">
              <property name="icon">
-              <iconset theme="dialog-cancel"/>
+              <iconset theme="dialog-cancel">
+               <normaloff/>
+              </iconset>
              </property>
             </widget>
            </item>
