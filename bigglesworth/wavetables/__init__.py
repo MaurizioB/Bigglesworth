@@ -12,6 +12,8 @@ from unidecode import unidecode
 os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
 
 sys.path.append('../..')
+sys.path.append('/Users/mauriziob/code/Bigglesworth/bigglesworth/editorWidgets/')
+sys.path.append('/Users/mauriziob/code/Bigglesworth/')
 
 from Qt import QtCore, QtGui, QtWidgets, QtSql
 
@@ -73,7 +75,7 @@ import soundfile
 
 from bigglesworth.libs import midifile
 #from bigglesworth.mididevice import MidiDevice
-from bigglesworth.utils import loadUi, setItalic, sanitize
+from bigglesworth.utils import loadUi, setItalic
 from bigglesworth.midiutils import SysExEvent, NoteOnEvent, NoteOffEvent, NOTEOFF, NOTEON
 
 from bigglesworth.const import INIT, END, CHK, IDW, IDE, WTBD
@@ -863,10 +865,14 @@ class TestMidiDevice(QtCore.QObject):
         self.main = main
         self.backend = -1
         self.main.midiEvent.connect(self.outputEvent)
-        config(
-            client_name='Bigglesworth', 
-            in_ports=[('Input', 'Virtual.*')], 
-            out_ports=[('Output', 'Blofeld.*', 'aseqdump.*')])
+        try:
+            config(
+                client_name='Bigglesworth', 
+                in_ports=[('Input', 'Virtual.*')], 
+                out_ports=[('Output', 'Blofeld.*', 'aseqdump.*')])
+            self.isValid = True
+        except:
+            self.isValid = False
 
     def start(self):
         run(Filter(mdNOTE) >> Call(self.inputEvent))
@@ -881,8 +887,8 @@ class TestMidiDevice(QtCore.QObject):
         self.midiEvent.emit(newEvent)
 
     def outputEvent(self, event):
-#        print(event)
-        outputEvent(mdSysExEvent(1, event.sysex))
+        if self.isValid:
+            outputEvent(mdSysExEvent(1, event.sysex))
 
 
 class WaveTableWindow(QtWidgets.QMainWindow):
@@ -1839,7 +1845,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.player.stop()
         if state:
             multiplier = max(1, self.speedSlider.value())
-            self.player.notify.connect(self.setFullTablePlayhead)
+#            self.player.notify.connect(self.setFullTablePlayhead)
             self.player.playData(
                 self.keyFrames.fullTableValues(note, multiplier, self.player.sampleRate, index=None, reverse=self.backForthChk.isChecked()), 
                 volume=max(1, velocity) / 127.)
@@ -3439,9 +3445,10 @@ GenericDrawUndo.labels = {
 
 if __name__ == '__main__':
 
-    from mididings import run, config, Filter, Call, NOTE as mdNOTE, NOTEOFF as mdNOTEOFF, NOTEON as mdNOTEON
-    from mididings.engine import output_event as outputEvent
-    from mididings.event import SysExEvent as mdSysExEvent
+    if 'linux' in sys.platform:
+        from mididings import run, config, Filter, Call, NOTE as mdNOTE, NOTEOFF as mdNOTEOFF, NOTEON as mdNOTEON
+        from mididings.engine import output_event as outputEvent
+        from mididings.event import SysExEvent as mdSysExEvent
 
 #    if 'linux' in sys.platform:
 #        def addSection(self, text=''):

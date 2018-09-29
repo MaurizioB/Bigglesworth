@@ -257,14 +257,14 @@ class WaveIODevice(QtCore.QIODevice):
                 #ratio is output/input
                 waveData = samplerate.resample(waveData, self.player.sampleRate / 48000., 0)
             self.currentSampleRate = self.player.sampleRate
-            if self.currentSampleSize != self.player.sampleSize or self.player.sampleSize == 16:
-                waveData = (waveData * 32768).astype('int16')
+#            if self.currentSampleSize != self.player.sampleSize or self.player.sampleSize == 16:
+#                waveData = (waveData * 32768).astype('int16')
             self.currentSampleSize = self.player.sampleSize
             if volume != self.currentVolume:
 #                waveData /= self.currentVolume
                 self.currentVolume = volume
 #            waveData *= volume
-            waveData = np.multiply(waveData, volume, out=waveData, casting='unsafe')
+            waveData = np.multiply(waveData, volume * 32768).astype('int16')
             self.clean = True
             self.currentWaveData = waveData
         self.byteArray.clear()
@@ -355,9 +355,10 @@ class Player(QtCore.QObject):
     def setAudioDevice(self, audioDevice=None):
         if audioDevice:
             self.audioDevice = audioDevice
-        sampleSize = 32 if 32 in self.audioDevice.supportedSampleSizes() else 16
-        sampleRate = 48000 if 48000 in self.audioDevice.supportedSampleRates() else 44100
-        print('detected sampleSize: {}, sampleRate: {}'.format(sampleSize, sampleRate))
+#        sampleSize = 32 if 32 in self.audioDevice.supportedSampleSizes() else 16
+        sampleSize = 16
+#        sampleRate = 48000 if 48000 in self.audioDevice.supportedSampleRates() else 44100
+        sampleRate = 44100
 
         format = QtMultimedia.QAudioFormat()
         format.setSampleRate(sampleRate)
@@ -365,7 +366,8 @@ class Player(QtCore.QObject):
         format.setSampleSize(sampleSize)
         format.setCodec('audio/pcm')
         format.setByteOrder(QtMultimedia.QAudioFormat.LittleEndian)
-        format.setSampleType(QtMultimedia.QAudioFormat.Float if sampleSize >= 32 else QtMultimedia.QAudioFormat.SignedInt)
+#        format.setSampleType(QtMultimedia.QAudioFormat.Float if sampleSize >= 32 else QtMultimedia.QAudioFormat.SignedInt)
+        format.setSampleType(QtMultimedia.QAudioFormat.SignedInt)
 
         if not self.audioDevice.isFormatSupported(format):
             format = self.audioDevice.nearestFormat(format)
