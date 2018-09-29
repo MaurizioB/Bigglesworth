@@ -3,8 +3,9 @@ import sys
 from uuid import uuid4
 
 from Qt import QtCore, QtGui, QtWidgets
-from PyQt4.QtGui import QStyleOptionTabV3, QIconEngineV2
+from PyQt4.QtGui import QStyleOptionTabV3, QIconEngineV2, QStyleOptionTabWidgetFrameV2
 QtWidgets.QStyleOptionTabV3 = QStyleOptionTabV3
+QtWidgets.QStyleOptionTabWidgetFrameV2 = QStyleOptionTabWidgetFrameV2
 QtGui.QIconEngineV2 = QIconEngineV2
 
 from bigglesworth.utils import sanitize, loadUi, getCardinal
@@ -2237,81 +2238,6 @@ class WaveTableMiniView(QtWidgets.QGraphicsView):
             self.clicked.emit()
 
 
-class MainTabBar(QtWidgets.QTabBar):
-    def __init__(self, *args, **kwargs):
-        QtWidgets.QTabBar.__init__(self, *args, **kwargs)
-        self.hidden = set()
-
-    def setHidden(self, index, hidden):
-        if hidden:
-            if hidden in self.hidden or len(self.hidden) == self.count() - 1:
-                return
-            self.hidden.add(index)
-            if self.currentIndex() == index:
-                if not index:
-                    newIndex = 1
-                    while newIndex in self.hidden:
-                        newIndex += 1
-                else:
-                    delta = -1
-                    newIndex = index - 1
-                    while newIndex in self.hidden:
-                        newIndex += delta
-                        if newIndex == self.count():
-                            delta = 1
-                            newIndex = index - 1
-                self.setCurrentIndex(newIndex)
-        else:
-            self.hidden.discard(index)
-#        self.tabRemoved(index)
-        self.tabLayoutChange()
-        QtWidgets.QApplication.processEvents()
-        size = QtCore.QSize(self.parent().width(), self.height())
-        self.resizeEvent(QtGui.QResizeEvent(size, QtCore.QSize()))
-        self.parent().resizeEvent(QtGui.QResizeEvent(self.parent().size(), QtCore.QSize()))
-#        self.update()
-
-    def tabSizeHint(self, index):
-        hint = QtWidgets.QTabBar.tabSizeHint(self, index)
-        if index in self.hidden:
-            hint.setWidth(0)
-        return hint
-
-    def wheelEvent(self, event):
-        index = self.currentIndex()
-        if event.delta() < 1:
-            delta = 1
-        else:
-            delta = -1
-        newIndex = index + delta
-        while newIndex in self.hidden:
-            newIndex += delta
-        if not 0 <= newIndex < self.count():
-            newIndex = index
-        self.setCurrentIndex(newIndex)
-
-    def paintEvent(self, event):
-        option = QtWidgets.QStyleOptionTabV3()
-        qp = QtWidgets.QStylePainter(self)
-        current = 0
-        last = self.count() - 1 - len(self.hidden)
-        for index in range(self.count()):
-            if index in self.hidden:
-                continue
-            self.initStyleOption(option, index)
-            if not last:
-                option.position = 3
-            elif not current:
-                option.position = 0
-            elif current == last:
-                option.position = 2
-            qp.drawPrimitive(QtWidgets.QStyle.PE_FrameTabBarBase, option)
-            qp.drawControl(QtWidgets.QStyle.CE_TabBarTab, option)
-            qp.drawControl(QtWidgets.QStyle.CE_TabBarTabShape, option)
-            qp.drawControl(QtWidgets.QStyle.CE_TabBarTabLabel, option)
-            current += 1
-
-
 class ExtendedTabBar(QtWidgets.QTabBar):
     def tabSizeHint(self, index):
         hint = QtWidgets.QTabBar.tabSizeHint(self, index)
@@ -2330,10 +2256,95 @@ class WaveTabWidget(QtWidgets.QTabWidget):
         QtWidgets.QTabWidget.resizeEvent(self, event)
 
 
+class MainTabBar(QtWidgets.QTabBar):
+    def __init__(self, *args, **kwargs):
+        from bigglesworth.wavetables.audioimport import AudioImportTab
+        self.reference = AudioImportTab
+
+        QtWidgets.QTabBar.__init__(self, *args, **kwargs)
+
+    def mousePressEvent(self, event):
+        self.index = self.tabAt(event.pos())
+        self.importTab = self.parent().widget(self.index)
+        if isinstance(self.importTab, self.reference) and not self.importTab.previewMode:
+            self.startPos = event.pos()
+        else:
+            self.startPos = None
+        QtWidgets.QTabBar.mousePressEvent(self, event)
+
+    def mouseMoveEvent(self, event):
+        if self.startPos and (event.pos() - self.startPos).manhattanLength() >= QtWidgets.QApplication.startDragDistance():
+            self.startDrag()
+
+    def startDrag(self):
+        option = QtWidgets.QStyleOptionTabV3()
+        self.initStyleOption(option, self.index)
+        option.position = option.OnlyOneTab
+        option.selectedPosition = option.NotAdjacent
+        pm = QtGui.QPixmap(option.rect.size())
+        pm.fill(QtCore.Qt.transparent)
+        qp = QtGui.QPainter(pm)
+        qp.translate(-option.rect.left(), 0)
+        self.style().drawPrimitive(QtWidgets.QStyle.PE_FrameTabBarBase, option, qp)
+        self.style().drawControl(QtWidgets.QStyle.CE_TabBarTab, option, qp)
+        self.style().drawControl(QtWidgets.QStyle.CE_TabBarTabShape, option, qp)
+        self.style().drawControl(QtWidgets.QStyle.CE_TabBarTabLabel, option, qp)
+        qp.end()
+
+        self.dragObject = ActivateDrag(self)
+        mimeData = QtCore.QMimeData()
+        byteArray = QtCore.QByteArray()
+        stream = QtCore.QDataStream(byteArray, QtCore.QIODevice.WriteOnly)
+        stream.writeQVariant(self.window().uuid)
+        stream.writeQString(self.importTab.currentInfo.name)
+        print(self.importTab.currentInfo.name)
+
+        mimeData.setData('bigglesworth/WaveFilePath', byteArray)
+
+        self.dragObject.setPixmap(pm)
+        self.dragObject.setMimeData(mimeData)
+        self.dragObject.exec_(QtCore.Qt.CopyAction)
+
+
+class TabPlaceHolder(QtWidgets.QWidget):
+    arrowTop = QtGui.QPainterPath()
+    arrowTop.moveTo(-4, 0)
+    arrowTop.lineTo(4, 0)
+    arrowTop.lineTo(0, 4)
+    arrowTop.closeSubpath()
+
+    arrowBottom = QtGui.QPainterPath()
+    arrowBottom.moveTo(-4, 0)
+    arrowBottom.lineTo(4, 0)
+    arrowBottom.lineTo(0, -4)
+    arrowBottom.closeSubpath()
+
+    def __init__(self, tabBar):
+        QtWidgets.QWidget.__init__(self, tabBar)
+        self.tabBar = tabBar
+        self.setVisible(False)
+        self.setFixedWidth(9)
+
+    def showEvent(self, event):
+        self.setMaximumHeight(self.tabBar.height())
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter(self)
+        qp.setRenderHints(qp.Antialiasing)
+        qp.setPen(QtCore.Qt.NoPen)
+        qp.setBrush(self.palette().color(QtGui.QPalette.ButtonText))
+        qp.translate(self.rect().center().x() + .5, .5)
+        qp.drawPath(self.arrowTop)
+        qp.translate(0, self.height() - 1)
+        qp.drawPath(self.arrowBottom)
+
+
 class MainTabWidget(QtWidgets.QTabWidget):
+    dropTabFileRequested = QtCore.pyqtSignal(str, int)
+
     def __init__(self, *args, **kwargs):
         QtWidgets.QTabWidget.__init__(self, *args, **kwargs)
-#        self.setTabBar(MainTabBar(self))
+        self.setTabBar(MainTabBar(self))
 #        self.setHidden = self.tabBar().setHidden
         metrics = {}
         dpi = (self.logicalDpiX() + self.logicalDpiY()) / 2.
@@ -2366,9 +2377,12 @@ class MainTabWidget(QtWidgets.QTabWidget):
                 }}
                 '''.format(**metrics))
 
+        self.placeHolder = TabPlaceHolder(self.tabBar())
+
     def dragEnterEvent(self, event):
         if event.mimeData().hasFormat('bigglesworth/WaveFileData') or \
-            event.mimeData().hasFormat('bigglesworth/SampleItemSelection'):
+            event.mimeData().hasFormat('bigglesworth/SampleItemSelection') or \
+            event.mimeData().hasFormat('bigglesworth/WaveFilePath'):
                 event.accept()
         else:
             QtWidgets.QTabWidget.dragEnterEvent(self, event)
@@ -2377,6 +2391,36 @@ class MainTabWidget(QtWidgets.QTabWidget):
         if event.pos() in self.tabBar().rect():
             tabBarPos = self.tabBar().mapFromParent(event.pos())
             tabIndex = self.tabBar().tabAt(tabBarPos)
+            if event.mimeData().hasFormat('bigglesworth/WaveFilePath'):
+                if not tabIndex:
+                    event.ignore()
+                    return
+                byteArray = QtCore.QByteArray(event.mimeData().data('bigglesworth/WaveFilePath'))
+                stream = QtCore.QDataStream(byteArray)
+                window = stream.readQVariant()
+                if window != self.window().uuid:
+                    option = QtWidgets.QStyleOptionTabWidgetFrameV2()
+                    self.initStyleOption(option)
+                    left = option.rect.x() + option.tabBarRect.left()
+                    option = QtWidgets.QStyleOptionTabV3()
+                    self.tabBar().initStyleOption(option, tabIndex)
+                    if event.pos().x() > option.rect.center().x():
+                        pos = option.rect.right()
+                        tabIndex += 1
+                    else:
+                        pos = option.rect.left()
+                    if tabIndex == self.count() or tabIndex <= 1:
+                        self.placeHolder.hide()
+                        event.ignore()
+                        return
+                    self.placeHolder.move(pos - left, 0)
+                    self.placeHolder.show()
+                    self.dropTabIndex = tabIndex
+                    event.accept()
+                else:
+                    self.placeHolder.hide()
+                    event.ignore()
+                return
             if event.mimeData().hasFormat('bigglesworth/SampleItemSelection') and \
                 event.source().window() != self.window():
                     if tabIndex == 0:
@@ -2395,6 +2439,20 @@ class MainTabWidget(QtWidgets.QTabWidget):
             if window == self.window().uuid and stream.readInt() == tabIndex:
                 self.setCurrentIndex(tabIndex)
         event.ignore()
+
+    def dropEvent(self, event):
+        self.placeHolder.hide()
+        if event.mimeData().hasFormat('bigglesworth/WaveFilePath'):
+            byteArray = QtCore.QByteArray(event.mimeData().data('bigglesworth/WaveFilePath'))
+            stream = QtCore.QDataStream(byteArray)
+            #ignore uuid
+            stream.readQVariant()
+            self.dropTabFileRequested.emit(stream.readQString(), self.dropTabIndex)
+        QtWidgets.QTabWidget.dropEvent(self, event)
+
+    def dragLeaveEvent(self, event):
+        self.placeHolder.hide()
+        QtWidgets.QTabWidget.dragLeaveEvent(self, event)
 
 
 class WaveIndexSpin(QtWidgets.QSpinBox):

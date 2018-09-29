@@ -357,25 +357,33 @@ class GenericValuesUndo(KeyFrameUndo):
 
 
 class AdvancedValuesUndo(KeyFrameUndo):
-    def __init__(self, main, dropData, values, fromFile):
+    def __init__(self, main, dropData, values, fromFile, isDrop=True):
         KeyFrameUndo.__init__(self, main)
         self.dropData = dropData
         self.values = values
         self.fromFile = fromFile
+        self.isDrop = isDrop
 
     def redo(self):
         if not self.done:
             self.done = True
             self.oldIndexes = self.keyFrames.getUuidDict()
             self.oldState = self.keyFrames.getSnapshot()
-            self.keyFrames.setValuesFromDrop(self.values, self.dropData, self.fromFile)
+            if self.isDrop:
+                self.keyFrames.setValuesFromDrop(self.values, self.dropData, self.fromFile)
+                count = self.dropData[0]
+            else:
+                self.keyFrames.setValuesMulti(0, self.values, fromFile=True)
+                count = 64
             self.newState = self.keyFrames.getSnapshot()
             self.newIndexes = self.keyFrames.getUuidDict()
             self.checkIndexes(self.oldIndexes, self.newIndexes)
-            count = self.dropData[0]
-            text = '{} wave{} dropped'.format(count, 's' if count > 1 else '')
+            text = '{c} wave{p} {d}'.format(
+                c=count, 
+                p='s' if count > 1 else '', 
+                d='dropped' if self.isDrop else 'imported')
             if self.fromFile:
-                text += 'dropped from file "{}"'.format(QtCore.QFileInfo(self.fromFile).fileName())
+                text += ' from file "{}"'.format(QtCore.QFileInfo(self.fromFile).fileName())
             self.setText(text)
         else:
             KeyFrameUndo.redo(self)
@@ -1295,8 +1303,9 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 
         self.mainTabWidget.currentChanged.connect(self.miniView.setVisible)
         self.mainTabWidget.tabCloseRequested.connect(self.tabCloseRequested)
+        self.mainTabWidget.dropTabFileRequested.connect(self.addAudioImportTab)
         self.mainTabBar = self.mainTabWidget.tabBar()
-        self.mainTabBar.setTabIcon(1, QtGui.QIcon.fromTheme('wavetable'))
+        self.mainTabBar.setTabIcon(1, QtGui.QIcon.fromTheme('wavetables'))
 
 #        self.transformEditor = TransformEditor(self)
 #        self.mainTabWidget.setHidden(self.mainTabWidget.addTab(self.transformEditor, QtGui.QIcon.fromTheme('exchange-positions'), 'Transform edit'), True)
@@ -1339,6 +1348,9 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                     break
                 index += 1
             self.nameEdit.setText(name)
+            self.wasNew = True
+        else:
+            self.wasNew = False
 
         self.checkDumps()
         self.dumpAllBtn.clicked.connect(self.dumpAll)
@@ -1856,10 +1868,15 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             pos = 64 - pos
         self.waveTableScene.highlight.emit(pos)
 
-    def addAudioImportTab(self):
-        importTab = AudioImportTab(self)
+    def addAudioImportTab(self, path=None, index=None):
+        importTab = AudioImportTab(self, path)
         importTab.imported.connect(self.fileImported)
-        self.mainTabWidget.addTab(importTab, QtGui.QIcon.fromTheme('document-open'), 'Audio import')
+        importTab.fullImportRequested.connect(self.fullImport)
+        if path:
+            self.mainTabWidget.insertTab(index, importTab, QtGui.QIcon.fromTheme('audio-x-generic'), QtCore.QFileInfo(path).fileName())
+            self.mainTabWidget.setCurrentIndex(index)
+        else:
+            self.mainTabWidget.addTab(importTab, QtGui.QIcon.fromTheme('document-open'), 'Audio import')
         self.checkTabButtons()
 
     def checkTabButtons(self):
@@ -1881,6 +1898,15 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.mainTabBar.setTabToolTip(tabId, fileInfo.absoluteFilePath())
         self.mainTabBar.setTabIcon(tabId, QtGui.QIcon.fromTheme('audio-x-generic'))
         self.addAudioImportTab()
+
+    def fullImport(self, values, filePath):
+        if len(self.keyFrames) > 1 or not self.isClean() or self.undoStack.index() > 0 or not self.wasNew:
+            if QtWidgets.QMessageBox.question(self, 'Confirm import?', 
+                'Do you want to overwrite the contents of the current wavetable with the imported data?', 
+                QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel) != QtWidgets.QMessageBox.Ok:
+                    return
+        self.undoStack.push(AdvancedValuesUndo(self, None, values, filePath, isDrop=False))
+        self.mainTabWidget.setCurrentIndex(0)
 
     def highlightKeyFrame(self, index):
         prevKeyFrame = nextKeyFrame = None
@@ -2930,6 +2956,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 self.settings.setValue('Recent', recent)
                 self.settings.endGroup()
             return
+        self.wasNew = False
         name = self.waveTableModel.index(row, NameColumn).data().rstrip()
         self.nameEdit.setText(name)
         self.setWindowTitle('Wavetable Editor - {} [*]'.format(name))

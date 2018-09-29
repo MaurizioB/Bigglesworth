@@ -622,6 +622,7 @@ class AudioImportTab(QtWidgets.QWidget):
     shown = False
     previewMode = True
     imported = QtCore.pyqtSignal(object)
+    fullImportRequested = QtCore.pyqtSignal(object, str)
 
     recentModel = ToolTipModel()
     recentLoaded = False
@@ -631,7 +632,7 @@ class AudioImportTab(QtWidgets.QWidget):
     defaultVolume = None
     currentPreviewFile = None
 
-    def __init__(self, waveTableWindow):
+    def __init__(self, waveTableWindow, filePath=None):
         QtWidgets.QWidget.__init__(self)
         loadUi('ui/audioimporttab.ui', self)
         self.waveTableWindow = waveTableWindow
@@ -776,13 +777,23 @@ class AudioImportTab(QtWidgets.QWidget):
         self.offsetSlider.setSibling(self.offsetSpin)
         self.selectCountSlider.setSibling(self.selectCountSpin)
 
-        self.importFullBtn.clicked.connect(self.importFull)
+        self.fullImportBtn.clicked.connect(self.fullImport)
         self.openWaveBtn.clicked.connect(self.openFileDialog)
         self.importBtn.clicked.connect(self.importFile)
         self.lowerPanel.setSwitchVisible(False)
 
-    def importFull(self):
-        pass
+        if filePath:
+            self.fileSelected(self.fileSystemModel.index(filePath), True)
+            self.importFile()
+
+    def fullImport(self):
+        start, count = self.waveView.currentSelection
+        start = start * 128 + self.offsetSpin.value()
+        values = []
+        for slice in range(count):
+            values.append(self.waveScene.outValues[start + slice * 128:start + (slice + 1) * 128])
+        name = self.waveScene.currentInfo.name
+        self.fullImportRequested.emit(values, name)
 
     def openFileDialog(self):
         self.player.stop()
@@ -991,6 +1002,7 @@ class AudioImportTab(QtWidgets.QWidget):
 
         self.lowerPanel.setSwitchVisible(True)
         self.lowerPanel.contentName = 'import options and info'
+        self.selectCountSpin.setValue(self.selectCountSpin.maximum())
 
     def selectionChanged(self, selection):
         self.selectFromSpin.blockSignals(True)
@@ -1012,7 +1024,7 @@ class AudioImportTab(QtWidgets.QWidget):
         self.selectFromSpin.blockSignals(False)
         self.selectToSpin.blockSignals(False)
         self.selectCountSpin.blockSignals(False)
-        self.importFullBtn.setEnabled(self.selectCountSpin.value() == 64)
+        self.fullImportBtn.setEnabled(self.selectCountSpin.value() == 64)
 
     def showPositionWidget(self):
         self.positionWidget.move(self.positionWidgetIcon.mapToGlobal(QtCore.QPoint(0, 0)))
@@ -1045,7 +1057,7 @@ class AudioImportTab(QtWidgets.QWidget):
         self.selectToSpin.blockSignals(False)
         self.selectCountSpin.blockSignals(False)
         self.waveView.setSelection(self.selectFromSpin.value() - 1, self.selectCountSpin.value())
-        self.importFullBtn.setEnabled(self.selectCountSpin.value() == 64)
+        self.fullImportBtn.setEnabled(self.selectCountSpin.value() == 64)
 
     def moveView(self, pos):
         scrollBar = self.waveView.horizontalScrollBar()
@@ -1442,12 +1454,13 @@ class WaveSourceView(QtWidgets.QGraphicsView):
                     self.startDrag()
             elif self.rubberSelectRect is not None:
 #                self.rubberSelectRect = QtCore.QRect(self.mousePos, event.pos())
-                before = self.mapFromScene(QtCore.QPoint()).x()
-                self.ensureVisible(QtCore.QRectF(self.mapToScene(event.pos().x(), self.adjustedRect.center().y()), QtCore.QSizeF(1, 1)), 0, 0)
-                deltaX = self.mapFromScene(QtCore.QPoint()).x() - before
-                if deltaX:
-                    self.rubberSelectRect.setLeft(self.rubberSelectRect.left() + deltaX)
-                    self.adjustedRect.setLeft(self.adjustedRect.left() + deltaX)
+                if len(self.selected) < 64:
+                    before = self.mapFromScene(QtCore.QPoint()).x()
+                    self.ensureVisible(QtCore.QRectF(self.mapToScene(event.pos().x(), self.adjustedRect.center().y()), QtCore.QSizeF(1, 1)), 0, 0)
+                    deltaX = self.mapFromScene(QtCore.QPoint()).x() - before
+                    if deltaX:
+                        self.rubberSelectRect.setLeft(self.rubberSelectRect.left() + deltaX)
+                        self.adjustedRect.setLeft(self.adjustedRect.left() + deltaX)
                 self.rubberSelectRect.setBottomRight(event.pos())
                 self.adjustedRect.setRight(event.pos().x())
                 if not self.adjustedRect.width():
@@ -1557,6 +1570,7 @@ class WaveSourceScene(QtWidgets.QGraphicsScene):
     waveBackground.setColorAt(0, QtGui.QColor(0, 128, 192, 64))
     waveBackground.setColorAt(.5, QtGui.QColor(0, 128, 192, 192))
     waveBackground.setColorAt(1, QtGui.QColor(0, 128, 192, 64))
+    lastRect = QtCore.QRect()
 
     waveFilePen = QtGui.QPen(QtGui.QBrush(waveBackground), 1)
     waveFilePen.setCosmetic(True)
@@ -1773,8 +1787,10 @@ class WaveSourceScene(QtWidgets.QGraphicsScene):
 
     def updateRect(self, rect):
         visible = set()
-        first = max(0, int(rect.x() / 128))
-        count = min(self.totChunks - first, int(rect.width() / 128) + 2)
+        #add the selection count to allow selected elements to be tracked by scene.items()
+        #as they are not listed if not visible.
+        first = max(0, int(rect.x() / 128) - len(self.view.selected))
+        count = min(self.totChunks - first, int(rect.width() / 128) + 2 + len(self.view.selected) * 2)
 #        print(self.totChunks, first, count)
         for c in range(first, first + count):
             for chunk in self.chunks[c]:
