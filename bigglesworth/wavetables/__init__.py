@@ -886,6 +886,8 @@ class TestMidiDevice(QtCore.QObject):
 
 
 class WaveTableWindow(QtWidgets.QMainWindow):
+    oldEditBtnStatus = None
+    editBtnIcons = None
     midiDevice = None
     shown = False
     isClosing = False
@@ -1947,10 +1949,12 @@ class WaveTableWindow(QtWidgets.QMainWindow):
     def setWaveEditBtn(self, index=None):
         if index is None:
             index = self.indexSlider.value()
-        if self.keyFrames.fullList[index]:
-            self.waveEditBtn.setIcon(QtGui.QIcon.fromTheme('document-edit'))
-        else:
-            self.waveEditBtn.setIcon(QtGui.QIcon.fromTheme('document-new'))
+        exists = self.keyFrames.fullList[index] is not None
+        if not self.editBtnIcons:
+            self.editBtnIcons = QtGui.QIcon.fromTheme('document-new'), QtGui.QIcon.fromTheme('document-edit')
+        if self.oldEditBtnStatus != exists:
+            self.waveEditBtn.setIcon(self.editBtnIcons[exists])
+            self.oldEditBtnStatus = exists
 
     def triggerWaveEditBtn(self):
         index = self.indexSlider.value()
