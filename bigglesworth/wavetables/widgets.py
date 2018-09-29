@@ -190,6 +190,7 @@ class MiniSlider(QtWidgets.QWidget):
     value = 0
     arrowWidth = 8
     default = None
+    minimum = maximum = 0
 
     def setSibling(self, spin):
         self.spin = spin
@@ -197,10 +198,14 @@ class MiniSlider(QtWidgets.QWidget):
         spin.valueChanged.connect(self.setValue)
         self.value = spin.value()
         self.valueChanged.connect(spin.setValue)
+        spin.setRange = lambda *args: [self.setRange(*args), QtWidgets.QSpinBox.setRange(spin, *args)]
 
     def setRange(self, minimum, maximum):
+        if self.minimum == minimum and self.maximum == maximum:
+            return
         self.minimum = minimum
         self.maximum = maximum
+        self.update()
 
     def setDefault(self, default=None):
         self.default = default
@@ -472,9 +477,14 @@ class TransformWidget(QtWidgets.QWidget):
 
 class NextWaveView(QtWidgets.QGraphicsView):
     shown = False
+    doubleClicked = QtCore.pyqtSignal()
+
     def __init__(self, *args, **kwargs):
         QtWidgets.QGraphicsView.__init__(self, *args, **kwargs)
         self.setScene(NextWaveScene())
+
+    def mouseDoubleClickEvent(self, event):
+        self.doubleClicked.emit()
 
     def showEvent(self, event):
         if not self.shown:

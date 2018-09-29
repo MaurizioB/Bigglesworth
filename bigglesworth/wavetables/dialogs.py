@@ -271,37 +271,38 @@ class Dumper(QtWidgets.QDialog):
         QtWidgets.QDialog.exec_(self)
 
 
-class Loader(QtWidgets.QDialog):
+class Loader(QtWidgets.QProgressDialog):
     texts = 'Loading, please wait...', 'Importing, please wait...'
     def __init__(self, parent):
-        QtWidgets.QDialog.__init__(self, parent)
-        l = QtWidgets.QVBoxLayout()
-        self.setLayout(l)
-        self.label = QtWidgets.QLabel()
-        l.addWidget(self.label)
-        self.setModal(True)
-        self.processTimer = QtCore.QTimer()
-        self.processTimer.setInterval(0)
-        self.processTimer.timeout.connect(QtWidgets.QApplication.processEvents)
+        QtWidgets.QProgressDialog.__init__(self, parent)
+        self.setWindowModality(QtCore.Qt.WindowModal)
+        self.setMinimumDuration(0)
+        cancelBtn = self.findChild(QtWidgets.QAbstractButton)
+        if cancelBtn:
+            cancelBtn.setVisible(False)
+            self.adjustSize()
 
-    def refresh(self):
-        QtWidgets.QApplication.processEvents()
+    def finalize(self):
+        self.setValue(self.maximum())
 
     def closeEvent(self, event):
         event.ignore()
+
+    def keyPressEvent(self, event):
+        pass
 
     def reject(self):
         pass
 
     def accept(self):
-        self.processTimer.stop()
-        QtWidgets.QDialog.accept(self)
+        QtWidgets.QProgressDialog.accept(self)
 
-    def start(self, full=False):
-        self.label.setText(self.texts[full])
+    def start(self, full=False, count=1):
+        self.setLabelText(self.texts[full])
+        self.setMaximum(count)
+        self.setValue(0)
         self.show()
         QtWidgets.QApplication.processEvents()
-        self.processTimer.start()
 
 
 class SetIndexDialog(QtWidgets.QDialog):

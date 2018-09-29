@@ -1281,15 +1281,17 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.snapCombo.currentIndexChanged.connect(self.waveScene.setSnapMode)
         self.showNodesChk.toggled.connect(self.waveScene.setNodesVisible)
 
-        self.miniView.setScene(self.waveTableView.scene())
-        self.miniView.setTransform(self.waveTableView.transform())
-        self.miniView.clicked.connect(lambda: self.mainTabWidget.setCurrentIndex(0))
-
         self.smoothBtn.clicked.connect(lambda: self.waveScene.smoothen(self.smoothEdgesChk.isChecked()))
         self.randomBtn.clicked.connect(self.waveScene.randomize)
         self.quantizeBtn.clicked.connect(lambda: self.waveScene.quantize(self.quantizeSpin.value()))
         self.hRevBtn.clicked.connect(self.waveScene.reverseHorizontal)
         self.vRevBtn.clicked.connect(self.waveScene.reverseVertical)
+
+        self.nextView.doubleClicked.connect(self.highlightNextKeyFrame)
+
+        self.miniView.setScene(self.waveTableView.scene())
+        self.miniView.setTransform(self.waveTableView.transform())
+        self.miniView.clicked.connect(lambda: self.mainTabWidget.setCurrentIndex(0))
 
         self.mainTabWidget.currentChanged.connect(self.miniView.setVisible)
         self.mainTabWidget.tabCloseRequested.connect(self.tabCloseRequested)
@@ -1344,6 +1346,21 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 #        self.mainTransformWidget.setTransform(self.keyFrames[0])
 #        SpecTransformDialog(self).exec_(self.keyFrames[0].nextTransform)
 #        self.exportWave()
+
+        #remembered settings
+        self.settings.beginGroup('WaveTables')
+        self.backForthChk.setChecked(self.settings.value('SweepMode', False, bool))
+        self.backForthChk.toggled.connect(self.rememberSettings)
+        self.gridCombo.setCurrentIndex(self.settings.value('WaveGrid', 0, int))
+        self.gridCombo.currentIndexChanged.connect(self.rememberSettings)
+        self.snapCombo.setCurrentIndex(self.settings.value('SnapMode', 0, int))
+        self.snapCombo.currentIndexChanged.connect(self.rememberSettings)
+        self.showNodesChk.setChecked(self.settings.value('ShowNodes', False, bool))
+        self.showNodesChk.toggled.connect(self.rememberSettings)
+        self.showCrosshairChk.setChecked(self.settings.value('Crosshair', True, bool))
+        self.showCrosshairChk.toggled.connect(self.rememberSettings)
+
+        self.settings.endGroup()
 
     def isClean(self):
         return self.undoStack.isClean() and self._isClean
@@ -2037,11 +2054,21 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         else:
             self.setNextKeyFrame()
 
+    def highlightNextKeyFrame(self):
+        next = self.keyFrames.next(self.waveScene.currentKeyFrame)
+        if next is None:
+            next = self.keyFrames[0]
+        if next == self.waveScene.currentKeyFrame:
+            return
+        self.setCurrentKeyFrame(next)
+
     def setCurrentKeyFrame(self, keyFrame, activate=False):
         if activate:
             self.mainTabWidget.setCurrentWidget(self.waveEditTab)
-        self.waveScene.setKeyFrame(keyFrame)
         self.setNextKeyFrame()
+        if keyFrame != self.waveScene.currentKeyFrame:
+            self.noMouseModeBtn.setChecked(True)
+        self.waveScene.setKeyFrame(keyFrame)
         self.mainTransformWidget.setTransform(keyFrame)
         if self.sender() == self.keyFrameScene:
             index = keyFrame.index
@@ -3251,6 +3278,20 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         if event.type() == QtCore.QEvent.ActivationChange:
             self.checkActivation()
         return QtWidgets.QMainWindow.changeEvent(self, event)
+
+    def rememberSettings(self):
+        self.settings.beginGroup('WaveTables')
+        if self.sender() == self.backForthChk:
+            self.settings.setValue('SweepMode', self.backForthChk.isChecked())
+        elif self.sender() == self.gridCombo:
+            self.settings.setValue('WaveGrid', self.gridCombo.currentIndex())
+        elif self.sender() == self.snapCombo:
+            self.settings.setValue('SnapMode', self.snapCombo.currentIndex())
+        elif self.sender() == self.showNodesChk:
+            self.settings.setValue('ShowNodes', self.showNodesChk.isChecked())
+        elif self.sender() == self.showCrosshairChk:
+            self.settings.setValue('Crosshair', self.showCrosshairChk.isChecked())
+        self.settings.endGroup()
 
     def closeEvent(self, event):
         if not self.isClean():

@@ -118,6 +118,7 @@ class OpenAudioFileDialog(QtWidgets.QFileDialog):
         self.playBtn = self.preview.playBtn
         self.stopBtn = self.preview.stopBtn
         self.autoPlayChk = self.preview.autoPlayChk
+        self.volumeIcon= self.preview.volumeIcon
         self.volumeSlider = self.preview.volumeSlider
 
         self.volumeSlider.setValue(AudioImportTab.defaultVolume)
@@ -128,10 +129,8 @@ class OpenAudioFileDialog(QtWidgets.QFileDialog):
 
         self.loader = Loader(self)
         self.waveScene = WaveSourceScene(self.waveView)
-#        self.waveScene.loaded.connect(self.playerPanel.setEnabled)
         self.waveScene.loadingStarted.connect(self.loader.start)
-        self.waveScene.loading.connect(self.loader.refresh)
-#        self.waveScene.loaded.connect(self.loader.accept)
+        self.waveScene.loading.connect(self.loader.setValue)
         self.waveScene.loaded.connect(self.loaded)
         self.waveView.setScene(self.waveScene)
 
@@ -143,7 +142,7 @@ class OpenAudioFileDialog(QtWidgets.QFileDialog):
     def loaded(self, loaded):
         self.playerPanel.setEnabled(loaded)
         if loaded:
-            self.loader.accept()
+            self.loader.finalize()
             if self.autoPlayChk.isChecked() and not self.player.isActive():
                 self.playBtn.setChecked(True)
 
@@ -152,7 +151,7 @@ class OpenAudioFileDialog(QtWidgets.QFileDialog):
         self.playBtn.setChecked(False)
         fileInfo = QtCore.QFileInfo(filePath)
         try:
-            assert fileInfo.isFile()
+            assert fileInfo.isFile(), 'Not a file'
             self.currentInfo = info = soundfile.info(filePath)
 #            ('File name', 'Path'), ('Format', 'Subtype', 'Duration'), ('Channels', 'Frequency', 'Frames')
             self.waveInfoModel.item(0, 1).setText(fileInfo.fileName())
@@ -199,6 +198,8 @@ class OpenAudioFileDialog(QtWidgets.QFileDialog):
             self.waveScene.playhead.setX(0)
             self.waveScene.playhead.setVisible(True)
             self.player.playWaveFile(self.currentData, self.currentInfo, self.volumeSlider.value() * .01)
+            self.volumeSlider.setEnabled(False)
+            self.volumeIcon.setEnabled(False)
 
     def stopped(self):
         self.waveScene.playhead.setVisible(False)
@@ -206,6 +207,8 @@ class OpenAudioFileDialog(QtWidgets.QFileDialog):
         self.playBtn.setChecked(False)
         self.playBtn.blockSignals(False)
         self.playBtn.setIcon(QtGui.QIcon.fromTheme('media-playback-start'))
+        self.volumeSlider.setEnabled(True)
+        self.volumeIcon.setEnabled(True)
 
     def movePlayhead(self):
         self.waveScene.setPlayhead(self.player.output.processedUSecs() / 1000000.)
@@ -626,6 +629,7 @@ class AudioImportTab(QtWidgets.QWidget):
     favoriteLoaded = False
 
     defaultVolume = None
+    currentPreviewFile = None
 
     def __init__(self, waveTableWindow):
         QtWidgets.QWidget.__init__(self)
@@ -640,8 +644,8 @@ class AudioImportTab(QtWidgets.QWidget):
         self.waveScene = WaveSourceScene(self.waveView)
         self.waveScene.loaded.connect(self.playerPanel.setEnabled)
         self.waveScene.loadingStarted.connect(self.loader.start)
-        self.waveScene.loading.connect(self.loader.refresh)
-        self.waveScene.loaded.connect(self.loader.accept)
+        self.waveScene.loading.connect(self.loader.setValue)
+        self.waveScene.loaded.connect(self.loader.finalize)
         self.waveView.setScene(self.waveScene)
 
         self.formatCombo.addItem('All supported audio files', ['*.{}'.format(k.lower()) for k in soundfile.available_formats().keys()])
@@ -769,10 +773,16 @@ class AudioImportTab(QtWidgets.QWidget):
         if not self.defaultVolume:
             self.__class__.defaultVolume = self.settings.value('defaultVolume', 80, type=int)
         self.volumeSlider.setValue(self.defaultVolume)
+        self.offsetSlider.setSibling(self.offsetSpin)
+        self.selectCountSlider.setSibling(self.selectCountSpin)
 
+        self.importFullBtn.clicked.connect(self.importFull)
         self.openWaveBtn.clicked.connect(self.openFileDialog)
         self.importBtn.clicked.connect(self.importFile)
         self.lowerPanel.setSwitchVisible(False)
+
+    def importFull(self):
+        pass
 
     def openFileDialog(self):
         self.player.stop()
@@ -870,6 +880,8 @@ class AudioImportTab(QtWidgets.QWidget):
             filePath = self.fileSystemModel.filePath(index)
         else:
             filePath = index.data(PathRole)
+        if filePath == self.currentPreviewFile:
+            return
         try:
             fileInfo = QtCore.QFileInfo(filePath)
             self.currentInfo = info = soundfile.info(filePath)
@@ -984,17 +996,23 @@ class AudioImportTab(QtWidgets.QWidget):
         self.selectFromSpin.blockSignals(True)
         self.selectToSpin.blockSignals(True)
         self.selectCountSpin.blockSignals(True)
+        self.selectCountSlider.blockSignals(True)
 
         if selection:
-            self.selectFromSpin.setValue(selection[0].index)
-            self.selectToSpin.setValue(selection[-1].index)
-            self.selectCountSpin.setValue(selection[-1].index - selection[0].index + 1)
+            start = selection[0].index
+            end = selection[-1].index
+            self.selectFromSpin.setValue(min(start, end) + 1)
+            self.selectToSpin.setValue(max(start, end) + 1)
+            self.selectCountSpin.setValue(abs(start - end) + 1)
         else:
             self.selectCountSpin.setValue(0)
+        self.selectCountSlider.setValue(self.selectCountSpin.value())
 
+        self.selectCountSlider.blockSignals(False)
         self.selectFromSpin.blockSignals(False)
         self.selectToSpin.blockSignals(False)
         self.selectCountSpin.blockSignals(False)
+        self.importFullBtn.setEnabled(self.selectCountSpin.value() == 64)
 
     def showPositionWidget(self):
         self.positionWidget.move(self.positionWidgetIcon.mapToGlobal(QtCore.QPoint(0, 0)))
@@ -1005,6 +1023,8 @@ class AudioImportTab(QtWidgets.QWidget):
         self.selectFromSpin.blockSignals(True)
         self.selectToSpin.blockSignals(True)
         self.selectCountSpin.blockSignals(True)
+        self.selectCountSlider.blockSignals(True)
+
         if self.sender() == self.selectFromSpin:
             if not self.selectCountSpin.value():
                 self.selectCountSpin.setValue(1)
@@ -1015,12 +1035,17 @@ class AudioImportTab(QtWidgets.QWidget):
             self.selectCountSpin.setValue(value - self.selectFromSpin.value() + 1)
         else:
             if value:
+                if self.selectFromSpin.value() + value - 1 > self.waveScene.totChunks:
+                    self.selectFromSpin.setValue(self.waveScene.totChunks - value + 1)
                 self.selectToSpin.setValue(self.selectFromSpin.value() + value - 1)
+        self.selectCountSlider.setValue(self.selectCountSpin.value())
 
+        self.selectCountSlider.blockSignals(False)
         self.selectFromSpin.blockSignals(False)
         self.selectToSpin.blockSignals(False)
         self.selectCountSpin.blockSignals(False)
         self.waveView.setSelection(self.selectFromSpin.value() - 1, self.selectCountSpin.value())
+        self.importFullBtn.setEnabled(self.selectCountSpin.value() == 64)
 
     def moveView(self, pos):
         scrollBar = self.waveView.horizontalScrollBar()
@@ -1417,6 +1442,12 @@ class WaveSourceView(QtWidgets.QGraphicsView):
                     self.startDrag()
             elif self.rubberSelectRect is not None:
 #                self.rubberSelectRect = QtCore.QRect(self.mousePos, event.pos())
+                before = self.mapFromScene(QtCore.QPoint()).x()
+                self.ensureVisible(QtCore.QRectF(self.mapToScene(event.pos().x(), self.adjustedRect.center().y()), QtCore.QSizeF(1, 1)), 0, 0)
+                deltaX = self.mapFromScene(QtCore.QPoint()).x() - before
+                if deltaX:
+                    self.rubberSelectRect.setLeft(self.rubberSelectRect.left() + deltaX)
+                    self.adjustedRect.setLeft(self.adjustedRect.left() + deltaX)
                 self.rubberSelectRect.setBottomRight(event.pos())
                 self.adjustedRect.setRight(event.pos().x())
                 if not self.adjustedRect.width():
@@ -1533,8 +1564,8 @@ class WaveSourceScene(QtWidgets.QGraphicsScene):
     playPen = QtGui.QPen(QtGui.QColor('orange'))
     playPen.setCosmetic(True)
 
-    loadingStarted = QtCore.pyqtSignal(bool)
-    loading = QtCore.pyqtSignal()
+    loadingStarted = QtCore.pyqtSignal(bool, int)
+    loading = QtCore.pyqtSignal(int)
     loaded = QtCore.pyqtSignal(bool)
 
     waveCache = {}
@@ -1592,12 +1623,12 @@ class WaveSourceScene(QtWidgets.QGraphicsScene):
     def drawWaveFile(self):
         self.loadItem = None
         self.clear()
-        self.loadingStarted.emit(False)
+        samples, channels = self.waveData.shape
+        self.loadingStarted.emit(False, samples * channels)
         QtWidgets.QApplication.processEvents()
 
         self.waveItems = []
         self.zeroLines = []
-        samples, channels = self.waveData.shape
 
         cachedPaths = self.waveCache.get(self.currentInfo.name)
         if cachedPaths:
@@ -1620,6 +1651,7 @@ class WaveSourceScene(QtWidgets.QGraphicsScene):
             count = samples / ratio
             paths = []
             for channel in range(channels):
+                multiplier = channel * samples
                 data = self.waveData[:, channel]
 
                 path = QtGui.QPainterPath()
@@ -1631,6 +1663,8 @@ class WaveSourceScene(QtWidgets.QGraphicsScene):
                     
                     path.moveTo(pos + .5, -maxValue)
                     path.lineTo(pos + .5, -minValue)
+                    if not pos % 1000:
+                        self.loading.emit(pos + multiplier)
                 paths.append(path)
 
                 waveItem = self.addPath(path)
@@ -1644,7 +1678,7 @@ class WaveSourceScene(QtWidgets.QGraphicsScene):
                 lineItem.setY(waveItem.pos().y())
                 lineItem.setPen(self.baseLinePen)
                 self.zeroLines.append(lineItem)
-                self.loading.emit()
+#                self.loading.emit()
             self.waveCache[self.currentInfo.name] = paths
 
         rect = QtCore.QRectF(0, 0, 0, 2)
@@ -1674,14 +1708,16 @@ class WaveSourceScene(QtWidgets.QGraphicsScene):
         ratio = mixer.channelValues[0]
         [waveItem.setVisible(False) for waveItem in self.waveItems]
 
-        self.loadingStarted.emit(True)
-        QtWidgets.QApplication.processEvents()
-
         samples, channels = self.waveData.shape
         count = samples / 128
 
+        self.loadingStarted.emit(True, count * (channels + 1))
+        QtWidgets.QApplication.processEvents()
+
         self.inChunks = [[] for _ in range(count)]
+
         for channel in range(channels):
+            multiplier = channel * count
             data = self.waveData[:, channel]
             y = 1 + channel * 2.1
             for slice in xrange(count):
@@ -1690,7 +1726,10 @@ class WaveSourceScene(QtWidgets.QGraphicsScene):
                 self.addItem(chunk)
                 self.inChunks[slice].append(chunk)
                 chunk.setPos(slice * 128, y)
+                if not slice & 1000:
+                    self.loading.emit(slice + multiplier)
 
+        multiplier = channels * count
         self.outValues = np.sum(self.waveData, axis=1) * ratio
         self.outChunks = []
         outCenter = 1 + (y - 1) / 2
@@ -1699,6 +1738,8 @@ class WaveSourceScene(QtWidgets.QGraphicsScene):
             self.addItem(chunk)
             self.outChunks.append([chunk])
             chunk.setPos(slice * 128, outCenter)
+            if not slice & 1000:
+                self.loading.emit(slice + multiplier)
 
         if channels == 1:
             self.outZeroLine = self.zeroLines[0]
@@ -1710,6 +1751,7 @@ class WaveSourceScene(QtWidgets.QGraphicsScene):
             self.outZeroLine.setY(outCenter)
             [line.setVisible(False) for line in self.zeroLines]
 
+        QtWidgets.QApplication.processEvents()
         self.totChunks = len(self.outChunks)
         [z.setZValue(10) for z in self.zeroLines]
         visible = []
