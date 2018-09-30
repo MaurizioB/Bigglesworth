@@ -221,7 +221,7 @@ class WaveIODevice(QtCore.QIODevice):
                 front = waveData[:, [0, 1]]/3
                 rear = waveData[:, [2, 3]]/3
                 center = waveData[:, [4]].repeat(2, axis=1)/2
-                sub = waveData[:, [5]].repeate(2, axis=1)/2
+                sub = waveData[:, [5]].repeat(2, axis=1)/2
                 waveData = front + rear + center + sub
             if self.player.sampleSize == 16:
                 waveData = (waveData * 32767).astype('int16')
