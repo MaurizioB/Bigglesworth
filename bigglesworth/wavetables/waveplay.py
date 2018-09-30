@@ -380,6 +380,17 @@ class Player(QtCore.QObject):
         except:
             pass
         self.output = QtMultimedia.QAudioOutput(self.audioDevice, format)
+        self.outputThread = QtCore.QThread()
+        self.output.moveToThread(self.outputThread)
+        self.outputThread.start()
+        self.outputThread.setPriority(self.outputThread.HighestPriority)
+
+        print('App {}\nself {}\noutputThread obj thread {}\nactual output thread {}'.format(
+            QtWidgets.QApplication.instance().thread(), 
+            self.thread(), 
+            self.outputThread, 
+            self.output.thread()))
+
         self.output.setNotifyInterval(25)
         self.output.stateChanged.connect(self.stateChanged)
         self.dirty.emit()
