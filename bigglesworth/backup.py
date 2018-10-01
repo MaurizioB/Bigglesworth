@@ -25,6 +25,10 @@ if sys.platform == 'win32':
             pass
     else:
         raise('sqlite not found?!')
+elif sys.platform == 'darwin' and getattr(sys, 'frozen', False):
+    localPath = os.path.dirname(sys.executable)
+    print('loading local libsqlite3: "{}"'.format(os.path.join(localPath, 'libsqlite3.0.dylib')))
+    sqlite = ctypes.CDLL(os.path.join(localPath, 'libsqlite3.0.dylib'))
 else:
     sqlite = ctypes.CDLL(find_library('sqlite3'))
 
