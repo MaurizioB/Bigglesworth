@@ -425,22 +425,8 @@ class Player(QtCore.QObject):
             del self.output
         except:
             pass
-<<<<<<< HEAD
         self.output = QtMultimedia.QAudioOutput(self.audioDevice, self.format)
-=======
-        self.output = QtMultimedia.QAudioOutput(self.audioDevice, format)
-        self.outputThread = QtCore.QThread()
-        self.output.moveToThread(self.outputThread)
-        self.outputThread.start()
-        self.outputThread.setPriority(self.outputThread.HighestPriority)
 
-        print('App {}\nself {}\noutputThread obj thread {}\nactual output thread {}'.format(
-            QtWidgets.QApplication.instance().thread(), 
-            self.thread(), 
-            self.outputThread, 
-            self.output.thread()))
-
->>>>>>> 073c9a6a900f94e5b26c3671520edc0742fa45c8
         self.output.setNotifyInterval(25)
         self.output.stateChanged.connect(self.stateChanged)
         self.output.setBufferSize(self.settings.value('BufferSize', defaultBufferSize, int))

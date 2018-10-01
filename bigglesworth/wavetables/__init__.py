@@ -1853,13 +1853,9 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.player.stop()
         if state:
             multiplier = max(1, self.speedSlider.value())
-<<<<<<< HEAD
             self.player.notify.connect(self.setFullTablePlayhead)
-=======
-            self.player.notify.connect(self.setFullTablePlayhead, QtCore.Qt.QueuedConnection, True)
 #            self.player.notify.connect(self.sleeptest, QtCore.Qt.QueuedConnection, True)
 #            self.connect(self.player.output, SIGNAL('notify()'), self.asdf, QtCore.Qt.QueuedConnection)
->>>>>>> 073c9a6a900f94e5b26c3671520edc0742fa45c8
             self.player.playData(
                 self.keyFrames.fullTableValues(note, multiplier, self.player.sampleRate, index=None, reverse=self.backForthChk.isChecked()), 
                 volume=max(1, velocity) / 127.)
