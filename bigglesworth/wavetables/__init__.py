@@ -2,6 +2,9 @@
 # *-* encoding: utf-8 *-*
 
 import sys, os, re
+from random import randrange
+from time import sleep
+from Queue import Queue
 from copy import deepcopy
 from itertools import chain
 from xml.etree import ElementTree as ET
@@ -16,6 +19,7 @@ sys.path.append('/Users/mauriziob/code/Bigglesworth/bigglesworth/editorWidgets/'
 sys.path.append('/Users/mauriziob/code/Bigglesworth/')
 
 from Qt import QtCore, QtGui, QtWidgets, QtSql
+from PyQt4.QtCore import SIGNAL, SLOT
 
 def colorAdjusted(color, **kwargs):
     if not kwargs:
@@ -917,6 +921,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         loadUi('ui/wavetables.ui', self)
         self.showLibrarianAction.setIcon(QtGui.QIcon.fromTheme('bigglesworth'))
         self.showEditorAction.setIcon(QtGui.QIcon.fromTheme('dial'))
+        self.queue = Queue()
 
         self.windowsActionGroup = QtWidgets.QActionGroup(self.windowsMenu)
         self.newWindowSeparator = self.windowsMenu.insertSeparator(self.newWindowAction)
@@ -1848,10 +1853,23 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.player.stop()
         if state:
             multiplier = max(1, self.speedSlider.value())
+<<<<<<< HEAD
             self.player.notify.connect(self.setFullTablePlayhead)
+=======
+            self.player.notify.connect(self.setFullTablePlayhead, QtCore.Qt.QueuedConnection, True)
+#            self.player.notify.connect(self.sleeptest, QtCore.Qt.QueuedConnection, True)
+#            self.connect(self.player.output, SIGNAL('notify()'), self.asdf, QtCore.Qt.QueuedConnection)
+>>>>>>> 073c9a6a900f94e5b26c3671520edc0742fa45c8
             self.player.playData(
                 self.keyFrames.fullTableValues(note, multiplier, self.player.sampleRate, index=None, reverse=self.backForthChk.isChecked()), 
                 volume=max(1, velocity) / 127.)
+
+    @QtCore.pyqtSlot()
+    def sleeptest(self):
+        print(self.sender(), randrange(10))
+        print(self.thread(), self.sender().thread())
+        sleep(1)
+        print('woken')
 
     def playWaveNote(self, state, note, velocity):
         try:
