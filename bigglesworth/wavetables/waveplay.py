@@ -236,7 +236,7 @@ class WaveIODevice(QtCore.QIODevice):
     def setWaveFileData(self, waveData, info, volume):
         if waveData is not self.inputWaveData or info.samplerate != self.player.sampleRate:
             if waveData is not self.inputWaveData:
-                self.inputWaveData = waveData
+                self.inputWaveData = waveData.copy()
 
             if info.samplerate != self.player.sampleRate:
                 #ratio is output/input
@@ -267,22 +267,24 @@ class WaveIODevice(QtCore.QIODevice):
                 waveData = front + rear + center + sub
             if self.player.sampleSize == 16:
                 waveData = (waveData * 32767).astype('int16')
-            self.currentWaveData = waveData
+            self.currentWaveData = waveData.copy()
 
-        if volume != self.currentVolume:
-            #I really don't know why changing waveData and appending it to the
-            #byteArray works only the first time... Let numpy take care of it.
-#            self.currentWaveData /= self.currentVolume
-#            self.currentWaveData *= volume
-            volume = self.volumeMultiplier(volume)
-            self.currentWaveData = np.multiply(
-                np.divide(
-                    self.currentWaveData, self.currentVolume, out=self.currentWaveData, casting='unsafe'), 
-                volume, out=self.currentWaveData, casting='unsafe')
-            self.currentVolume = volume
+#        if volume != self.currentVolume:
+#            #I really don't know why changing waveData and appending it to the
+#            #byteArray works only the first time... Let numpy take care of it.
+##            self.currentWaveData /= self.currentVolume
+##            self.currentWaveData *= volume
+#            volume = self.volumeMultiplier(volume)
+#            self.currentWaveData = np.multiply(
+#                np.divide(
+#                    self.currentWaveData, self.currentVolume, out=self.currentWaveData, casting='unsafe'), 
+#                volume, out=self.currentWaveData, casting='unsafe')
+#            self.currentVolume = volume
+
+        waveData = np.multiply(self.currentWaveData, volume).astype('int16')
 
         self.byteArray.clear()
-        self.byteArray.append(self.currentWaveData.tostring())
+        self.byteArray.append(waveData.tostring())
         self.bytePos = 0
         self.infinite = False
         self.open(QtCore.QIODevice.ReadOnly)
@@ -306,7 +308,7 @@ class WaveIODevice(QtCore.QIODevice):
 #                waveData /= self.currentVolume
                 self.currentVolume = volume
 #            waveData *= volume
-            waveData = np.multiply(waveData, volume * 32768).astype('int16')
+            waveData = np.multiply(waveData, volume * 32768.).astype('int16')
             self.clean = True
             self.currentWaveData = waveData
         self.byteArray.clear()
