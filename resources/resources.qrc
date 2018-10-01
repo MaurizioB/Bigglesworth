@@ -137,6 +137,7 @@
         <file alias="16x16/text-x-log.svg">icons/Bigglesworth/16x16/text-x-log.svg</file>
         <file alias="22x22/text-x-log.svg">icons/Bigglesworth/22x22/text-x-log.svg</file>
         <file alias="64x64/text-x-log.svg">icons/Bigglesworth/64x64/text-x-log.svg</file>
+        <file alias="64x64/audio-card.svg">icons/Bigglesworth/64x64/audio-card.svg</file>
         <file alias="32x32/media-playback-stop.svg">icons/Bigglesworth/32x32/media-playback-stop.svg</file>
         <file alias="16x16/media-playback-stop.svg">icons/Bigglesworth/16x16/media-playback-stop.svg</file>
         <file alias="22x22/media-playback-stop.svg">icons/Bigglesworth/22x22/media-playback-stop.svg</file>
