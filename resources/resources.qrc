@@ -77,10 +77,7 @@
         <file alias="16x16/format-align-vertical-bottom.svg">icons/Bigglesworth/16x16/format-align-vertical-bottom.svg</file>
         <file alias="22x22/format-align-vertical-bottom.svg">icons/Bigglesworth/22x22/format-align-vertical-bottom.svg</file>
         <file alias="24x24/format-align-vertical-bottom.svg">icons/Bigglesworth/24x24/format-align-vertical-bottom.svg</file>
-        <file alias="32x32/go-previous.svg">icons/Bigglesworth/32x32/go-previous.svg</file>
-        <file alias="16x16/go-previous.svg">icons/Bigglesworth/16x16/go-previous.svg</file>
-        <file alias="22x22/go-previous.svg">icons/Bigglesworth/22x22/go-previous.svg</file>
-        <file alias="24x24/go-previous.svg">icons/Bigglesworth/24x24/go-previous.svg</file>
+        <file alias="64x64/audio-card.svg">icons/Bigglesworth/64x64/audio-card.svg</file>
         <file alias="16x16/checkbox.svg">icons/Bigglesworth/16x16/checkbox.svg</file>
         <file alias="22x22/checkbox.svg">icons/Bigglesworth/22x22/checkbox.svg</file>
         <file alias="24x24/checkbox.svg">icons/Bigglesworth/24x24/checkbox.svg</file>
@@ -137,7 +134,10 @@
         <file alias="16x16/text-x-log.svg">icons/Bigglesworth/16x16/text-x-log.svg</file>
         <file alias="22x22/text-x-log.svg">icons/Bigglesworth/22x22/text-x-log.svg</file>
         <file alias="64x64/text-x-log.svg">icons/Bigglesworth/64x64/text-x-log.svg</file>
-        <file alias="64x64/audio-card.svg">icons/Bigglesworth/64x64/audio-card.svg</file>
+        <file alias="32x32/go-previous.svg">icons/Bigglesworth/32x32/go-previous.svg</file>
+        <file alias="16x16/go-previous.svg">icons/Bigglesworth/16x16/go-previous.svg</file>
+        <file alias="22x22/go-previous.svg">icons/Bigglesworth/22x22/go-previous.svg</file>
+        <file alias="24x24/go-previous.svg">icons/Bigglesworth/24x24/go-previous.svg</file>
         <file alias="32x32/media-playback-stop.svg">icons/Bigglesworth/32x32/media-playback-stop.svg</file>
         <file alias="16x16/media-playback-stop.svg">icons/Bigglesworth/16x16/media-playback-stop.svg</file>
         <file alias="22x22/media-playback-stop.svg">icons/Bigglesworth/22x22/media-playback-stop.svg</file>

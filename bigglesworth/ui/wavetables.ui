@@ -2018,6 +2018,8 @@
     <property name="title">
      <string>Windows</string>
     </property>
+    <addaction name="audioSettingsAction"/>
+    <addaction name="separator"/>
     <addaction name="showLibrarianAction"/>
     <addaction name="showEditorAction"/>
     <addaction name="separator"/>
@@ -2330,6 +2332,14 @@
    </property>
    <property name="shortcut">
     <string>Alt+W</string>
+   </property>
+  </action>
+  <action name="audioSettingsAction">
+   <property name="icon">
+    <iconset theme="audio-card"/>
+   </property>
+   <property name="text">
+    <string>Audio settings</string>
    </property>
   </action>
  </widget>

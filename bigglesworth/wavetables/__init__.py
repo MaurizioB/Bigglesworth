@@ -1117,13 +1117,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.waveTableMenu.aboutToShow.connect(self.populateWaveTableMenu)
         self.waveTableMenuSeparator = self.waveTableMenu.addSection('Recent wavetables')
         self.showDockAction.triggered.connect(self.toggleDock)
-        self.audioSettingsAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('audio-card'), 'Audio settings', self)
         self.audioSettingsAction.triggered.connect(self.setAudioDevice)
-        if sys.platform == 'darwin':
-            self.windowsMenu.insertAction(self.showLibrarianAction, self.audioSettingsAction)
-            self.windowsMenu.insertSeparator(self.showLibrarianAction)
-        else:
-            self.menubar.addAction(self.audioSettingsAction)
 
         self.undoStack = UndoStack()
         self.undoStack.canUndoChanged.connect(lambda state: [self.mainUndoBtn.setEnabled(state), self.waveUndoBtn.setEnabled(state)])
