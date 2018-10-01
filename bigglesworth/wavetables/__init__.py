@@ -1378,6 +1378,9 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 
         self.settings.endGroup()
 
+    def isPlaying(self):
+        return self.player.isPlaying()
+
     def isClean(self):
         return self.undoStack.isClean() and self._isClean
 
@@ -1758,6 +1761,8 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         else:
             return
 
+        if window.mainTabWidget.currentIndex() > 1:
+            return
         keyboard = window.wavePianoKeyboard if window.mainTabWidget.currentIndex() == 1 else window.pianoKeyboard
         keyboard.triggerNoteEvent(event.type == NOTEON, event.note, event.velocity)
 
@@ -1838,6 +1843,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         except:
             pass
         self.player.stop()
+        self.waveTableView.setInteractive(not state)
         if state:
             multiplier = max(1, self.speedSlider.value())
             self.player.notify.connect(self.setFullTablePlayhead)

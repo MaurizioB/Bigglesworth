@@ -822,7 +822,8 @@ class AudioImportTab(QtWidgets.QWidget):
         self.volumeSlider.setEnabled(False)
         self.volumeSpin.setEnabled(False)
         self.volumeIcon.setEnabled(False)
-        self.playSelectionChk.setEnabled(False)
+        self.selectionWidget.setEnabled(False)
+        self.waveView.setEnabled(False)
         if state:
             themeIcon = 'media-playback-pause'
         else:
@@ -837,15 +838,6 @@ class AudioImportTab(QtWidgets.QWidget):
                 self.playPreview()
             else:
                 self.playWave()
-#        if self.previewMode:
-#            if self.player.isPaused():
-#                self.player.resume()
-#            elif self.player.isPlaying():
-#                self.player.pause()
-#            else:
-#                self.playPreview()
-#        else:
-#            self.playWave()
 
     def playPreview(self):
         self.waveScene.playhead.setX(0)
@@ -875,7 +867,8 @@ class AudioImportTab(QtWidgets.QWidget):
         self.volumeSlider.setEnabled(True)
         self.volumeSpin.setEnabled(True)
         self.volumeIcon.setEnabled(True)
-        self.playSelectionChk.setEnabled(True)
+        self.selectionWidget.setEnabled(True)
+        self.waveView.setEnabled(True)
         self.waveScene.playhead.setVisible(False)
 
     def movePlayhead(self):
@@ -1491,7 +1484,7 @@ class WaveSourceView(QtWidgets.QGraphicsView):
             if items != self.selected:
                 self.selectionChanged.emit(items)
                 self.selected = items
-        elif not self._previewMode and event.modifiers() == QtCore.Qt.ShiftModifier:
+        elif not self._previewMode and event.modifiers() == QtCore.Qt.ShiftModifier and self.adjustedRect is not None:
             items = [i for i in self.items(self.adjustedRect.normalized()) if isinstance(i, ChunkItem)]
             if items and items != self.selected:
                 #select the first item, in case the cursor was between two items
