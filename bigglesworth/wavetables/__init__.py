@@ -1581,10 +1581,11 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         res = AudioSettingsDialog(self.window(), self.player).exec_()
         if not res:
             return
-        device, conversion = res
+        device, conversion, bufferSize = res
         if device is not None:
             self.player.setAudioDevice(device)
         self.player.setSampleRateConversion(conversion)
+        self.player.setBufferSize(bufferSize)
 
     def checkClipMode(self, index):
         mode = self.clipModeCombo.itemData(index)
@@ -1847,7 +1848,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.player.stop()
         if state:
             multiplier = max(1, self.speedSlider.value())
-#            self.player.notify.connect(self.setFullTablePlayhead)
+            self.player.notify.connect(self.setFullTablePlayhead)
             self.player.playData(
                 self.keyFrames.fullTableValues(note, multiplier, self.player.sampleRate, index=None, reverse=self.backForthChk.isChecked()), 
                 volume=max(1, velocity) / 127.)

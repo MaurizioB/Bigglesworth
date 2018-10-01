@@ -6,7 +6,16 @@ import samplerate
 import numpy as np
 from Qt import QtCore, QtGui, QtWidgets, QtMultimedia
 
-from bigglesworth.utils import loadUi, setBold
+from bigglesworth.utils import loadUi, setBold, setItalic
+from bigglesworth.wavetables.utils import sineValues, defaultBufferSize
+
+bufferSizes = [
+    4096, 
+    8192, 
+    16384, 
+    32768, 
+    65536, 
+]
 
 channelsLabels = {
     1: 'Mono', 
@@ -40,10 +49,10 @@ class AudioDeviceProber(QtCore.QObject):
         self.deviceList.emit(deviceList)
 
 
-class AudioDevicesListView(QtWidgets.QListView):
-    deviceSelected = QtCore.pyqtSignal(object)
-    def currentChanged(self, current, previous):
-        self.deviceSelected.emit(current)
+#class AudioDevicesListView(QtWidgets.QListView):
+#    deviceSelected = QtCore.pyqtSignal(object)
+#    def currentChanged(self, current, previous):
+#        self.deviceSelected.emit(current)
 
 
 class AudioSettingsDialog(QtWidgets.QDialog):
@@ -62,11 +71,12 @@ class AudioSettingsDialog(QtWidgets.QDialog):
             'Probing audio devices, please wait...', 
             parent=self)
         self.popup.setStandardButtons(self.popup.NoButton)
+        self.popup.setModal(True)
         self.deviceModel = QtGui.QStandardItemModel()
-        self.deviceList.setModel(self.deviceModel)
+        self.deviceCombo.setModel(self.deviceModel)
         self.sampleRatesModel = QtGui.QStandardItemModel()
         self.sampleRatesList.setModel(self.sampleRatesModel)
-        self.deviceList.deviceSelected.connect(self.deviceSelected)
+        self.deviceCombo.currentIndexChanged.connect(self.deviceSelected)
         self.channelsModel = QtGui.QStandardItemModel()
         self.channelsList.setModel(self.channelsModel)
 
@@ -78,78 +88,105 @@ class AudioSettingsDialog(QtWidgets.QDialog):
             self.sinc_fastestRadio, self.zero_order_holdRadio, self.linearRadio)):
                 self.sampleRateGroup.setId(radio, conversion)
 
-    def deviceSelected(self, index):
+        for size in bufferSizes:
+            self.bufferCombo.addItem(str(size))
+
+        self.reloadBtn.clicked.connect(self.probe)
+        self.testDeviceBtn.clicked.connect(self.test)
+
+    def deviceSelected(self, comboIndex):
+        index = self.deviceModel.index(comboIndex, 0)
+        self.deviceInfoBox.setEnabled(True)
         self.sampleRatesModel.clear()
         device = index.data(DeviceRole)
         self.buttonBox.button(self.buttonBox.Ok).setEnabled(True if index.data(ValidRole) != False else False)
-        self.deviceInfoBox.setTitle(device.deviceName())
+        self.deviceInfoBox.setTitle('Properties of "{}"'.format(device.deviceName()))
         preferredFormat = index.data(FormatRole)
         if not preferredFormat:
             preferredFormat = device.preferredFormat()
         for sampleRate in sorted(index.data(SampleRateRole), reverse=True):
             item = QtGui.QStandardItem('{:.1f} kHz'.format(sampleRate/1000.))
             if sampleRate == preferredFormat.sampleRate():
+                setItalic(item)
+            if sampleRate == 44100:
                 setBold(item)
             self.sampleRatesModel.appendRow(item)
         sampleSizes = index.data(SampleSizeRole)
         for sampleSize in (8, 16, 32):
             checkBox = getattr(self, 'depth{}Chk'.format(sampleSize))
-            checkBox.setChecked(True if sampleSize in sampleSizes else False)
-            setBold(checkBox, True if sampleSize == preferredFormat.sampleSize() else False)
+            checkBox.setChecked(sampleSize in sampleSizes)
+            setItalic(checkBox, sampleSize == preferredFormat.sampleSize())
+            setBold(checkBox, sampleSize == 16)
         self.channelsModel.clear()
         for channelCount in sorted(index.data(ChannelsRole)):
             item = QtGui.QStandardItem('{}: {}'.format(channelCount, channelsLabels.get(channelCount, '(unknown configuration)')))
-            if channelCount == preferredFormat.channelCount():
-                setBold(item)
+            setItalic(item, channelCount == preferredFormat.channelCount())
+            setBold(item, channelCount == 2)
             self.channelsModel.appendRow(item)
+
+    def test(self):
+        device = self.deviceModel.item(self.deviceCombo.currentIndex()).data(DeviceRole)
+        output = QtMultimedia.QAudioOutput(device, self.player.format, self)
+        waveData = np.concatenate((sineValues(1, 256), ) * 100)
+        waveData = np.multiply(waveData, 32768 * .5).astype('int16')
+        buffer = QtCore.QBuffer(self)
+        buffer.setData(waveData.tostring())
+        buffer.open(QtCore.QIODevice.ReadOnly)
+        buffer.seek(0)
+        output.start(buffer)
 
     def probed(self, deviceList):
         self.popup.hide()
+        self.deviceModel.clear()
         default = QtMultimedia.QAudioDeviceInfo.defaultOutputDevice()
+        self.currentLbl.setText(self.player.audioDevice.deviceName())
         current = None
         for device, name, sampleRates, sampleSizes, channels in deviceList:
-            if device == default:
-                name = '{} (default)'.format(name)
             deviceItem = QtGui.QStandardItem(name)
-            if device == self.player.audioDevice:
+            if name == self.player.audioDevice.deviceName():
                 current = deviceItem
-                setBold(deviceItem)
+            if device.deviceName() == default.deviceName():
+                deviceItem.setText('{} (default)'.format(name))
             deviceItem.setData(device, DeviceRole)
             deviceItem.setData(sampleRates, SampleRateRole)
             deviceItem.setData(sampleSizes, SampleSizeRole)
             deviceItem.setData(channels, ChannelsRole)
             if not (sampleRates and sampleSizes and channels):
                 deviceItem.setData(False, ValidRole)
+                deviceItem.setEnabled(False)
             self.deviceModel.appendRow(deviceItem)
-        currentDeviceName = self.settings.value('AudioDevice')
+#        currentDeviceName = self.settings.value('AudioDevice')
         if current:
-            if currentDeviceName:
-                match = self.deviceModel.match(self.deviceModel.index(0, 0), QtCore.Qt.DisplayRole, currentDeviceName, flags=QtCore.Qt.MatchExactly)
-                if not match:
-                    self.deviceList.setCurrentIndex(current.index())
-                else:
-                    self.deviceList.setCurrentIndex(match[0])
-            else:
-                self.deviceList.setCurrentIndex(current.index())
+            self.deviceCombo.setCurrentIndex(self.deviceModel.indexFromItem(current).row())
+#            if currentDeviceName:
+#                match = self.deviceModel.match(self.deviceModel.index(0, 0), QtCore.Qt.DisplayRole, currentDeviceName, flags=QtCore.Qt.MatchExactly)
+#                if not match:
+#                    self.deviceList.setCurrentIndex(current.index())
+#                else:
+#                    self.deviceList.setCurrentIndex(match[0])
+#            else:
+#                self.deviceList.setCurrentIndex(current.index())
 
-    def exec_(self):
-        self.sampleRateGroup.button(self.settings.value('SampleRateConversion', 2, type=int)).setChecked(True)
-
+    def probe(self):
+        self.popup.show()
         prober = AudioDeviceProber()
         proberThread = QtCore.QThread()
         prober.moveToThread(proberThread)
         proberThread.started.connect(prober.probe)
         prober.deviceList.connect(self.probed)
         prober.deviceList.connect(lambda _: [proberThread.quit(), prober.deleteLater(), proberThread.deleteLater()])
-        self.deviceModel.clear()
-        self.show()
-        self.popup.show()
-        self.popup.setModal(True)
         proberThread.start()
+
+    def exec_(self):
+        self.sampleRateGroup.button(self.settings.value('SampleRateConversion', 2, type=int)).setChecked(True)
+
+        self.bufferCombo.setCurrentIndex(bufferSizes.index(self.settings.value('BufferSize', defaultBufferSize, int)))
+        self.show()
+        self.probe()
         res = QtWidgets.QDialog.exec_(self)
         if not res:
             return res
-        device = self.deviceList.currentIndex().data(DeviceRole)
+        device = self.deviceCombo.itemData(self.deviceCombo.currentIndex(), DeviceRole)
         if device is not None:
             self.settings.setValue('AudioDevice', device.deviceName())
         conversion = self.sampleRateGroup.checkedId()
@@ -157,7 +194,12 @@ class AudioSettingsDialog(QtWidgets.QDialog):
             self.settings.remove('SampleRateConversion')
         else:
             self.settings.setValue('SampleRateConversion', conversion)
-        return device, conversion
+        bufferSize = int(self.bufferCombo.currentText())
+        if bufferSize != defaultBufferSize:
+            self.settings.setValue('BufferSize', bufferSize)
+        else:
+            self.settings.remove('BufferSize')
+        return device, conversion, bufferSize
 
 
 class WaveIODevice(QtCore.QIODevice):
@@ -229,7 +271,7 @@ class WaveIODevice(QtCore.QIODevice):
 
         if volume != self.currentVolume:
             #I really don't know why changing waveData and appending it to the
-            #byteArray works only the first time... Let's numpy take care of it.
+            #byteArray works only the first time... Let numpy take care of it.
 #            self.currentWaveData /= self.currentVolume
 #            self.currentWaveData *= volume
             volume = self.volumeMultiplier(volume)
@@ -253,9 +295,9 @@ class WaveIODevice(QtCore.QIODevice):
             else:
                 waveData = waveData.copy()
             self.inputWaveData = waveData
-            if self.currentSampleRate != self.player.sampleRate and self.player.sampleRate != 48000:
-                #ratio is output/input
-                waveData = samplerate.resample(waveData, self.player.sampleRate / 48000., 0)
+#            if self.currentSampleRate != self.player.sampleRate and self.player.sampleRate != 48000:
+#                #ratio is output/input
+#                waveData = samplerate.resample(waveData, self.player.sampleRate / 48000., 0)
             self.currentSampleRate = self.player.sampleRate
 #            if self.currentSampleSize != self.player.sampleSize or self.player.sampleSize == 16:
 #                waveData = (waveData * 32768).astype('int16')
@@ -318,6 +360,16 @@ class Player(QtCore.QObject):
             self.waveIODevice.finished.connect(self.checkFinished)
         self.output = None
         self.audioDevice = None
+        self.settings = QtCore.QSettings()
+
+        self.format = QtMultimedia.QAudioFormat()
+        self.format.setSampleRate(44100)
+        self.format.setChannelCount(2)
+        self.format.setSampleSize(16)
+        self.format.setCodec('audio/pcm')
+        self.format.setByteOrder(QtMultimedia.QAudioFormat.LittleEndian)
+        self.format.setSampleType(QtMultimedia.QAudioFormat.SignedInt)
+
         self.setAudioDeviceByName(audioDeviceName)
         self.setAudioDevice()
         self.sampleRateConversion = sampleRateConversion
@@ -336,6 +388,9 @@ class Player(QtCore.QObject):
     def setSampleRateConversion(self, sampleRateConversion=2):
         self.sampleRateConversion = sampleRateConversion
         self.dirty.emit()
+
+    def setBufferSize(self, bufferSize=defaultBufferSize):
+        self.output.setBufferSize(bufferSize)
 
     def setAudioDeviceByName(self, audioDeviceName):
         defaultDevice = QtMultimedia.QAudioDeviceInfo.defaultOutputDevice()
@@ -360,28 +415,20 @@ class Player(QtCore.QObject):
 #        sampleRate = 48000 if 48000 in self.audioDevice.supportedSampleRates() else 44100
         sampleRate = 44100
 
-        format = QtMultimedia.QAudioFormat()
-        format.setSampleRate(sampleRate)
-        format.setChannelCount(2)
-        format.setSampleSize(sampleSize)
-        format.setCodec('audio/pcm')
-        format.setByteOrder(QtMultimedia.QAudioFormat.LittleEndian)
-#        format.setSampleType(QtMultimedia.QAudioFormat.Float if sampleSize >= 32 else QtMultimedia.QAudioFormat.SignedInt)
-        format.setSampleType(QtMultimedia.QAudioFormat.SignedInt)
-
-        if not self.audioDevice.isFormatSupported(format):
-            format = self.audioDevice.nearestFormat(format)
+        if not self.audioDevice.isFormatSupported(self.format):
+            self.format = self.audioDevice.nearestFormat(self.format)
             #do something else with self.audioDevice.nearestFormat(format)?
-        self.sampleSize = format.sampleSize()
-        self.sampleRate = format.sampleRate()
+        self.sampleSize = self.format.sampleSize()
+        self.sampleRate = self.format.sampleRate()
         try:
             self.output.notify.disconnect()
             del self.output
         except:
             pass
-        self.output = QtMultimedia.QAudioOutput(self.audioDevice, format)
+        self.output = QtMultimedia.QAudioOutput(self.audioDevice, self.format)
         self.output.setNotifyInterval(25)
         self.output.stateChanged.connect(self.stateChanged)
+        self.output.setBufferSize(self.settings.value('BufferSize', defaultBufferSize, int))
         self.dirty.emit()
         self.notify = self.output.notify
 
