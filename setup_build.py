@@ -138,10 +138,13 @@ else:
         (os.path.join(pkgDir, 'soundfile.py'), 'soundfile.py'), 
         (os.path.join(pkgDir, '_soundfile.pyc'), '_soundfile.pyc'), 
         (os.path.join(pkgDir, 'soundfile.pyc'), 'soundfile.pyc'), 
-        (os.path.join(pkgDir, 'samplerate'), 'samplerate'), 
+#        (os.path.join(pkgDir, 'samplerate'), 'samplerate'), 
+        ('/opt/local/lib/libsamplerate.0.dylib', 'samplerate/_samplerate_data/libsamplerate.dylib'), 
         ('/opt/local/libexec/qt4/share/plugins/sqldrivers', 'sqldrivers'), 
     ])
 
+    for f in glob('{}/*'.format(os.path.join(pkgDir, 'samplerate'))):
+        files.append((f, 'samplerate/{}'.format(os.path.basename(f))))
 
 #    files.append(('/opt/local/libexec/qt4/share/plugins/sqldrivers', 'sqldrivers'))
 
@@ -151,7 +154,7 @@ else:
     ]
 
 buildOptions = dict(packages = [], includes = includes, include_files = files, 
-    excludes = ['soundfile', 'samplerate', 'tkinter', 'tcl'], bin_excludes = ['libsndfile32bit.dll', 'libsamplerate-32bit.dll'])
+    excludes = ['soundfile', 'samplerate', 'tkinter', 'tcl'], bin_excludes = ['libsndfile32bit.dll', 'libsamplerate-32bit.dll', 'libsamplerate.dylyb'])
 macbuildOptions = {'iconfile': 'resources/bigglesworth_icon.icns', 'bundle_name': 'BigglesworthBeta'}
 dmgOptions = {'applications_shortcut': True}
 
