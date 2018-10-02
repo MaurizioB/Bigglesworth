@@ -11,7 +11,7 @@ QtGui.QIconEngineV2 = QIconEngineV2
 from bigglesworth.utils import sanitize, loadUi, getCardinal
 from bigglesworth.dialogs.messageboxes import AdvancedMessageBox
 from bigglesworth.wavetables import UidColumn, NameColumn, SlotColumn, EditedColumn, DataColumn, PreviewColumn, DumpedColumn
-from bigglesworth.wavetables.utils import ActivateDrag, curves, getCurvePath, waveFunction, waveColors
+from bigglesworth.wavetables.utils import ActivateDrag, curves, getCurvePath, waveFunction, waveColors, pow20, pow21, WaveLabels
 from bigglesworth.wavetables.graphics import SampleItem, NextWaveScene, WaveTransformItem
 
 
@@ -19,7 +19,6 @@ FractRole = QtCore.Qt.UserRole + 1
 
 CurveIconType, WaveIconType = 0, 1
 
-WaveLabels = ['Sine', 'Square', 'Triangle', 'Sawtooth', 'Inv. Saw']
 
 class IconEngine(QtGui.QIconEngineV2):
 
@@ -1054,7 +1053,7 @@ class EnvelopeHarmonicsSlider(QtWidgets.QWidget):
 #        QtWidgets.QApplication.sendEvent(self.window(), QtGui.QStatusTipEvent(self.slider.statusTip()))
 
     def sliderValueChanged(self, value, oldValue):
-        self.waveWidget.setValue(value)
+#        self.waveWidget.setValue(value)
         self.valueChanged.emit(value, oldValue)
         self.setStatusTip()
 
@@ -2224,6 +2223,104 @@ class WaveTableView(QtWidgets.QGraphicsView):
     def resizeEvent(self, event):
 #        self.setFixedHeight(self.width() * .75)
         self.fitInView(self.scene().sceneRect(), QtCore.Qt.KeepAspectRatio)
+
+
+class WaveTableCurrentView(QtWidgets.QGraphicsView):
+    shown = False
+    wavePen = QtGui.QPen(waveColors[0], 1)
+    wavePen.setCosmetic(True)
+
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QGraphicsView.__init__(self, *args, **kwargs)
+        scene = QtWidgets.QGraphicsScene()
+        scene.setSceneRect(QtCore.QRectF(0, -pow20, 127, pow21))
+        self.setScene(scene)
+        #for performance we are using computed values, not wavepaths, 
+        #so we vertically flip the view
+        self.setTransform(QtGui.QTransform().scale(1, -1))
+        self.queuedUpdate = False
+        self.currentIndex = 0
+        self.prevKeyFrameIndex = 0
+        self.nextKeyFrameIndex = 0
+        self.wavePaths = []
+        self.wavePathItems = []
+        for i in range(64):
+            wavePath = QtGui.QPainterPath()
+            wavePath.moveTo(0, 0)
+            for s in range(1, 128):
+                wavePath.lineTo(s, 0)
+            wavePathItem = scene.addPath(wavePath)
+            wavePathItem.setPen(self.wavePen)
+            self.wavePaths.append(wavePath)
+            self.wavePathItems.append(wavePathItem)
+            wavePathItem.setOpacity(0 if i else 1)
+
+    def setKeyFramesObj(self, keyFrames):
+        self.keyFrames = keyFrames
+        keyFrames.changed.connect(self.scheduleUpdate)
+        self.scheduleUpdate()
+
+    def scheduleUpdate(self):
+        if self.isVisible():
+            self.rebuildPaths()
+            self.queuedUpdate = False
+        else:
+            self.queuedUpdate = True
+
+    def setCurrentIndex(self, index):
+        if index == self.currentIndex:
+            return
+#        if not index:
+#            self.wavePathItems[self.currentIndex].setOpacity(0)
+        self.wavePathItems[index].setOpacity(1)
+        keyFrame = self.keyFrames.get(index)
+        if keyFrame:
+            if self.nextKeyFrameIndex and self.nextKeyFrameIndex != index:
+                self.wavePathItems[self.nextKeyFrameIndex].setOpacity(0)
+            self.nextKeyFrameIndex = self.keyFrames.nextIndex(index)
+            if self.prevKeyFrameIndex and self.prevKeyFrameIndex != index:
+                self.wavePathItems[self.prevKeyFrameIndex].setOpacity(0)
+            self.prevKeyFrameIndex = self.keyFrames.previousIndex(index)
+            if self.prevKeyFrameIndex < 0:
+                self.prevKeyFrameIndex = self.keyFrames[-1].index
+        else:
+            prevKeyFrameIndex = self.keyFrames.previousIndex(index)
+            if prevKeyFrameIndex < 0:
+                prevKeyFrameIndex = self.keyFrames[-1].index
+            if prevKeyFrameIndex != self.prevKeyFrameIndex:
+                self.wavePathItems[self.prevKeyFrameIndex].setOpacity(0)
+                self.prevKeyFrameIndex = prevKeyFrameIndex
+            nextKeyFrameIndex = self.keyFrames.nextIndex(index)
+            if nextKeyFrameIndex != self.nextKeyFrameIndex:
+                self.wavePathItems[self.nextKeyFrameIndex].setOpacity(0)
+                self.nextKeyFrameIndex = nextKeyFrameIndex
+            if nextKeyFrameIndex != prevKeyFrameIndex and self.keyFrames.get(prevKeyFrameIndex).nextTransform.mode:
+                last = 64 if not nextKeyFrameIndex else nextKeyFrameIndex
+                pos = float(index - prevKeyFrameIndex) / (last - prevKeyFrameIndex) * .5
+                self.wavePathItems[prevKeyFrameIndex].setOpacity(.5 - pos)
+                self.wavePathItems[nextKeyFrameIndex].setOpacity(pos)
+        self.wavePathItems[self.currentIndex].setOpacity(0)
+        self.currentIndex = index
+
+    def rebuildPaths(self):
+        waveIter = iter(zip(self.wavePaths, self.wavePathItems))
+        for keyFrame in self.keyFrames:
+            for i, waveData in enumerate(self.keyFrames.bounce(keyFrame.nextTransform, setValues=False)):
+                wavePath, wavePathItem = waveIter.next()
+                for sample, value in enumerate(waveData):
+                    wavePath.setElementPositionAt(sample, sample, value)
+                wavePathItem.setPath(wavePath)
+
+    def resizeEvent(self, event):
+        self.fitInView(self.scene().sceneRect(), QtCore.Qt.IgnoreAspectRatio)
+
+    def showEvent(self, event):
+        if not self.shown:
+            self.shown = True
+            self.fitInView(self.scene().sceneRect(), QtCore.Qt.IgnoreAspectRatio)
+        if self.queuedUpdate:
+            self.rebuildPaths()
+
 
 
 class WaveTableMiniView(QtWidgets.QGraphicsView):

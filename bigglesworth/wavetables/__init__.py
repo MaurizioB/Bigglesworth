@@ -11,7 +11,7 @@ from uuid import uuid4
 from unidecode import unidecode
 os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
 
-#sys.path.append('../..')
+sys.path.append('../..')
 
 from Qt import QtCore, QtGui, QtWidgets, QtSql
 
@@ -1263,8 +1263,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 
         self.undoStack.indexesChanged.connect(self.waveScene.indexesChanged)
 
-        self.fullTableMiniScene = QtWidgets.QGraphicsScene()
-        self.fullTableMiniView.setScene(self.fullTableMiniScene)
+        self.waveTableCurrentWaveScene = self.waveTableCurrentWaveView.scene()
 
         self.gridCombo.currentIndexChanged.connect(self.waveScene.setGridMode)
         self.waveScene.setGridMode(self.gridCombo.currentIndex())
@@ -1355,6 +1354,9 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             self.wasNew = True
         else:
             self.wasNew = False
+        self.waveTableCurrentWaveView.setKeyFramesObj(self.keyFrames)
+        self.keyFrameScene.keyFrameChanged.connect(self.waveTableCurrentWaveView.scheduleUpdate)
+        self.keyFrameScene.transformChanged.connect(self.waveTableCurrentWaveView.scheduleUpdate)
 
         self.checkDumps()
         self.dumpAllBtn.clicked.connect(self.dumpAll)
@@ -1937,22 +1939,23 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 #        else:
 #            keyRange = nextKeyFrame.index - prevKeyFrame.index
         self.waveTableScene.updateSlice(index)
-        self.fullTableMiniScene.clear()
-        prevItem = self.fullTableMiniScene.addPath(prevKeyFrame.wavePath)
-        prevColor = QtGui.QColor(SampleItem.wavePen.color())
-        transform = prevKeyFrame.nextTransform
-        if nextKeyFrame and transform.isValid() and transform.mode:
-            pathItem = self.fullTableMiniScene.addPath(transform.getIntermediatePaths(index))
-            nextColor = QtGui.QColor(SampleItem.wavePen.color())
-            nextColor.setAlphaF(.8)
-            pathItem.setPen(nextColor)
-            prevColor.setAlphaF(.5)
-#            nextItem = self.fullTableMiniScene.addPath(nextKeyFrame.wavePath)
-#            nextColor = QtGui.QColor(SampleItem.highlightPen)
-#            pos = (index - prevKeyFrame.index) / float(keyRange)
-#            nextColor.setAlphaF(pos)
-#            nextItem.setPen(nextColor)
-        prevItem.setPen(prevColor)
+        self.waveTableCurrentWaveView.setCurrentIndex(index)
+#        self.waveTableCurrentWaveScene.clear()
+#        prevItem = self.waveTableCurrentWaveScene.addPath(prevKeyFrame.wavePath)
+#        prevColor = QtGui.QColor(SampleItem.wavePen.color())
+#        transform = prevKeyFrame.nextTransform
+#        if nextKeyFrame and transform.isValid() and transform.mode:
+#            pathItem = self.waveTableCurrentWaveScene.addPath(transform.getIntermediatePaths(index))
+#            nextColor = QtGui.QColor(SampleItem.wavePen.color())
+#            nextColor.setAlphaF(.8)
+#            pathItem.setPen(nextColor)
+#            prevColor.setAlphaF(.5)
+##            nextItem = self.waveTableCurrentWaveScene.addPath(nextKeyFrame.wavePath)
+##            nextColor = QtGui.QColor(SampleItem.highlightPen)
+##            pos = (index - prevKeyFrame.index) / float(keyRange)
+##            nextColor.setAlphaF(pos)
+##            nextItem.setPen(nextColor)
+#        prevItem.setPen(prevColor)
         self.mainTransformWidget.setTransform(prevKeyFrame)
 
     def setWaveEditBtn(self, index=None):
@@ -1977,11 +1980,12 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         if isinstance(keyFrame, int):
             self.indexSlider.setValue(keyFrame)
             return
-        self.fullTableMiniScene.clear()
-        item = self.fullTableMiniScene.addPath(keyFrame.wavePath)
-        item.setPen(keyFrame.wavePen)
-        rect = QtCore.QRectF(0, 0, keyFrame.wavePathMaxWidth, keyFrame.wavePathMaxHeight)
-        self.fullTableMiniView.fitInView(rect)
+        self.waveTableCurrentWaveView.setCurrentIndex(keyFrame.index)
+#        self.waveTableCurrentWaveScene.clear()
+#        item = self.waveTableCurrentWaveScene.addPath(keyFrame.wavePath)
+#        item.setPen(keyFrame.wavePen)
+#        rect = QtCore.QRectF(0, 0, keyFrame.wavePathMaxWidth, keyFrame.wavePathMaxHeight)
+#        self.waveTableCurrentWaveView.fitInView(rect)
         index = keyFrame.index
         self.indexSlider.blockSignals(True)
         self.indexSlider.setValue(index)
@@ -2226,7 +2230,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         currentIndex = keyFrame.index
         prevIndex = self.keyFrames.previousIndex(keyFrame) if currentIndex else 0
         nextIndex = self.keyFrames.nextIndex(keyFrame)
-        if nextIndex < 0:
+        if not nextIndex:
             nextIndex = 64
         #indexes set and return as shown (not zero-index)
         res = SetIndexDialog(self, prevIndex + 2, currentIndex + 1, nextIndex).exec_()
@@ -3381,14 +3385,15 @@ class WaveTableWindow(QtWidgets.QMainWindow):
     def showEvent(self, event):
         if not self.shown:
             self.shown = True
-            self.fullTableMiniView.setFixedHeight(self.fullTableMiniView.width() * .4)
+            self.waveTableCurrentWaveView.setFixedHeight(self.waveTableCurrentWaveView.width() * .5)
             self.selectionLeftBtn.setMaximumHeight(self.selectionMinusBtn.geometry().bottom() - self.selectionPlusBtn.geometry().top())
             self.selectionRightBtn.setMaximumHeight(self.selectionLeftBtn.maximumHeight())
             self.selectionListView.setFixedHeight(self.fontMetrics().height() * 3.5)
             #This is necessary as changing the icon invalidates the *whole* layout. we don't want that...
             self.waveEditBtn.setFixedSize(self.waveEditBtn.size())
+            self.miniView.setVisible(False)
 
-#            self.fullTableMiniView.fitInView(self.fullTableMiniScene.sceneRect())
+#            self.waveTableCurrentWaveView.fitInView(self.waveTableCurrentWaveScene.sceneRect())
             self.setCurrentKeyFrame(self.keyFrames[0])
             self.updateMiniWave(self.keyFrames[0])
             for w in reversed(self.lastActive):
@@ -3411,10 +3416,10 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 
     def resizeEvent(self, event):
         QtWidgets.QMainWindow.resizeEvent(self, event)
-        self.fullTableMiniView.setFixedHeight(self.fullTableMiniView.width() * .4)
-#        self.fullTableMiniView.fitInView(self.fullTableMiniScene.sceneRect())
-        rect = QtCore.QRectF(0, 0, SampleItem.wavePathMaxWidth, SampleItem.wavePathMaxHeight)
-        self.fullTableMiniView.fitInView(rect)
+        self.waveTableCurrentWaveView.setFixedHeight(self.waveTableCurrentWaveView.width() * .5)
+#        self.waveTableCurrentWaveView.fitInView(self.waveTableCurrentWaveScene.sceneRect())
+#        rect = QtCore.QRectF(0, 0, SampleItem.wavePathMaxWidth, SampleItem.wavePathMaxHeight)
+#        self.waveTableCurrentWaveView.fitInView(rect)
         height = self.morphLabel.sizeHint().height() + self.nextTransformCombo.sizeHint().height() + self.nextTab.layout().verticalSpacing()
         self.nextView.setMaximumSize(height * 1.3, height)
 

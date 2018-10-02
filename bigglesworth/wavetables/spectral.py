@@ -1,12 +1,14 @@
 # *-* encoding: utf-8 *-*
 
 import sys
+from copy import deepcopy
 import numpy as np
 from Qt import QtCore, QtGui, QtWidgets
 
-from bigglesworth.utils import loadUi, getCardinal, getQtFlags, sanitize
+from bigglesworth.utils import loadUi, getCardinal, sanitize
 from bigglesworth.wavetables.widgets import HarmonicsSlider, CurveIcon, EnvelopeHarmonicsSlider, AddSliderButton
-from bigglesworth.wavetables.utils import curves, waveFunction, cubicTranslation, getCurveFunc, Envelope, waveColors
+from bigglesworth.wavetables.utils import curves, waveFunction, cubicTranslation, getCurveFunc, Envelope, waveColors, WaveLabelsExt
+from bigglesworth.help import HelpDialog
 
 FractRole = QtCore.Qt.UserRole + 1
 
@@ -1228,6 +1230,9 @@ class SpecTransformDialog(QtWidgets.QDialog):
 
         self.start = self.prevItem.index
         self.end = self.nextItem.index
+        if not self.start and not self.end:
+            self.applyToNextChk.setEnabled(False)
+            self.applyToNextChk.setStatusTip('')
         if not self.end:
             self.end = 64
         self.envelopeScene.setWaveRange(self.start, self.end)
@@ -1247,11 +1252,19 @@ class SpecTransformDialog(QtWidgets.QDialog):
         self.addBtn.setToolTip('Add envelope')
 
         self.transformData = transform.data['harmonics']
+        self.originalData = deepcopy(self.transformData)
         for h, data in self.transformData.items():
             self.addEnvelope(h, *data)
 
         self.updatePaths()
         self.addToolBtn.addRequested.connect(self.addMultiEnvelopes)
+
+        self.helpDialog = HelpDialog(self)
+        self.buttonBox.button(self.buttonBox.Help).clicked.connect(self.getHelp)
+
+    def getHelp(self):
+        self.helpDialog.show()
+        self.helpDialog.openUrl('qthelp://jidesk.net.bigglesworth.1.0/html/Wavetable Editor/spectral.html', True)
 
     @property
     def currentSlider(self):
@@ -1327,8 +1340,11 @@ class SpecTransformDialog(QtWidgets.QDialog):
     def removeEnvelope(self):
         if self.sender() == self.deleteBtn:
             slider = self.currentSlider
-            if QtWidgets.QMessageBox.question(self, 'Delete envelope', 
-                'Delete envelope for {} harmonic?'.format(getCardinal(abs(slider.fract) & 127)), 
+            number = getCardinal(abs(slider.fract) & 127)
+            wave = WaveLabelsExt[abs(slider.fract) >> 7].lower()
+            negative = 'negative ' if slider.fract < 0 else 0
+            message = 'Delete envelope for {} harmonic, {}{} wave?'.format(number, negative, wave)
+            if QtWidgets.QMessageBox.question(self, 'Delete envelope', message, 
                 QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel) != QtWidgets.QMessageBox.Ok:
                     return
         else:
@@ -1456,11 +1472,22 @@ class SpecTransformDialog(QtWidgets.QDialog):
         self.envelopeView.fitInView(self.envelopeScene.sceneRect().adjusted(-margin, 0, margin, 0))
         self.previewView.fitInView(self.previewScene.sceneRect())
 
+    def getData(self):
+        return {slider.fract: (list(envelope.nodes), envelope.curves)[:2 if envelope.curves else 1] for slider, envelope in self.envelopes.items()}
+
+    def reject(self):
+        if self.originalData != self.getData() and \
+            QtWidgets.QMessageBox.question(self, 'Ignore changes?', 
+                'Contents of the transformation has been changed.\nAre you sure you want to cancel?', 
+                QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel) != QtWidgets.QMessageBox.Ok:
+                    return
+        QtWidgets.QDialog.reject(self)
+
     def exec_(self):
         res = QtWidgets.QDialog.exec_(self)
         if res:
-            data = {slider.fract: (list(envelope.nodes), envelope.curves) for slider, envelope in self.envelopes.items()}
-            return data
+#            data = {slider.fract: (list(envelope.nodes), envelope.curves)[:2 if envelope.curves else 1] for slider, envelope in self.envelopes.items()}
+            return self.getData()
 
 #    def changeFract(self):
 #        print('agggiornato')

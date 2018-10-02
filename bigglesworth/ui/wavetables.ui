@@ -419,7 +419,7 @@
             </widget>
            </item>
            <item row="1" column="0">
-            <widget class="QGraphicsView" name="fullTableMiniView">
+            <widget class="WaveTableCurrentView" name="waveTableCurrentWaveView">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -2336,7 +2336,9 @@
   </action>
   <action name="audioSettingsAction">
    <property name="icon">
-    <iconset theme="audio-card"/>
+    <iconset theme="audio-card">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>Audio settings</string>
@@ -2470,6 +2472,11 @@
   <customwidget>
    <class>ClipSlopeIcon</class>
    <extends>QLabel</extends>
+   <header>bigglesworth.wavetables.widgets</header>
+  </customwidget>
+  <customwidget>
+   <class>WaveTableCurrentView</class>
+   <extends>QGraphicsView</extends>
    <header>bigglesworth.wavetables.widgets</header>
   </customwidget>
  </customwidgets>

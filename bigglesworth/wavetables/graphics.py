@@ -1280,7 +1280,10 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
     setIndexRequested = QtCore.pyqtSignal(object)
     highlight = QtCore.pyqtSignal(object, bool)
     transformSelected = QtCore.pyqtSignal(object, bool)
-    changed = QtCore.pyqtSignal()
+#    changed = QtCore.pyqtSignal()
+    waveTableChanged = QtCore.pyqtSignal()
+    keyFrameChanged = QtCore.pyqtSignal()
+    transformChanged = QtCore.pyqtSignal()
 
     BeforeItem, OnItem, AfterItem = -1, 0, 1
 
@@ -1304,6 +1307,7 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
         keyFrame.pressed.connect(lambda doubleClicked: self.highlight.emit(keyFrame, doubleClicked))
         keyFrame.copyWave.connect(self.copyWave)
         keyFrame.pasteWave.connect(self.pasteWave)
+        keyFrame.changed.connect(self.keyFrameChanged)
 #        self.changed.emit()
 
     def copyWave(self):
@@ -1328,7 +1332,8 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
         transform.pasteTransform.connect(self.pasteTransform)
         transform.bounceRequested.connect(self.bounceRequested)
         transform.pressed.connect(lambda doubleClicked: self.transformSelected.emit(transform, doubleClicked))
-        transform.geometryChanged.connect(lambda: self.keyFrameContainer.layout().invalidate())
+        transform.changed.connect(self.transformChanged)
+#        transform.geometryChanged.connect(lambda: self.keyFrameContainer.layout().invalidate())
 #        self.changed.emit()
 
 #    def deleteKeyFrame(self, keyFrame):
@@ -3465,7 +3470,7 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
         self.waveTableWindow = waveTableWindow
         self.view = waveTableWindow.waveTableView
         self.keyFrameScene = waveTableWindow.keyFrameScene
-        self.keyFrameScene.changed.connect(self.updateKeyFrames)
+        self.keyFrameScene.waveTableChanged.connect(self.updateKeyFrames)
         self.keyFrameScene.selectionChanged.connect(self.keyFrameSceneSelectionChanged)
         self.keyFrames = self.keyFrameScene.keyFrames
 
@@ -3588,6 +3593,7 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
 
         self.highlight.connect(self.updateSlice)
         self.highlightedItem = None
+        self.highlightedIndex = None
         self.newIndex = None
         self.currentSelection = []
         self.moveRangePrev = self.moveRangeNext = 0
@@ -3623,7 +3629,13 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
 #        self.sliceEditRequested.emit(self.sliceIdItem.index)
 
     def updateSlice(self, keyFrame):
-        #emitted by PreviewWaveItem.hoverEnterEvent
+        if isinstance(keyFrame, int):
+            index = keyFrame
+            keyFrame = self.keyFrames.get(index)
+        else:
+            index = keyFrame.index
+        if index == self.highlightedIndex:
+            return
         if self.highlightedItem and self.highlightedItem != keyFrame:
             self.highlightedItem.setHighlighted(False)
         waveItem = self.keyFrameItems.get(keyFrame)
@@ -3633,24 +3645,20 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
             self.sliceItem.setPos(waveItem.pos())
             self.sliceItem.setZValue(waveItem.zValue() - 1)
             self.sliceItem.setVisible(True)
-            self.sliceIdItem.setIndex(keyFrame.index)
-            self.sliceIdItem.setPos(self.sliceItem.pos())
-            self.sliceIdItem.setY(
-                self.sliceIdItem.y() - self.view.mapToScene(self.sliceIdItem.boundingRect().toRect()).boundingRect().height() * 1.25)
-            self.sliceIdItem.setVisible(True)
             self.sliceEditItem.setEdit(True)
         else:
-#            print('keyFrame not in previews?!')
             self.highlightedItem = None
-            self.sliceItem.setPos(self.front.x() + keyFrame * self.xRatio, 
-                self.front.y() - keyFrame * self.yRatio)
-            self.sliceIdItem.setIndex(keyFrame)
-            self.sliceIdItem.setPos(self.sliceItem.pos())
-            self.sliceIdItem.setY(
-                self.sliceIdItem.y() - self.view.mapToScene(self.sliceIdItem.boundingRect().toRect()).boundingRect().height() * 1.25)
+            self.sliceItem.setPos(self.front.x() + index * self.xRatio, 
+                self.front.y() - index * self.yRatio)
             self.sliceItem.setVisible(True)
-            self.sliceIdItem.setVisible(True)
             self.sliceEditItem.setEdit(False)
+
+        self.sliceIdItem.setIndex(index)
+        self.sliceIdItem.setPos(self.sliceItem.pos())
+        self.sliceIdItem.setY(
+            self.sliceIdItem.y() - self.view.mapToScene(self.sliceIdItem.boundingRect().toRect()).boundingRect().height() * 1.25)
+        self.sliceIdItem.setVisible(True)
+        self.highlightedIndex = index
 
     def updateKeyFrames(self):
         for item in self.keyFrameItems.values() + list(chain(*self.motionLines.values())):
@@ -3662,8 +3670,6 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
             self.highlightedItem = None
         for keyFrame in self.keyFrames:
             item = PreviewWaveItem(keyFrame)
-#            item.highlight.connect(self.highlight)
-#            item.clicked.connect(self.waveDoubleClicked)
             try:
                 item.setX(self.front.x() + keyFrame.index * self.xRatio)
             except:
@@ -3682,56 +3688,6 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
         for item in self.keyFrames.allItems:
             if isinstance(item, WaveTransformItem):
                 self.updateTransform(item)
-#        return
-#        #for "cycling" (last keyFrame has to know the first keyframe if it's not final)
-#        first = self.keyFrames[0]
-#        last = self.keyFrames[-1]
-#        scaleX = self.invertedScale.m11()
-#        scaleY = self.invertedScale.m22()
-#        for keyFrame in self.keyFrames:
-#            transform = keyFrame.nextTransform
-#            if transform and transform.isValid() and not transform.isContiguous():
-#                keyFrameX = keyFrame.index * scaleX
-#                keyFrameY = -keyFrame.index * scaleY
-#                if keyFrame == last:
-#                    nextItem = first
-#                    nextItemY = -63 * scaleY
-#                    deltaX = (63 - keyFrame.index) * scaleX
-##                    deltaY = -(63 - keyFrame.index) * scaleY
-#                else:
-#                    nextItem = transform.nextItem
-#                    nextItemY = -(nextItem.index) * scaleY
-#                    deltaX = (nextItem.index - keyFrame.index) * scaleX
-##                    deltaY = -(nextItem.index - keyFrame.index) * scaleY
-#                lines = []
-#                self.motionLines[transform] = lines
-#                if transform.mode:
-#                    print('mode')
-#                    for sample in range(128):
-#                        p0 = keyFrame.wavePath.elementAt(sample)
-#                        p1 = nextItem.wavePath.elementAt(sample)
-#                        line = QtCore.QLineF(keyFrameX + p0.x, p0.y + keyFrameY, 
-#                            keyFrameX + p0.x + deltaX, nextItemY - keyFrameY + p1.y)
-#                        lineItem = self.addLine(line)
-#                        lineItem.setPen(self.transformPen)
-#                        lineItem.setTransform(self.scaleTransform)
-#                        lines.append(lineItem)
-#                else:
-#                    print('constant', keyFrame.y())
-#                    for sample in range(128):
-#                        p0 = keyFrame.wavePath.elementAt(sample)
-#                        p1 = nextItem.wavePath.elementAt(sample)
-#                        line = QtCore.QLineF(keyFrameX + p0.x, p0.y + keyFrameY, 
-#                            keyFrameX + p0.x + deltaX, nextItemY + p0.y)
-#                        lineItem = self.addLine(line)
-#                        lineItem.setPen(self.transformPen)
-#                        lineItem.setTransform(self.scaleTransform)
-#                        lines.append(lineItem)
-#                transform.changed.connect(self.updateTransform)
-#            else:
-#                pass
-##                print('habeoje', keyFrame, keyFrame.index, transform)
-#            print(self.motionLines.keys())
 
     def queueTransformUpdate(self):
         self.updateQueue.add(self.sender())
@@ -3748,8 +3704,7 @@ class WaveTableScene(QtWidgets.QGraphicsScene):
             return
         scaleX = self.invertedScale.m11() * self.xRatio
         scaleY = self.invertedScale.m22() * self.yRatio
-        print(transform.prevItem, transform.nextItem)
-        print('indexes: {} {}'.format(transform.prevItem.index, transform.nextItem.index))
+        print('transform indexes: {} {}'.format(transform.prevItem.index, transform.nextItem.index))
         prevItem = transform.prevItem
         nextItem = transform.nextItem
 #        prevPreview = self.keyFrameItems[prevItem]

@@ -153,16 +153,6 @@
         <property name="margin">
          <number>0</number>
         </property>
-        <item row="2" column="1">
-         <widget class="QSlider" name="progressSlider">
-          <property name="maximum">
-           <number>999</number>
-          </property>
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
         <item row="0" column="2" rowspan="3">
          <widget class="EndRangeLabel" name="endLbl">
           <property name="frameShape">
@@ -189,6 +179,16 @@
           </property>
          </widget>
         </item>
+        <item row="2" column="1">
+         <widget class="QSlider" name="progressSlider">
+          <property name="maximum">
+           <number>999</number>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
         <item row="1" column="1">
          <widget class="ToolTipSlider" name="toolTipSlider">
           <property name="sizePolicy">
@@ -199,6 +199,19 @@
           </property>
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0" colspan="3">
+         <widget class="QCheckBox" name="applyToNextChk">
+          <property name="statusTip">
+           <string>By default, morphs do not change values to the next wave. Right click or see help to know more.</string>
+          </property>
+          <property name="whatsThis">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Morphs usually change values &lt;span style=&quot; font-style:italic;&quot;&gt;between&lt;/span&gt; keyframes, leaving the starting and final keyframe of the transition untouched.&lt;/p&gt;&lt;p&gt;As spectral morph is able to apply its harmonic envelopes to the starting keyframe, it is also possible to apply those envelopes to the final one. See the manual to know more.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="text">
+           <string>Apply to next wave values</string>
           </property>
          </widget>
         </item>
@@ -234,7 +247,7 @@
         <enum>Qt::Horizontal</enum>
        </property>
        <property name="standardButtons">
-        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Help|QDialogButtonBox::Ok</set>
        </property>
       </widget>
      </item>
@@ -288,7 +301,7 @@
         <x>0</x>
         <y>0</y>
         <width>16</width>
-        <height>119</height>
+        <height>144</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -313,7 +326,9 @@
      <item>
       <widget class="AddToolButton" name="addToolBtn">
        <property name="icon">
-        <iconset theme="list-add"/>
+        <iconset theme="list-add">
+         <normaloff/>
+        </iconset>
        </property>
        <property name="popupMode">
         <enum>QToolButton::MenuButtonPopup</enum>

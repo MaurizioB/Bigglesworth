@@ -58,6 +58,10 @@ def noteFrequency(note, tuning=440):
 #        return '{:02.0f}:{:02.0f}:{:.03f}'.format(hours, minutes, seconds)
 
 #sine128 = tuple(sin(2 * pi * r * (0.0078125)) for r in xrange(128))
+
+WaveLabels = 'Sine', 'Square', 'Triangle', 'Sawtooth', 'Inv. saw'
+WaveLabelsExt = 'Sine', 'Square', 'Triangle', 'Sawtooth', 'Inverted sawtooth'
+
 sineData = {}
 def sineValues(fract, count=128):
     try:

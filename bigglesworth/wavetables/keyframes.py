@@ -60,7 +60,7 @@ class KeyFrames(QtCore.QObject):
         try:
             return self.fullList[index]
         except:
-            print('invalid index {}!!!'.format(index))
+            print('invalid index {}!!! <- {}'.format(index, self.sender()))
             return None
 
     def getClosestValidIndex(self, index, direction=0):
@@ -186,7 +186,7 @@ class KeyFrames(QtCore.QObject):
                 item.updateGeometry()
         if isinstance(self.allItems[-1], WaveTransformItem) and self.allItems[-1].nextItem != self.keyFrames[0]:
             self.allItems[-1].setNextItem(self.keyFrames[0])
-        self.scene.changed.emit()
+        self.scene.waveTableChanged.emit()
         if not self.scene.maximized:
             self.allItems[1].minimize()
         self.layout.invalidate()
@@ -273,7 +273,7 @@ class KeyFrames(QtCore.QObject):
 #                    self.fullValues[index] = values
 #                    changed.append(self.fullList[index])
 
-        self.scene.changed.emit()
+        self.scene.waveTableChanged.emit()
         if not self.scene.maximized:
             self.allItems[1].minimize()
         [k.changed.emit() for k in changed]
@@ -394,7 +394,7 @@ class KeyFrames(QtCore.QObject):
                     item.setTargets(self.allItems[layoutIndex - 1], self.keyFrames[0])
         self.clean = False
         [k.changed.emit() for k in self.keyFrames]
-        self.scene.changed.emit()
+        self.scene.waveTableChanged.emit()
         self.layout.invalidate()
         self.changed.emit()
 
@@ -418,7 +418,7 @@ class KeyFrames(QtCore.QObject):
         self.clean = False
         [k.changed.emit() for k in items]
         self.invalidateTransforms()
-        self.scene.changed.emit()
+        self.scene.waveTableChanged.emit()
         self.layout.invalidate()
         self.changed.emit()
 
@@ -473,7 +473,7 @@ class KeyFrames(QtCore.QObject):
     def nextIndex(self, index):
         nextItem = self.next(index)
         if nextItem is None:
-            return -1
+            return 0
         return self.index(nextItem)
 
     def prevTransform(self, item):
@@ -584,7 +584,7 @@ class KeyFrames(QtCore.QObject):
             self.setValues(keyFrame.index, values[:])
         for transform in transforms | self.invalidateTransforms():
             transform.updateGeometry()
-        self.scene.changed.emit()
+        self.scene.waveTableChanged.emit()
         if not self.scene.maximized:
             self.allItems[1].minimize()
         self.layout.invalidate()
@@ -621,7 +621,7 @@ class KeyFrames(QtCore.QObject):
             self.allItems.append(transform)
             self.layout.addItem(transform)
         print(self.keyFrames, self.fullList)
-        self.scene.changed.emit()
+        self.scene.waveTableChanged.emit()
         [k.indexChanged.emit(i) for k, i in newIndexes.items()]
         self.clean = False
         self.changed.emit()
@@ -629,7 +629,7 @@ class KeyFrames(QtCore.QObject):
     def moveKeyFrame(self, keyFrame, newIndex):
         prevValidIndex = self.previousIndex(keyFrame)
         nextValidIndex = self.nextIndex(keyFrame)
-        if nextValidIndex < 0:
+        if not nextValidIndex:
             nextValidIndex = 64
         if not prevValidIndex < newIndex < nextValidIndex:
             print('wtf?!', prevValidIndex, nextValidIndex, newIndex)
@@ -645,7 +645,7 @@ class KeyFrames(QtCore.QObject):
             transform = keyFrame.prevTransform.clone(keyFrame, self.keyFrames[0])
             self.allItems.append(transform)
             self.layout.addItem(transform)
-        self.scene.changed.emit()
+        self.scene.waveTableChanged.emit()
         keyFrame.indexChanged.emit(newIndex)
         self.clean = False
         self.changed.emit()
@@ -676,7 +676,7 @@ class KeyFrames(QtCore.QObject):
         self.allItems.remove(keyFrame)
         if self.allItems[-1] == prevTransform:
             prevTransform.setNextItem(self.keyFrames[0])
-        self.scene.changed.emit()
+        self.scene.waveTableChanged.emit()
         self.clean = False
         self.changed.emit()
 
@@ -721,7 +721,7 @@ class KeyFrames(QtCore.QObject):
             self.layout.removeItem(lastTransform)
             self.scene.removeItem(lastTransform)
         self.invalidateTransforms()
-        self.scene.changed.emit()
+        self.scene.waveTableChanged.emit()
         self.layout.invalidate()
         self.clean = False
         self.changed.emit()
@@ -742,7 +742,7 @@ class KeyFrames(QtCore.QObject):
         self.layout.removeItem(transform)
         self.scene.removeItem(transform)
         self.allItems.remove(transform)
-        self.scene.changed.emit()
+        self.scene.waveTableChanged.emit()
         self.layout.invalidate()
         self.clean = False
         self.changed.emit()
@@ -821,7 +821,7 @@ class KeyFrames(QtCore.QObject):
         self.allItems[:] = allItems
         for item in self.allItems:
             self.layout.addItem(item)
-        self.scene.changed.emit()
+        self.scene.waveTableChanged.emit()
         self.layout.invalidate()
         self.clean = False
         self.changed.emit()

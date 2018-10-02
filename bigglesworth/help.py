@@ -169,6 +169,14 @@ class HelpDialog(QtWidgets.QDialog):
         else:
             self.contentWidget.expand(self.proxy.index(0, 0))
 
+    def openUrl(self, textUrl, start=False):
+        if not (self.loaded and self.shown and self.proxy.rowCount()):
+            QtCore.QTimer.singleShot(0, lambda: self.openUrl(textUrl, start))
+            return
+        self.anchorClicked(QtCore.QUrl(textUrl))
+        if start:
+            self.helpBrowser.clearHistory()
+
     def anchorClicked(self, url, parent=None):
         if url.scheme() != 'qthelp':
             QtGui.QDesktopServices.openUrl(url)
