@@ -564,13 +564,14 @@ class SpecTransformUndo(TransformUndo):
         self.transform = transform
         self.reference = transform.prevItem.index
         self.oldHarmonics = deepcopy(transform.harmonics)
-        self.newHarmonics = data
+        self.oldAppliesToNext = transform.appliesToNext
+        self.newHarmonics, self.newAppliesToNext = data
 
     def redo(self):
         if not self.done:
             self.done = True
             self.oldState = self.keyFrames.getSnapshot()
-            self.transform.setData({'harmonics': self.newHarmonics})
+            self.transform.setData({'harmonics': self.newHarmonics, 'appliesToNext': self.newAppliesToNext})
             self.newState = self.keyFrames.getSnapshot()
         else:
             TransformUndo.redo(self)
@@ -579,6 +580,7 @@ class SpecTransformUndo(TransformUndo):
         if isinstance(other, TranslateTransformUndo) and self.reference == other.reference:
             self.newState = other.newState
             self.newHarmonics = other.newHarmonics
+            self.newAppliesToNext = other.newAppliesToNext
             return True
         return False
 
@@ -1357,6 +1359,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.waveTableCurrentWaveView.setKeyFramesObj(self.keyFrames)
         self.keyFrameScene.keyFrameChanged.connect(self.waveTableCurrentWaveView.scheduleUpdate)
         self.keyFrameScene.transformChanged.connect(self.waveTableCurrentWaveView.scheduleUpdate)
+        self.keyFrameScene.transformChanged.connect(self.waveScene.checkComputedPath)
 
         self.checkDumps()
         self.dumpAllBtn.clicked.connect(self.dumpAll)
@@ -1377,6 +1380,13 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.showNodesChk.toggled.connect(self.rememberSettings)
         self.showCrosshairChk.setChecked(self.settings.value('Crosshair', True, bool))
         self.showCrosshairChk.toggled.connect(self.rememberSettings)
+        self.playComputedBtn.setChecked(self.settings.value('PlayComputedWave', True, bool))
+        self.playComputedBtn.toggled.connect(self.rememberSettings)
+        self.playComputedBtn.toggled.connect(
+            lambda s: [
+                self.playComputedBtn.setIcon(QtGui.QIcon.fromTheme(('wavetables', 'node')[s])), 
+                self.playComputedBtn.setToolTip(('Play actual wave', 'Play computed wave')[s])
+                ])
 
         self.settings.endGroup()
 
@@ -2056,9 +2066,9 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         mimeData.setData('bigglesworth/WaveValues', byteArray)
         QtWidgets.QApplication.clipboard().setMimeData(mimeData)
 
-    def pasteTransform(self, transform, values):
+    def pasteTransform(self, transform, mode, data):
         #create undoCommand here
-        transform.setParameters(values)
+        transform.setParameters(mode, data)
 
     def reverseWaveTable(self):
         selection = self.waveTableScene.currentSelection
@@ -3338,6 +3348,8 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             self.settings.setValue('ShowNodes', self.showNodesChk.isChecked())
         elif self.sender() == self.showCrosshairChk:
             self.settings.setValue('Crosshair', self.showCrosshairChk.isChecked())
+        elif self.sender() == self.playComputedBtn:
+            self.settings.setValue('PlayComputedWave', self.playComputedBtn.isChecked())
         self.settings.endGroup()
 
     def closeEvent(self, event):

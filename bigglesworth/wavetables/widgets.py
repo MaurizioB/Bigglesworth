@@ -2254,6 +2254,10 @@ class WaveTableCurrentView(QtWidgets.QGraphicsView):
             self.wavePaths.append(wavePath)
             self.wavePathItems.append(wavePathItem)
             wavePathItem.setOpacity(0 if i else 1)
+        self.scheduleTimer = QtCore.QTimer()
+        self.scheduleTimer.setInterval(50)
+        self.scheduleTimer.setSingleShot(True)
+        self.scheduleTimer.timeout.connect(self.rebuildPaths)
 
     def setKeyFramesObj(self, keyFrames):
         self.keyFrames = keyFrames
@@ -2262,8 +2266,7 @@ class WaveTableCurrentView(QtWidgets.QGraphicsView):
 
     def scheduleUpdate(self):
         if self.isVisible():
-            self.rebuildPaths()
-            self.queuedUpdate = False
+            self.scheduleTimer.start()
         else:
             self.queuedUpdate = True
 
@@ -2303,6 +2306,7 @@ class WaveTableCurrentView(QtWidgets.QGraphicsView):
         self.currentIndex = index
 
     def rebuildPaths(self):
+        self.queuedUpdate = False
         waveIter = iter(zip(self.wavePaths, self.wavePathItems))
         for keyFrame in self.keyFrames:
             for i, waveData in enumerate(self.keyFrames.bounce(keyFrame.nextTransform, setValues=False)):

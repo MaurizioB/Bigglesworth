@@ -1212,29 +1212,26 @@ class SpecTransformDialog(QtWidgets.QDialog):
         self.startLbl.clicked.connect(lambda: self.progressSlider.setValue(self.progressSlider.minimum()))
         self.endLbl.clicked.connect(lambda: self.progressSlider.setValue(self.progressSlider.maximum()))
 
-#        self.statusbar = StatusBar(self)
-#        self.statusbar.setSizeGripEnabled(False)
-#        self.buttonLayout.insertWidget(0, self.statusbar)
-
         self.volumeIcon.iconSize = self.playBtn.iconSize()
         self.volumeIcon.setVolume(self.volumeSlider.value())
         self.volumeIcon.step.connect(lambda step: self.volumeSlider.setValue(self.volumeSlider.value() + self.volumeSlider.pageStep() * step))
         self.volumeIcon.reset.connect(self.volumeSlider.reset)
         self.volumeSlider.valueChanged.connect(self.volumeIcon.setVolume)
-#        self.setTransform(transform)
 
-#    def setTransform(self, transform):
         self.transform = transform
         self.prevItem = transform.prevItem
         self.nextItem = transform.nextItem
 
+        self.applyToNextChk.setChecked(transform.appliesToNext)
+
         self.start = self.prevItem.index
         self.end = self.nextItem.index
         if not self.start and not self.end:
-            self.applyToNextChk.setEnabled(False)
-            self.applyToNextChk.setStatusTip('')
+            self.applyToNextChk.setIcon(QtGui.QIcon.fromTheme('emblem-warning'))
+            self.applyToNextChk.setStatusTip(self.applyToNextChk.statusTip() + ' This option will not be applied as start and end wave coincide.')
         if not self.end:
             self.end = 64
+
         self.envelopeScene.setWaveRange(self.start, self.end)
         self.progressSlider.blockSignals(True)
         self.progressSlider.setRange(self.start, self.end)
@@ -1476,7 +1473,7 @@ class SpecTransformDialog(QtWidgets.QDialog):
         return {slider.fract: (list(envelope.nodes), envelope.curves)[:2 if envelope.curves else 1] for slider, envelope in self.envelopes.items()}
 
     def reject(self):
-        if self.originalData != self.getData() and \
+        if (self.originalData != self.getData() or self.transform.appliesToNext != self.applyToNextChk.isChecked()) and \
             QtWidgets.QMessageBox.question(self, 'Ignore changes?', 
                 'Contents of the transformation has been changed.\nAre you sure you want to cancel?', 
                 QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel) != QtWidgets.QMessageBox.Ok:
@@ -1487,7 +1484,7 @@ class SpecTransformDialog(QtWidgets.QDialog):
         res = QtWidgets.QDialog.exec_(self)
         if res:
 #            data = {slider.fract: (list(envelope.nodes), envelope.curves)[:2 if envelope.curves else 1] for slider, envelope in self.envelopes.items()}
-            return self.getData()
+            return self.getData(), self.applyToNextChk.isChecked()
 
 #    def changeFract(self):
 #        print('agggiornato')

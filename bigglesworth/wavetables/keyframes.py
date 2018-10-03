@@ -33,6 +33,7 @@ class KeyFrames(QtCore.QObject):
         self.fullAudioValues = None
         self.currentNote = None
         self.multiplier = None
+        self.changing = False
 
     @property
     def scene(self):
@@ -43,6 +44,9 @@ class KeyFrames(QtCore.QObject):
             if scene is not None:
                 self._scene = scene
             return scene
+
+    def isChanging(self):
+        return self.changing
 
     def setValuesDirty(self):
         self.clean = False
@@ -313,7 +317,8 @@ class KeyFrames(QtCore.QObject):
 ##        transform = firstItem.nextTransform
         firstIndex = transform.prevItem.index
         lastIndex = transform.nextItem.index
-        firstValues = self.fullValues[firstIndex][:]
+#        firstValues = self.fullValues[firstIndex][:]
+        firstValues = transform.valuesAtBeginning()
         data = []
         diff = (lastIndex if lastIndex else 64) - firstIndex
         if not transform.mode:
@@ -321,7 +326,8 @@ class KeyFrames(QtCore.QObject):
                 data.append(firstValues)
         else:
             firstValues = np.array(firstValues)
-            lastValues = np.array(self.fullValues[lastIndex if lastIndex else 0])
+#            lastValues = np.array(self.fullValues[lastIndex if lastIndex else 0])
+            lastValues = np.array(transform.nextItem.nextTransform.valuesAtBeginning())
             ratio = 1. / diff
             if transform.isLinear():
                 for index in range(diff):
@@ -443,8 +449,30 @@ class KeyFrames(QtCore.QObject):
 #            print('index requested, but not found', item, self.sender())
             return None
 
-    def values(self, item):
-        return self.fullValues[self.fullList.index(item)]
+    def values(self, keyFrame):
+        return self.fullValues[self.fullList.index(keyFrame)]
+
+    def computedValues(self, index):
+        if not isinstance(index, int):
+            keyFrame = index
+            index = self.fullList.index(keyFrame)
+        else:
+            keyFrame = self.fullList[index]
+        if keyFrame:
+            if not self.waveIsTransformed(keyFrame):
+                return self.fullValues[index]
+            return keyFrame.prevTransform.valuesAtEnd()
+        else:
+            previousIndex = self.previousIndex(index)
+            return self.bounce(self.get(previousIndex).nextTransform, setValues=False)[index - previousIndex]
+
+    def waveIsTransformed(self, keyFrame):
+        prevTransform = self.prevTransform(keyFrame)
+        nextTransform = self.nextTransform(keyFrame)
+        if prevTransform != nextTransform:
+            return prevTransform.nextIsChanged() or nextTransform.prevIsChanged()
+        else:
+            return prevTransform.nextIsChanged()
 
     def previous(self, index):
         if isinstance(index, SampleItem):
@@ -480,7 +508,9 @@ class KeyFrames(QtCore.QObject):
         itemIndex = self.allItems.index(item)
         if itemIndex:
             return self.allItems[itemIndex - 1]
-        return self.allItems[-1]
+        transform = self.allItems[-1]
+        assert isinstance(transform, WaveTransformItem)
+        return transform
 
     def nextTransform(self, item):
         try:
@@ -775,6 +805,7 @@ class KeyFrames(QtCore.QObject):
         return content
 
     def setSnapshot(self, content):
+        self.changing = True
         keyFrames = []
         fullList = [None for _ in range(64)]
         allItems = []
@@ -824,6 +855,7 @@ class KeyFrames(QtCore.QObject):
         self.scene.waveTableChanged.emit()
         self.layout.invalidate()
         self.clean = False
+        self.changing = False
         self.changed.emit()
 #        print(', '.join([str(i) for i in allItems if isinstance(i, WaveTransformItem)]))
 
