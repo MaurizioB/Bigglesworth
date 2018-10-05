@@ -506,6 +506,32 @@ class TransformChangeUndo(TransformUndo):
         return False
 
 
+class TransformAppliesToNextUndo(TransformUndo):
+    def __init__(self, main, transform, applies):
+        text = 'Transform {} to the next wave'.format('applies' if applies else 'does not apply')
+        TransformUndo.__init__(self, main, text)
+        self.transform = transform
+        self.reference = transform.prevItem.index
+        self.oldApplies = transform.appliesToNext
+        self.newApplies = applies
+
+    def redo(self):
+        if not self.done:
+            self.done = True
+            self.oldState = self.keyFrames.getSnapshot()
+            self.transform.appliesToNext = self.newApplies
+            self.newState = self.keyFrames.getSnapshot()
+        else:
+            TransformUndo.redo(self)
+
+    def mergeWith(self, other):
+        if isinstance(other, CurveTransformUndo) and self.reference == other.reference:
+            self.newState = other.newState
+            self.newApplies= other.newApplies
+            return True
+        return False
+
+
 class CurveTransformUndo(TransformUndo):
     def __init__(self, main, transform, curve):
         TransformUndo.__init__(self, main, 'Transform curve set to {}'.format(curves[curve]))
@@ -936,12 +962,15 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.nextTransformCombo.currentIndexChanged.connect(self.setCurrentTransformMode)
         self.curveTransformCombo.currentIndexChanged.connect(self.setCurrentTransformCurve)
         self.translOffsetSpin.valueChanged.connect(self.setCurrentTransformTransl)
+        self.appliesToNextChk.toggled.connect(self.setCurrentTransformAppliesToNext)
+        self.appliesToNextChk2.toggled.connect(self.appliesToNextChk.setChecked)
         self.specTransformEditBtn.clicked.connect(self.editSpectral)
 
         self.mainTransformWidget.changeTransformModeRequested.connect(self.setCurrentTransformMode)
         self.mainTransformWidget.specTransformRequest.connect(self.editSpectral)
         self.mainTransformWidget.changeTransformCurveRequested.connect(self.setCurrentTransformCurve)
         self.mainTransformWidget.changeTransformTranslRequested.connect(self.setCurrentTransformTransl)
+        self.mainTransformWidget.appliesToNextToggled.connect(self.setCurrentTransformAppliesToNext)
 #        self.curveTransformCombo = CurveTransformCombo()
 #        self.nextTransformCycler.addWidget(self.curveTransformCombo)
 #        self.nextTransformCycler.setCurrentIndex(1)
@@ -1380,13 +1409,13 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.showNodesChk.toggled.connect(self.rememberSettings)
         self.showCrosshairChk.setChecked(self.settings.value('Crosshair', True, bool))
         self.showCrosshairChk.toggled.connect(self.rememberSettings)
-        self.playComputedBtn.setChecked(self.settings.value('PlayComputedWave', True, bool))
-        self.playComputedBtn.toggled.connect(self.rememberSettings)
         self.playComputedBtn.toggled.connect(
             lambda s: [
                 self.playComputedBtn.setIcon(QtGui.QIcon.fromTheme(('wavetables', 'node')[s])), 
                 self.playComputedBtn.setToolTip(('Play actual wave', 'Play computed wave')[s])
                 ])
+        self.playComputedBtn.setChecked(self.settings.value('PlayComputedWave', True, bool))
+        self.playComputedBtn.toggled.connect(self.rememberSettings)
 
         self.settings.endGroup()
 
@@ -1870,7 +1899,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             pass
         self.player.stop()
         if state:
-            if self.harmonicsWidget.isVisible() or True:
+            if self.harmonicsWidget.isVisible() or self.clipPanel.isVisible():
                 wavePath = self.waveScene.currentWavePath.path()
                 index = [-wavePath.elementAt(s).y + pow20 for s in range(128)]
             else:
@@ -1878,7 +1907,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 #                index = self.waveScene.currentKeyFrame.values
 #            print(index[:10])
 #                data = np.concatenate(np.array([wavePath.elementAt(s).y for s in range(128)]))
-            data = self.keyFrames.fullTableValues(note, 1, self.player.sampleRate, index=index)
+            data = self.keyFrames.fullTableValues(note, 1, self.player.sampleRate, index=index, computed=self.playComputedBtn.isChecked())
             self.player.playData(data, volume=max(1, velocity) / 127.)
 
     def setFullTablePlayhead(self):
@@ -2121,10 +2150,10 @@ class WaveTableWindow(QtWidgets.QMainWindow):
     def setCurrentKeyFrame(self, keyFrame, activate=False):
         if activate:
             self.mainTabWidget.setCurrentWidget(self.waveEditTab)
-        self.setNextKeyFrame()
         if keyFrame != self.waveScene.currentKeyFrame:
             self.noMouseModeBtn.setChecked(True)
         self.waveScene.setKeyFrame(keyFrame)
+        self.setNextKeyFrame()
         self.mainTransformWidget.setTransform(keyFrame)
         if self.sender() == self.keyFrameScene:
             index = keyFrame.index
@@ -2161,6 +2190,13 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             transform = self.currentTransform
 #        transform.setData({'offset': offset})
         self.undoStack.push(TranslateTransformUndo(self, transform, offset))
+
+    def setCurrentTransformAppliesToNext(self, applies):
+        if self.sender() == self.mainTransformWidget:
+            transform = self.mainTransformWidget.currentTransform
+        else:
+            transform = self.currentTransform
+        self.undoStack.push(TransformAppliesToNextUndo(self, transform, applies))
 
     def editSpectral(self):
         if self.sender() == self.mainTransformWidget:
@@ -2207,7 +2243,12 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 self.translOffsetSpin.blockSignals(True)
                 self.translOffsetSpin.setValue(self.currentTransform.translate)
                 self.translOffsetSpin.blockSignals(False)
-#            self.nextTransformEditBtn.setEnabled(self.currentTransform.mode > 1)
+            self.appliesToNextChk.blockSignals(True)
+            self.appliesToNextChk.setChecked(self.currentTransform.appliesToNext)
+            self.appliesToNextChk.blockSignals(False)
+            self.appliesToNextChk2.blockSignals(True)
+            self.appliesToNextChk2.setChecked(self.currentTransform.appliesToNext)
+            self.appliesToNextChk2.blockSignals(False)
         else:
             self.nextTransformCombo.setEnabled(False)
 #            self.nextTransformEditBtn.setEnabled(False)

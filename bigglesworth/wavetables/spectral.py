@@ -1223,6 +1223,7 @@ class SpecTransformDialog(QtWidgets.QDialog):
         self.nextItem = transform.nextItem
 
         self.applyToNextChk.setChecked(transform.appliesToNext)
+        print('appliestonext?!', transform.appliesToNext)
 
         self.start = self.prevItem.index
         self.end = self.nextItem.index

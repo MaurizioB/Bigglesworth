@@ -405,6 +405,7 @@ class TransformWidget(QtWidgets.QWidget):
     specTransformRequest = QtCore.pyqtSignal()
     changeTransformCurveRequested = QtCore.pyqtSignal(int)
     changeTransformTranslRequested = QtCore.pyqtSignal(int)
+    appliesToNextToggled = QtCore.pyqtSignal(bool)
 
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
@@ -420,6 +421,9 @@ class TransformWidget(QtWidgets.QWidget):
         self.currentTransform = None
         self.currentIndex = None
         self.specTransformEditBtn.clicked.connect(self.specTransformRequest)
+        self.appliesToNextChk.toggled.connect(self.appliesToNextToggled)
+        self.appliesToNextChk.toggled.connect(self.setApplyToNext)
+        self.appliesToNextChk2.toggled.connect(self.appliesToNextChk.setChecked)
 
     def setCurrentTransformMode(self, mode):
         self.nextTransformCycler.setCurrentIndex(mode)
@@ -445,6 +449,7 @@ class TransformWidget(QtWidgets.QWidget):
         self.currentTransform = keyFrame.nextTransform
         if self.currentTransform:
             self.currentTransform.changed.connect(self.updateTransform)
+            self.setApplyToNext()
         self.updateTransform()
 
     def updateTransform(self):
@@ -464,6 +469,7 @@ class TransformWidget(QtWidgets.QWidget):
                 self.translOffsetSpin.blockSignals(True)
                 self.translOffsetSpin.setValue(self.currentTransform.translate)
                 self.translOffsetSpin.blockSignals(False)
+            self.setApplyToNext()
         else:
             self.nextTransformCombo.setEnabled(False)
             self.nextTransformCycler.setEnabled(False)
@@ -474,6 +480,19 @@ class TransformWidget(QtWidgets.QWidget):
             self.nextWaveLbl.setNum(self.currentTransform.nextItem.index + 1)
         except:
             pass
+
+    def setApplyToNext(self, state=None):
+        if state is None:
+            state = self.currentTransform.appliesToNext
+        if self.sender() != self.appliesToNextChk:
+            self.appliesToNextChk.blockSignals(True)
+            self.appliesToNextChk.setChecked(state)
+            self.appliesToNextChk.blockSignals(False)
+        if self.sender() != self.appliesToNextChk2:
+            self.appliesToNextChk2.blockSignals(True)
+            self.appliesToNextChk2.setChecked(state)
+            self.appliesToNextChk2.blockSignals(False)
+
 
 class NextWaveView(QtWidgets.QGraphicsView):
     shown = False

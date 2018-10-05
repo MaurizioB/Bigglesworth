@@ -308,11 +308,15 @@ class KeyFrames(QtCore.QObject):
         else:
             previous = self.previous(index)
         transform = previous.nextTransform
+        if not transform.isValid():
+            return previous.values
         values = self.bounce(transform, False)
         firstIndex = self.index(previous)
         return values[index - firstIndex]
 
     def bounce(self, transform, setValues=True):
+        if not transform.isValid():
+            return []
 #        firstItem = self.fullList[firstIndex]
 ##        transform = firstItem.nextTransform
         firstIndex = transform.prevItem.index
@@ -586,6 +590,10 @@ class KeyFrames(QtCore.QObject):
                 self.keyFrames.append(keyFrame)
                 self.allItems.append(keyFrame)
                 self.layout.addItem(keyFrame)
+                transform = prevTransform.clone(keyFrame, self.keyFrames[0])
+                transforms.add(transform)
+                self.allItems.append(transform)
+                self.layout.addItem(transform)
 #                keyFrame.setFinal(True)
             else:
                 self.keyFrames.insert(self.keyFrames.index(prevItem) + 1, keyFrame)
@@ -834,6 +842,8 @@ class KeyFrames(QtCore.QObject):
         #set cycle to last transform if no final keyFrame
         if isinstance(allItems[-1], WaveTransformItem):
             allItems[-1].setNextItem(keyFrames[0])
+        else:
+            allItems.append(allItems[-2].clone(allItems[-1], allItems[0]))
         #special case of restored layout with [SampleItem, WaveTransform, WaveTransform]
         if len(allItems) > 2:
             try:
@@ -902,23 +912,30 @@ class KeyFrames(QtCore.QObject):
     def __len__(self):
         return len(self.keyFrames)
 
-    def fullTableValues(self, note, multiplier, sampleRate, index=None, reverse=False, export=False):
+    def fullTableValues(self, note, multiplier, sampleRate, index=None, reverse=False, export=False, computed=True):
         if not export and note == self.currentNote and multiplier == self.multiplier and \
             self.clean and self.fullClean and self.fullAudioValues.any():
                 return self.fullAudioValues
         if index is not None:
             if isinstance(index, int):
+                print('computed?', computed)
                 #usa np.tile(array, multiplier)
-                arrays = [np.concatenate((np.array(self.get(index).values), ) * 500)]
+                keyFrame = self.get(index)
+                if computed:
+                    values = keyFrame.nextTransform.valuesAtBeginning()
+                else:
+                    values = self.get(index).values
+                arrays = [np.tile(np.array(values), 500)]
             else:
-                arrays = [np.concatenate((np.array(index), ) * 500)]
+                arrays = [np.tile(np.array(index), 500)]
         else:
 #            arrays = [np.concatenate((np.array(self.keyFrames[0].values), ) * multiplier)]
             arrays = []
             iterFrames = iter(self.keyFrames)
             firstFrame = currentFrame = iterFrames.next()
             currentIndex = 0
-            currentValues = self.fullValues[0]
+#            currentValues = self.fullValues[0]
+            prevValues = np.array(self.keyFrames[0].nextTransform.valuesAtBeginning())
             while True:
                 try:
                     nextFrame = iterFrames.next()
@@ -931,71 +948,56 @@ class KeyFrames(QtCore.QObject):
 #                    print('linear? {}'.format(transform.isLinear()))
 #                    if not transform.mode:
                     if not transform.mode or not transform.isValid():
-                        values = np.array(currentValues)
+#                        values = np.array(currentValues)
 #                        arrays.append(np.concatenate((values, ) * (nextFrame.index - currentFrame.index - 1) * multiplier))
                         for _ in range(nextIndex - currentIndex):
-                            arrays.append(np.concatenate((values, ) * multiplier))
-                    elif transform.isLinear():
-                        first = np.array(currentValues)
-                        try:
-                            last = np.array(self.fullValues[nextIndex])
-                        except:
-                            last = np.array(self.fullValues[0])
-                        diff = (nextIndex - currentIndex)
-                        ratio = 1. / diff
-                        for index in range(diff):
-                            percent = index * ratio
-                            deltaArray = (1 - percent) * first + percent * last
-                            arrays.append(np.concatenate((deltaArray, ) * multiplier))
-                    elif transform.mode == WaveTransformItem.CurveMorph:
-                        first = np.array(currentValues)
-                        try:
-                            last = np.array(self.fullValues[nextIndex])
-                        except:
-                            last = np.array(self.fullValues[0])
-                        diff = (nextIndex - currentIndex)
-                        ratio = 1. / diff
-                        curveFunc = transform.curveFunction
-                        for index in range(diff):
-                            percent = curveFunc(index * ratio)
-                            deltaArray = (1 - percent) * first + percent * last
-                            arrays.append(np.concatenate((deltaArray, ) * multiplier))
-                    elif transform.mode == WaveTransformItem.TransMorph:
-                        first = np.array(currentValues)
-                        try:
-                            last = np.array(self.fullValues[nextIndex])
-                        except:
-                            last = np.array(self.fullValues[0])
-                        diff = (nextIndex - currentIndex)
-                        ratio = 1. / diff
-                        offset = transform.translate
-                        last = np.roll(last, offset)
-                        for index in range(diff):
-                            percent = index * ratio
-                            deltaArray = np.roll((1 - percent) * first + percent * last, int(transform.translate * percent))
-                            arrays.append(np.concatenate((deltaArray, ) * multiplier))
-                    elif transform.mode == WaveTransformItem.SpecMorph:
-                        first = np.array(currentValues)
-                        try:
-                            last = np.array(self.fullValues[nextIndex])
-                        except:
-                            last = np.array(self.fullValues[0])
-                        diff = (nextIndex - currentIndex)
-                        ratio = 1. / diff
-                        harmonicsArrays = transform.getHarmonicsArray()
-                        for index in range(diff):
-                            percent = index * ratio
-                            deltaArray = (1 - percent) * first + percent * last
-                            np.clip(np.add(deltaArray, harmonicsArrays[index]), -pow20, pow20, out=deltaArray)
-                            arrays.append(np.concatenate((deltaArray, ) * multiplier))
+#                            arrays.append(np.concatenate((prevValues, ) * multiplier))
+                            arrays.append(np.tile(prevValues, multiplier))
+                    else:
+                        nextValues = np.array(np.array(nextFrame.nextTransform.valuesAtBeginning(False)))
+                        if transform.isLinear():
+                            diff = (nextIndex - currentIndex)
+                            ratio = 1. / diff
+                            for index in range(diff):
+                                percent = index * ratio
+                                deltaArray = (1 - percent) * prevValues + percent * nextValues
+                                arrays.append(np.concatenate((deltaArray, ) * multiplier))
+                        elif transform.mode == WaveTransformItem.CurveMorph:
+                            diff = (nextIndex - currentIndex)
+                            ratio = 1. / diff
+                            curveFunc = transform.curveFunction
+                            for index in range(diff):
+                                percent = curveFunc(index * ratio)
+                                deltaArray = (1 - percent) * prevValues + percent * nextValues
+                                arrays.append(np.concatenate((deltaArray, ) * multiplier))
+                        elif transform.mode == WaveTransformItem.TransMorph:
+                            diff = (nextIndex - currentIndex)
+                            ratio = 1. / diff
+                            offset = transform.translate
+                            np.roll(nextValues, offset, out=nextValues)
+                            for index in range(diff):
+                                percent = index * ratio
+                                deltaArray = np.roll((1 - percent) * prevValues + percent * nextValues, int(transform.translate * percent))
+                                arrays.append(np.concatenate((deltaArray, ) * multiplier))
+                        elif transform.mode == WaveTransformItem.SpecMorph:
+                            diff = (nextIndex - currentIndex)
+                            ratio = 1. / diff
+                            harmonicsArrays = transform.getHarmonicsArray()
+                            for index in range(diff):
+                                percent = index * ratio
+                                deltaArray = (1 - percent) * prevValues + percent * nextValues
+                                np.clip(np.add(deltaArray, harmonicsArrays[index]), -pow20, pow20, out=deltaArray)
+                                arrays.append(np.concatenate((deltaArray, ) * multiplier))
                 else:
-                    arrays.append(np.concatenate((np.array(currentValues), ) * multiplier))
+#                    arrays.append(np.concatenate((np.array(currentValues), ) * multiplier))
+                    arrays.append(np.tile(prevValues, multiplier))
 #                arrays.append(np.concatenate((np.array(nextFrame.values), ) * multiplier))
                 if nextIndex == 64:
                     break
                 currentFrame = nextFrame
                 currentIndex = self.index(currentFrame)
-                currentValues = self.fullValues[currentIndex]
+#                currentValues = self.fullValues[currentIndex]
+                prevValues = np.array(currentFrame.nextTransform.valuesAtBeginning())
             if reverse:
                 arrays += reversed(arrays)
 #        array = np.array(self.fullValues) / float(pow22)

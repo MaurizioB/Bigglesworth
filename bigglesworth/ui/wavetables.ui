@@ -102,7 +102,7 @@
        <bool>true</bool>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <property name="elideMode">
        <enum>Qt::ElideMiddle</enum>
@@ -678,12 +678,11 @@
               <string>Toggle bewteen playing the actual wave or the computed one if the previous transformation changes it.</string>
              </property>
              <property name="icon">
-              <iconset theme="wavetables"/>
+              <iconset theme="wavetables">
+               <normaloff/>
+              </iconset>
              </property>
              <property name="checkable">
-              <bool>true</bool>
-             </property>
-             <property name="checked">
               <bool>true</bool>
              </property>
             </widget>
@@ -1374,6 +1373,9 @@
                    <verstretch>0</verstretch>
                   </sizepolicy>
                  </property>
+                 <property name="currentIndex">
+                  <number>0</number>
+                 </property>
                  <widget class="QWidget" name="noTransform">
                   <layout class="QHBoxLayout" name="horizontalLayout_16">
                    <item>
@@ -1423,18 +1425,37 @@
                   <layout class="QHBoxLayout" name="horizontalLayout_13">
                    <item>
                     <widget class="QLabel" name="label_5">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
                      <property name="text">
                       <string>Offset</string>
                      </property>
                     </widget>
                    </item>
                    <item>
-                    <widget class="QSpinBox" name="translOffsetSpin">
+                    <widget class="PositiveSpin" name="translOffsetSpin">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
                      <property name="minimum">
                       <number>-127</number>
                      </property>
                      <property name="maximum">
                       <number>128</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="appliesToNextChk">
+                     <property name="text">
+                      <string>Applies to next</string>
                      </property>
                     </widget>
                    </item>
@@ -1450,6 +1471,13 @@
                      <property name="icon">
                       <iconset theme="document-edit">
                        <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="appliesToNextChk2">
+                     <property name="text">
+                      <string>Applies to next</string>
                      </property>
                     </widget>
                    </item>
@@ -2509,6 +2537,11 @@
   <customwidget>
    <class>WaveTableCurrentView</class>
    <extends>QGraphicsView</extends>
+   <header>bigglesworth.wavetables.widgets</header>
+  </customwidget>
+  <customwidget>
+   <class>PositiveSpin</class>
+   <extends>QSpinBox</extends>
    <header>bigglesworth.wavetables.widgets</header>
   </customwidget>
  </customwidgets>

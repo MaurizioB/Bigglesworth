@@ -772,6 +772,10 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
             return False
         return self.data.get('appliesToNext', False)
 
+    @appliesToNext.setter
+    def appliesToNext(self, applies):
+        self.setData({'appliesToNext': applies})
+
     def clone(self, prevItem, nextItem=None):
         return WaveTransformItem(self.keyFrames, self.mode, prevItem, nextItem)
 
