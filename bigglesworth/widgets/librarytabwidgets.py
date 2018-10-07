@@ -150,6 +150,7 @@ class BaseTabWidget(QtWidgets.QTabWidget):
     manageCollections = QtCore.pyqtSignal()
     tabMoveRequested = QtCore.pyqtSignal(int, object)
     panelSwapRequested = QtCore.pyqtSignal()
+    toggleDualView = QtCore.pyqtSignal()
     minimizePanelRequested = QtCore.pyqtSignal()
     fullDumpCollectionToBlofeldRequested = QtCore.pyqtSignal(str, bool)
     fullDumpBlofeldToCollectionRequested = QtCore.pyqtSignal(str, bool)
@@ -299,14 +300,19 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         closeAction = self.menu.addAction(QtGui.QIcon.fromTheme('window-close'), 'Close collection')
         closeAction.triggered.connect(lambda: self.tabCloseRequested.emit(index))
         side = 'right' if self.side == Left else 'left'
-        tabSwapAction = self.menu.addAction(QtGui.QIcon.fromTheme('document-swap'), 'Swap panel')
-        tabSwapAction.triggered.connect(self.panelSwapRequested)
+        if self.window().dualMode:
+            if self.side == Right:
+                closeDualViewAction = self.menu.addAction(QtGui.QIcon.fromTheme('view-right-close'), 'Switch to single panel mode')
+                closeDualViewAction.triggered.connect(self.toggleDualView)
+            tabSwapAction = self.menu.addAction(QtGui.QIcon.fromTheme('document-swap'), 'Swap panel')
+            tabSwapAction.triggered.connect(self.panelSwapRequested)
         moveTabAction = self.menu.addAction(QtGui.QIcon.fromTheme('arrow-{}'.format(side)), 'Move to {} panel'.format(side))
         moveTabAction.triggered.connect(lambda: self.tabMoveRequested.emit(index, self.siblingTabWidget))
         if self.count() <= 1:
             closeAction.setEnabled(False)
             moveTabAction.setEnabled(False)
 
+        self.menu.addSeparator()
         collection = self.widget(index).collection
         if collection:
             dumpMenu = self.menu.addMenu(QtGui.QIcon(':/images/dump.svg'), 'Dump "{}"'.format(collection))

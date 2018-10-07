@@ -97,6 +97,9 @@
       <bool>false</bool>
      </property>
     </widget>
+    <addaction name="toggleLibrarySidebarAction"/>
+    <addaction name="toggleDualViewAction"/>
+    <addaction name="separator"/>
     <addaction name="createCollectionAction"/>
     <addaction name="openCollectionMenu"/>
     <addaction name="duplicatesAction"/>
@@ -134,6 +137,18 @@
    <addaction name="aboutMenu"/>
   </widget>
   <widget class="StatusBar" name="statusbar"/>
+  <widget class="QDockWidget" name="sidebar">
+   <property name="features">
+    <set>QDockWidget::DockWidgetClosable</set>
+   </property>
+   <property name="windowTitle">
+    <string>Main library</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="DockLibrary" name="dockLibrary"/>
+  </widget>
   <action name="createCollectionAction">
    <property name="icon">
     <iconset theme="document-new">
@@ -304,10 +319,27 @@
   </action>
   <action name="helpAction">
    <property name="icon">
-    <iconset theme="help-contents"/>
+    <iconset theme="help-contents">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>Bigglesworth Manual</string>
+   </property>
+  </action>
+  <action name="toggleLibrarySidebarAction">
+   <property name="icon">
+    <iconset theme="file-catalog-symbolic">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Show library sidebar</string>
+   </property>
+  </action>
+  <action name="toggleDualViewAction">
+   <property name="text">
+    <string>Open twin tab view</string>
    </property>
   </action>
  </widget>
@@ -346,6 +378,12 @@
    <class>StatusBar</class>
    <extends>QStatusBar</extends>
    <header>bigglesworth.widgets</header>
+  </customwidget>
+  <customwidget>
+   <class>DockLibrary</class>
+   <extends>QWidget</extends>
+   <header>bigglesworth.widgets</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

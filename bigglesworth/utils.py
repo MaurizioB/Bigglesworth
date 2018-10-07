@@ -5,7 +5,7 @@ from os import path
 import json
 
 from PyQt4 import QtCore, QtGui, uic
-from bigglesworth.const import backgroundRole, ord2chr
+from bigglesworth.const import foregroundRole, backgroundRole, ord2chr
 from bigglesworth.libs import midifile
 
 def getCardinal(value):
@@ -111,7 +111,7 @@ def getQColor(variant):
     except:
         return None
 
-def getValidQColor(variant, role):
+def getValidQColor(variant, role=foregroundRole):
     color = getQColor(variant)
     if color:
         return color

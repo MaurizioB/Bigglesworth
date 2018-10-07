@@ -184,10 +184,11 @@ class TagsDialog(QtWidgets.QDialog):
             model.removeRow(row)
             return
 
+        model.setData(model.index(row, 0), dialog.tagEdit.text())
         if dialog.backgroundColor:
             model.setData(model.index(row, 1), json.dumps(dialog.backgroundColor.getRgb()[:3]), QtCore.Qt.BackgroundRole)
         if dialog.foregroundColor:
-            model.setData(model.index(row, 1), json.dumps(dialog.foregroundColor.getRgb()[:3]), QtCore.Qt.ForegroundRole)
+            model.setData(model.index(row, 2), json.dumps(dialog.foregroundColor.getRgb()[:3]), QtCore.Qt.ForegroundRole)
 
         self.tagsView.setCurrentIndex(index)
         self.tagsView.scrollToBottom()
@@ -269,7 +270,6 @@ class TagEditDialog(QtWidgets.QDialog):
 
     def __init__(self, parent, name='', new=False, fgd=None, bgd=None):
         QtWidgets.QDialog.__init__(self, parent)
-        self.setWindowTitle('Select tag colors')
         layout = QtWidgets.QGridLayout()
         self.setLayout(layout)
 
@@ -325,8 +325,11 @@ class TagEditDialog(QtWidgets.QDialog):
         self.restoreBtn.clicked.connect(lambda: [self.setBackgroundColor(), self.setForegroundColor()])
 
         if new:
-            self.tagEdit.textChanged.connect(lambda tag: self.okBtn.setEnabled(self.tagEdit.isValid(tag) == QtGui.QValidator.Acceptable))
+            self.setWindowTitle('Create new tag')
+            self.tagEdit.textChanged.connect(lambda tag: self.okBtn.setEnabled(bool(self.tagEdit.text()) and self.tagEdit.isValid(tag) == QtGui.QValidator.Acceptable))
+            self.okBtn.setEnabled(bool(self.tagEdit.text()) and self.tagEdit.isValid(self.tagEdit.text()) == QtGui.QValidator.Acceptable)
         else:
+            self.setWindowTitle('Select tag colors')
             self.tagEdit.setEnabled(False)
 
     def reverseColor(self, color):

@@ -9,7 +9,7 @@ from bigglesworth.const import factoryPresetsNamesDict
 from bigglesworth.utils import loadUi, setBold
 #from bigglesworth.library import LibraryModel
 from bigglesworth.widgets import LibraryWidget, CollectionWidget, MidiStatusBarWidget
-from bigglesworth.dialogs import NewCollectionDialog, ManageCollectionsDialog, TagsDialog, AboutDialog, SoundListExport, MidiChartDialog
+from bigglesworth.dialogs import NewCollectionDialog, ManageCollectionsDialog, TagsDialog, AboutDialog, SoundListExport, MidiChartDialog, TagEditDialog
 from bigglesworth.forcebwu import MayTheForce
 #import icons
 
@@ -55,54 +55,77 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rightTabWidget.minimizePanelRequested.connect(lambda: self.setRightVisible(False))
         self.rightTabBar.maximize.connect(lambda tab: self.setRightVisible(True, tab))
 
-        #TODO: load previous session (check if collection exists!)
-        sessionMode = self.main.settings.value('startupSessionMode', 2, int)
-        if sessionMode >= 2:
-            #import sessions and remove duplicates
-            left = list(OrderedDict.fromkeys(self.main.settings.value('sessionLayoutLeft', ['Blofeld'], 'QStringList')))
-            right = list(OrderedDict.fromkeys(self.main.settings.value('sessionLayoutRight', [None], 'QStringList')))
-            for side in (left, right):
-                for i, c in enumerate(side):
-                    if c == '':
-                        side[i] = None
-            if not all((left, right)):
-                if None not in left and None not in right:
-                    if not left:
-                        left = [None]
+        #import sessions and use OrderedDicts to remove duplicates and keep ordering
+        if self.main.settings.value('dualMode', False, bool) or self.main.settings.contains('sessionLayoutRight'):
+            sessionMode = self.main.settings.value('startupSessionMode', 2, int)
+            if sessionMode >= 2:
+                left = list(OrderedDict.fromkeys(self.main.settings.value('sessionLayoutLeft', ['Blofeld'], 'QStringList')))
+                right = list(OrderedDict.fromkeys(self.main.settings.value('sessionLayoutRight', [None], 'QStringList')))
+                for side in (left, right):
+                    for i, c in enumerate(side):
+                        if c == '':
+                            side[i] = None
+                if not all((left, right)):
+                    if None not in left and None not in right:
+                        if not left:
+                            left = [None]
+                        else:
+                            right = [None]
+                    elif 'Blofeld' not in left and 'Blofeld' not in right:
+                        if not left:
+                            left = ['Blofeld']
+                        else:
+                            right = ['Blofeld']
                     else:
-                        right = [None]
-                elif 'Blofeld' not in left and 'Blofeld' not in right:
-                    if not left:
                         left = ['Blofeld']
-                    else:
-                        right = ['Blofeld']
-                else:
-                    left = ['Blofeld']
-                    right = [None]
-        elif sessionMode:
-            left = [None]
-            right = ['Blofeld']
+                        right = [None]
+            elif sessionMode:
+                left = [None]
+                right = ['Blofeld']
+            else:
+                left = ['Blofeld']
+                right = [None]
+
+            for tab, collections in (self.leftTabWidget, left), (self.rightTabWidget, right):
+                for collection in collections:
+                    if collection not in (None, 'Blofeld') and collection not in self.database.referenceModel.allCollections:
+                        print (collection, 'not found?!')
+                        continue
+                    self.openCollection(collection, tab)
+
+            panelLayout = self.settings.value('sessionPanelLayout', 3, int)
+            if panelLayout == 1:
+                self.setRightVisible(False)
+            elif panelLayout == 2:
+                self.setLeftVisible(False)
+            else:
+                sizes = self.settings.value('sessionPanelSizes', None)
+                if sizes:
+                    self.splitter.restoreState(sizes)
+
         else:
-            left = ['Blofeld']
-            right = [None]
+            left = list(OrderedDict.fromkeys(self.main.settings.value('sessionLayoutLeft', ['Blofeld'], 'QStringList')))
+            if '' in left:
+                left[left.index('')] = None
+            for c in reversed(left):
+                if c not in self.database.referenceModel.allCollections:
+                    left.remove(c)
+            if not left:
+                left = ['Blofeld']
 
-        for tab, collections in (self.leftTabWidget, left), (self.rightTabWidget, right):
-            for collection in collections:
-                if collection not in (None, 'Blofeld') and collection not in self.database.referenceModel.allCollections:
-                    print (collection, 'not found?!')
-                    continue
-                self.openCollection(collection, tab)
+            for collection in left:
+                self.openCollection(collection, self.leftTabWidget)
 
-        panelLayout = self.settings.value('sessionPanelLayout', 3, int)
-        if panelLayout == 1:
-            self.setRightVisible(False)
-        elif panelLayout == 2:
-            self.setLeftVisible(False)
-        else:
-            sizes = self.settings.value('sessionPanelSizes', None)
-            if sizes:
-                self.splitter.restoreState(sizes)
+            self.rightTabWidget.setVisible(False)
+            self.rightTabBar.setVisible(False)
+            self.leftTabWidget.minimizeBtn.setVisible(False)
 
+        self.sidebar.setVisible(self.settings.value('librarySideBar', True, bool))
+        self.dockLibrary.newCollection.connect(self.newCollection)
+        self.dockLibrary.manageCollections.connect(self.manageCollections)
+        self.dockLibrary.editTag.connect(self.editTag)
+        self.dockLibrary.editTags.connect(self.editTags)
+        self.dockLibrary.deleteTag.connect(self.deleteTag)
         self.splitter.moved.connect(self.checkSplitter)
 
         self.exportSoundListAction.triggered.connect(lambda: SoundListExport(self, None).exec_())
@@ -115,15 +138,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.leftTabWidget.panelSwapRequested.connect(self.panelSwap)
         self.rightTabWidget.openCollection.connect(self.openCollection)
         self.rightTabWidget.newCollection.connect(self.newCollection)
-        self.rightTabWidget.newCollection.connect(self.manageCollections)
+        self.rightTabWidget.manageCollections.connect(self.manageCollections)
         self.rightTabWidget.tabCloseRequested.connect(self.closeCollection)
         self.rightTabWidget.tabMoveRequested.connect(self.moveCollection)
         self.rightTabWidget.panelSwapRequested.connect(self.panelSwap)
+        self.rightTabWidget.toggleDualView.connect(self.toggleDualView)
 
         self.editTagsAction.triggered.connect(self.editTags)
         self.manageCollectionsAction.triggered.connect(self.manageCollections)
         self.createCollectionAction.triggered.connect(self.newCollection)
-        self.libraryMenu.aboutToShow.connect(self.updateCollectionMenu)
+        self.libraryMenu.aboutToShow.connect(self.updateLibraryMenu)
 #        self.openCollectionAction.triggered.connect(self.openCollection)
 
         self.showEditorAction.setIcon(QtGui.QIcon.fromTheme('dial'))
@@ -135,6 +159,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.showMidiChartAction.setIcon(QtGui.QIcon(':/images/midiicon.svg'))
         self.aboutAction.triggered.connect(self.showAbout)
         self.aboutQtAction.triggered.connect(lambda: QtWidgets.QMessageBox.aboutQt(self, 'About Qt...'))
+        self.toggleLibrarySidebarAction.triggered.connect(lambda: self.sidebar.setVisible(not self.sidebar.isVisible()))
+        self.toggleDualViewAction.triggered.connect(self.toggleDualView)
 
         self.openCollectionMenu.addSection('Personal collections')
         blofeldAction = self.openCollectionMenu.addAction(QtGui.QIcon(':/images/bigglesworth_logo.svg'), 'Blofeld')
@@ -173,7 +199,18 @@ class MainWindow(QtWidgets.QMainWindow):
     def editorWindow(self):
         return QtWidgets.QApplication.instance().editorWindow
 
-    def updateCollectionMenu(self):
+    @property
+    def dualMode(self):
+        return bool(self.rightTabWidget.width()) or self.rightTabBar.isVisible()
+
+    def updateLibraryMenu(self):
+        self.toggleLibrarySidebarAction.setText('{} library sidebar'.format(('Show', 'Hide')[self.sidebar.isVisible()]))
+        if self.dualMode:
+            self.toggleDualViewAction.setText('Close twin panel view')
+            self.toggleDualViewAction.setIcon(QtGui.QIcon.fromTheme('view-right-close'))
+        else:
+            self.toggleDualViewAction.setText('Open twin panel view')
+            self.toggleDualViewAction.setIcon(QtGui.QIcon.fromTheme('view-split-left-right'))
 #        self.openCollectionMenu.clear()
 #        self.referenceModel.setTable('reference')
         exists = []
@@ -195,6 +232,55 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.collections.pop(collection)
         self.settings.endGroup()
         return
+
+    def toggleDualView(self, toRemove=None):
+        if self.dualMode:
+            if self.leftTabBar.isVisible():
+                self.setLeftVisible(True)
+            current = self.rightTabWidget.currentIndex() + self.leftTabWidget.count()
+            for i in range(self.rightTabWidget.count()):
+                name = self.rightTabWidget.tabText(0)
+                widget = self.rightTabWidget.removeTab(0)
+                self.leftTabWidget.addTab(widget, name)
+            self.leftTabWidget.setCurrentIndex(current)
+            self.rightTabWidget.setVisible(False)
+            self.rightTabBar.setVisible(False)
+            self.leftTabWidget.minimizeBtn.setVisible(False)
+        else:
+            if toRemove is None:
+                current = self.leftTabWidget.currentIndex()
+                last = self.leftTabWidget.count() - 1
+                toRemove = -1
+                if current < last:
+                    toRemove = last
+                elif current >= 1:
+                    toRemove = 0
+            if toRemove >= 0:
+                name = self.leftTabWidget.tabText(toRemove)
+                widget = self.leftTabWidget.removeTab(toRemove)
+                self.rightTabWidget.addTab(widget, name)
+            else:
+                for collection in reversed(self.referenceModel.allCollections):
+                    if collection not in self.leftTabWidget.collections:
+                        self.openCollection(collection, self.rightTabWidget)
+                        break
+            self.rightTabWidget.setVisible(True)
+            self.leftTabWidget.minimizeBtn.setVisible(True)
+            self.setRightVisible(True, 0)
+#            leftTabs = []
+#            rightTabs = []
+#            leftIndex = self.leftTabWidget.currentIndex()
+#            rightIndex = self.rightTabWidget.currentIndex()
+#            for tab, destTabList in zip((self.leftTabWidget, self.rightTabWidget), (rightTabs, leftTabs)):
+#                for index in range(tab.count()):
+#                    name = tab.tabText(0)
+#                    widget = tab.removeTab(0)
+#                    destTabList.append((widget, name))
+#            for tab, destTabList in zip((self.leftTabWidget, self.rightTabWidget), (leftTabs, rightTabs)):
+#                for widget, name in destTabList:
+#                    tab.addTab(widget, name)
+#            self.leftTabWidget.setCurrentIndex(rightIndex)
+#            self.rightTabWidget.setCurrentIndex(leftIndex)
 
 #        self.referenceModel.refresh()
 #        current = [self.leftTabWidget.tabText(t).lower() for t in range(self.leftTabWidget.count())] + \
@@ -228,6 +314,15 @@ class MainWindow(QtWidgets.QMainWindow):
 #            action = self.openCollectionMenu.addAction(QtGui.QIcon.fromTheme('go-home'), 'Main library')
 #            action.triggered.connect(lambda: self.openCollection.emit(''))
 
+    def editTag(self, oldName=''):
+        new = not oldName
+        dialog = TagEditDialog(self, oldName, new=new)
+        if not dialog.exec_():
+            return
+        self.database.editTag(dialog.tagEdit.text(), oldName, dialog.backgroundColor, dialog.foregroundColor)
+        if new and self.sidebar.isVisible():
+            self.dockLibrary.expandTags()
+
     def editTags(self):
         tagsView = TagsDialog(self)
         if tagsView.exec_():
@@ -236,8 +331,30 @@ class MainWindow(QtWidgets.QMainWindow):
                     collWidget = tabwidget.widget(tab)
                     collWidget.filterTagsEdit.setTags([])
                     collWidget.collectionView.viewport().update()
-        for collection in self.database.collections.values():
-            collection.updated.emit()
+        if tagsView.changed:
+            for collection in self.database.collections.values():
+                collection.updated.emit()
+
+    def deleteTag(self, tag):
+        message = 'Delete tag "{}"?'.format(tag)
+        tagCount = self.database.getCountForTag(tag)
+        if tagCount:
+            message += '\n\nThis action will affect {} sound{}.'.format(tagCount, 's' if tagCount > 1 else '')
+        else:
+            message += '\n\nIt seems that no sound is using it.'
+
+        if QtWidgets.QMessageBox.question(self, 'Delete tag', message, 
+            QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel) != QtWidgets.QMessageBox.Ok:
+                return
+
+        if self.database.deleteTag(tag):
+            for tabwidget in self.leftTabWidget, self.rightTabWidget:
+                for tab in range(tabwidget.count()):
+                    collWidget = tabwidget.widget(tab)
+                    collWidget.filterTagsEdit.setTags([])
+                    collWidget.collectionView.viewport().update()
+            for collection in self.database.collections.values():
+                collection.updated.emit()
 
     def openCollection(self, collection='', dest=None):
         if collection:
@@ -288,10 +405,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.main.settings.setValue(collection, dialog.currentIconName())
         self.main.settings.endGroup()
         self.openCollection(collection, dest)
+        if self.sidebar.isVisible():
+            self.dockLibrary.expandCollections()
 
     def manageCollections(self):
-        dialog = ManageCollectionsDialog(self, self.leftTabWidget.collections + self.rightTabWidget.collections)
-        res = dialog.exec_()
+        ManageCollectionsDialog(self, self.leftTabWidget.collections + self.rightTabWidget.collections).dialog.exec_()
         self.leftTabWidget.checkIcons()
         self.rightTabWidget.checkIcons()
 
@@ -304,10 +422,13 @@ class MainWindow(QtWidgets.QMainWindow):
     def moveCollection(self, index, dest):
         if self.sender().count() <= 1:
             return
-        name = self.sender().tabText(index)
-        widget = self.sender().removeTab(index)
-        index = dest.addTab(widget, name)
-        dest.setCurrentIndex(index)
+        if self.dualMode:
+            name = self.sender().tabText(index)
+            widget = self.sender().removeTab(index)
+            index = dest.addTab(widget, name)
+            dest.setCurrentIndex(index)
+        else:
+            self.toggleDualView(index)
 
     def panelSwap(self):
         leftTabs = []
@@ -370,13 +491,20 @@ class MainWindow(QtWidgets.QMainWindow):
             AboutDialog(self).exec_()
 
     def saveLayout(self):
+        self.main.settings.setValue('librarySideBar', self.sidebar.isVisible())
         self.main.settings.setValue('sessionLayoutLeft', self.leftTabWidget.collections)
-        self.main.settings.setValue('sessionLayoutRight', self.rightTabWidget.collections)
-        self.main.settings.setValue('sessionPanelLayout', self.panelLayout)
-        if self.panelLayout == 3:
-            self.main.settings.setValue('sessionPanelSizes', self.splitter.saveState())
-        else:
+        self.main.settings.setValue('dualMode', self.dualMode)
+        if not self.dualMode:
+            self.main.settings.remove('sessionLayoutRight')
+            self.main.settings.remove('sessionPanelLayout')
             self.main.settings.remove('sessionPanelSizes')
+        else:
+            self.main.settings.setValue('sessionLayoutRight', self.rightTabWidget.collections)
+            self.main.settings.setValue('sessionPanelLayout', self.panelLayout)
+            if self.panelLayout == 3:
+                self.main.settings.setValue('sessionPanelSizes', self.splitter.saveState())
+            else:
+                self.main.settings.remove('sessionPanelSizes')
         self.main.settings.sync()
 
     def closeEvent(self, event):

@@ -11,7 +11,7 @@ from Qt import QtCore, QtGui, QtSql
 QtCore.pyqtSignal = QtCore.Signal
 
 from bigglesworth.utils import Enum, localPath, getName, getSizeStr, elapsedFrom
-from bigglesworth.parameters import Parameters, oscShapes
+from bigglesworth.parameters import Parameters, oscShapes, categories
 from bigglesworth.libs import midifile
 from bigglesworth.const import factoryPresets, NameColumn, chr2ord, LogInfo, LogWarning, LogCritical, LogFatal, LogDebug
 from bigglesworth.library import CollectionModel, LibraryModel
@@ -944,6 +944,73 @@ class BlofeldDB(QtCore.QObject):
             splitted = uidList[250 * delta: 250 * (delta + 1)]
         return duplicates
 
+    def editTag(self, newName, oldName, bgd=None, fgd=None):
+        self.sql.transaction()
+        if oldName and newName != oldName:
+            self.query.exec_('SELECT uid, tags FROM reference WHERE tags IS NOT NULL AND tags != "[]"')
+            uidDict = {}
+            while self.query.next():
+                tags = json.loads(self.query.value(1))
+                if oldName in tags:
+                    tags.remove(oldName)
+                    tags.append(newName)
+                    uidDict[self.query.value(0)] = sorted(tags)
+
+            for uid, tags in uidDict.items():
+                self.query.prepare('UPDATE reference SET tags=:tags WHERE uid=:uid')
+                self.query.bindValue(':uid', uid)
+                self.query.bindValue(':tags', json.dumps(tags))
+                if not self.query.exec_():
+                    self.dbErrorLog('Error updating tags for uid', extMessage=(tags, uid))
+                    self.sql.rollback()
+                    return
+
+        self.sql.commit()
+        if oldName:
+            res = self.tagsModel.match(self.tagsModel.index(0, 0), QtCore.Qt.DisplayRole, oldName, flags=QtCore.Qt.MatchExactly)
+            if not res:
+                self.dbErrorLog('Error trying to update tag', extMessage=(oldName))
+                return
+            index = res[0]
+        else:
+            row = self.tagsModel.rowCount()
+            self.tagsModel.insertRow(row)
+            index = self.tagsModel.index(row, 0)
+        self.tagsModel.setData(index, newName)
+        self.tagsModel.setData(index.sibling(index.row(), 1), json.dumps(bgd.getRgb()[:3]) if bgd is not None else None)
+        self.tagsModel.setData(index.sibling(index.row(), 2), json.dumps(fgd.getRgb()[:3]) if bgd is not None else None)
+        return self.tagsModel.submitAll()
+
+    def deleteTag(self, tag):
+        self.sql.transaction()
+        self.query.exec_('SELECT uid, tags FROM reference WHERE tags IS NOT NULL AND tags != "[]"')
+        uidDict = {}
+        while self.query.next():
+            tags = json.loads(self.query.value(1))
+            if tag in tags:
+                tags.remove(tag)
+                uidDict[self.query.value(0)] = sorted(tags)
+
+        for uid, tags in uidDict.items():
+            self.query.prepare('UPDATE reference SET tags=:tags WHERE uid=:uid')
+            self.query.bindValue(':uid', uid)
+            self.query.bindValue(':tags', json.dumps(tags))
+            if not self.query.exec_():
+                self.dbErrorLog('Error updating tags for uid', extMessage=(tags, uid))
+                self.sql.rollback()
+                return
+
+        if not self.sql.commit():
+            self.dbErrorLog('Error finalizing tag updates', extMessage=(tags, uidDict.keys()))
+            return
+
+        res = self.tagsModel.match(self.tagsModel.index(0, 0), QtCore.Qt.DisplayRole, tag, flags=QtCore.Qt.MatchExactly)
+        if not res:
+            self.dbErrorLog('Error trying to delete tag', extMessage=(tag))
+            return
+        self.tagsModel.removeRow(res[0].row())
+        return self.tagsModel.submitAll()
+
     def createCollection(self, name, source=None):
         if not self.query.exec_(u'ALTER TABLE reference ADD COLUMN "{}" int'.format(name)):
             self.dbErrorLog('Error creating collection', extMessage=(name))
@@ -1007,6 +1074,29 @@ class BlofeldDB(QtCore.QObject):
         self.addRawSoundData([p.default for p in Parameters.parameterData], collection=collection, index=index)
         self.collections[collection].query().exec_()
         self.collections[collection].updated.emit()
+
+    def getCountForCollection(self, collection):
+        #perché non funziona con il prepare?!
+        if not self.query.exec_('SELECT COUNT() FROM reference WHERE "{}" IS NOT NULL'.format(collection)):
+            self.dbErrorLog('Error counting collection contents', extMessage=(collection))
+        self.query.next()
+        return self.query.value(0)
+
+    def getCountForCategory(self, category):
+        if not self.query.exec_('SELECT COUNT() FROM sounds WHERE category == {}'.format(category)):
+            self.dbErrorLog('Error counting sounds by category', extMessage=(categories[category]))
+        self.query.next()
+        return self.query.value(0)
+
+    def getCountForTag(self, tag):
+        if not self.query.exec_('SELECT tags FROM reference WHERE tags IS NOT NULL AND tags != "[]"'):
+            self.dbErrorLog('Error counting sounds by tag', extMessage=(tag))
+        count = 0
+        while self.query.next():
+            tags = json.loads(self.query.value(0))
+            if tag in tags:
+                count += 1
+        return count
 
     def getAlternateNameChrs(self, uid, name):
 #        self.query.exec_(

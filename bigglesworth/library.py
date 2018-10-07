@@ -366,6 +366,22 @@ class MainLibraryProxy(BaseLibraryProxy):
             return False
         return True
 
+
+class DockLibraryProxy(BaseLibraryProxy):
+    filter = 0
+
+    def customFilter(self, row, parent):
+        index = self.sourceModel().index(row, LocationColumn)
+        return index.data() & self.filter
+#        if self.filter == 1 and index.data() & 7:
+#            return False
+#        elif self.filter == 2 and index.data() <= 7:
+#            return False
+#        elif self.filter == 3 and index.data():
+#            return False
+#        return True
+
+
 class BankProxy(BaseLibraryProxy):
     filter = -1
 
@@ -392,6 +408,21 @@ class CatProxy(BaseLibraryProxy):
         if not index.isValid() or index.data() is None:
             return False
         if index.data() == self.filter:
+            return True
+        else:
+            return False
+
+
+class MultiCatProxy(BaseLibraryProxy):
+    filter = []
+
+    def customFilter(self, row, parent):
+        if not self.filter:
+            return True
+        index = self.sourceModel().index(row, CatColumn)
+        if not index.isValid() or index.data() is None:
+            return False
+        if index.data() in self.filter:
             return True
         else:
             return False
