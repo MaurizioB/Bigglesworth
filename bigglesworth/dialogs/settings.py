@@ -12,6 +12,14 @@ from bigglesworth.themes import ThemeCollection
 from bigglesworth.midiutils import SysExEvent, SYSEX, GLBD, INIT, IDW, IDE, GLBR, END
 from bigglesworth.dialogs import ThemeEditor, GlobalsWaiter, BaseFileDialog
 
+startupSessionModes = [
+    ['Blofeld', 'Main library'], 
+    ['Blofeld | Main library', 
+    'Main library | Blofeld'], 
+    ['Blofeld | (Main library)', 
+    'Main library | (Blofeld)'], 
+]
+
 
 class MoveDbDialog(BaseFileDialog):
     def __init__(self, parent, currentDbFile, selectedFile=None):
@@ -84,6 +92,9 @@ class SettingsDialog(QtWidgets.QDialog):
         loadUi('ui/settings.ui', self)
         self.main = main
         self.settings = main.settings
+
+        self.dualModeCombo.currentIndexChanged.connect(self.updateStartupSessionCombo)
+
         self.themes = main.themes
 #        self.themeSettings = QtCore.QSettings()
         self.themeTab.layout().addWidget(QtWidgets.QWidget(), *self.themeTab.layout().getItemPosition(self.themeTab.layout().indexOf(self.previewWidget)))
@@ -107,6 +118,10 @@ class SettingsDialog(QtWidgets.QDialog):
         self.backendGroup.setId(self.alsaBackendRadio, 0)
         self.backendGroup.setId(self.rtmidiBackendRadio, 1)
         self.autoconnectClearChk.clicked.connect(self.clearAutoconnect)
+
+    def updateStartupSessionCombo(self, startupDualMode):
+        for index, label in enumerate(startupSessionModes[startupDualMode]):
+            self.startupSessionCombo.setItemText(index, label)
 
     def clearAutoconnect(self):
         self.settings.beginGroup('MIDI')
@@ -277,6 +292,11 @@ class SettingsDialog(QtWidgets.QDialog):
             child.labelColor = theme.frameLabelColor
 
     def exec_(self):
+        self.restoreGeometryChk.setChecked(self.settings.value('saveGeometry', True, bool))
+        self.dualModeCombo.setCurrentIndex(self.settings.value('startupDualMode', 2, int))
+        self.startupSessionCombo.setCurrentIndex(self.settings.value('startupSessionMode', 2, int))
+        self.sidebarCombo.setCurrentIndex(self.settings.value('startupSidebarMode', 2, int))
+
         self.dbPathMove = False
         self.dbPathEdit.setText(self.main.database.path)
         if self.main.database.path != QtCore.QDir(
@@ -286,7 +306,7 @@ class SettingsDialog(QtWidgets.QDialog):
         backupInterval = self.settings.value('backupInterval', 5, int)
         self.backupChk.setChecked(backupInterval)
         self.backupIntervalSpin.setValue(backupInterval if backupInterval else 5)
-        self.startupSessionCombo.setCurrentIndex(self.settings.value('startupSessionMode', 0, int))
+
         self.showFirstRunChk.setChecked(not self.settings.value('FirstRunShown', False, bool))
         if self.showFirstRunChk.isChecked():
             self.firstRunSkipBlofeldDetectChk.setChecked(not self.settings.value('FirstRunAutoDetect', True, bool))
@@ -338,7 +358,10 @@ class SettingsDialog(QtWidgets.QDialog):
             if self.restoreMsgBoxBtn.isChecked():
                 self.settings.remove('MessageBoxes')
 
+            self.settings.setValue('saveGeometry', self.restoreGeometryChk.isChecked())
+            self.settings.setValue('startupDualMode', self.dualModeCombo.currentIndex())
             self.settings.setValue('startupSessionMode', self.startupSessionCombo.currentIndex())
+            self.settings.setValue('startupSidebarMode', self.sidebarCombo.currentIndex())
 #            self.settings.setValue('theme', self.themes.current.name)
             self.settings.setValue('theme', self.themeCombo.currentText())
             backupInterval = self.backupIntervalSpin.value() if self.backupChk.isChecked() else 0

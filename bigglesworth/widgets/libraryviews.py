@@ -1,5 +1,6 @@
 # *-* encoding: utf-8 *-*
 
+import sys
 import json
 from string import uppercase
 from unidecode import unidecode as _unidecode
@@ -697,6 +698,8 @@ class BaseLibraryView(QtWidgets.QTableView):
         while isinstance(self.sourceModel, QtCore.QSortFilterProxyModel):
             self.sourceModel = self.sourceModel.sourceModel()
         QtWidgets.QTableView.setModel(self, model)
+        if isinstance(self, CollectionTableView):
+            self.sourceModel.modelReset.connect(self.checkModelSize)
         model.layoutChanged.connect(self.restoreLayout)
         self.restoreLayout()
         libAlert = '<br/><br/><b>WARNING</b>: this could take a lot of time in the full library view! ' \
@@ -921,10 +924,12 @@ class LibraryTableView(BaseLibraryView):
 class CollectionTableView(BaseLibraryView):
     dropIntoPen = QtCore.Qt.blue
     dropIntoBrush = QtGui.QBrush(QtGui.QColor(32, 128, 255, 96))
+    emptyBrush = QtGui.QBrush(QtGui.QColor(255, 255, 255, 160))
 
     def __init__(self, *args, **kwargs):
         BaseLibraryView.__init__(self, *args, **kwargs)
         self.setDropIndicatorShown(False)
+        self.menuActive = False
         self.autoScrollTimer = QtCore.QTimer()
         self.autoScrollDelta = 0
         self.autoScrollAccel = 0
@@ -946,6 +951,55 @@ class CollectionTableView(BaseLibraryView):
         font = self.font()
         font.setBold(True)
         self.cornerButton.setFont(font)
+
+        self.emptyInfoBox = QtGui.QTextDocument(
+            'This collection is empty.\n\n'
+            'Drag sounds from a collection or the Main Library, '
+            'otherwise use the right click menu to create a new sound '
+            'or dump content from your Blofeld.')
+        option = self.emptyInfoBox.defaultTextOption()
+        option.setWrapMode(option.WordWrap)
+        option.setAlignment(QtCore.Qt.AlignCenter)
+        self.emptyInfoBox.setDefaultTextOption(option)
+        self.emptyInfoBoxHCenter = self.emptyInfoBoxVCenter = 0
+        self.preferredInfoBoxWidth = self.fontMetrics().width(self.emptyInfoBox.toPlainText().splitlines()[0]) * 2.5
+
+
+    @property
+    def cachedSize(self):
+        try:
+            return self._cachedSize
+        except:
+            self._cachedSize = None
+            self.checkModelSize()
+            return self._cachedSize
+
+    @cachedSize.setter
+    def cachedSize(self, size):
+        self._cachedSize = size
+
+    def checkModelSize(self):
+        newSize = self.model().size()
+        if newSize != self.cachedSize:
+            #on windows (?), the paintEvent.rect() does not include the full geometry
+            #so we connect the scrollbars to avoid drawing artifacts on the empty
+            #collection infobox
+            #TODO: !IMPORTANT! check if this applies to osx too
+            if not 'linux' in sys.platform:
+                #remember, the size might be -1!
+                if newSize > 0:
+                    try:
+                        self.verticalScrollBar().valueChanged.disconnect(self.viewport().update)
+                        self.horizontalScrollBar().valueChanged.disconnect(self.viewport().update)
+                    except:
+                        pass
+                else:
+                    try:
+                        self.verticalScrollBar().valueChanged.connect(self.viewport().update, QtCore.Qt.UniqueConnection)
+                        self.horizontalScrollBar().valueChanged.connect(self.viewport().update, QtCore.Qt.UniqueConnection)
+                    except Exception as e:
+                        print(e)
+        self.cachedSize = newSize
 
     def doAutoScroll(self):
         self.verticalScrollBar().setValue(self.verticalScrollBar().value() + self.autoScrollDelta)
@@ -988,7 +1042,9 @@ class CollectionTableView(BaseLibraryView):
         if not res:
             return
         menu, index, name, uid = res
+        self.menuActive = True
         menu.exec_(self.viewport().mapToGlobal(pos))
+        self.menuActive = False
 
     def dragEnterEvent(self, event):
         self.checkAutoScroll(event.pos())
@@ -1300,6 +1356,24 @@ class CollectionTableView(BaseLibraryView):
                 rect = self.visualRect(self.dropSelectionIndexes[0])
                 rect |= self.visualRect(self.dropSelectionIndexes[0].sibling(self.dropSelectionIndexes[0].row(), TagsColumn))
                 qp.drawLine(rect.x(), rect.top(), rect.width(), rect.top())
+        elif self.cachedSize <= 0 and not self.menuActive:
+            viewport = self.viewport()
+            qp = QtGui.QPainter(viewport)
+            qp.setPen(QtCore.Qt.NoPen)
+            qp.setBrush(self.emptyBrush)
+            qp.translate(.5, .5)
+            qp.drawRect(viewport.rect())
+            qp.setPen(self.palette().color(QtGui.QPalette.WindowText))
+            qp.translate(viewport.rect().center().x() - self.emptyInfoBoxHCenter, viewport.rect().center().y() - self.emptyInfoBoxVCenter)
+            self.emptyInfoBox.drawContents(qp, QtCore.QRectF(viewport.rect()))
+
+    def resizeEvent(self, event):
+        BaseLibraryView.resizeEvent(self, event)
+        if not event.size().isEmpty():
+            self.emptyInfoBox.setTextWidth(min(self.viewport().width(), self.preferredInfoBoxWidth))
+            self.emptyInfoBoxHCenter = self.emptyInfoBox.size().width() / 2
+            #add a line height to vertically align slightly above than the center
+            self.emptyInfoBoxVCenter = (self.emptyInfoBox.size().height() + self.fontMetrics().height()) / 2
 
 
 class BaseLibraryWidget(QtWidgets.QWidget):

@@ -636,7 +636,7 @@ class MatrixHasU(QtWidgets.QDialog):
         self.matrixView.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(QtCore.Qt.black)))
 
         self.slides = [
-        _conv(u'Welc.me to the mod matrix...'), 
+        _conv(u'Welcome to the mod matrix...'), 
         ('B1GGLESWORTH', True, 4000), 
         (_conv('Version\n' + __version__)), 
         (_conv('CREATED BY\nM4URIZIO BeRTI')), 

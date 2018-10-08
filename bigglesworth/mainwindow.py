@@ -12,6 +12,7 @@ from bigglesworth.widgets import LibraryWidget, CollectionWidget, MidiStatusBarW
 from bigglesworth.dialogs import NewCollectionDialog, ManageCollectionsDialog, TagsDialog, AboutDialog, SoundListExport, MidiChartDialog, TagEditDialog
 from bigglesworth.forcebwu import MayTheForce
 from bigglesworth.matrixhasu import MatrixHasU
+from bigglesworth.version import getUniqueVersionToMin, MAJ_VERSION, MIN_VERSION, REV_VERSION
 #import icons
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -56,10 +57,29 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rightTabWidget.minimizePanelRequested.connect(lambda: self.setRightVisible(False))
         self.rightTabBar.maximize.connect(lambda tab: self.setRightVisible(True, tab))
 
+        sidebarMode = self.settings.value('startupSidebarMode', 2, int)
+        if sidebarMode == 2:
+            if self.main.settings.value('windowState'):
+                try:
+                    self.restoreState(self.main.settings.value('windowState'), getUniqueVersionToMin())
+                    print('Window state successfully restored')
+                except Exception as e:
+                    print('Error restoring main window state: {}'.format(e))
+        else:
+            self.sidebar.setVisible(sidebarMode)
+
+        if self.main.settings.value('saveGeometry', True, bool) and self.main.settings.contains('windowGeometry'):
+            self.restoreGeometry(self.main.settings.value('windowGeometry'))
+
         #import sessions and use OrderedDicts to remove duplicates and keep ordering
-        if self.main.settings.value('dualMode', False, bool) or self.main.settings.contains('sessionLayoutRight'):
-            sessionMode = self.main.settings.value('startupSessionMode', 2, int)
-            if sessionMode >= 2:
+        #but, before that, check unset configurations from previous versions for testers...
+        #TODO: this can be removed in the future versions...
+        existsStartupDualMode = self.main.settings.contains('startupDualMode')
+        startupDualMode = self.main.settings.value('startupDualMode', 2, int)
+        dualMode = self.main.settings.value('dualMode', False, bool)
+        startupSessionMode = self.main.settings.value('startupSessionMode', 2, int)
+        if (startupDualMode and dualMode) or (not existsStartupDualMode and self.main.settings.contains('sessionLayoutRight')):
+            if startupSessionMode >= 2:
                 left = list(OrderedDict.fromkeys(self.main.settings.value('sessionLayoutLeft', ['Blofeld'], 'QStringList')))
                 right = list(OrderedDict.fromkeys(self.main.settings.value('sessionLayoutRight', [None], 'QStringList')))
                 for side in (left, right):
@@ -80,19 +100,30 @@ class MainWindow(QtWidgets.QMainWindow):
                     else:
                         left = ['Blofeld']
                         right = [None]
-            elif sessionMode:
+            elif startupSessionMode:
                 left = [None]
                 right = ['Blofeld']
             else:
                 left = ['Blofeld']
                 right = [None]
 
+            actualCollections = []
             for tab, collections in (self.leftTabWidget, left), (self.rightTabWidget, right):
                 for collection in collections:
                     if collection not in (None, 'Blofeld') and collection not in self.database.referenceModel.allCollections:
                         print (collection, 'not found?!')
                         continue
+                    actualCollections.append(collection)
                     self.openCollection(collection, tab)
+            while not all((left, right)):
+                for collection in reversed(self.database.referenceModel.allCollections):
+                    if collection not in actualCollections:
+                        if not left:
+                            self.openCollection(collection, self.leftTabWidget)
+                            left.append(collection)
+                        else:
+                            self.openCollection(collection, self.rightTabWidget)
+                            right.append(collection)
 
             panelLayout = self.settings.value('sessionPanelLayout', 3, int)
             if panelLayout == 1:
@@ -105,10 +136,17 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.splitter.restoreState(sizes)
 
         else:
-            left = list(OrderedDict.fromkeys(self.main.settings.value('sessionLayoutLeft', ['Blofeld'], 'QStringList')))
+            if startupSessionMode >= 2:
+                left = list(OrderedDict.fromkeys(self.main.settings.value('sessionLayoutLeft', ['Blofeld'], 'QStringList')))
+            elif startupSessionMode:
+                left = [None]
+            else:
+                left = ['Blofeld']
             if '' in left:
                 left[left.index('')] = None
             for c in reversed(left):
+                if c in ['Blofeld', None]:
+                    continue
                 if c not in self.database.referenceModel.allCollections:
                     left.remove(c)
             if not left:
@@ -121,7 +159,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.rightTabBar.setVisible(False)
             self.leftTabWidget.minimizeBtn.setVisible(False)
 
-        self.sidebar.setVisible(self.settings.value('librarySideBar', True, bool))
+#        self.sidebar.setVisible(self.settings.value('librarySideBar', True, bool))
         self.dockLibrary.newCollection.connect(self.newCollection)
         self.dockLibrary.manageCollections.connect(self.manageCollections)
         self.dockLibrary.editTag.connect(self.editTag)
@@ -235,6 +273,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.settings.endGroup()
         return
 
+    @QtCore.pyqtSlot()
     def toggleDualView(self, toRemove=None):
         if self.dualMode:
             if self.leftTabBar.isVisible():
@@ -251,7 +290,8 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             if toRemove is None:
                 current = self.leftTabWidget.currentIndex()
-                last = self.leftTabWidget.count() - 1
+                count = self.leftTabWidget.count()
+                last = count - 1
                 toRemove = -1
                 if current < last:
                     toRemove = last
@@ -269,52 +309,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.rightTabWidget.setVisible(True)
             self.leftTabWidget.minimizeBtn.setVisible(True)
             self.setRightVisible(True, 0)
-#            leftTabs = []
-#            rightTabs = []
-#            leftIndex = self.leftTabWidget.currentIndex()
-#            rightIndex = self.rightTabWidget.currentIndex()
-#            for tab, destTabList in zip((self.leftTabWidget, self.rightTabWidget), (rightTabs, leftTabs)):
-#                for index in range(tab.count()):
-#                    name = tab.tabText(0)
-#                    widget = tab.removeTab(0)
-#                    destTabList.append((widget, name))
-#            for tab, destTabList in zip((self.leftTabWidget, self.rightTabWidget), (leftTabs, rightTabs)):
-#                for widget, name in destTabList:
-#                    tab.addTab(widget, name)
-#            self.leftTabWidget.setCurrentIndex(rightIndex)
-#            self.rightTabWidget.setCurrentIndex(leftIndex)
-
-#        self.referenceModel.refresh()
-#        current = [self.leftTabWidget.tabText(t).lower() for t in range(self.leftTabWidget.count())] + \
-#            [self.rightTabWidget.tabText(t).lower() for t in range(self.rightTabWidget.count())]
-#        self.openCollectionMenu.setSeparatorsCollapsible(False)
-#        sep = self.openCollectionMenu.addSeparator()
-#        sep.setText('Custom collections')
-#        for c in range(5, self.referenceModel.columnCount()):
-#            collection = self.referenceModel.headerData(c, QtCore.Qt.Horizontal)
-#            if collection.lower() in current:
-#                continue
-#            action = self.openCollectionMenu.addAction(collection)
-#            action.triggered.connect(lambda state, collection=collection: self.openCollection(collection, self.leftTabWidget))
-#            if collection == 'Blofeld':
-#                setBold(action)
-#                action.setIcon(QtGui.QIcon.fromTheme('go-home'))
-#        if len(self.openCollectionMenu.actions()) <= 1:
-#            sep.setVisible(False)
-#        sep = self.openCollectionMenu.addSeparator()
-#        sep.setText('Factory presets')
-#        for c in range(2, 5):
-#            collection = self.referenceModel.headerData(c, QtCore.Qt.Horizontal)
-#            if collection.lower() in current:
-#                continue
-#            action = self.openCollectionMenu.addAction(factoryPresetsNamesDict[collection])
-#            action.triggered.connect(lambda state, collection=collection: self.openCollection.emit(collection))
-#        if len(self.openCollectionMenu.actions()) <= 1:
-#            sep.setVisible(False)
-#        if not 'main library' in current:
-#            self.openCollectionMenu.addSeparator()
-#            action = self.openCollectionMenu.addAction(QtGui.QIcon.fromTheme('go-home'), 'Main library')
-#            action.triggered.connect(lambda: self.openCollection.emit(''))
 
     def editTag(self, oldName=''):
         new = not oldName
@@ -493,7 +487,14 @@ class MainWindow(QtWidgets.QMainWindow):
             (MayTheForce, MatrixHasU)[self.lastAboutEgg](self).exec_()
 
     def saveLayout(self):
-        self.main.settings.setValue('librarySideBar', self.sidebar.isVisible())
+        #prima o poi questo puoi rimuoverlo
+        self.main.settings.remove('librarySideBar')
+#        self.main.settings.setValue('librarySideBar', self.sidebar.isVisible())
+        self.main.settings.setValue('windowState', self.saveState(getUniqueVersionToMin()))
+        if self.main.settings.value('saveGeometry', True, bool):
+            self.main.settings.setValue('windowGeometry', self.saveGeometry())
+        else:
+            self.main.settings.remove('windowGeometry')
         self.main.settings.setValue('sessionLayoutLeft', self.leftTabWidget.collections)
         self.main.settings.setValue('dualMode', self.dualMode)
         if not self.dualMode:

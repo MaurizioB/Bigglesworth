@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>493</width>
-    <height>462</height>
+    <width>540</width>
+    <height>531</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,16 +29,16 @@
          <property name="title">
           <string>Library</string>
          </property>
-         <layout class="QGridLayout" name="gridLayout_5">
-          <item row="2" column="0">
-           <widget class="QLabel" name="label_3">
-            <property name="text">
-             <string>Database path</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
+         <layout class="QVBoxLayout" name="verticalLayout_5">
+          <item>
            <layout class="QHBoxLayout" name="horizontalLayout_2">
+            <item>
+             <widget class="QLabel" name="label_3">
+              <property name="text">
+               <string>Database path</string>
+              </property>
+             </widget>
+            </item>
             <item>
              <widget class="QLineEdit" name="dbPathEdit">
               <property name="readOnly">
@@ -82,44 +82,7 @@
             </item>
            </layout>
           </item>
-          <item row="0" column="0" colspan="2">
-           <layout class="QHBoxLayout" name="horizontalLayout_5">
-            <item>
-             <widget class="QLabel" name="label_10">
-              <property name="text">
-               <string>Open collections on startup</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QComboBox" name="startupSessionCombo">
-              <item>
-               <property name="text">
-                <string>Blofeld + Library</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Library + Blofeld</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Restore previously opened collections</string>
-               </property>
-              </item>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item row="1" column="0" colspan="2">
-           <widget class="Line" name="line_2">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0" colspan="2">
+          <item>
            <layout class="QHBoxLayout" name="horizontalLayout_6">
             <item>
              <widget class="QCheckBox" name="backupChk">
@@ -172,6 +135,112 @@
             </item>
            </layout>
           </item>
+          <item>
+           <widget class="Line" name="line_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_14">
+            <property name="text">
+             <string>Startup options</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QGridLayout" name="gridLayout_5">
+            <item row="1" column="3">
+             <widget class="QComboBox" name="dualModeCombo">
+              <item>
+               <property name="text">
+                <string>Always use single panel</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Always use twin panel</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Restore last state</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_15">
+              <property name="text">
+               <string>Side library</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QComboBox" name="sidebarCombo">
+              <item>
+               <property name="text">
+                <string>Always off</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Always on</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Restore last state</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item row="1" column="2">
+             <widget class="QLabel" name="label_13">
+              <property name="text">
+               <string>Panel mode</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="3">
+             <widget class="QComboBox" name="startupSessionCombo">
+              <item>
+               <property name="text">
+                <string>Blofeld | Main library</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Main library | Blofeld</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Restore last state</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item row="0" column="2">
+             <widget class="QLabel" name="label_10">
+              <property name="text">
+               <string>Open collections</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0" colspan="2">
+             <widget class="QCheckBox" name="restoreGeometryChk">
+              <property name="text">
+               <string>Restore window position</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
          </layout>
         </widget>
        </item>
@@ -181,18 +250,63 @@
           <string>Editor</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_7">
-          <item row="1" column="2">
-           <widget class="QLabel" name="label_12">
+          <item row="1" column="3">
+           <widget class="QComboBox" name="midiSendCombo">
+            <property name="currentIndex">
+             <number>3</number>
+            </property>
+            <property name="sizeAdjustPolicy">
+             <enum>QComboBox::AdjustToContentsOnFirstShow</enum>
+            </property>
+            <item>
+             <property name="text">
+              <string>Program changes</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Ctrl/Sysex events</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>All events</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Remember last state</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_6">
             <property name="text">
-             <string>MIDI Send</string>
+             <string>Autosave</string>
             </property>
            </widget>
           </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="label_11">
-            <property name="text">
-             <string>MIDI Receive</string>
+          <item row="0" column="1">
+           <widget class="QComboBox" name="autosaveCombo">
+            <property name="currentIndex">
+             <number>0</number>
             </property>
+            <item>
+             <property name="text">
+              <string>Always off</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Always on</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Remember last state</string>
+             </property>
+            </item>
            </widget>
           </item>
           <item row="1" column="1">
@@ -225,63 +339,18 @@
             </item>
            </widget>
           </item>
-          <item row="0" column="1">
-           <widget class="QComboBox" name="autosaveCombo">
-            <property name="currentIndex">
-             <number>0</number>
-            </property>
-            <item>
-             <property name="text">
-              <string>Always off</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Always on</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Remember last state</string>
-             </property>
-            </item>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="label_6">
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_11">
             <property name="text">
-             <string>Autosave</string>
+             <string>MIDI Receive</string>
             </property>
            </widget>
           </item>
-          <item row="1" column="3">
-           <widget class="QComboBox" name="midiSendCombo">
-            <property name="currentIndex">
-             <number>3</number>
+          <item row="1" column="2">
+           <widget class="QLabel" name="label_12">
+            <property name="text">
+             <string>MIDI Send</string>
             </property>
-            <property name="sizeAdjustPolicy">
-             <enum>QComboBox::AdjustToContentsOnFirstShow</enum>
-            </property>
-            <item>
-             <property name="text">
-              <string>Program changes</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Ctrl/Sysex events</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>All events</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Remember last state</string>
-             </property>
-            </item>
            </widget>
           </item>
          </layout>
@@ -290,7 +359,7 @@
        <item>
         <widget class="QGroupBox" name="groupBox_6">
          <property name="title">
-          <string>GroupBox</string>
+          <string>Other options</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_8">
           <item row="0" column="0">
@@ -941,7 +1010,6 @@ parameters</string>
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>startupSessionCombo</tabstop>
   <tabstop>dbPathEdit</tabstop>
   <tabstop>dbPathBtn</tabstop>
   <tabstop>detectBtn</tabstop>
