@@ -700,6 +700,7 @@ class BaseLibraryView(QtWidgets.QTableView):
         QtWidgets.QTableView.setModel(self, model)
         if isinstance(self, CollectionTableView):
             self.sourceModel.modelReset.connect(self.checkModelSize)
+            self.sourceModel.updated.connect(self.checkModelSize)
         model.layoutChanged.connect(self.restoreLayout)
         self.restoreLayout()
         libAlert = '<br/><br/><b>WARNING</b>: this could take a lot of time in the full library view! ' \
@@ -999,6 +1000,8 @@ class CollectionTableView(BaseLibraryView):
                         self.horizontalScrollBar().valueChanged.connect(self.viewport().update, QtCore.Qt.UniqueConnection)
                     except Exception as e:
                         print(e)
+        if newSize <= 0:
+            self.parent().clearFilters()
         self.cachedSize = newSize
 
     def doAutoScroll(self):
