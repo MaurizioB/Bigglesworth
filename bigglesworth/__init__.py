@@ -1,4 +1,5 @@
 #!/usr/bin/env python2.7
+# *-* encoding: utf-8 *-*
 
 #from __future__ import print_function
 import os, sys

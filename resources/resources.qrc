@@ -9,6 +9,7 @@
         <file>SWCrawlBody.ttf</file>
         <file>onesizerev.ttf</file>
         <file>onesize.ttf</file>
+        <file>MatrixCodeNFImod.ttf</file>
     </qresource>
     <qresource prefix="images/">
         <file>blofeld_dt_perspective_alpha.png</file>

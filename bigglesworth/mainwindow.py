@@ -11,6 +11,7 @@ from bigglesworth.utils import loadUi, setBold
 from bigglesworth.widgets import LibraryWidget, CollectionWidget, MidiStatusBarWidget
 from bigglesworth.dialogs import NewCollectionDialog, ManageCollectionsDialog, TagsDialog, AboutDialog, SoundListExport, MidiChartDialog, TagEditDialog
 from bigglesworth.forcebwu import MayTheForce
+from bigglesworth.matrixhasu import MatrixHasU
 #import icons
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -158,6 +159,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.showMidiChartAction.triggered.connect(lambda: MidiChartDialog(self).exec_())
         self.showMidiChartAction.setIcon(QtGui.QIcon(':/images/midiicon.svg'))
         self.aboutAction.triggered.connect(self.showAbout)
+        self.lastAboutEgg = randrange(2)
         self.aboutQtAction.triggered.connect(lambda: QtWidgets.QMessageBox.aboutQt(self, 'About Qt...'))
         self.toggleLibrarySidebarAction.triggered.connect(lambda: self.sidebar.setVisible(not self.sidebar.isVisible()))
         self.toggleDualViewAction.triggered.connect(self.toggleDualView)
@@ -479,16 +481,16 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QApplication.processEvents()
 
     def checkTagFilters(self):
-#        print('checco')
         for widget in self.leftTabWidget.collections + self.rightTabWidget.collections:
             if isinstance(widget, CollectionWidget):
                 widget.filterTagsEdit.setTags()
 
     def showAbout(self):
-        if not randrange(3):
-            MayTheForce(self).exec_()
-        else:
+        if randrange(100) / 33:
             AboutDialog(self).exec_()
+        else:
+            self.lastAboutEgg = not self.lastAboutEgg
+            (MayTheForce, MatrixHasU)[self.lastAboutEgg](self).exec_()
 
     def saveLayout(self):
         self.main.settings.setValue('librarySideBar', self.sidebar.isVisible())

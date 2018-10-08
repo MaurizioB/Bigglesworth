@@ -10,8 +10,10 @@ from Qt import QtCore, QtGui, QtWidgets
 
 try:
     from bigglesworth.version import __version__
+    from bigglesworth.dialogs.about import thanksto
 except:
     __version__ == '0.1.2'
+    thanksto = 'Fabio "Faber" Vescarelli', 'Benedetto Schiavone', 'Nick Sherman', 'Piet Wagner'
 
 #SWColor = lambda: QtGui.QColor(229, 177, 58)
 SWColor = lambda: QtGui.QColor(255, 195, 12)
@@ -158,34 +160,34 @@ class MayTheForce(QtWidgets.QDialog):
 
         #The following is a unicode thin space (U+2009): " "
         #The following is a unicode hair space (U+200A): " "
-        text = u'''
-        A  year  has  passed since  the  previous 
-        version was released, and lots of users 
-        lost their hope, but here we are.
-
-        Created by Maurizio Berti.
-
-        Thanks to:
-        Fabio "Faber" Vescarelli
-        Benedetto Schiavone
-        Nick Sherman
-
-        The people at Synth Cafe and all the 
-        users around the galaxy!
-
-        May the patch be with us....
-        '''
-
-        self.text = [l.strip() for l in text.split('\n')]
+#        text = u'''
+#        A  year  has  passed since  the  previous 
+#        version was released, and lots of users 
+#        lost their hope, but here we are.
+#
+#        Created by Maurizio Berti.
+#
+#        Thanks to:
+#        Fabio "Faber" Vescarelli
+#        Benedetto Schiavone
+#        Nick Sherman
+#
+#        The people at Synth Cafe and all the 
+#        users around the galaxy!
+#
+#        May the patch be with us....
+#        '''
+#
+#        self.text = [l.strip() for l in text.split('\n')]
         self.fullText = 'It is a dark time for the Blofeld editors. ' \
             'A year has passed since the previous version of BIGGLESWORTH was released, ' \
             'and lots of users lost their hope.\n\n' \
             'Evading the dreaded competition, a group of freedom fighters has ' \
             'established their confidence, sure that the beloved program was still alive.\n\n' \
             'Created by Maurizio Berti.\n\n' \
-            'Thanks to: Fabio "Faber" Vescarelli, Benedetto Schiavone, Nick Sherman, Piet Wagner' \
+            'Thanks to:\n{}, ' \
             'the people at Synth Cafe, and all the users around the galaxy!\n\n' \
-            'May the patch be with us__dots__'
+            'May the patch be with us__dots__'.format(', '.join(thanksto))
 
 #        self.fullText = 'It is a dark time for the Rebellion. ' \
 #        'Although the Death Star has been destroyed, Imperial troops have driven the ' \
