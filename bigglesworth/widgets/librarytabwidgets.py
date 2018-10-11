@@ -137,6 +137,7 @@ class LibraryTabBar(DroppableTabBar):
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.showMenu)
         self.startIndex = None
+        self.deltaX = 0
         self.settings = QtCore.QSettings()
 
     def startDrag(self):
@@ -192,7 +193,6 @@ class LibraryTabBar(DroppableTabBar):
         DroppableTabBar.mousePressEvent(self, event)
         if self.isMovable():
             self.startX = event.x()
-            self.startY = event.y()
             self.startIndex = self.currentIndex()
             self.deltaX = self.startX - self.tabRect(self.startIndex).x()
 

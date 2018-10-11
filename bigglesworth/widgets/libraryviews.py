@@ -1374,16 +1374,26 @@ class CollectionTableView(BaseLibraryView):
                 rect = self.visualRect(self.dropSelectionIndexes[0])
                 rect |= self.visualRect(self.dropSelectionIndexes[0].sibling(self.dropSelectionIndexes[0].row(), TagsColumn))
                 qp.drawLine(rect.x(), rect.top(), rect.width(), rect.top())
-        elif self.cachedSize <= 0 and not self.menuActive:
-            viewport = self.viewport()
-            qp = QtGui.QPainter(viewport)
-            qp.setPen(QtCore.Qt.NoPen)
-            qp.setBrush(self.emptyBrush)
-            qp.translate(.5, .5)
-            qp.drawRect(viewport.rect())
-            qp.setPen(self.palette().color(QtGui.QPalette.WindowText))
-            qp.translate(viewport.rect().center().x() - self.emptyInfoBoxHCenter, viewport.rect().center().y() - self.emptyInfoBoxVCenter)
-            self.emptyInfoBox.drawContents(qp, QtCore.QRectF(viewport.rect()))
+        elif not self.menuActive:
+            if self.cachedSize <= 0:
+                viewport = self.viewport()
+                qp = QtGui.QPainter(viewport)
+                qp.setPen(QtCore.Qt.NoPen)
+                qp.setBrush(self.emptyBrush)
+                qp.translate(.5, .5)
+                qp.drawRect(viewport.rect())
+                qp.setPen(self.palette().color(QtGui.QPalette.WindowText))
+                qp.translate(viewport.rect().center().x() - self.emptyInfoBoxHCenter, viewport.rect().center().y() - self.emptyInfoBoxVCenter)
+                self.emptyInfoBox.drawContents(qp, QtCore.QRectF(viewport.rect()))
+            elif not self.model().rowCount():
+                viewport = self.viewport()
+                qp = QtGui.QPainter(viewport)
+                qp.setPen(QtCore.Qt.NoPen)
+                qp.setBrush(self.emptyBrush)
+                qp.translate(.5, .5)
+                qp.drawRect(viewport.rect())
+                qp.setPen(self.palette().color(QtGui.QPalette.WindowText))
+                qp.drawText(viewport.rect(), QtCore.Qt.AlignCenter, 'Current filters return no result')
 
     def resizeEvent(self, event):
         BaseLibraryView.resizeEvent(self, event)
@@ -1416,6 +1426,8 @@ class BaseLibraryWidget(QtWidgets.QWidget):
         self.collectionView.tagsDelegate.tagClicked.connect(self.setTagFilter)
         self.collectionView.importRequested.connect(lambda uriList: self.importRequested.emit(uriList, self.collection))
         self.editModeBtn = QtWidgets.QPushButton(QtGui.QIcon.fromTheme('edit-rename'), '')
+        self.editModeBtn.setToolTip('Toggle edit mode')
+        self.editModeBtn.setStatusTip('Toggle edit mode to rename sounds or change category')
         self.editModeBtn.setCheckable(True)
         self.collectionView.setCornerWidget(self.editModeBtn)
 
@@ -1574,6 +1586,8 @@ class CollectionWidget(BaseLibraryWidget):
 #        self.collectionView.duplicateRequested.connect(self.duplicateRequested)
 #        self.collectionView.deleteRequested.connect(self.deleteRequested)
 
+        self.catCombo.view().setUniformItemSizes(True)
+        self.bankCombo.view().setUniformItemSizes(True)
         self.updateFilterCombos()
         self.filterGroupBox.setEnabled(True if self.model.size() > 0 else False)
 

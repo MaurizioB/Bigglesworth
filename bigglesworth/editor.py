@@ -1708,6 +1708,19 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.display.setStatusText('{} parameters randomized'.format(len(paramList)))
 
     def closeEvent(self, event):
+        if self._editStatus == self.Modified or self.setFromDump:
+            if self._editStatus == self.Modified:
+                title = 'Sound modified'
+                message = 'The current sound has been modified.\nWhat do you want to do?'
+            else:
+                title = 'Sound dumped'
+                message = 'The current sound has been dumped from the Blofeld.\nWhat do you want to do?'
+            res = QtWidgets.QMessageBox.question(self, title, message, 
+                QtWidgets.QMessageBox.Save|QtWidgets.QMessageBox.Ignore|QtWidgets.QMessageBox.Cancel)
+            if not res or res == QtWidgets.QMessageBox.Cancel:
+                return
+            elif res == QtWidgets.QMessageBox.Save:
+                self.save()
         QtWidgets.QMainWindow.closeEvent(self, event)
         self.closed.emit()
 

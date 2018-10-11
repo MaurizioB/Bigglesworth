@@ -281,7 +281,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot()
     def toggleDualView(self, toRemove=None):
-        print('vai!', self.dualMode)
         if self.dualMode:
             if self.leftTabBar.isVisible():
                 self.setLeftVisible(True)
