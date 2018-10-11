@@ -11,9 +11,10 @@ from bigglesworth.widgets.editormenu import SoundsMenu, EditorMenu
 #from bigglesworth.widgets.collectionwidget import CollectionWidget
 from bigglesworth.widgets.filters import FilterNameEdit, FilterTagsEdit
 from bigglesworth.widgets.libraryviews import LibraryWidget, CollectionWidget, LibraryTableView, CollectionTableView
-from bigglesworth.widgets.librarytabwidgets import LeftTabBar, RightTabBar, LeftTabWidget, RightTabWidget
 from bigglesworth.widgets.misc import (MidiStatusBarWidget, MidiInWidget, MidiOutWidget, ShrinkButton, 
-    VerticalLabel, DeltaSpin, DeviceIdSpin, DevicePopupSpin, Waiter, ExpandButton, IconSelector)
+    VerticalLabel, DeltaSpin, DeviceIdSpin, DevicePopupSpin, Waiter, 
+    DroppableTabBar, ExpandButton, IconSelector)
+from bigglesworth.widgets.librarytabwidgets import LeftTabBar, RightTabBar, LeftTabWidget, RightTabWidget
 from bigglesworth.widgets.display import BlofeldDisplay
 from bigglesworth.widgets.graphicsbuttons import GraphicsButton, CloseBtn
 from bigglesworth.widgets.arpeggiator import ArpeggiatorDisplay

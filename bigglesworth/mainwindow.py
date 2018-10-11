@@ -162,6 +162,7 @@ class MainWindow(QtWidgets.QMainWindow):
 #        self.sidebar.setVisible(self.settings.value('librarySideBar', True, bool))
         self.dockLibrary.newCollection.connect(self.newCollection)
         self.dockLibrary.manageCollections.connect(self.manageCollections)
+        self.dockLibrary.openCollection.connect(self.openCollection)
         self.dockLibrary.editTag.connect(self.editTag)
         self.dockLibrary.editTags.connect(self.editTags)
         self.dockLibrary.deleteTag.connect(self.deleteTag)
@@ -170,12 +171,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.exportSoundListAction.triggered.connect(lambda: SoundListExport(self, None).exec_())
 
         self.leftTabWidget.openCollection.connect(self.openCollection)
+        self.leftTabWidget.openCollection[str, object].connect(self.openCollection)
+        self.leftTabWidget.openCollection[str, object, int].connect(self.openCollection)
         self.leftTabWidget.newCollection.connect(self.newCollection)
         self.leftTabWidget.manageCollections.connect(self.manageCollections)
         self.leftTabWidget.tabCloseRequested.connect(self.closeCollection)
         self.leftTabWidget.tabMoveRequested.connect(self.moveCollection)
         self.leftTabWidget.panelSwapRequested.connect(self.panelSwap)
+        self.leftTabWidget.toggleDualView.connect(self.toggleDualView)
         self.rightTabWidget.openCollection.connect(self.openCollection)
+        self.rightTabWidget.openCollection[str, object].connect(self.openCollection)
+        self.rightTabWidget.openCollection[str, object, int].connect(self.openCollection)
         self.rightTabWidget.newCollection.connect(self.newCollection)
         self.rightTabWidget.manageCollections.connect(self.manageCollections)
         self.rightTabWidget.tabCloseRequested.connect(self.closeCollection)
@@ -225,7 +231,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.openCollectionMenu.addSeparator()
         action = self.openCollectionMenu.addAction(QtGui.QIcon.fromTheme('go-home'), 'Main library')
-        action.triggered.connect(lambda: self.openCollection.emit(''))
+        action.triggered.connect(lambda: self.openCollection(''))
 
     def activate(self):
         self.show()
@@ -275,19 +281,23 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot()
     def toggleDualView(self, toRemove=None):
+        print('vai!', self.dualMode)
         if self.dualMode:
             if self.leftTabBar.isVisible():
                 self.setLeftVisible(True)
+            self.rightTabWidget.setVisible(False)
+            self.rightTabBar.setVisible(False)
+            self.leftTabWidget.minimizeBtn.setVisible(False)
             current = self.rightTabWidget.currentIndex() + self.leftTabWidget.count()
             for i in range(self.rightTabWidget.count()):
                 name = self.rightTabWidget.tabText(0)
                 widget = self.rightTabWidget.removeTab(0)
                 self.leftTabWidget.addTab(widget, name)
             self.leftTabWidget.setCurrentIndex(current)
-            self.rightTabWidget.setVisible(False)
-            self.rightTabBar.setVisible(False)
-            self.leftTabWidget.minimizeBtn.setVisible(False)
         else:
+            self.rightTabWidget.setVisible(True)
+            self.leftTabWidget.minimizeBtn.setVisible(True)
+            self.setRightVisible(True, 0)
             if toRemove is None:
                 current = self.leftTabWidget.currentIndex()
                 count = self.leftTabWidget.count()
@@ -306,9 +316,6 @@ class MainWindow(QtWidgets.QMainWindow):
                     if collection not in self.leftTabWidget.collections:
                         self.openCollection(collection, self.rightTabWidget)
                         break
-            self.rightTabWidget.setVisible(True)
-            self.leftTabWidget.minimizeBtn.setVisible(True)
-            self.setRightVisible(True, 0)
 
     def editTag(self, oldName=''):
         new = not oldName
@@ -352,7 +359,7 @@ class MainWindow(QtWidgets.QMainWindow):
             for collection in self.database.collections.values():
                 collection.updated.emit()
 
-    def openCollection(self, collection='', dest=None):
+    def openCollection(self, collection='', dest=None, index=-1):
         if collection:
             name = factoryPresetsNamesDict.get(collection, collection)
             colWidget = CollectionWidget(self, collection)
@@ -374,7 +381,7 @@ class MainWindow(QtWidgets.QMainWindow):
         colWidget.findDuplicatesRequested.connect(self.findDuplicatesRequested)
         colWidget.importRequested.connect(self.importRequested)
         colWidget.exportRequested.connect(self.exportRequested)
-        index = dest.addTab(colWidget, name)
+        index = dest.insertTab(index, colWidget, name)
         dest.setCurrentIndex(index)
         return colWidget
 
@@ -388,43 +395,63 @@ class MainWindow(QtWidgets.QMainWindow):
         if not collection:
             return
         if dialog.cloneChk.isChecked():
-            res = self.database.createCollection(collection, dialog.cloneCombo.itemData(dialog.cloneCombo.currentIndex()))
+            res = self.database.createCollection(collection, dialog.cloneCombo.itemData(dialog.cloneCombo.currentIndex()), iconName=dialog.currentIconName())
         else:
-            res = self.database.createCollection(collection)
+            res = self.database.createCollection(collection, iconName=dialog.currentIconName())
         if not res:
             QtWidgets.QMessageBox.critical(
                 self, 
                 'Error creating collection', 
                 'An error occured while trying to create the collection.\nThis is the message returned:\n\n{}'.format(self.database.query.lastError().databaseText()))
             return
-        self.main.settings.beginGroup('CollectionIcons')
-        self.main.settings.setValue(collection, dialog.currentIconName())
-        self.main.settings.endGroup()
+#        self.main.settings.beginGroup('CollectionIcons')
+#        self.main.settings.setValue(collection, dialog.currentIconName())
+#        self.main.settings.endGroup()
         self.openCollection(collection, dest)
         if self.sidebar.isVisible():
             self.dockLibrary.expandCollections()
 
     def manageCollections(self):
-        ManageCollectionsDialog(self, self.leftTabWidget.collections + self.rightTabWidget.collections).dialog.exec_()
+        ManageCollectionsDialog(self, self.leftTabWidget.collections + self.rightTabWidget.collections).exec_()
         self.leftTabWidget.checkIcons()
         self.rightTabWidget.checkIcons()
 
     def closeCollection(self, index):
-        if self.sender().count() <= 1:
+        source = self.sender()
+        if not self.dualMode and source.count() <= 1:
             return
-        widget = self.sender().removeTab(index)
+        widget = source.removeTab(index)
         widget.deleteLater()
+        if not source.count():
+            self.rightTabWidget.setVisible(False)
+            self.rightTabBar.setVisible(False)
+            self.leftTabWidget.minimizeBtn.setVisible(False)
+            if source == self.leftTabWidget:
+                current = self.rightTabWidget.currentIndex()
+                for i in range(self.rightTabWidget.count()):
+                    name = self.rightTabWidget.tabText(0)
+                    widget = self.rightTabWidget.removeTab(0)
+                    self.leftTabWidget.addTab(widget, name)
+                self.leftTabWidget.setCurrentIndex(current)
+            if self.leftTabWidget.count() == 1:
+                try:
+                    self.leftTabWidget.tabBar().tabButton(0, self.leftTabWidget.tabBar().RightSide).setVisible(False)
+                except:
+                    self.leftTabWidget.tabBar().tabButton(0, self.leftTabWidget.tabBar().LeftSide).setVisible(False)
 
-    def moveCollection(self, index, dest):
-        if self.sender().count() <= 1:
+    def moveCollection(self, index, dest, targetIndex=-1):
+        source = dest.siblingTabWidget
+        if source.count() <= 1 and not self.dualMode:
             return
-        if self.dualMode:
-            name = self.sender().tabText(index)
-            widget = self.sender().removeTab(index)
-            index = dest.addTab(widget, name)
-            dest.setCurrentIndex(index)
+        if self.dualMode and source.count() > 1:
+            name = source.tabText(index)
+            widget = source.removeTab(index)
+            targetIndex = dest.insertTab(targetIndex, widget, name)
+            dest.setCurrentIndex(targetIndex)
         else:
             self.toggleDualView(index)
+#        source.tabRemoved(index)
+#        source.update()
 
     def panelSwap(self):
         leftTabs = []

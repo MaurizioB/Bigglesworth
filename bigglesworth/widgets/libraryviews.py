@@ -236,6 +236,8 @@ class BaseLibraryView(QtWidgets.QTableView):
     dumpFromRequested = QtCore.pyqtSignal(object, object, int, bool)
     #uid, blofeld index/buffer, multi
     dumpToRequested = QtCore.pyqtSignal(object, object, bool)
+    fullDumpCollectionToBlofeldRequested = QtCore.pyqtSignal(str, bool)
+    fullDumpBlofeldToCollectionRequested = QtCore.pyqtSignal(str, bool)
     dropEventSignal = QtCore.pyqtSignal()
 
     def __init__(self, *args, **kwargs):
@@ -428,8 +430,9 @@ class BaseLibraryView(QtWidgets.QTableView):
                 self.externalFileDropContents = sysex
             else:
                 event.ignore()
-        elif event.mimeData().hasFormat('application/x-qabstractitemmodeldatalist') and event.source():
-            QtWidgets.QTableView.dragEnterEvent(self, event)
+        elif event.mimeData().hasFormat('application/x-qabstractitemmodeldatalist') and \
+            event.source() and event.mimeData().hasFormat('bigglesworth/collectionItems'):
+                QtWidgets.QTableView.dragEnterEvent(self, event)
         else:
             event.ignore()
 
@@ -446,11 +449,11 @@ class BaseLibraryView(QtWidgets.QTableView):
         stream = QtCore.QDataStream(byteArray, QtCore.QIODevice.WriteOnly)
         for uid in self.getUidFromIndexList(items):
             stream.writeQVariant(uid)
-        mimeData.setData('bigglesworth/collectiondrag', byteArray)
+        mimeData.setData('bigglesworth/collectionItems', byteArray)
         byteArray.clear()
         stream = QtCore.QDataStream(byteArray, QtCore.QIODevice.WriteOnly)
         stream.writeBool(False)
-        mimeData.setData('bigglesworth/dragmode', byteArray)
+        mimeData.setData('bigglesworth/collectionDragMode', byteArray)
 
         itemWidth = self.horizontalHeader().sectionSize(NameColumn)
         itemHeight = self.verticalHeader().sectionSize(0)
@@ -732,28 +735,30 @@ class BaseLibraryView(QtWidgets.QTableView):
         selRows = self.selectionModel().selectedRows()
         if not index.isValid() or not index.flags() & QtCore.Qt.ItemIsEnabled or not selRows:
             valid = False
+            if isinstance(self, LibraryTableView):
+                return
 #            return
         else:
             valid = True
         menu = ContextMenu(self)
         menu.setSeparatorsCollapsible(False)
         nameIndex = index.sibling(index.row(), NameColumn)
-        name = nameIndex.data().rstrip()
+        name = nameIndex.data().rstrip() if valid else None
         uid = index.sibling(index.row(), UidColumn).data()
 
         inConn, outConn = QtWidgets.QApplication.instance().connections
 
-        if not selRows or not valid:
+        if (not selRows or not valid) and isinstance(self, CollectionTableView):
             pos = '{}{:03}'.format(uppercase[index.row() >> 7], (index.row() & 127) + 1)
             menu.addSection('Empty slot ' + pos)
             initAction = menu.addAction('INIT this slot')
             initAction.triggered.connect(lambda: self.database.initSound(index.row(), self.collection))
             menu.addSeparator()
-            dumpMenu = menu.addMenu('Dump')
+            dumpMenu = menu.addMenu(QtGui.QIcon(':/images/dump.svg'), 'Dump')
             if not all((inConn, outConn)):
                 dumpMenu.setEnabled(False)
             dumpMenu.setSeparatorsCollapsible(False)
-            dumpMenu.addSection('Receive')
+            receiveSection = dumpMenu.addSection('Receive')
             dumpFromSoundBuffer = dumpMenu.addAction('Dump from Sound Edit Buffer')
             dumpFromSoundBuffer.triggered.connect(lambda: self.dumpFromRequested.emit(None, self.collection, index.row(), False))
             dumpFromIndex = dumpMenu.addAction('Dump from {}'.format(pos))
@@ -762,6 +767,8 @@ class BaseLibraryView(QtWidgets.QTableView):
             for part in range(16):
                 dumpFromMultiAction = dumpFromMultiMenu.addAction('Part {}'.format(part + 1))
                 dumpFromMultiAction.triggered.connect(lambda _, part=part: self.dumpFromRequested.emit(part, self.collection, index.row(), True))
+
+            sendSection = dumpMenu.addSection('Send')
 
         elif len(selRows) == 1:
             if selRows[0].row() != index.row():
@@ -874,6 +881,14 @@ class BaseLibraryView(QtWidgets.QTableView):
             exportAction.triggered.connect(lambda: self.exportRequested.emit(uidList, self.collection))
             if len(uidList) > 1024:
                 exportAction.setEnabled(False)
+
+        if isinstance(self, CollectionTableView):
+            dumpFromAllAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('arrow-left-double'), 'Show dump receive dialog...', dumpMenu)
+            dumpFromAllAction.triggered.connect(lambda: self.fullDumpBlofeldToCollectionRequested.emit(self.collection, False))
+            dumpMenu.insertAction(sendSection, dumpFromAllAction)
+            dumpToAllAction = dumpMenu.addAction(QtGui.QIcon.fromTheme('arrow-right-double'), 'Show dump send dialog...')
+            dumpToAllAction.triggered.connect(lambda: self.fullDumpCollectionToBlofeldRequested.emit(self.collection, False))
+
         return menu, index, name, uid
 
     def populateTagsMenu(self, uidList):
@@ -1189,8 +1204,8 @@ class CollectionTableView(BaseLibraryView):
         if self.dropIndicatorPosition == self.OnViewport:
             event.ignore()
             return
-        if event.mimeData().hasFormat('bigglesworth/collectiondrag'):
-            data = event.mimeData().data('bigglesworth/collectiondrag')
+        if event.mimeData().hasFormat('bigglesworth/collectionItems'):
+            data = event.mimeData().data('bigglesworth/collectionItems')
             stream = QtCore.QDataStream(data)
             uidList = []
             while not stream.atEnd():
@@ -1387,6 +1402,8 @@ class BaseLibraryWidget(QtWidgets.QWidget):
     dumpFromRequested = QtCore.pyqtSignal(object, object, int, bool)
     #uid, blofeld index/buffer, multi
     dumpToRequested = QtCore.pyqtSignal(object, object, bool)
+    fullDumpCollectionToBlofeldRequested = QtCore.pyqtSignal(str, bool)
+    fullDumpBlofeldToCollectionRequested = QtCore.pyqtSignal(str, bool)
 
     def __init__(self, uiPath, parent, collection=None):
         QtWidgets.QWidget.__init__(self, parent)
@@ -1427,6 +1444,9 @@ class BaseLibraryWidget(QtWidgets.QWidget):
         self.collectionView.findDuplicatesRequested.connect(self.findDuplicatesRequested)
         self.collectionView.deleteRequested.connect(self.deleteRequested)
         self.collectionView.exportRequested.connect(self.exportRequested)
+        self.collectionView.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeldRequested)
+        self.collectionView.fullDumpBlofeldToCollectionRequested.connect(self.fullDumpBlofeldToCollectionRequested)
+
 
         self.collectionView.dumpToRequested.connect(self.dumpToRequested)
         self.collectionView.dumpFromRequested.connect(self.dumpFromRequested)

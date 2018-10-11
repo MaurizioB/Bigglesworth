@@ -2,6 +2,68 @@ import sys
 from bisect import bisect_left
 
 from Qt import QtCore, QtGui, QtWidgets
+from PyQt4.QtGui import QStyleOptionTabV3, QStyleOptionTabWidgetFrameV2
+QtWidgets.QStyleOptionTabV3 = QStyleOptionTabV3
+QtWidgets.QStyleOptionTabWidgetFrameV2 = QStyleOptionTabWidgetFrameV2
+
+class TabPlaceHolder(QtWidgets.QWidget):
+    arrowTop = QtGui.QPainterPath()
+    arrowTop.moveTo(-4, 0)
+    arrowTop.lineTo(4, 0)
+    arrowTop.lineTo(0, 4)
+    arrowTop.closeSubpath()
+
+    arrowBottom = QtGui.QPainterPath()
+    arrowBottom.moveTo(-4, 0)
+    arrowBottom.lineTo(4, 0)
+    arrowBottom.lineTo(0, -4)
+    arrowBottom.closeSubpath()
+
+    def __init__(self, parent):
+        self.tabBar = parent
+        if isinstance(parent.parent(), QtWidgets.QTabWidget):
+            parent = parent.parent()
+        QtWidgets.QWidget.__init__(self, parent)
+        self.setVisible(False)
+        self.setFixedWidth(9)
+
+    def showEvent(self, event):
+        height = self.tabBar.height()
+        if isinstance(self.parent(), QtWidgets.QTabWidget):
+            height += 14
+        self.setFixedHeight(self.tabBar.height())
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter(self)
+        qp.setRenderHints(qp.Antialiasing)
+        qp.setPen(QtCore.Qt.NoPen)
+        qp.setBrush(self.palette().color(QtGui.QPalette.ButtonText))
+        qp.translate(self.rect().center().x() + .5, .5)
+        qp.drawPath(self.arrowTop)
+        qp.translate(0, self.height() - 1)
+        qp.drawPath(self.arrowBottom)
+
+
+class DroppableTabBar(QtWidgets.QTabBar):
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QTabBar.__init__(self, *args, **kwargs)
+        self.placeHolder = TabPlaceHolder(self)
+
+    def setDropIndexAt(self, pos):
+        tabIndex = self.tabAt(self.mapFromParent(pos))
+        if tabIndex < 0:
+            tabIndex += self.count()
+        rect = self.tabRect(tabIndex)
+        if pos.x() > rect.center().x():
+            tabIndex += 1
+            if tabIndex < self.count():
+                x = self.tabRect(tabIndex).left()
+            else:
+                x = rect.right()
+        else:
+            x = rect.left()
+        self.placeHolder.move(x, rect.top())
+        return tabIndex
 
 
 class ShrinkButton(QtWidgets.QPushButton):

@@ -34,6 +34,9 @@
        <bool>false</bool>
       </property>
       <widget class="LeftTabWidget" name="leftTabWidget">
+       <property name="acceptDrops">
+        <bool>true</bool>
+       </property>
        <property name="currentIndex">
         <number>-1</number>
        </property>
@@ -42,6 +45,9 @@
        </property>
       </widget>
       <widget class="RightTabWidget" name="rightTabWidget">
+       <property name="acceptDrops">
+        <bool>true</bool>
+       </property>
        <property name="tabsClosable">
         <bool>true</bool>
        </property>
@@ -336,10 +342,16 @@
    <property name="text">
     <string>Show library sidebar</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+L</string>
+   </property>
   </action>
   <action name="toggleDualViewAction">
    <property name="text">
     <string>Open twin tab view</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+D</string>
    </property>
   </action>
  </widget>

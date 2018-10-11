@@ -138,8 +138,7 @@
    <item row="1" column="0">
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>&lt;b&gt;NOTE&lt;/b&gt;: Collections can be edited and deleted only if they are not opened in the librarian.&lt;br/&gt;
-Bigglesworth &lt;b&gt;requires&lt;/b&gt; to be restarted after renaming or deleting an existing collection.</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;NOTE&lt;/span&gt;: Collections can be edited or deleted only if they are not opened in the librarian.&lt;br/&gt;Bigglesworth &lt;span style=&quot; font-weight:600;&quot;&gt;requires&lt;/span&gt; to be restarted after renaming or deleting an existing collection.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>

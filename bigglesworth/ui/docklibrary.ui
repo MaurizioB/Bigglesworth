@@ -35,6 +35,9 @@
          <property name="contextMenuPolicy">
           <enum>Qt::CustomContextMenu</enum>
          </property>
+         <property name="statusTip">
+          <string>SHIFT + click for contiguous selection, CTRL + click for extended selection, right click for context menu</string>
+         </property>
          <property name="editTriggers">
           <set>QAbstractItemView::NoEditTriggers</set>
          </property>
@@ -75,7 +78,11 @@
           </widget>
          </item>
          <item>
-          <widget class="FilterNameEdit" name="filterNameEdit"/>
+          <widget class="FilterNameEdit" name="filterNameEdit">
+           <property name="acceptDrops">
+            <bool>false</bool>
+           </property>
+          </widget>
          </item>
         </layout>
        </item>
@@ -150,7 +157,9 @@
                </sizepolicy>
               </property>
               <property name="icon">
-               <iconset theme="edit-clear-all-symbolic"/>
+               <iconset theme="edit-clear-all-symbolic">
+                <normaloff/>
+               </iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -185,6 +194,9 @@
             </property>
             <property name="editTriggers">
              <set>QAbstractItemView::NoEditTriggers</set>
+            </property>
+            <property name="dragDropMode">
+             <enum>QAbstractItemView::InternalMove</enum>
             </property>
             <property name="resizeMode">
              <enum>QListView::Adjust</enum>
@@ -227,8 +239,8 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>DockTreeView</class>
-   <extends>QTreeView</extends>
+   <class>FilterNameEdit</class>
+   <extends>QLineEdit</extends>
    <header>bigglesworth.widgets</header>
   </customwidget>
   <customwidget>
@@ -237,13 +249,13 @@
    <header>bigglesworth.widgets</header>
   </customwidget>
   <customwidget>
-   <class>LibraryFilterList</class>
-   <extends>QListView</extends>
+   <class>DockTreeView</class>
+   <extends>QTreeView</extends>
    <header>bigglesworth.widgets</header>
   </customwidget>
   <customwidget>
-   <class>FilterNameEdit</class>
-   <extends>QLineEdit</extends>
+   <class>LibraryFilterList</class>
+   <extends>QListView</extends>
    <header>bigglesworth.widgets</header>
   </customwidget>
  </customwidgets>

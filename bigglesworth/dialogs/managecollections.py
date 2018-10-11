@@ -11,22 +11,50 @@ Delete, Keep, Rename, Copy, New = -1, 0, 1, 2, 4
 class NameDelegate(QtWidgets.QStyledItemDelegate):
     def paint(self, qp, option, index):
         self.initStyleOption(option, index)
+        font = option.font
+        extraIcon = None
         if index.data(EditRole) & Rename:
-            font = option.font
-            font.setBold(True)
-            option.font = font
-        if index.data(EditRole) & Rename:
-            icon = QtGui.QIcon.fromTheme('edit-rename')
-            if not icon.isNull():
-                option.features |= option.HasDecoration
-                option.icon = icon
+            font.setItalic(True)
+            extraIcon = QtGui.QIcon.fromTheme('edit-rename')
         elif index.data(EditRole) & Copy:
-            option.features |= option.HasDecoration
-            option.icon = QtGui.QIcon.fromTheme('edit-copy')
+            font.setUnderline(True)
+            extraIcon = QtGui.QIcon.fromTheme('edit-copy')
         elif index.data(EditRole) & New:
+            font.setBold(True)
+            extraIcon = QtGui.QIcon.fromTheme('document-new')
+        if extraIcon:
+            left = option.decorationSize.width()
+            height = option.decorationSize.height()
+            iconSize = option.fontMetrics.height()
+            currentIcon = QtGui.QIcon(option.icon)
+            option.icon = QtGui.QIcon()
+            option.decorationSize.setWidth(left + iconSize + 2)
             option.features |= option.HasDecoration
-            option.icon = QtGui.QIcon.fromTheme('document-new')
+#        if index.data(EditRole) & Rename:
+#            font = option.font
+#            font.setBold(True)
+#            option.font = font
+#        if index.data(EditRole) & Rename:
+#            icon = QtGui.QIcon.fromTheme('edit-rename')
+#            if not icon.isNull():
+#                option.features |= option.HasDecoration
+#                option.icon = icon
+#        elif index.data(EditRole) & Copy:
+#            option.features |= option.HasDecoration
+#            option.icon = QtGui.QIcon.fromTheme('edit-copy')
+#        elif index.data(EditRole) & New:
+#            option.features |= option.HasDecoration
+#            option.icon = QtGui.QIcon.fromTheme('document-new')
         QtWidgets.QStyledItemDelegate.paint(self, qp, option, QtCore.QModelIndex())
+        if extraIcon:
+            decoRect = QtWidgets.QApplication.style().subElementRect(QtWidgets.QStyle.SE_ItemViewItemDecoration, option)
+            vCenter = decoRect.center().y()
+            if not currentIcon.isNull():
+                pixmap = currentIcon.pixmap(left, height)
+                qp.drawPixmap(QtCore.QRect(decoRect.left(), vCenter - height / 2, left, height), pixmap, pixmap.rect())
+            iconRect = QtCore.QRect(decoRect.left() + left + 2, option.rect.center().y() - iconSize / 2, iconSize, iconSize)
+            pixmap = extraIcon.pixmap(iconSize).scaledToWidth(iconSize, QtCore.Qt.SmoothTransformation)
+            qp.drawPixmap(iconRect, pixmap, pixmap.rect())
 
     def createEditor(self, parent, option, index):
         if index.data() != 'Blofeld':

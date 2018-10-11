@@ -3,6 +3,7 @@ from Qt import QtCore, QtGui, QtWidgets, QtSql
 
 from bigglesworth.const import factoryPresetsNamesDict, NameColumn
 from bigglesworth.utils import setBold
+from bigglesworth.widgets import DroppableTabBar
 
 Left, Right = 1, 2
 NumKeys = {getattr(QtCore.Qt, 'Key_{}'.format(n)):n for n in range(10)}
@@ -77,6 +78,7 @@ class SideTabBarWidget(QtWidgets.QWidget):
         self.tabBar = SideTabBar(self)
         layout.addWidget(self.tabBar)
         self.addTab = self.tabBar.addTab
+        self.insertTab = self.tabBar.insertTab
         self.removeTab = self.tabBar.removeTab
         self.setCurrentIndex = self.tabBar.setCurrentIndex
         self.moveTab = self.tabBar.moveTab
@@ -84,9 +86,6 @@ class SideTabBarWidget(QtWidgets.QWidget):
         self.count = self.tabBar.count
         self.iconSize = self.tabBar.iconSize
 
-    def tabs(self):
-        for index in range(self.tabBar.count()):
-            print(self.tabBar.tabText(index))
 
 class LeftTabBar(SideTabBarWidget):
     def __init__(self, *args, **kwargs):
@@ -132,19 +131,97 @@ class TabCornerWidget(QtWidgets.QWidget):
 #        return base
 
 
-class LibraryTabBar(QtWidgets.QTabBar):
+class LibraryTabBar(DroppableTabBar):
     def __init__(self, *args, **kwargs):
-        QtWidgets.QTabBar.__init__(self, *args, **kwargs)
+        DroppableTabBar.__init__(self, *args, **kwargs)
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.showMenu)
+        self.startIndex = None
+        self.settings = QtCore.QSettings()
+
+    def startDrag(self):
+        byteArray = QtCore.QByteArray()
+        stream = QtCore.QDataStream(byteArray, QtCore.QIODevice.WriteOnly)
+        collection = self.parent().collections[self.currentIndex()]
+        stream.writeQVariant(collection)
+        mimeData = QtCore.QMimeData()
+        mimeData.setData('bigglesworth/collectionObject', byteArray)
+
+        iconSize = self.fontMetrics().height()
+        displayName = self.tabText(self.currentIndex())
+        rect = QtCore.QRect(0, 0, self.fontMetrics().width(displayName + ' ' * 4), iconSize * 2)
+        
+        icon = self.tabIcon(self.currentIndex())
+        if not icon.isNull():
+            rect.setWidth(rect.width() + iconSize + 8)
+
+        pixmap = QtGui.QPixmap(rect.size())
+        pixmap.fill(QtCore.Qt.transparent)
+
+        palette = self.palette()
+        qp = QtGui.QPainter(pixmap)
+        qp.setRenderHints(qp.Antialiasing)
+        qp.translate(.5, .5)
+        qp.setPen(palette.color(palette.Mid))
+        qp.setBrush(palette.color(palette.Midlight))
+        qp.drawRoundedRect(rect.adjusted(0, 0, -1, -1), 4, 4)
+
+        if not icon.isNull():
+            left = iconSize + 4
+            iconPixmap = icon.pixmap(iconSize)
+            if iconPixmap.width() != iconSize:
+                iconPixmap = iconPixmap.scaledToWidth(iconSize, QtCore.Qt.SmoothTransformation)
+            qp.drawPixmap(QtCore.QRect(4, rect.center().y() - iconSize / 2, iconSize, iconSize), iconPixmap, iconPixmap.rect())
+        else:
+            left = 0
+        qp.setPen(palette.color(palette.WindowText))
+        qp.drawText(rect.adjusted(left, 0, 0, 0), QtCore.Qt.AlignCenter, displayName)
+        qp.end()
+        del qp
+
+        dragObject = QtGui.QDrag(self)
+        dragObject.setPixmap(pixmap)
+        dragObject.setMimeData(mimeData)
+        dragObject.setHotSpot(QtCore.QPoint(-20, -20))
+        dragObject.exec_(QtCore.Qt.CopyAction|QtCore.Qt.MoveAction, QtCore.Qt.CopyAction)
 
     def showMenu(self, pos):
         self.parent().showMenu(self.tabAt(pos), self.mapToGlobal(pos))
 
+    def mousePressEvent(self, event):
+        DroppableTabBar.mousePressEvent(self, event)
+        if self.isMovable():
+            self.startX = event.x()
+            self.startY = event.y()
+            self.startIndex = self.currentIndex()
+            self.deltaX = self.startX - self.tabRect(self.startIndex).x()
+
+    def mouseMoveEvent(self, event, internal=False):
+        mapRect = self.rect()
+        mapRect.setLeft(self.deltaX)
+        mapRect.setRight(mapRect.right() - self.tabRect(self.count() - 1).width() + self.deltaX)
+        if not self.isMovable():
+            DroppableTabBar.mouseMoveEvent(self, event)
+        elif not event.pos() in mapRect:
+            pos = QtCore.QPoint(self.startX, 0)
+            event = QtGui.QMouseEvent(event.type(), pos, QtCore.Qt.NoButton, QtCore.Qt.MouseButtons(QtCore.Qt.LeftButton), event.modifiers())
+            DroppableTabBar.mouseMoveEvent(self, event)
+            if self.window().dualMode and self.count() > 1 and not internal:
+                self.startDrag()
+        else:
+            if self.isMovable() and self.startIndex != self.currentIndex():
+                self.startX = self.tabRect(self.currentIndex()).x() + self.deltaX
+                self.startIndex = self.currentIndex()
+            DroppableTabBar.mouseMoveEvent(self, event)
+
+    def mouseReleaseEvent(self, event):
+        DroppableTabBar.mouseReleaseEvent(self, event)
+        self.startIndex = None
+
 
 class BaseTabWidget(QtWidgets.QTabWidget):
     newCollection = QtCore.pyqtSignal()
-    openCollection = QtCore.pyqtSignal(str)
+    openCollection = QtCore.pyqtSignal([str], [str, object], [str, object, int])
     exportRequested = QtCore.pyqtSignal(object, object)
     exportListRequested = QtCore.pyqtSignal(str)
     manageCollections = QtCore.pyqtSignal()
@@ -161,8 +238,9 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         self.main = QtWidgets.QApplication.instance()
         self.database = self.main.database
         self.referenceModel = self.database.referenceModel
-        tabBar = LibraryTabBar()
+        tabBar = LibraryTabBar(self)
         self.setTabBar(tabBar)
+        self.placeHolder = tabBar.placeHolder
 #        self.referenceModel = QtSql.QSqlTableModel()
         self.settings = QtCore.QSettings()
         self.menu = QtWidgets.QMenu(self)
@@ -239,8 +317,11 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         self.currentChanged.connect(self.sideTabBar.setCurrentIndex)
 
     def addTab(self, widget, name):
-        self.sideTabBar.addTab(name)
-        index = QtWidgets.QTabWidget.addTab(self, widget, name)
+        self.insertTab(-1, widget, name)
+
+    def insertTab(self, index, widget, name):
+        self.sideTabBar.insertTab(index, name)
+        index = QtWidgets.QTabWidget.insertTab(self, index, widget, name)
         if sys.platform == 'darwin':
             self.setTabToolTip(index, 'ctrl+click or right click for menu')
         icon = QtGui.QIcon()
@@ -254,14 +335,23 @@ class BaseTabWidget(QtWidgets.QTabWidget):
             self.settings.beginGroup('CollectionIcons')
             icon = QtGui.QIcon.fromTheme(self.settings.value(name, ''))
             self.settings.endGroup()
+        if widget.collection not in [None] + factoryPresetsNamesDict.keys():
+            widget.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeldRequested)
+            widget.fullDumpBlofeldToCollectionRequested.connect(self.fullDumpBlofeldToCollectionRequested)
         if not icon.isNull():
             self.setTabIcon(index, icon)
+        #this is necessary at startup
+        showClose = self.window().dualMode or self.count() > 1
         try:
-            self.tabBar().tabButton(0, self.tabBar().RightSide).setVisible(False if self.count() == 1 else True)
+            self.tabBar().tabButton(0, self.tabBar().RightSide).setVisible(showClose)
+            side = self.tabBar().RightSide
         except:
-            self.tabBar().tabButton(0, self.tabBar().LeftSide).setVisible(False if self.count() == 1 else True)
+            self.tabBar().tabButton(0, self.tabBar().LeftSide).setVisible(showClose)
+            side = self.tabBar().LeftSide
         if self.count() > 1:
             self.setMovable(True)
+        if self.window().dualMode and self.siblingTabWidget.count() == 1:
+            self.siblingTabWidget.tabBar().tabButton(0, side).setVisible(True)
         return index
 
     def removeTab(self, index):
@@ -269,10 +359,11 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         widget = self.widget(index)
         QtWidgets.QTabWidget.removeTab(self, index)
         if self.count():
+            showClose = self.window().dualMode or self.count() > 1
             try:
-                self.tabBar().tabButton(0, self.tabBar().RightSide).setVisible(False if self.count() == 1 else True)
+                self.tabBar().tabButton(0, self.tabBar().RightSide).setVisible(showClose)
             except:
-                self.tabBar().tabButton(0, self.tabBar().LeftSide).setVisible(False if self.count() == 1 else True)
+                self.tabBar().tabButton(0, self.tabBar().LeftSide).setVisible(showClose)
         if self.count() <= 1:
             self.setMovable(False)
         return widget
@@ -299,18 +390,25 @@ class BaseTabWidget(QtWidgets.QTabWidget):
 #        menu = self.getOpenCollectionMenu()
         closeAction = self.menu.addAction(QtGui.QIcon.fromTheme('window-close'), 'Close collection')
         closeAction.triggered.connect(lambda: self.tabCloseRequested.emit(index))
-        side = 'right' if self.side == Left else 'left'
+        otherSide = 'right' if self.side == Left else 'left'
         if self.window().dualMode:
-            if self.side == Right:
-                closeDualViewAction = self.menu.addAction(QtGui.QIcon.fromTheme('view-right-close'), 'Switch to single panel mode')
-                closeDualViewAction.triggered.connect(self.toggleDualView)
-            tabSwapAction = self.menu.addAction(QtGui.QIcon.fromTheme('document-swap'), 'Swap panel')
+            tabSwapAction = self.menu.addAction(QtGui.QIcon.fromTheme('document-swap'), 'Swap panels')
             tabSwapAction.triggered.connect(self.panelSwapRequested)
-        moveTabAction = self.menu.addAction(QtGui.QIcon.fromTheme('arrow-{}'.format(side)), 'Move to {} panel'.format(side))
-        moveTabAction.triggered.connect(lambda: self.tabMoveRequested.emit(index, self.siblingTabWidget))
-        if self.count() <= 1:
-            closeAction.setEnabled(False)
-            moveTabAction.setEnabled(False)
+            toggleDualViewAction = self.menu.addAction(QtGui.QIcon.fromTheme('view-right-close'), 'Switch to single panel view')
+            toggleDualViewAction.triggered.connect(self.toggleDualView)
+            if self.side == Right or self.count() > 1:
+                moveTabAction = self.menu.addAction('Move to {} panel'.format(otherSide))
+                moveTabAction.triggered.connect(lambda: self.tabMoveRequested.emit(index, self.siblingTabWidget))
+                if self.side == Right and self.count() == 1:
+                    toggleDualViewAction.setVisible(False)
+                    moveTabAction.setIcon(QtGui.QIcon.fromTheme('view-right-close'))
+                else:
+                    moveTabAction.setIcon(QtGui.QIcon.fromTheme('arrow-{}'.format(otherSide)))
+        else:
+            toggleDualViewAction = self.menu.addAction(QtGui.QIcon.fromTheme('view-split-left-right'), 'Move to right panel')
+            toggleDualViewAction.triggered.connect(lambda: self.tabMoveRequested.emit(index, self.siblingTabWidget))
+            if self.count() <= 1:
+                closeAction.setEnabled(False)
 
         self.menu.addSeparator()
         collection = self.widget(index).collection
@@ -404,6 +502,76 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         menu.addSeparator()
         menu.addMenu(self.getOpenCollectionMenu())
         menu.exec_(event.globalPos())
+
+    def dragEnterEvent(self, event):
+        self.dragSource = event.source()
+        if event.mimeData().hasFormat('bigglesworth/collectionObject'):
+            collection = QtCore.QDataStream(event.mimeData().data('bigglesworth/collectionObject')).readQVariant()
+            if collection in self.collections:
+                if event.source() == self.tabBar():
+                    moveEvent = QtGui.QMouseEvent(QtCore.QEvent.MouseMove, event.pos(), QtCore.Qt.NoButton, event.mouseButtons(), event.keyboardModifiers())
+                    self.tabBar().mouseMoveEvent(moveEvent, True)
+                    event.accept()
+                else:
+                    self.setCurrentIndex(self.collections.index(collection))
+                    event.ignore()
+            elif not event.source() == self.siblingTabWidget.tabBar() and collection in self.siblingTabWidget.collections:
+                self.siblingTabWidget.setCurrentIndex(self.siblingTabWidget.collections.index(collection))
+                event.ignore()
+            else:
+                event.accept()
+
+    def dragMoveEvent(self, event):
+        #use the tabbar geometry adjusted to the tabwidget width
+        tabRect = self.tabBar().geometry()
+        tabRect.setLeft(0)
+        tabRect.setWidth(self.width())
+        if event.pos() in tabRect and event.mimeData().hasFormat('bigglesworth/collectionObject'):
+            self.dropTabIndex = self.tabBar().setDropIndexAt(event.pos())
+            if event.source() == self.tabBar():
+                event.setDropAction(QtCore.Qt.MoveAction)
+                moveEvent = QtGui.QMouseEvent(QtCore.QEvent.MouseMove, event.pos(), QtCore.Qt.NoButton, event.mouseButtons(), event.keyboardModifiers())
+                self.tabBar().mouseMoveEvent(moveEvent, True)
+            else:
+                self.placeHolder.show()
+            event.accept()
+        else:
+            self.placeHolder.hide()
+            event.ignore()
+
+    def dragLeaveEvent(self, event):
+        if self.dragSource == self.tabBar():
+            moveEvent = QtGui.QMouseEvent(
+                QtCore.QEvent.MouseMove, self.mapFromGlobal(QtGui.QCursor.pos()), QtCore.Qt.NoButton, 
+                QtCore.Qt.MouseButtons(QtCore.Qt.LeftButton), QtCore.Qt.KeyboardModifiers())
+            self.tabBar().mouseMoveEvent(moveEvent, True)
+        else:
+            self.placeHolder.hide()
+
+    def dropEvent(self, event):
+        self.placeHolder.hide()
+        collection = QtCore.QDataStream(event.mimeData().data('bigglesworth/collectionObject')).readQVariant()
+        if collection in self.collections:
+            pass
+        elif collection in self.siblingTabWidget.collections:
+            self.tabMoveRequested.emit(self.siblingTabWidget.collections.index(collection), self)
+            self.tabBar().setCurrentIndex(self.currentIndex())
+        else:
+            self.openCollection[str, object, int].emit(collection, self, self.dropTabIndex)
+        #create "fake" button release event to let qtabbar know we've finished
+        source = event.source()
+        if isinstance(source, QtWidgets.QTabBar):
+            releaseEvent = QtGui.QMouseEvent(
+                QtCore.QEvent.MouseMove, source.mapFromGlobal(QtGui.QCursor.pos()), QtCore.Qt.LeftButton, 
+                QtCore.Qt.MouseButtons(), QtCore.Qt.KeyboardModifiers())
+            source.mouseReleaseEvent(releaseEvent)
+            source.update()
+            #since there are some indexing and painting issues with this system,
+            #ensure that the sibling tabbar and tabwidget are updated
+            if source != self.tabBar():
+                index = source.count() - 1
+                source.setCurrentIndex(index)
+                source.parent().setCurrentIndex(index)
 
 
 class LeftTabWidget(BaseTabWidget):

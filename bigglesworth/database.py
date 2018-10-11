@@ -1011,7 +1011,7 @@ class BlofeldDB(QtCore.QObject):
         self.tagsModel.removeRow(res[0].row())
         return self.tagsModel.submitAll()
 
-    def createCollection(self, name, source=None):
+    def createCollection(self, name, source=None, iconName=None):
         if not self.query.exec_(u'ALTER TABLE reference ADD COLUMN "{}" int'.format(name)):
             self.dbErrorLog('Error creating collection', extMessage=(name))
             return False
@@ -1067,6 +1067,12 @@ class BlofeldDB(QtCore.QObject):
                         print(index)
                 self.sql.commit()
                 self.dbErrorLog('Factory cloned successfully', LogDebug)
+
+        if iconName is not None:
+            self.main.settings.beginGroup('CollectionIcons')
+            self.main.settings.setValue(name, iconName)
+            self.main.settings.endGroup()
+
         self.referenceModel.refresh()
         return True
 
@@ -1550,6 +1556,8 @@ class BlofeldDB(QtCore.QObject):
 
 
 class CollectionManagerModel(QtSql.QSqlTableModel):
+    updated = QtCore.pyqtSignal()
+
     def __init__(self):
         QtSql.QSqlTableModel.__init__(self)
         self.refresh()
@@ -1559,6 +1567,7 @@ class CollectionManagerModel(QtSql.QSqlTableModel):
         self.select()
         while self.canFetchMore():
             self.fetchMore()
+        self.updated.emit()
 
     @property
     def collections(self):

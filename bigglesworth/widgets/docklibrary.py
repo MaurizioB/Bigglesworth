@@ -35,6 +35,7 @@ class DockTreeView(QtWidgets.QTreeView):
     clickTimer = QtCore.QElapsedTimer()
     clickTimer.start()
     factoryIndex = None
+    startPos = QtCore.QPoint()
 
     def clearSelection(self):
         QtWidgets.QTreeView.clearSelection(self)
@@ -47,10 +48,11 @@ class DockTreeView(QtWidgets.QTreeView):
         return hint
 
     def mousePressEvent(self, event):
+        self.startPos = event.pos()
         if event.buttons() == QtCore.Qt.LeftButton:
-            index = self.indexAt(event.pos())
+            index = self.indexAt(self.startPos)
             if self.clickTimer.elapsed() > QtWidgets.QApplication.instance().doubleClickInterval():
-                if index.isValid() and event.pos() in self.visualRect(index):
+                if index.isValid() and self.startPos in self.visualRect(index):
                     if self.checkSelection(index, event.modifiers()):
                         self.selectionUpdated.emit(self.selectionModel().selectedRows())
                         self.clickTimer.start()
@@ -64,13 +66,63 @@ class DockTreeView(QtWidgets.QTreeView):
             self.selectionUpdated.emit(self.selectionModel().selectedRows())
 
     def mouseMoveEvent(self, event):
-        pass
+        index = self.indexAt(self.startPos)
+        if index.parent() in self.collectionIndexes and len(self.selectionModel().selectedRows()) == 1 and \
+            (self.startPos - event.pos()).manhattanLength() > QtWidgets.QApplication.instance().startDragDistance():
+                self.startDrag(index)
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_F2:
             if self.edit(self.currentIndex(), self.AllEditTriggers, event):
                 return
         QtWidgets.QTreeView.keyPressEvent(self, event)
+
+    def startDrag(self, index):
+        if index.column():
+            index = index.sibling(index.row(), 0)
+        mimeData = self.model().mimeData([index])
+        if not mimeData:
+            return
+        byteArray = QtCore.QByteArray()
+        stream = QtCore.QDataStream(byteArray, QtCore.QIODevice.WriteOnly)
+        stream.writeQVariant(index.data(CollectionRole))
+        mimeData.setData('bigglesworth/collectionObject', byteArray)
+
+        iconSize = self.fontMetrics().height()
+        rect = QtCore.QRect(0, 0, self.fontMetrics().width(index.data() + ' ' * 4), iconSize * 2)
+        icon = index.data(QtCore.Qt.DecorationRole)
+        if not icon.isNull():
+            rect.setWidth(rect.width() + iconSize + 8)
+
+        pixmap = QtGui.QPixmap(rect.size())
+        pixmap.fill(QtCore.Qt.transparent)
+
+        palette = self.palette()
+        qp = QtGui.QPainter(pixmap)
+        qp.setRenderHints(qp.Antialiasing)
+        qp.translate(.5, .5)
+        qp.setPen(palette.color(palette.Mid))
+        qp.setBrush(palette.color(palette.Midlight))
+        qp.drawRoundedRect(rect.adjusted(0, 0, -1, -1), 4, 4)
+
+        if not icon.isNull():
+            left = iconSize + 4
+            iconPixmap = icon.pixmap(iconSize)
+            if iconPixmap.width() != iconSize:
+                iconPixmap = iconPixmap.scaledToWidth(iconSize, QtCore.Qt.SmoothTransformation)
+            qp.drawPixmap(QtCore.QRect(4, rect.center().y() - iconSize / 2, iconSize, iconSize), iconPixmap, iconPixmap.rect())
+        else:
+            left = 0
+        qp.setPen(palette.color(palette.WindowText))
+        qp.drawText(rect.adjusted(left, 0, 0, 0), QtCore.Qt.AlignCenter, index.data())
+        qp.end()
+        del qp
+
+        dragObject = QtGui.QDrag(self)
+        dragObject.setPixmap(pixmap)
+        dragObject.setMimeData(mimeData)
+        dragObject.setHotSpot(QtCore.QPoint(-20, -20))
+        dragObject.exec_(QtCore.Qt.CopyAction|QtCore.Qt.LinkAction, QtCore.Qt.CopyAction)
 
     def unselectCollection(self, collection):
         if collection in factoryPresets:
@@ -351,6 +403,7 @@ class DockLibrary(QtWidgets.QWidget):
     newCollection = QtCore.pyqtSignal()
     manageCollections = QtCore.pyqtSignal()
     cloneCollection = QtCore.pyqtSignal(str)
+    openCollection = QtCore.pyqtSignal(object)
     editTag = QtCore.pyqtSignal(str)
     editTags = QtCore.pyqtSignal()
     deleteTag = QtCore.pyqtSignal(str)
@@ -470,10 +523,17 @@ class DockLibrary(QtWidgets.QWidget):
             editTagsAction.triggered.connect(self.editTags)
 
         elif index.parent() == self.userIndex or index == self.userIndex:
+            if index.parent() == self.userIndex:
+                openCollectionAction = menu.addAction(QtGui.QIcon.fromTheme('edit-find'), 'Browse collection')
+                openCollectionAction.triggered.connect(lambda: self.openCollection.emit(index.data(CollectionRole)))
             newCollectionAction = menu.addAction(QtGui.QIcon.fromTheme('document-new'), 'Create new collection')
             newCollectionAction.triggered.connect(self.newCollection)
             manageCollectionAction = menu.addAction(QtGui.QIcon.fromTheme('preferences-other'), 'Manage collections...')
             manageCollectionAction.triggered.connect(self.manageCollections)
+
+        elif index.parent() == self.factoryIndex:
+            openCollectionAction = menu.addAction(QtGui.QIcon.fromTheme('edit-find'), 'Browse collection')
+            openCollectionAction.triggered.connect(lambda: self.openCollection.emit(index.data(CollectionRole)))
 
         menu.addSeparator()
         clearFiltersAction = menu.addAction(QtGui.QIcon.fromTheme('edit-clear-all-symbolic'), 'Clear filters')
@@ -638,7 +698,8 @@ class DockLibrary(QtWidgets.QWidget):
                     icon = QtGui.QIcon(':/images/factory.svg')
                 elif collection == 'Blofeld':
                     icon = QtGui.QIcon(':/images/bigglesworth_logo.svg')
-                icon = QtGui.QIcon.fromTheme('view-filter')
+                else:
+                    icon = QtGui.QIcon.fromTheme('view-filter')
             filterItem = QtGui.QStandardItem(icon, factoryPresetsNamesDict.get(collection, collection))
             self.settings.endGroup()
             filterItem.setData(collection, CollectionRole)
@@ -673,6 +734,7 @@ class DockLibrary(QtWidgets.QWidget):
             self.shown = True
             self.database = QtWidgets.QApplication.instance().database
             self.referenceModel = self.database.referenceModel
+            self.referenceModel.updated.connect(self.rebuild)
             self.tagsModel = self.database.tagsModel
             self.tagsModel.dataChanged.connect(self.rebuild)
 

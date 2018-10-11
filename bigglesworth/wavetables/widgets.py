@@ -3,13 +3,13 @@ import sys
 from uuid import uuid4
 
 from Qt import QtCore, QtGui, QtWidgets
-from PyQt4.QtGui import QStyleOptionTabV3, QIconEngineV2, QStyleOptionTabWidgetFrameV2
+from PyQt4.QtGui import QStyleOptionTabV3, QIconEngineV2
 QtWidgets.QStyleOptionTabV3 = QStyleOptionTabV3
-QtWidgets.QStyleOptionTabWidgetFrameV2 = QStyleOptionTabWidgetFrameV2
 QtGui.QIconEngineV2 = QIconEngineV2
 
 from bigglesworth.utils import sanitize, loadUi, getCardinal
 from bigglesworth.dialogs.messageboxes import AdvancedMessageBox
+from bigglesworth.widgets import DroppableTabBar
 from bigglesworth.wavetables import UidColumn, NameColumn, SlotColumn, EditedColumn, DataColumn, PreviewColumn, DumpedColumn
 from bigglesworth.wavetables.utils import ActivateDrag, curves, getCurvePath, waveFunction, waveColors, pow20, pow21, WaveLabels
 from bigglesworth.wavetables.graphics import SampleItem, NextWaveScene, WaveTransformItem
@@ -2376,12 +2376,11 @@ class WaveTabWidget(QtWidgets.QTabWidget):
         QtWidgets.QTabWidget.resizeEvent(self, event)
 
 
-class MainTabBar(QtWidgets.QTabBar):
+class MainTabBar(DroppableTabBar):
     def __init__(self, *args, **kwargs):
         from bigglesworth.wavetables.audioimport import AudioImportTab
         self.reference = AudioImportTab
-
-        QtWidgets.QTabBar.__init__(self, *args, **kwargs)
+        DroppableTabBar.__init__(self, *args, **kwargs)
 
     def mousePressEvent(self, event):
         self.index = self.tabAt(event.pos())
@@ -2426,39 +2425,6 @@ class MainTabBar(QtWidgets.QTabBar):
         self.dragObject.exec_(QtCore.Qt.CopyAction)
 
 
-class TabPlaceHolder(QtWidgets.QWidget):
-    arrowTop = QtGui.QPainterPath()
-    arrowTop.moveTo(-4, 0)
-    arrowTop.lineTo(4, 0)
-    arrowTop.lineTo(0, 4)
-    arrowTop.closeSubpath()
-
-    arrowBottom = QtGui.QPainterPath()
-    arrowBottom.moveTo(-4, 0)
-    arrowBottom.lineTo(4, 0)
-    arrowBottom.lineTo(0, -4)
-    arrowBottom.closeSubpath()
-
-    def __init__(self, tabBar):
-        QtWidgets.QWidget.__init__(self, tabBar)
-        self.tabBar = tabBar
-        self.setVisible(False)
-        self.setFixedWidth(9)
-
-    def showEvent(self, event):
-        self.setMaximumHeight(self.tabBar.height())
-
-    def paintEvent(self, event):
-        qp = QtGui.QPainter(self)
-        qp.setRenderHints(qp.Antialiasing)
-        qp.setPen(QtCore.Qt.NoPen)
-        qp.setBrush(self.palette().color(QtGui.QPalette.ButtonText))
-        qp.translate(self.rect().center().x() + .5, .5)
-        qp.drawPath(self.arrowTop)
-        qp.translate(0, self.height() - 1)
-        qp.drawPath(self.arrowBottom)
-
-
 class MainTabWidget(QtWidgets.QTabWidget):
     dropTabFileRequested = QtCore.pyqtSignal(str, int)
 
@@ -2497,7 +2463,7 @@ class MainTabWidget(QtWidgets.QTabWidget):
                 }}
                 '''.format(**metrics))
 
-        self.placeHolder = TabPlaceHolder(self.tabBar())
+        self.placeHolder = self.tabBar().placeHolder
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasFormat('bigglesworth/WaveFileData') or \
@@ -2519,21 +2485,11 @@ class MainTabWidget(QtWidgets.QTabWidget):
                 stream = QtCore.QDataStream(byteArray)
                 window = stream.readQVariant()
                 if window != self.window().uuid:
-                    option = QtWidgets.QStyleOptionTabWidgetFrameV2()
-                    self.initStyleOption(option)
-                    left = option.rect.x() + option.tabBarRect.left()
-                    option = QtWidgets.QStyleOptionTabV3()
-                    self.tabBar().initStyleOption(option, tabIndex)
-                    if event.pos().x() > option.rect.center().x():
-                        pos = option.rect.right()
-                        tabIndex += 1
-                    else:
-                        pos = option.rect.left()
-                    if tabIndex == self.count() or tabIndex <= 1:
+                    self.dropTabIndex = self.tabBar().setDropIndexAt(event.pos())
+                    if self.dropTabIndex == self.count() or self.dropTabIndex <= 1:
                         self.placeHolder.hide()
                         event.ignore()
                         return
-                    self.placeHolder.move(pos - left, 0)
                     self.placeHolder.show()
                     self.dropTabIndex = tabIndex
                     event.accept()
