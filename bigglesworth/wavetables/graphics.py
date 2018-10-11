@@ -808,7 +808,7 @@ class WaveTransformItem(QtWidgets.QGraphicsWidget):
         try:
             return self.prevItem.index == 63 or self.nextItem.index == self.prevItem.index + 1
         except:
-            print('isContiguous exception?')
+#            print('isContiguous exception?')
             return False
 
     def setPrevItem(self, prevItem):
@@ -2476,6 +2476,11 @@ class WaveScene(QtWidgets.QGraphicsScene):
         self.innerRect = self.sceneRect().adjusted(-pow16, 0, pow16, 0)
         self.setSceneRect(self.sceneRect())
 
+        self.scheduleTimer = QtCore.QTimer()
+        self.scheduleTimer.setInterval(50)
+        self.scheduleTimer.setSingleShot(True)
+        self.scheduleTimer.timeout.connect(self.checkComputedPath)
+
     @property
     def currentKeyFrame(self):
         return self._currentKeyFrame
@@ -2487,9 +2492,14 @@ class WaveScene(QtWidgets.QGraphicsScene):
         self.previousIndex = self.currentIndex
         self.currentIndex = keyFrame.index
 
-    def checkComputedPath(self, transform):
-        if self._currentKeyFrame.prevTransform != transform:
+    def checkComputedPath(self, transform=None):
+        if self.keyFrames.isChanging():
+            self.scheduleTimer.start()
             return
+        if transform and self._currentKeyFrame.prevTransform == transform:
+            return
+        if transform is None:
+            transform = self._currentKeyFrame.prevTransform
         if transform.isValid() and transform.nextIsChanged():
             self.computedWavePath.setValues(transform.valuesAtEnd())
             self.computedWavePath.setVisible(True)

@@ -2342,7 +2342,10 @@ class WaveTableCurrentView(QtWidgets.QGraphicsView):
             self.shown = True
             self.fitInView(self.scene().sceneRect(), QtCore.Qt.IgnoreAspectRatio)
         if self.queuedUpdate:
-            self.rebuildPaths()
+            if self.keyFrames.isChanging():
+                self.scheduleUpdate()
+            else:
+                self.rebuildPaths()
 
 
 

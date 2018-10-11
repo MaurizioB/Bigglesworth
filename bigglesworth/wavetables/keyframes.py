@@ -119,6 +119,7 @@ class KeyFrames(QtCore.QObject):
         data = {}
         allItems = []
         keyFrames = []
+        self.changing = True
         if count != 64:
             invalidTransforms = {}
             for item in self.allItems:
@@ -165,9 +166,9 @@ class KeyFrames(QtCore.QObject):
                 keyFrames.append(keyFrame)
                 if prevTransform:
                     prevTransform.setNextItem(keyFrame)
-                if w < 63:
-                    prevTransform = WaveTransformItem(self, 0, keyFrame)
-                    allItems.append(prevTransform)
+                prevTransform = WaveTransformItem(self, 0, keyFrame)
+                allItems.append(prevTransform)
+            prevTransform.setNextItem(keyFrames[0])
         for item in self.allItems:
 #            if isinstance(item, WaveTransformItem):
 #                item.setTargets(None, None)
@@ -182,7 +183,9 @@ class KeyFrames(QtCore.QObject):
         else:
             for index, data in data.items():
                 self.setValues(index, list(data))
+        self.changing = False
 
+        self.keyFrames[0].setFirst(True)
         for item in self.allItems:
             if isinstance(item, WaveTransformItem):
 #                if not item.isValid():
@@ -191,8 +194,8 @@ class KeyFrames(QtCore.QObject):
         if isinstance(self.allItems[-1], WaveTransformItem) and self.allItems[-1].nextItem != self.keyFrames[0]:
             self.allItems[-1].setNextItem(self.keyFrames[0])
         self.scene.waveTableChanged.emit()
-        if not self.scene.maximized:
-            self.allItems[1].minimize()
+#        if not self.scene.maximized:
+#            self.allItems[1].minimize()
         self.layout.invalidate()
         self.clean = False
         self.changed.emit()
@@ -513,6 +516,7 @@ class KeyFrames(QtCore.QObject):
         if itemIndex:
             return self.allItems[itemIndex - 1]
         transform = self.allItems[-1]
+        print(itemIndex, transform, self.keyFrames)
         assert isinstance(transform, WaveTransformItem)
         return transform
 
