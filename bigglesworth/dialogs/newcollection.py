@@ -9,7 +9,8 @@ class NewCollectionDialog(QtWidgets.QDialog):
         QtWidgets.QDialog.__init__(self, parent)
         loadUi('ui/newcollection.ui', self)
         self.nameEdit.textChanged.connect(self.checkNames)
-        self.buttonBox.button(self.buttonBox.Ok).setEnabled(False)
+        self.okBtn = self.buttonBox.button(self.buttonBox.Ok)
+        self.okBtn.setEnabled(False)
         self.cloneCombo.currentIndexChanged.connect(self.cloneSet)
         self.cloneChk.toggled.connect(lambda state: self.cloneSet(self.cloneCombo.currentIndex()) if state else None)
         self.validator = QtGui.QRegExpValidator(QtCore.QRegExp(r'^(?!.* {2})(?=\S)[a-zA-Z0-9\ \-\_]+$'))
@@ -27,8 +28,14 @@ class NewCollectionDialog(QtWidgets.QDialog):
         if not name:
             self.buttonBox.button(self.buttonBox.Ok).setEnabled(False)
         else:
-            current = [c.lower() for c in self.current.keys() + self.current.values() + factoryPresets]
-            self.buttonBox.button(self.buttonBox.Ok).setEnabled(False if name.lower() in current + ['main library'] else True)
+            current = [c.lower() for c in self.current.keys() + self.current.values() + factoryPresets] + \
+                ['main library', 'uid', 'tags']
+            if name.lower() in current:
+                self.okBtn.setEnabled(False)
+                self.nameEdit.setStyleSheet('color: red')
+            else:
+                self.okBtn.setEnabled(True)
+                self.nameEdit.setStyleSheet('')
 
     def exec_(self, clone=''):
         query = QtSql.QSqlQuery()

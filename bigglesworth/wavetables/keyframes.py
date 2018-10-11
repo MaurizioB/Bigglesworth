@@ -516,7 +516,6 @@ class KeyFrames(QtCore.QObject):
         if itemIndex:
             return self.allItems[itemIndex - 1]
         transform = self.allItems[-1]
-        print(itemIndex, transform, self.keyFrames)
         assert isinstance(transform, WaveTransformItem)
         return transform
 

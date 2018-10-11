@@ -8,7 +8,7 @@ from Qt import QtCore, QtGui, QtWidgets
 
 #from PyQt4 import uic
 from bigglesworth.utils import loadUi, localPath, getName
-from bigglesworth.const import ord2chr, LogInfo, LogWarning, factoryPresetsNames
+from bigglesworth.const import ord2chr, LogInfo, LogWarning, factoryPresets, factoryPresetsNames
 from bigglesworth.midiutils import SysExEvent, INIT, END, SYSEX
 from bigglesworth.parameters import categories
 #from bigglesworth.widgets import MidiConnectionWidget
@@ -18,7 +18,7 @@ class CollectionValidator(QtGui.QValidator):
     def __init__(self, collections):
         QtGui.QValidator.__init__(self)
         self.baseValidator = QtGui.QRegExpValidator(QtCore.QRegExp(r'^(?!.* {2})(?=\S)[a-zA-Z0-9\ \-\_]+$'))
-        self.collections = [c.lower() for c in collections]
+        self.collections = [c.lower() for c in collections] + ['uid', 'tags'] + factoryPresets
 
     def validate(self, text, pos):
         if not text:

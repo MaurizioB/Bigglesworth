@@ -1,14 +1,25 @@
 import sys
+from unidecode import unidecode
 from Qt import QtCore, QtGui, QtWidgets, QtSql
 
 from bigglesworth.utils import loadUi
+from bigglesworth.const import factoryPresets
 
 EditRole = QtCore.Qt.UserRole + 1
 IconRole = EditRole + 1
 Delete, Keep, Rename, Copy, New = -1, 0, 1, 2, 4
 
 
+class NameValidator(QtGui.QValidator):
+    def validate(self, text, pos):
+        if not text or len(text) > 32 or text in ['uid', 'tags'] + factoryPresets:
+            return self.Intermediate, text, pos
+        return self.Acceptable, text, pos
+
+
 class NameDelegate(QtWidgets.QStyledItemDelegate):
+    nameValidator = NameValidator()
+
     def paint(self, qp, option, index):
         self.initStyleOption(option, index)
         font = option.font
@@ -58,8 +69,18 @@ class NameDelegate(QtWidgets.QStyledItemDelegate):
 
     def createEditor(self, parent, option, index):
         if index.data() != 'Blofeld':
-            return QtWidgets.QStyledItemDelegate.createEditor(self, parent, option, index)
+            editor = QtWidgets.QStyledItemDelegate.createEditor(self, parent, option, index)
+            editor.setValidator(self.nameValidator)
+            editor.textChanged.connect(self.setValid)
+            return editor
         return None
+
+    def setValid(self, text):
+        valid, _, _ = self.nameValidator.validate(text, 0)
+        if valid == QtGui.QValidator.Intermediate:
+            self.sender().setStyleSheet('color: red')
+        else:
+            self.sender().setStyleSheet('')
 
     def setModelData(self, widget, model, index):
         name = widget.text().strip()
