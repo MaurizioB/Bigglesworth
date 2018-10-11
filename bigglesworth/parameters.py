@@ -294,7 +294,7 @@ parameterData = _ParameterData([
     _(37, 'osc3Keytrack', (0, 127, 1), keytrackRange, 64, 'Osc 3 Keytrack', 'Keytrack', 'Osc 3'), 
     _(38, 'osc3FMSource', (0, 11, 1), fmSource, 0, 'Osc 3 FM Source', 'FM Source', 'Osc 3'), #init: 66
     _(39, 'osc3FMAmount', (0, 127, 1), fullRange, 96, 'Osc 3 FM Amount', 'FM Amount', 'Osc 3'), 
-    _(40, 'osc3Shape', (0, 5, 1), oscShapes, 0, 'Osc 3 Shape', 'Shape', 'Osc 3'), 
+    _(40, 'osc3Shape', (0, 4, 1), oscShapes[:5], 0, 'Osc 3 Shape', 'Shape', 'Osc 3'), 
     _(41, 'osc3Pulsewidth', (0, 127, 1), fullRange, 0, 'Osc 3 Pulsewidth', 'Pulsewidth', 'Osc 3'), 
     _(42, 'osc3PWMSource', (0, 30, 1), modSource, 0, 'Osc 3 PWM Source', 'PWM Source', 'Osc 3'), 
     _(43, 'osc3PWMAmount', (0, 127, 1), fullRangeCenterZero, 127, 'Osc 3 PWM Amount', 'PWM Amount', 'Osc 3'), 
