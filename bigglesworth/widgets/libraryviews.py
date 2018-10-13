@@ -1745,7 +1745,8 @@ class LibraryWidget(BaseLibraryWidget):
     def clearFilters(self):
         self.filterNameEdit.setText('')
         self.filterTagsEdit.setTags()
-        self.hideFactoryChk.setChecked(False)
+        self.locationCombo.setCurrentIndex(0)
+#        self.hideFactoryChk.setChecked(False)
 
     def focusUid(self, uid):
         self.clearFilters()
@@ -1759,7 +1760,7 @@ class LibraryWidget(BaseLibraryWidget):
             pos = index.row()
             tot = self.collectionView.model().rowCount()
             scrollValue = pos * self.collectionView.verticalScrollBar().maximum() / float(tot)
-            self.collectionView.verticalScrollBar().setValue(int(scrollValue))
+            self.collectionView.verticalScrollBar().setValue(int(scrollValue) + 2)
 
     def duplicateRequested(self, uid, source):
         if self.database.duplicateSound(uid):

@@ -348,6 +348,7 @@ class BlofeldDB(QtCore.QObject):
                                 self.sql.rollback()
                                 break
                             if self.query.next() and self.query.value(0):
+                                #remove duplicate sounds (probably added in previous bugged versions)
                                 if not self.query.exec_('DELETE FROM reference WHERE uid="{}"'.format(uid)):
                                     self.dbErrorLog('Error removing duplicate from reference for trimming', extMessage=uid)
                                     self.sql.rollback()

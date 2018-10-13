@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>324</width>
-    <height>368</height>
+    <height>378</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -24,18 +24,74 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="1">
-    <spacer name="horizontalSpacer">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+   <item row="5" column="0" colspan="3">
+    <widget class="QTableView" name="tableView">
+     <property name="editTriggers">
+      <set>QAbstractItemView::NoEditTriggers</set>
      </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>0</width>
-       <height>20</height>
-      </size>
+     <attribute name="verticalHeaderVisible">
+      <bool>false</bool>
+     </attribute>
+    </widget>
+   </item>
+   <item row="0" column="0" colspan="3">
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Find duplicates in:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="collectionCombo">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <item>
+        <property name="text">
+         <string>Full library</string>
+        </property>
+        <property name="icon">
+         <iconset theme="go-home">
+          <normaloff/>
+         </iconset>
+        </property>
+       </item>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="6" column="0" colspan="3">
+    <widget class="QTreeView" name="treeView">
+     <property name="editTriggers">
+      <set>QAbstractItemView::NoEditTriggers</set>
      </property>
-    </spacer>
+     <property name="expandsOnDoubleClick">
+      <bool>false</bool>
+     </property>
+     <attribute name="headerVisible">
+      <bool>false</bool>
+     </attribute>
+    </widget>
+   </item>
+   <item row="4" column="2">
+    <widget class="QPushButton" name="startBtn">
+     <property name="text">
+      <string>Start</string>
+     </property>
+     <property name="icon">
+      <iconset theme="system-search">
+       <normaloff/>
+      </iconset>
+     </property>
+     <property name="default">
+      <bool>true</bool>
+     </property>
+    </widget>
    </item>
    <item row="3" column="0" colspan="3">
     <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -61,30 +117,18 @@
      </item>
     </layout>
    </item>
-   <item row="5" column="0" colspan="3">
-    <widget class="QTableView" name="tableView">
-     <property name="editTriggers">
-      <set>QAbstractItemView::NoEditTriggers</set>
+   <item row="4" column="1">
+    <spacer name="horizontalSpacer">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
      </property>
-     <attribute name="verticalHeaderVisible">
-      <bool>false</bool>
-     </attribute>
-    </widget>
-   </item>
-   <item row="4" column="2">
-    <widget class="QPushButton" name="startBtn">
-     <property name="text">
-      <string>Start</string>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>0</width>
+       <height>20</height>
+      </size>
      </property>
-     <property name="icon">
-      <iconset theme="system-search">
-       <normaloff/>
-      </iconset>
-     </property>
-     <property name="default">
-      <bool>true</bool>
-     </property>
-    </widget>
+    </spacer>
    </item>
    <item row="2" column="0" colspan="3">
     <widget class="QWidget" name="nameWidget" native="true">
@@ -121,54 +165,23 @@
      </layout>
     </widget>
    </item>
-   <item row="6" column="0" colspan="3">
-    <widget class="QTreeView" name="treeView">
-     <property name="editTriggers">
-      <set>QAbstractItemView::NoEditTriggers</set>
-     </property>
-     <property name="expandsOnDoubleClick">
-      <bool>false</bool>
-     </property>
-     <attribute name="headerVisible">
-      <bool>false</bool>
-     </attribute>
-    </widget>
-   </item>
-   <item row="0" column="0" colspan="3">
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
-     <item>
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>Find duplicates in:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QComboBox" name="collectionCombo">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <item>
-        <property name="text">
-         <string>Full library</string>
-        </property>
-        <property name="icon">
-         <iconset theme="go-home">
-          <normaloff/>
-         </iconset>
-        </property>
-       </item>
-      </widget>
-     </item>
-    </layout>
-   </item>
    <item row="1" column="0" colspan="2">
     <widget class="Line" name="line">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0" colspan="3">
+    <widget class="QLabel" name="label_3">
+     <property name="text">
+      <string>Double click on a duplicate sound to open and select it in the librarian.&lt;br/&gt;
+If the sound is part of a collection, that collection will be opened, otherwise it will be shown in the Main library.&lt;br/&gt;
+Items marked with an asterisk (*) are &quot;clones&quot; used in multiple collections.
+</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
      </property>
     </widget>
    </item>

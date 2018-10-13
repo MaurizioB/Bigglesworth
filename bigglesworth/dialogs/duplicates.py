@@ -5,6 +5,19 @@ from bigglesworth.utils import loadUi, localPath
 from bigglesworth.const import UidRole, LocationRole, factoryPresetsNamesDict
 from bigglesworth.parameters import Parameters
 
+
+class DuplicateProgressDialog(QtWidgets.QProgressDialog):
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QProgressDialog.__init__(self, *args, **kwargs)
+        self.setWindowModality(QtCore.Qt.WindowModal)
+
+    def reject(self):
+        pass
+
+    def closeEvent(self, event):
+        event.ignore()
+
+
 class FindDuplicates(QtWidgets.QDialog):
     duplicateSelected = QtCore.pyqtSignal(str, object)
     def __init__(self, parent):
@@ -177,10 +190,8 @@ class FindDuplicates(QtWidgets.QDialog):
         paramList = []
         ignoreNames = self.ignoreNamesChk.isChecked()
         ignoreCats = self.ignoreCatsChk.isChecked()
-        for p in Parameters.parameterData:
-            if p.attr.startswith('reserved'):
-                continue
-            elif ignoreNames and p.attr.startswith('nameChar'):
+        for p in Parameters.validParameterData:
+            if ignoreNames and p.attr.startswith('nameChar'):
                 continue
             elif ignoreCats and p.attr == 'category':
                 continue
@@ -206,6 +217,10 @@ class FindDuplicates(QtWidgets.QDialog):
         query.last()
         size = query.at() + 1
         query.first()
+
+        progressDialog = DuplicateProgressDialog(
+            'Checking duplicates, please wait...', None, 0, size, self)
+
         count = 0
         while query.next():
             count += 1
@@ -223,12 +238,19 @@ class FindDuplicates(QtWidgets.QDialog):
             if len(uidList) <= 1:
                 continue
 #            print(uidList)
+            progressDialog.setValue(count)
             firstUid = uidList.pop(0)
             parent = QtGui.QStandardItem(self.database.getNameFromUid(firstUid))
             parent.setData(firstUid, UidRole)
             parentCollId = self.database.getCollectionsFromUid(firstUid, ignoreFactory)
             if parentCollId:
-                parent.setData(allCollections[parentCollId[0]], LocationRole)
+                coll = allCollections[parentCollId[0]]
+                index = self.database.getIndexForUid(firstUid, coll)
+                parent.setText(parent.text().strip() + ' ({b}{p:03}@{c})'.format(
+                    c=factoryPresetsNamesDict.get(coll, coll), 
+                    b=uppercase[index >> 7], 
+                    p=(index & 127) + 1))
+                parent.setData(coll, LocationRole)
             self.model.appendRow(parent)
             collDict = {}
             for uid in uidList:
@@ -271,12 +293,14 @@ class FindDuplicates(QtWidgets.QDialog):
                     soundItem.setData(uid, UidRole)
                     collItem.appendRow(soundItem)
         if self.model.rowCount():
-            for r in range(self.model.rowCount()):
-                self.treeView.expand(self.model.index(r, 0))
+            self.treeView.expandToDepth(0)
+#            for r in range(self.model.rowCount()):
+#                self.treeView.expand(self.model.index(r, 0))
         else:
             noItems = QtGui.QStandardItem('No duplicates found')
             noItems.setEnabled(False)
             self.model.appendRow(noItems)
+        progressDialog.setValue(progressDialog.maximum())
 
     def launch(self, uid=None, collection=None):
         self.model.clear()
