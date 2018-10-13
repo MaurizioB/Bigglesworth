@@ -44,7 +44,8 @@ class LogLevelDelegate(QtWidgets.QStyledItemDelegate):
             option.icon = self.noIcon
             QtWidgets.QApplication.style().drawControl(QtWidgets.QStyle.CE_ItemViewItem, option, qp)
 #            qp.drawRect(option.rect.adjusted(2, 2, -2, -2))
-            s = min(option.rect.width(), option.rect.height())
+#            s = min(option.rect.width(), option.rect.height())
+            s = option.widget.iconSize().height()
             r = QtCore.QRect(option.rect.center().x() - s * .5, option.rect.center().y() - s * .5, s, s)
             qp.drawPixmap(r, icon.pixmap(s))
 
@@ -67,6 +68,9 @@ class LogWindow(QtWidgets.QDialog):
         self.proxy = LogProxy()
         self.proxy.setSourceModel(self.model)
         self.logView.setModel(self.proxy)
+        fontHeight = self.fontMetrics().height()
+        iconSize = fontHeight * 1.2
+        self.logView.setIconSize(QtCore.QSize(iconSize, iconSize))
         self.timeDelegate = TimeDelegate(self.logger.startTime)
         self.logView.setItemDelegateForColumn(0, self.timeDelegate)
         self.logLevelDelegate = LogLevelDelegate()
@@ -81,6 +85,8 @@ class LogWindow(QtWidgets.QDialog):
         self.logView.horizontalHeader().setResizeMode(1, QtWidgets.QHeaderView.Fixed)
         self.logView.horizontalHeader().setResizeMode(2, QtWidgets.QHeaderView.Interactive)
         self.logView.horizontalHeader().setResizeMode(3, QtWidgets.QHeaderView.Interactive)
+        self.logView.verticalHeader().setResizeMode(QtWidgets.QHeaderView.Fixed)
+        self.logView.verticalHeader().setDefaultSectionSize(fontHeight * 2)
 
         self.levelCombo.currentIndexChanged.connect(self.setFilter)
         self.logView.customContextMenuRequested.connect(self.logMenu)
@@ -150,7 +156,7 @@ class LogWindow(QtWidgets.QDialog):
 #        logLevelItem = QtGui.QStandardItem()
 #        logLevelItem.setData(logLevel, QtCore.Qt.DisplayRole)
 #        self.model.appendRow([timeItem, logLevelItem, QtGui.QStandardItem(message), QtGui.QStandardItem(extMessage)])
-        self.logView.resizeRowsToContents()
+#        self.logView.resizeRowsToContents()
         self.logView.resizeColumnsToContents()
         self.logView.scrollToBottom()
         QtWidgets.QApplication.processEvents()
@@ -163,7 +169,7 @@ class LogWindow(QtWidgets.QDialog):
         self.clear()
         for data in self.logger.log:
             self.appendRow(*data)
-        self.logView.resizeRowsToContents()
+#        self.logView.resizeRowsToContents()
         self.logView.resizeColumnsToContents()
         self.logView.scrollToBottom()
 

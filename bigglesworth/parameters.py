@@ -744,7 +744,10 @@ class Parameters(QtCore.QObject):
     #local variable to ensure that the properties are created only once
     __initialized = False
     parameterData = parameterData
+    validParameterData = []
     parameterList = []
+    validParameterList = []
+    indexedValidParameterList = []
     ids = []
     groups = set()
 
@@ -764,6 +767,10 @@ class Parameters(QtCore.QObject):
                 cls.ids.append(param.attr)
                 setattr(cls, param.attr, parameterProperty)
                 cls.parameterList.append(param.attr)
+                if not param.attr.startswith('reserved'):
+                    cls.validParameterData.append(param)
+                    cls.validParameterList.append(param.attr)
+                    cls.indexedValidParameterList.append((param.id, param.attr))
             cls.__initialized = True
         return obj
 
@@ -843,4 +850,6 @@ class Parameters(QtCore.QObject):
         except:
             pass
 
-
+# a fake Parameters object to let it initialize the class
+_ = Parameters()
+del _

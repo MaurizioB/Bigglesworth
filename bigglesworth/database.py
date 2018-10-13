@@ -18,11 +18,15 @@ from bigglesworth.library import CollectionModel, LibraryModel
 from bigglesworth.backup import BackUp
 
 renameRegExp = re.compile(r'^(?=.{16}$)(?P<name>.*)~(?P<count>[1-9][0-9]{0,2}){0,1} *$')
-_parameterList = []
+parameterList = Parameters.parameterList
+validParameterList = Parameters.validParameterList
+indexedValidParameterList = Parameters.indexedValidParameterList
 soundsColumns = []
 soundsDef = '('
 for p in Parameters.parameterData:
-    _parameterList.append(p.attr)
+#    parameterList.append(p.attr)
+#    if not p.attr.startswith('reserved'):
+#        validParameterList.append(validParameterList)
     soundsColumns.append(p.attr)
     soundsDef += '{} int, '.format(p.attr)
 
@@ -31,6 +35,15 @@ soundsColumns.append('uid')
 soundsDef += 'uid varchar primary key)'
 referenceColumns = ['uid', 'tags', 'blofeld_fact_200801', 'blofeld_fact_200802', 'blofeld_fact_201200', 'Blofeld']
 referenceDef = '(uid varchar primary key, tags varchar, blofeld_fact_200801 int, blofeld_fact_200802 int, blofeld_fact_201200 int, Blofeld int)'
+
+
+def splitter(uidList, limit=500):
+    splitList = uidList[:limit]
+    delta = 0
+    while splitList:
+        yield splitList
+        delta += 1
+        splitList = uidList[limit * delta: limit * (delta + 1)]
 
 
 class BlofeldDB(QtCore.QObject):
@@ -298,6 +311,75 @@ class BlofeldDB(QtCore.QObject):
                 self.sql.commit()
                 self.logger.append(LogDebug, 'Reference table successfully reordered')
 
+            self.logger.append(LogDebug, 'Checking collection consistency')
+            self.query.exec_('PRAGMA table_info(reference)')
+            collections = []
+            while self.query.next():
+                collections.append(self.query.value(1))
+            valid = True
+            duplicatePrepareStr = 'SELECT uid FROM sounds WHERE {} AND :collection IS NOT NULL'.format(
+                ' AND '.join('{0}=:{0}'.format(param) for param in validParameterList))
+            for collection in collections[2:]:
+                self.query.exec_('SELECT uid,"{0}" FROM reference WHERE "{0}" IS NOT NULL'.format(collection))
+                items = []
+                while self.query.next():
+                    items.append((self.query.value(0), self.query.value(1)))
+                count = len(items)
+                if count > 1024:
+                    self.sql.transaction()
+                    self.dbErrorLog('Collection "{}" too big, trimming down to 1024'.format(collection), 
+                        extMessage='{} sounds'.format(count), logLevel=LogWarning)
+                    for splitted in splitter([uid for uid, index in items[1024:]], 500):
+                        where = ' OR '.join('uid="{}"'.format(uid) for uid in splitted)
+                        if not self.query.exec_('UPDATE reference SET "{}"=NULL WHERE {}'.format(collection, where)):
+                            self.dbErrorLog('Error trimming too big collection', extMessage=collection)
+                            valid = False
+                            self.sql.rollback()
+                            break
+                        for uid in splitted:
+                            values = self.getSoundDataFromUid(uid, onlyValid=True)
+                            self.query.prepare(duplicatePrepareStr)
+                            self.query.bindValue(':collection', collection)
+                            for param, value in zip(validParameterList, values):
+                                self.query.bindValue(':{}'.format(param), value)
+                            if not self.query.exec_():
+                                self.dbErrorLog('Error checking duplicates for trimming')
+                                valid = False
+                                self.sql.rollback()
+                                break
+                            if self.query.next() and self.query.value(0):
+                                if not self.query.exec_('DELETE FROM reference WHERE uid="{}"'.format(uid)):
+                                    self.dbErrorLog('Error removing duplicate from reference for trimming', extMessage=uid)
+                                    self.sql.rollback()
+                                    break
+                                if not self.query.exec_('DELETE FROM sounds WHERE uid="{}"'.format(uid)):
+                                    self.dbErrorLog('Error removing duplicate from sounds for trimming', extMessage=uid)
+                                    self.sql.rollback()
+                                    break
+                    else:
+                        self.sql.commit()
+                        self.logger.append(LogDebug, 'Collection "{}" successfully resized'.format(collection))
+                elif len(set(items)) != count:
+                    self.dbErrorLog('Duplicate indexes found in "{}", purging'.format(collection), logLevel=LogWarning)
+                    indexes = set()
+                    duplicates = []
+                    for uid, index in items:
+                        if index not in indexes:
+                            indexes.add(index)
+                        else:
+                            duplicates.append(uid)
+                    for splitted in splitter(duplicates):
+                        where = ' OR '.join('uid="{}"'.format(uid) for uid in splitted)
+                        if not self.query.exec_('UPDATE reference SET "{}"=NULL WHERE {}'.format(collection, where)):
+                            self.dbErrorLog('Error trimming too big collection', extMessage=collection)
+                            valid = False
+                            break
+                    else:
+                        self.logger.append(LogDebug, 'Collection "{}" successfully fixed'.format(collection))
+                else:
+                    self.logger.append(LogDebug, 'Collection "{}" checked with {}errors'.format(collection, ('', 'no ')[valid]), 
+                        extMessage='{} sound{}'.format(count, '' if count == 1 else 's'))
+
         self.logger.append(LogDebug, 'Checking templates table')
 #        self.query.exec_('PRAGMA table_info(templates)')
         if not 'templates' in tables:
@@ -489,9 +571,7 @@ class BlofeldDB(QtCore.QObject):
             if not set(groups) & set(templateGroups):
                 continue
             params = []
-            for id, attr in enumerate(_parameterList):
-                if attr.startswith('reserved'):
-                    continue
+            for id, attr in indexedValidParameterList:
                 value = self.query.value(id)
                 try:
                     params.append((attr, int(value)))
@@ -535,7 +615,7 @@ class BlofeldDB(QtCore.QObject):
         tempPre = 'INSERT INTO templates('
         tempPost = 'VALUES('
         updateStr = 'UPDATE templates SET '
-        for p in _parameterList:
+        for p in parameterList:
             tempPre += p + ', '
             tempPost += ':' + p
             updateStr += '{}=:{}, '.format(p, p)
@@ -549,7 +629,7 @@ class BlofeldDB(QtCore.QObject):
                 self.query.prepare(updateStr)
             else:
                 self.query.prepare(insertStr)
-            for p, value in zip(_parameterList, valueList):
+            for p, value in zip(parameterList, valueList):
                 self.query.bindValue(':' + p, value)
             self.query.bindValue(':name', name)
             self.query.bindValue(':groups', json.dumps(groups))
@@ -700,15 +780,15 @@ class BlofeldDB(QtCore.QObject):
             return False
         return True
 
-    def getSoundDataFromUid(self, uid):
-#        print(uid)
-        if not self.query.exec_('SELECT {} FROM sounds WHERE uid = "{}"'.format(','.join(Parameters.parameterList), uid)):
+    def getSoundDataFromUid(self, uid, onlyValid=False):
+        params = ','.join(validParameterList if onlyValid else parameterList)
+        if not self.query.exec_('SELECT {} FROM sounds WHERE uid = "{}"'.format(params, uid)):
             self.dbErrorLog('Error getting sound data from uid', extMessage=uid)
             return False
         self.query.first()
         if not isinstance(self.query.value(0), (int, long)):
             return False
-        return map(int, [self.query.value(v) for v in range(383)])
+        return map(int, [self.query.value(v) for v in range(len(validParameterList if onlyValid else parameterList))])
 
     def getIndexesFromUidList(self, uidList, collection):
         if not self.query.exec_('SELECT "{}" FROM reference WHERE {}'.format(
@@ -918,9 +998,9 @@ class BlofeldDB(QtCore.QObject):
         return True
 
     def updateSound(self, uid, parameters):
-        fieldList = ', '.join(['{}=:{}'.format(p, p) for p in _parameterList])
+        fieldList = ', '.join(['{}=:{}'.format(p, p) for p in parameterList])
         self.query.prepare('UPDATE sounds SET {} WHERE uid="{}"'.format(fieldList, uid))
-        for p, value in zip(_parameterList, parameters):
+        for p, value in zip(parameterList, parameters):
             self.query.bindValue(':{}'.format(p), int(value))
         if not self.query.exec_():
             self.dbErrorLog('Error updating sound values', extMessage=uid)
@@ -1028,11 +1108,11 @@ class BlofeldDB(QtCore.QObject):
                 self.sql.transaction()
                 self.dbErrorLog('Creating duplicates from factory', LogDebug, extMessage=source)
 
-                fieldList = [':{}'.format(p) for p in _parameterList]
-                prepareStr = 'SELECT {}, reference.tags FROM sounds,reference WHERE sounds.uid=:uid AND reference.uid=:uid2'.format(', '.join('sounds.' + p for p in _parameterList))
+                fieldList = [':{}'.format(p) for p in parameterList]
+                prepareStr = 'SELECT {}, reference.tags FROM sounds,reference WHERE sounds.uid=:uid AND reference.uid=:uid2'.format(', '.join('sounds.' + p for p in parameterList))
                 reader = QtSql.QSqlQuery()
                 reader.prepare(prepareStr)
-                insertPrepare = 'INSERT INTO sounds({}, uid) VALUES({}, :uid)'.format(', '.join(_parameterList), ', '.join(fieldList))
+                insertPrepare = 'INSERT INTO sounds({}, uid) VALUES({}, :uid)'.format(', '.join(parameterList), ', '.join(fieldList))
 
                 for index, uid in enumerate(uidList):
                     reader.prepare(prepareStr)
@@ -1135,8 +1215,8 @@ class BlofeldDB(QtCore.QObject):
         return self.getAlternateNameChrs(uid, name)
 
     def duplicateSound(self, uid, collection=None, target=-1, rename=True):
-        fieldList = [':{}'.format(p) for p in _parameterList]
-        self.query.prepare('SELECT {}, reference.tags FROM sounds,reference WHERE sounds.uid=:uid AND reference.uid=:uid2'.format(', '.join('sounds.' + p for p in _parameterList)))
+        fieldList = [':{}'.format(p) for p in parameterList]
+        self.query.prepare('SELECT {}, reference.tags FROM sounds,reference WHERE sounds.uid=:uid AND reference.uid=:uid2'.format(', '.join('sounds.' + p for p in parameterList)))
         self.query.bindValue(':uid', uid)
         self.query.bindValue(':uid2', uid)
         if not self.query.exec_():
@@ -1149,7 +1229,7 @@ class BlofeldDB(QtCore.QObject):
             newNameChrs = self.getAlternateNameChrs(uid, getName(values[363:379]))
             for i, chr in enumerate(newNameChrs, 363):
                 values[i] = chr2ord[chr]
-        self.query.prepare('INSERT INTO sounds({}, uid) VALUES({}, :uid)'.format(', '.join(_parameterList), ', '.join(fieldList)))
+        self.query.prepare('INSERT INTO sounds({}, uid) VALUES({}, :uid)'.format(', '.join(parameterList), ', '.join(fieldList)))
         for p, value in zip(fieldList, values):
             self.query.bindValue(p, value)
         newUid = str(uuid.uuid4())
@@ -1179,11 +1259,11 @@ class BlofeldDB(QtCore.QObject):
         return newUid
 
     def addSoundsToCollection(self, uidMap, collection):
-        fieldList = [':{}'.format(p) for p in _parameterList]
-        prepareStr = 'SELECT {}, reference.tags FROM sounds,reference WHERE sounds.uid=:uid AND reference.uid=:uid2'.format(', '.join('sounds.' + p for p in _parameterList))
+        fieldList = [':{}'.format(p) for p in parameterList]
+        prepareStr = 'SELECT {}, reference.tags FROM sounds,reference WHERE sounds.uid=:uid AND reference.uid=:uid2'.format(', '.join('sounds.' + p for p in parameterList))
         reader = QtSql.QSqlQuery()
         reader.prepare(prepareStr)
-        insertPrepare = 'INSERT INTO sounds({}, uid) VALUES({}, :uid)'.format(', '.join(_parameterList), ', '.join(fieldList))
+        insertPrepare = 'INSERT INTO sounds({}, uid) VALUES({}, :uid)'.format(', '.join(parameterList), ', '.join(fieldList))
 
         splitted = uidMap[:500]
         delta = 0

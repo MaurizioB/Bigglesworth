@@ -96,10 +96,8 @@ class FindDuplicates(QtWidgets.QDialog):
         allCollections = self.referenceModel.allCollections
         ignoreNames = self.ignoreNamesChk.isChecked()
         ignoreCats = self.ignoreCatsChk.isChecked()
-        for p, v in zip(Parameters.parameterData, self.database.getSoundDataFromUid(self.uid)):
-            if p.attr.startswith('reserved'):
-                continue
-            elif ignoreNames and p.attr.startswith('nameChar'):
+        for p, v in zip(Parameters.validParameterData, self.database.getSoundDataFromUid(self.uid, onlyValid=True)):
+            if ignoreNames and p.attr.startswith('nameChar'):
                 continue
             elif ignoreCats and p.attr == 'category':
                 continue
@@ -205,7 +203,12 @@ class FindDuplicates(QtWidgets.QDialog):
 
         ignoreFactory = self.ignoreFactoryChk.isChecked() if not self.collectionCombo.currentIndex() else True
 #        print(query.lastQuery())
+        query.last()
+        size = query.at() + 1
+        query.first()
+        count = 0
         while query.next():
+            count += 1
             uidListRaw = query.value(0)
 #            print(uidListRaw)
             if not isinstance(uidListRaw, (str, unicode)):
