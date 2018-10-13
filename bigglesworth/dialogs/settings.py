@@ -292,7 +292,8 @@ class SettingsDialog(QtWidgets.QDialog):
             child.labelColor = theme.frameLabelColor
 
     def exec_(self):
-        self.restoreGeometryChk.setChecked(self.settings.value('saveGeometry', True, bool))
+        self.restoreLibrarianGeometryChk.setChecked(self.settings.value('saveLibrarianGeometry', True, bool))
+        self.restoreEditorGeometryChk.setChecked(self.settings.value('saveEditorGeometry', True, bool))
         self.dualModeCombo.setCurrentIndex(self.settings.value('startupDualMode', 2, int))
         self.startupSessionCombo.setCurrentIndex(self.settings.value('startupSessionMode', 2, int))
         self.sidebarCombo.setCurrentIndex(self.settings.value('startupSidebarMode', 2, int))
@@ -358,7 +359,12 @@ class SettingsDialog(QtWidgets.QDialog):
             if self.restoreMsgBoxBtn.isChecked():
                 self.settings.remove('MessageBoxes')
 
-            self.settings.setValue('saveGeometry', self.restoreGeometryChk.isChecked())
+            self.settings.setValue('saveLibrarianGeometry', self.restoreLibrarianGeometryChk.isChecked())
+            if not self.restoreLibrarianGeometryChk.isChecked():
+                self.settings.remove('librarianGeometry')
+            self.settings.setValue('saveEditorGeometry', self.restoreEditorGeometryChk.isChecked())
+            if not self.restoreEditorGeometryChk.isChecked():
+                self.settings.remove('editorGeometry')
             self.settings.setValue('startupDualMode', self.dualModeCombo.currentIndex())
             self.settings.setValue('startupSessionMode', self.startupSessionCombo.currentIndex())
             self.settings.setValue('startupSidebarMode', self.sidebarCombo.currentIndex())

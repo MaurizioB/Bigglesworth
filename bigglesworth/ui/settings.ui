@@ -233,7 +233,7 @@
              </widget>
             </item>
             <item row="0" column="0" colspan="2">
-             <widget class="QCheckBox" name="restoreGeometryChk">
+             <widget class="QCheckBox" name="restoreLibrarianGeometryChk">
               <property name="text">
                <string>Restore window position</string>
               </property>
@@ -271,35 +271,6 @@
             <item>
              <property name="text">
               <string>All events</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Remember last state</string>
-             </property>
-            </item>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="label_6">
-            <property name="text">
-             <string>Autosave</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QComboBox" name="autosaveCombo">
-            <property name="currentIndex">
-             <number>0</number>
-            </property>
-            <item>
-             <property name="text">
-              <string>Always off</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Always on</string>
              </property>
             </item>
             <item>
@@ -350,6 +321,42 @@
            <widget class="QLabel" name="label_12">
             <property name="text">
              <string>MIDI Send</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QComboBox" name="autosaveCombo">
+            <property name="currentIndex">
+             <number>0</number>
+            </property>
+            <item>
+             <property name="text">
+              <string>Always off</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Always on</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Remember last state</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QLabel" name="label_6">
+            <property name="text">
+             <string>Autosave</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0" colspan="2">
+           <widget class="QCheckBox" name="restoreEditorGeometryChk">
+            <property name="text">
+             <string>Restore position on startup</string>
             </property>
            </widget>
           </item>

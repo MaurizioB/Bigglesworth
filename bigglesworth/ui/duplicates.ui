@@ -177,7 +177,7 @@
      <property name="text">
       <string>Double click on a duplicate sound to open and select it in the librarian.&lt;br/&gt;
 If the sound is part of a collection, that collection will be opened, otherwise it will be shown in the Main library.&lt;br/&gt;
-Items marked with an asterisk (*) are &quot;clones&quot; used in multiple collections.
+Items marked with an asterisk (*) are reference to the same sound, used in multiple collections.
 </string>
      </property>
      <property name="wordWrap">

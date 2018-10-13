@@ -68,8 +68,8 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.sidebar.setVisible(sidebarMode)
 
-        if self.main.settings.value('saveGeometry', True, bool) and self.main.settings.contains('windowGeometry'):
-            self.restoreGeometry(self.main.settings.value('windowGeometry'))
+        if self.main.settings.value('saveLibrarianGeometry', True, bool) and self.main.settings.contains('librarianGeometry'):
+            self.restoreGeometry(self.main.settings.value('librarianGeometry'))
 
         #import sessions and use OrderedDicts to remove duplicates and keep ordering
         #but, before that, check unset configurations from previous versions for testers...
@@ -517,10 +517,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.main.settings.remove('librarySideBar')
 #        self.main.settings.setValue('librarySideBar', self.sidebar.isVisible())
         self.main.settings.setValue('windowState', self.saveState(getUniqueVersionToMin()))
-        if self.main.settings.value('saveGeometry', True, bool):
-            self.main.settings.setValue('windowGeometry', self.saveGeometry())
+        if self.main.settings.value('saveLibrarianGeometry', True, bool):
+            self.main.settings.setValue('librarianGeometry', self.saveGeometry())
         else:
-            self.main.settings.remove('windowGeometry')
+            self.main.settings.remove('librarianGeometry')
         self.main.settings.setValue('sessionLayoutLeft', self.leftTabWidget.collections)
         self.main.settings.setValue('dualMode', self.dualMode)
         if not self.dualMode:

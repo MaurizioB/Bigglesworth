@@ -130,14 +130,14 @@ class UndoView(QtWidgets.QUndoView):
 
 class FilterRoutingDisplay(QtWidgets.QWidget):
     paralPath = QtGui.QPainterPath()
-    paralPath.moveTo(-2.5, -5)
-    paralPath.lineTo(2.5, 0)
-    paralPath.lineTo(-2.5, 5)
+    paralPath.moveTo(-5, -2.5)
+    paralPath.lineTo(0, 2.5)
+    paralPath.lineTo(5, -2.5)
 
     serialPath = QtGui.QPainterPath()
-    serialPath.moveTo(-5, -2.5)
-    serialPath.lineTo(0, 2.5)
-    serialPath.lineTo(5, -2.5)
+    serialPath.moveTo(-2.5, -5)
+    serialPath.lineTo(2.5, 0)
+    serialPath.lineTo(-2.5, 5)
 
     routingPaths = paralPath, serialPath
 
@@ -875,6 +875,9 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.modMatrixBtn.clicked.connect(self.showModMatrix)
         self.modMatrixView = None
 #        self.showModMatrix()
+
+        if self.settings.value('saveEditorGeometry', True, bool) and self.settings.contains('editorGeometry'):
+            self.restoreGeometry(self.main.settings.value('editorGeometry'))
 
     def activate(self):
         self.show()
@@ -1721,6 +1724,10 @@ class EditorWindow(QtWidgets.QMainWindow):
                 return
             elif res == QtWidgets.QMessageBox.Save:
                 self.save()
+        if self.main.settings.value('saveEditorGeometry', True, bool):
+            self.main.settings.setValue('editorGeometry', self.saveGeometry())
+        else:
+            self.main.settings.remove('editorGeometry')
         QtWidgets.QMainWindow.closeEvent(self, event)
         self.closed.emit()
 
