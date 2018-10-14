@@ -280,15 +280,17 @@ class MainBubble(Bubble):
         Bubble.__init__(self, main, targetWindow)
         self.message = 'This is the Librarian, where you can organize all your sounds.'
         self.targets = [
-            Target('The Main Library stores <b>every</b> sound you have, including Waldorf\'s factory presets.', targetWindow.rightTabWidget, Left), 
-            Target('This is your Blofeld collection, which "mirrors" the contents of your Blofeld.', targetWindow.leftTabWidget, Right), 
-            Target('Let\'s review the contents of a factory preset. Click the "+" button and select one of the 3 "Factory Presets"', 
-                targetWindow.rightTabWidget.cornerWidget(), Left, targetWindow.rightTabWidget.currentChanged), 
+            Target('This is your Blofeld collection, which can "mirror" the contents of your Blofeld.', targetWindow.leftTabWidget, Right), 
+            Target('The side library panel contains the full library, which stores <b>every</b> available sounds, including Waldorf\'s factory presets.', targetWindow.dockLibrary, Left), 
+            Target('Sounds in the side library can be searched by using filters', targetWindow.dockLibrary, Left), 
+            Target('For example'), 
+#            Target('Let\'s review the contents of a factory preset. Click the "+" button and select one of the 3 "Factory Presets"', 
+#                targetWindow.leftTabWidget.cornerWidget(), Left, targetWindow.leftTabWidget.currentChanged), 
             Target('Every collection contains up to 1024 sounds, you might easily be lost. Filters can help you!', 
-                lambda: targetWindow.rightTabWidget.widget(1).filterGroupBox, Bottom), 
+                lambda: targetWindow.leftTabWidget.widget(1).filterGroupBox, Bottom), 
             Target('Preset collections are <i>read only</i>, but you can obviously add their sounds to your collections. ' \
                 'Just choose one and drag it on the "Blofeld" panel on the left.', 
-                lambda: targetWindow.rightTabWidget.widget(1).collectionView, Top, targetWindow.leftTabWidget.widget(0).collectionView.dropEventSignal), 
+                lambda: targetWindow.leftTabWidget.widget(1).collectionView, Top, targetWindow.leftTabWidget.widget(0).collectionView.dropEventSignal), 
             Target('Very good, now let\'s dump your Blofeld sounds to the Blofeld library! Click on the tab with the right button', 
                 targetWindow.leftTabWidget.tabBar(), Bottom, QtCore.QEvent.ContextMenu), 
             Target('Open the menu "Dump" and select "Dump sounds FROM Blofeld...', targetWindow.leftTabWidget.menu, Left, 

@@ -57,7 +57,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rightTabWidget.minimizePanelRequested.connect(lambda: self.setRightVisible(False))
         self.rightTabBar.maximize.connect(lambda tab: self.setRightVisible(True, tab))
 
-        sidebarMode = self.settings.value('startupSidebarMode', 2, int)
+        #override sidebar and dualmode if firstrun/tutorial is on
+        tutorialActive = not self.settings.value('FirstRunShown', False, bool) or self.settings.value('ShowLibrarianTutorial', True, bool)
+            
+        sidebarMode = self.settings.value('startupSidebarMode', 2, int) if not tutorialActive else 2
         if sidebarMode == 2:
             if self.main.settings.value('windowState'):
                 try:
@@ -65,6 +68,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     print('Window state successfully restored')
                 except Exception as e:
                     print('Error restoring main window state: {}'.format(e))
+            elif tutorialActive:
+                self.sidebar.setVisible(True)
         else:
             self.sidebar.setVisible(sidebarMode)
 
@@ -78,7 +83,8 @@ class MainWindow(QtWidgets.QMainWindow):
         startupDualMode = self.main.settings.value('startupDualMode', 2, int)
         dualMode = self.main.settings.value('dualMode', False, bool)
         startupSessionMode = self.main.settings.value('startupSessionMode', 2, int)
-        if (startupDualMode and dualMode) or (not existsStartupDualMode and self.main.settings.contains('sessionLayoutRight')):
+
+        if not tutorialActive and ((startupDualMode and dualMode) or (not existsStartupDualMode and self.main.settings.contains('sessionLayoutRight'))):
             if startupSessionMode >= 2:
                 left = list(OrderedDict.fromkeys(self.main.settings.value('sessionLayoutLeft', ['Blofeld'], 'QStringList')))
                 right = list(OrderedDict.fromkeys(self.main.settings.value('sessionLayoutRight', [None], 'QStringList')))
@@ -136,7 +142,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.splitter.restoreState(sizes)
 
         else:
-            if startupSessionMode >= 2:
+            if tutorialActive:
+                left = ['Blofeld']
+            elif startupSessionMode >= 2:
                 left = list(OrderedDict.fromkeys(self.main.settings.value('sessionLayoutLeft', ['Blofeld'], 'QStringList')))
             elif startupSessionMode:
                 left = [None]
