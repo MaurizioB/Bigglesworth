@@ -349,7 +349,7 @@ class Frame(QtWidgets.QFrame):
         hMargin = fontMetrics.height() / 4
         vMargin = hMargin / 2
         if sys.platform == 'darwin':
-            hMargin *= 2
+            hMargin = max(8, hMargin * 2)
         self._labelRect = rect = self.fontMetrics().boundingRect(self._label).adjusted(0, 0, hMargin, vMargin)
         rect.translate(-rect.topLeft())
         self._labelBackgroundPath = QtGui.QPainterPath()
