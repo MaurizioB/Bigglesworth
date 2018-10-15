@@ -412,10 +412,6 @@ class Player(QtCore.QObject):
     def setAudioDevice(self, audioDevice=None):
         if audioDevice:
             self.audioDevice = audioDevice
-#        sampleSize = 32 if 32 in self.audioDevice.supportedSampleSizes() else 16
-        sampleSize = 16
-#        sampleRate = 48000 if 48000 in self.audioDevice.supportedSampleRates() else 44100
-        sampleRate = 44100
 
         if not self.audioDevice.isFormatSupported(self.format):
             self.format = self.audioDevice.nearestFormat(self.format)
