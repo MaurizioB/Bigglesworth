@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import sys
+
 from Qt import QtCore, QtGui, QtWidgets, __binding__
 #from metawidget import BaseWidget, _getCssQColorStr, _getCssQFontStr
 from metawidget import _getCssQColorStr
@@ -343,7 +345,12 @@ class Frame(QtWidgets.QFrame):
 
     def _setLabelRect(self):
 #        self._labelRect = rect = QtCore.QRectF(0, 0, self.fontMetrics().width(self._label) + 4, self.fontMetrics().height() + 2)
-        self._labelRect = rect = self.fontMetrics().boundingRect(self._label).adjusted(0, 0, 4, 2)
+        fontMetrics = self.fontMetrics()
+        hMargin = fontMetrics.height() / 4
+        vMargin = hMargin / 2
+        if sys.platform == 'darwin':
+            hMargin *= 2
+        self._labelRect = rect = self.fontMetrics().boundingRect(self._label).adjusted(0, 0, hMargin, vMargin)
         rect.translate(-rect.topLeft())
         self._labelBackgroundPath = QtGui.QPainterPath()
         self._labelBackgroundPath.moveTo(2, 0)
@@ -447,7 +454,6 @@ class Frame(QtWidgets.QFrame):
 
 
 if __name__ == '__main__':
-    import sys
     app = QtWidgets.QApplication(sys.argv)
     f = Frame(label='asdf')
     f.borderColor = QtGui.QColor(QtCore.Qt.blue)
