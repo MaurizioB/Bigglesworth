@@ -1197,8 +1197,8 @@ class EditorWindow(QtWidgets.QMainWindow):
             #for some reason, directly editing the existing palette doesn't work, so we need a copy of it
             palette = QtGui.QPalette(theme.palette)
             for role in (QtGui.QPalette.Inactive, QtGui.QPalette.Active):
-#                palette.setColor(role, QtGui.QPalette.Button, palette.color(role, QtGui.QPalette.Window))
-                palette.setColor(role, QtGui.QPalette.Button, QtGui.QColor(QtCore.Qt.red))
+                palette.setColor(role, QtGui.QPalette.Button, palette.color(role, QtGui.QPalette.Window))
+#                palette.setColor(role, QtGui.QPalette.Button, QtGui.QColor(QtCore.Qt.red))
                 palette.setColor(role, QtGui.QPalette.ButtonText, palette.color(role, QtGui.QPalette.WindowText))
             self.editorMenuBar.setPalette(palette)
         else:
@@ -1223,7 +1223,14 @@ class EditorWindow(QtWidgets.QMainWindow):
         for child in self.findChildren(Frame):
             child.borderColor = theme.frameBorderColor
             child.labelColor = theme.frameLabelColor
-        self.repaint()
+        metrics = QtGui.QFontMetricsF(theme.font)
+        dialWidth = 0
+        filterDials = self.filterEnvelopeFrame.findChildren(Dial)
+        for envDial in filterDials:
+            dialWidth = max(dialWidth, metrics.width(envDial.label) + 2)
+        for envDial in filterDials + self.amplifierEnvelopeFrame.findChildren(Dial):
+            envDial.setFixedWidth(dialWidth)
+#        self.repaint()
 
     def setOctave(self, offset):
         self.pianoKeyboard.firstNote = 12 + offset * 12

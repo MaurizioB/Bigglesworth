@@ -212,17 +212,30 @@ class BaseWidget(QtWidgets.QWidget):
 
     def sizeHint(self):
         widgetSize = self.widget.sizeHint()
+        l, t, r, b = self.layout().getContentsMargins()
+
         if not self._label:
-            return widgetSize
-        try:
-            text = self._label.decode('string_escape') if sys.version_info.major==2 else bytes(self._label, 'utf-8').decode('unicode_escape')
-        except:
-            pass
-        textSize = self.fontMetrics().size(QtCore.Qt.TextExpandTabs, text)
-        if self._labelPos & (QtCore.Qt.TopEdge|QtCore.Qt.BottomEdge):
-            return QtCore.QSize(max(textSize.width(), widgetSize.width()), (textSize + widgetSize).height() + self._labelMargin)
+            width = widgetSize.width() + l + r
+            height = widgetSize.height() + t + b
         else:
-            return QtCore.QSize((textSize + widgetSize).width() + self._labelMargin, max(textSize.height(), widgetSize.height()))
+            labelSize = self._labelWidget.minimumSizeHint()
+            if self._labelPos & (QtCore.Qt.TopEdge|QtCore.Qt.BottomEdge):
+                width = max(widgetSize.width(), labelSize.width()) + l + r
+                height = widgetSize.height() + labelSize.height() + self._labelMargin + t + b
+            else:
+                width = widgetSize.width() + labelSize.width() + self._labelMargin + l + r
+                height = max(widgetSize.height(), labelSize.height()) + t + b
+        return QtCore.QSize(width, height)
+
+#        try:
+#            text = self._label.decode('string_escape') if sys.version_info.major==2 else bytes(self._label, 'utf-8').decode('unicode_escape')
+#        except:
+#            pass
+#        textSize = self.fontMetrics().size(QtCore.Qt.TextExpandTabs, text)
+#        if self._labelPos & (QtCore.Qt.TopEdge|QtCore.Qt.BottomEdge):
+#            return QtCore.QSize(max(textSize.width(), widgetSize.width()), (textSize + widgetSize).height() + self._labelMargin)
+#        else:
+#            return QtCore.QSize((textSize + widgetSize).width() + self._labelMargin, max(textSize.height(), widgetSize.height()))
 
     def minimumSizeHint(self):
         widgetSize = self.widget.minimumSize()
@@ -230,18 +243,32 @@ class BaseWidget(QtWidgets.QWidget):
             widgetSize = self.widget.minimumSizeHint()
             if widgetSize.isNull():
                 widgetSize = self.widget.sizeHint()
+
+        l, t, r, b = self.layout().getContentsMargins()
+
         if not self._label:
-            return widgetSize
-        try:
-            text = self._label.decode('string_escape') if sys.version_info.major==2 else bytes(self._label, 'utf-8').decode('unicode_escape')
-        except:
-            pass
-        textSize = self.fontMetrics().size(QtCore.Qt.TextExpandTabs, text)
-#        textSize.setWidth(textSize.width() + 2)
-        if self._labelPos & (QtCore.Qt.TopEdge|QtCore.Qt.BottomEdge):
-            return QtCore.QSize(max(textSize.width(), widgetSize.width()), (textSize + widgetSize).height() + self._labelMargin)
+            width = widgetSize.width() + l + r
+            height = widgetSize.height() + t + b
         else:
-            return QtCore.QSize((textSize + widgetSize).width() + self._labelMargin, max(textSize.height(), widgetSize.height()))
+            labelSize = self._labelWidget.minimumSizeHint()
+            if self._labelPos & (QtCore.Qt.TopEdge|QtCore.Qt.BottomEdge):
+                width = max(widgetSize.width(), labelSize.width()) + l + r
+                height = widgetSize.height() + labelSize.height() + self._labelMargin + t + b
+            else:
+                width = widgetSize.width() + labelSize.width() + self._labelMargin + l + r
+                height = max(widgetSize.height(), labelSize.height()) + t + b
+        return QtCore.QSize(width, height)
+
+#        try:
+#            text = self._label.decode('string_escape') if sys.version_info.major==2 else bytes(self._label, 'utf-8').decode('unicode_escape')
+#        except:
+#            pass
+#        textSize = self.fontMetrics().size(QtCore.Qt.TextExpandTabs, text)
+##        textSize.setWidth(textSize.width() + 2)
+#        if self._labelPos & (QtCore.Qt.TopEdge|QtCore.Qt.BottomEdge):
+#            return QtCore.QSize(max(textSize.width(), widgetSize.width()), (textSize + widgetSize).height() + self._labelMargin)
+#        else:
+#            return QtCore.QSize((textSize + widgetSize).width() + self._labelMargin, max(textSize.height(), widgetSize.height()))
 
     def _paletteChanged(self, palette):
         self.widget.setPalette(palette)
@@ -465,6 +492,7 @@ class BaseWidget(QtWidgets.QWidget):
         elif event.type() == QtCore.QEvent.FontChange:
             self._fontChanged(self.font())
 
+#    def paintEvent(self, event):
     def paintEventDebug(self, event):
         qp = QtGui.QPainter(self)
         qp.setPen(QtCore.Qt.darkRed)
