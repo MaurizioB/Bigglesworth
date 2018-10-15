@@ -360,6 +360,8 @@ class Frame(QtWidgets.QFrame):
         self._labelBackgroundPath.arcTo(closeRect, 270, 90)
         closeRect.translate(rect.height(), 0)
         self._labelBackgroundPath.arcTo(closeRect, 180, -90)
+        if sys.platform == 'darwin':
+            self._labelRect.setWidth(self._labelRect.width() - hMargin / 2)
 
     def _computeMargins(self):
         top = bottom = left = right = self._padding
