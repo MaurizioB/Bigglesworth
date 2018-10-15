@@ -113,6 +113,11 @@ class Theme(QtCore.QObject):
         self._frameBorderColor = frameBorderColor
         if frameLabelColor is None:
             frameLabelColor = palette.color(palette.Shadow)
+            if abs(frameBorderColor.lightness() - frameLabelColor.lightness()) < 32:
+                if frameLabelColor.lightness() < 128:
+                    frameLabelColor = frameLabelColor.lighter()
+                else:
+                    frameLabelColor = frameLabelColor.darker()
         self._frameLabelColor = frameLabelColor
 
     @property
