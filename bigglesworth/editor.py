@@ -1432,7 +1432,12 @@ class EditorWindow(QtWidgets.QMainWindow):
                 if self.bankBuffer is not None and not QtWidgets.QApplication.activeModalWidget():
                     self.midiInWidget.activate()
 #                    print('prog change - bank', self.bankBuffer, 'prog', event.program)
+                    print('requesting program change: {} {}'.format(self.bankBuffer, event.program))
                     self.openSoundFromBankProg(prog=event.program)
+                else:
+                    print('program change ignored?!')
+            else:
+                print('program change ignored', self.main.progReceiveState, event.channel, self.main.chanReceive)
             self.bankBuffer = None
             return
         if event.type == NOTEON:
@@ -1443,10 +1448,15 @@ class EditorWindow(QtWidgets.QMainWindow):
             self.midiInWidget.activate()
         elif event.type == CTRL:
             if event.channel not in self.main.chanReceive:
+                print('event ignored', event.channel, self.main.chanReceive)
+                self.bankBuffer = None
                 return
             if event.param == 0:
+                print('received bank request: {}'.format(event.value))
                 if self.main.progReceiveState:
                     self.bankBuffer = event.value
+                else:
+                    print('bank request ignored')
                 return
             elif event.param == 1:
                 self.modSlider.setValue(event.value)
@@ -1457,7 +1467,6 @@ class EditorWindow(QtWidgets.QMainWindow):
                 if event.source in self.main.blockForwardPorts:
                     self.canForward = False
                 self.parameters[index] = event.value
-                self.bankBuffer = None
             elif self.main.ctrlSendState and event.param != 0:
                 self.midiEvent.emit(event)
         elif event.type == SYSEX:
@@ -1470,6 +1479,7 @@ class EditorWindow(QtWidgets.QMainWindow):
             else:
                 print('unknown SysExEvent received:\n{}', ', '.join('0x{:x}'.format(e) for e in event.sysex))
         self.canForward = True
+        self.bankBuffer = None
 
     def noteEvent(self, eventType, note, velocity):
 #        for channel in sorted(self.main.chanSend):
@@ -1493,8 +1503,11 @@ class EditorWindow(QtWidgets.QMainWindow):
         setattr(self.parameters, self.sender().objectName(), value)
 
     def openSoundFromBankProg(self, bank=None, prog=None, collection=None):
+        print('openSoundFromBankProg\ncurrentBank: {}\ncurrentProg: {}\nbank: {}\nprog: {}\ncollection: {}'.format(
+            self.currentBank, self.currentProg, bank, prog, collection))
         if not collection:
             if not self.currentCollection:
+                print('no current collection')
                 return
             collection = self.currentCollection
         if (bank, prog) == (None, None):

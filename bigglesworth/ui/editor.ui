@@ -2200,9 +2200,6 @@
         </item>
         <item row="0" column="0" colspan="2">
          <widget class="StackedWidget" name="arpEfxStackedWidget">
-          <property name="currentIndex" stdset="0">
-           <number>0</number>
-          </property>
           <widget class="QWidget" name="arpEditorPage">
            <layout class="QHBoxLayout" name="horizontalLayout">
             <property name="margin">
@@ -2210,12 +2207,6 @@
             </property>
             <item>
              <widget class="ArpeggiatorDisplay" name="arpeggiatorDisplay">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>150</height>
-               </size>
-              </property>
               <property name="frameShape">
                <enum>QFrame::NoFrame</enum>
               </property>
