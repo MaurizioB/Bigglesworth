@@ -597,6 +597,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.currentBank = None
         self.currentProg = None
         self.setFromDump = False
+        self.canForward = True
 
         inConn, outConn = self.main.connections
         self.editorMenuBar = EditorMenu(self)
@@ -1316,7 +1317,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         parHigh, parLow = divmod(id, 128)
 #        print par_high, par_low, value
 
-        if self.main.ctrlSendState:
+        if self.main.ctrlSendState and self.canForward:
             self.midiEvent.emit(SysExEvent(1, [INIT, IDW, IDE, self.main.blofeldId, SNDP, location, parHigh, parLow, newValue, END]))
             self.midiOutWidget.activate()
         if self.autosave and self.currentUid:
@@ -1441,13 +1442,15 @@ class EditorWindow(QtWidgets.QMainWindow):
                     self.bankBuffer = event.value
                 return
             elif event.param == 1:
-                self.modSlider.blockSignals(True)
+#                self.modSlider.blockSignals(True)
                 self.modSlider.setValue(event.value)
-                self.modSlider.blockSignals(False)
+#                self.modSlider.blockSignals(False)
                 self.midiInWidget.activate()
             elif event.param in ctrl2sysex:
                 self.midiInWidget.activate()
                 index = ctrl2sysex[event.param]
+                if event.source in self.main.blockForwardPorts:
+                    self.canForward = False
                 self.parameters[index] = event.value
                 self.bankBuffer = None
             elif self.main.ctrlSendState and event.param != 0:
@@ -1455,21 +1458,13 @@ class EditorWindow(QtWidgets.QMainWindow):
         elif event.type == SYSEX:
             if event.sysex[:3] == [INIT, IDW, IDE] and event.sysex[4] == SNDP and \
                 self.acceptBlofeldId(event.sysex[3]):
+                    if event.source in self.main.blockForwardPorts:
+                        self.canForward = False
                     id = (event.sysex[6] << 7) + event.sysex[7]
                     setattr(self.parameters, Parameters.parameterData[id].attr, event.sysex[8])
             else:
                 print('unknown SysExEvent received:\n{}', ', '.join('0x{:x}'.format(e) for e in event.sysex))
-
-#                setattr(self.parameters, self.sender().objectName(), value)
-#        print(event.type == NOTE)
-#        if event.type == NOTE
-#        if not self.main.ctrlReceiveState
-#        if event.type == SYSEX:
-#            pass
-#        elif event.type == CTRL:
-#            if event in ctrl2sysex:
-#                self.
-#            print ctrl2sysex[event.data]
+        self.canForward = True
 
     def noteEvent(self, eventType, note, velocity):
 #        for channel in sorted(self.main.chanSend):

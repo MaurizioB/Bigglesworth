@@ -923,6 +923,9 @@ class Port(QtCore.QObject):
     def is_hardware(self):
         return self.client.is_hardware
 
+    def toString(self):
+        return u'{}:{}'.format(self.client.name, self.name)
+
     def __str__(self):
         return self.name
 
