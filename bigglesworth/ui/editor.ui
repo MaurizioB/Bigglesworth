@@ -18,8 +18,14 @@
     <property name="margin">
      <number>1</number>
     </property>
+    <property name="spacing">
+     <number>4</number>
+    </property>
     <item row="0" column="0" rowspan="2">
      <layout class="QVBoxLayout" name="leftLayout">
+      <property name="spacing">
+       <number>4</number>
+      </property>
       <item>
        <widget class="Frame" name="mixerFrame">
         <property name="sizePolicy">
@@ -384,6 +390,9 @@
     </item>
     <item row="0" column="1">
      <layout class="QGridLayout" name="displayLayout" columnstretch="10,0,0">
+      <property name="spacing">
+       <number>4</number>
+      </property>
       <item row="0" column="1">
        <widget class="QWidget" name="widget" native="true">
         <layout class="QGridLayout" name="gridLayout_5">
@@ -560,6 +569,9 @@
        </property>
        <property name="bottomMargin">
         <number>0</number>
+       </property>
+       <property name="spacing">
+        <number>4</number>
        </property>
        <item row="1" column="1">
         <widget class="Frame" name="filter2Frame">
@@ -756,6 +768,22 @@
            </property>
           </widget>
          </item>
+         <item>
+          <spacer name="horizontalSpacer_19">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::Fixed</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>4</width>
+             <height>1</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
         </layout>
        </item>
        <item row="1" column="0">
@@ -930,6 +958,9 @@
     </item>
     <item row="1" column="1">
      <layout class="QGridLayout" name="oscLfoLayout" columnstretch="388,196">
+      <property name="spacing">
+       <number>4</number>
+      </property>
       <item row="0" column="1">
        <widget class="Frame" name="lfo1Frame">
         <property name="contextMenuPolicy">
@@ -1750,8 +1781,14 @@
     </item>
     <item row="2" column="0" colspan="3">
      <layout class="QHBoxLayout" name="lowerLayout">
+      <property name="spacing">
+       <number>4</number>
+      </property>
       <item>
        <layout class="QGridLayout" name="envLayout">
+        <property name="spacing">
+         <number>4</number>
+        </property>
         <item row="0" column="0">
          <widget class="Frame" name="filterEnvelopeFrame">
           <property name="contextMenuPolicy">
@@ -2155,13 +2192,16 @@
       </item>
       <item>
        <layout class="QGridLayout" name="bottomRightLayout">
+        <property name="spacing">
+         <number>4</number>
+        </property>
         <item row="1" column="0" alignment="Qt::AlignVCenter">
          <widget class="PianoKeyboard" name="pianoKeyboard"/>
         </item>
         <item row="0" column="0" colspan="2">
          <widget class="StackedWidget" name="arpEfxStackedWidget">
           <property name="currentIndex" stdset="0">
-           <number>1</number>
+           <number>0</number>
           </property>
           <widget class="QWidget" name="arpEditorPage">
            <layout class="QHBoxLayout" name="horizontalLayout">
@@ -2170,6 +2210,12 @@
             </property>
             <item>
              <widget class="ArpeggiatorDisplay" name="arpeggiatorDisplay">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>150</height>
+               </size>
+              </property>
               <property name="frameShape">
                <enum>QFrame::NoFrame</enum>
               </property>
