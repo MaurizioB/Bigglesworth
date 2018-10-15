@@ -20,6 +20,7 @@ class _Combo(QtWidgets.QComboBox):
 
     def __init__(self, parent, valueList=None):
         QtWidgets.QComboBox.__init__(self, parent)
+        self.setAttribute(QtCore.Qt.WA_LayoutUsesWidgetRect, True)
         self.setMinimumSize(self._minimumSizeHint)
         self._baseStyleSheet = ''
         self.computeMetrics()
