@@ -1071,6 +1071,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.globalsBlock = False
         if not res:
             return
+        self.blofeldId = self.settingsDialog.deviceIdSpin.value()
         themeName = self.settingsDialog.themeCombo.currentText()
         if themeName != self.themes.current:
             self.themes.setCurrentTheme(themeName)

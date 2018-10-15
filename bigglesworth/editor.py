@@ -1442,9 +1442,7 @@ class EditorWindow(QtWidgets.QMainWindow):
                     self.bankBuffer = event.value
                 return
             elif event.param == 1:
-#                self.modSlider.blockSignals(True)
                 self.modSlider.setValue(event.value)
-#                self.modSlider.blockSignals(False)
                 self.midiInWidget.activate()
             elif event.param in ctrl2sysex:
                 self.midiInWidget.activate()
