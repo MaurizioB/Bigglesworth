@@ -312,8 +312,12 @@ class EditorMenu(QtWidgets.QMenuBar):
 #        self.openLibrarianAction = self.libraryMenu.openLibrarianAction
 #        self.addAction(self.openLibrarianAction)
 
-        self.dumpMenu = self.addMenu('&Dump')
-        self.dumpMenu.aboutToShow.connect(self.updatedumpMenu)
+        #Due to the menu section hack for osx, the dump menu has to be 
+        #manually created, otherwise PyQt will complain about unaccessible 
+        #objects when they're not created from python
+        self.dumpMenu = QtWidgets.QMenu('&Dump', self)
+        self.addMenu(self.dumpMenu)
+        self.dumpMenu.aboutToShow.connect(self.updateDumpMenu)
         self.dumpMenu.setSeparatorsCollapsible(False)
         self.dumpMenu.addSection('Receive')
         self.dumpFromSoundEditAction = self.dumpMenu.addAction('Request from Sound Edit buffer')
@@ -348,7 +352,7 @@ class EditorMenu(QtWidgets.QMenuBar):
         randomCustomAction = randomMenu.addAction('Custom randomize...')
         randomCustomAction.triggered.connect(self.randomCustomRequest)
 
-    def updatedumpMenu(self):
+    def updateDumpMenu(self):
         inConn, outConn = map(any, self.main.connections)
 
         self.dumpFromSoundEditAction.setEnabled(inConn)
