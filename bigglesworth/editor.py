@@ -574,7 +574,7 @@ class EditorWindow(QtWidgets.QMainWindow):
     closed = QtCore.pyqtSignal()
     importRequested = QtCore.pyqtSignal(object, object)
     openLibrarianRequested = QtCore.pyqtSignal()
-    midiEvent = QtCore.pyqtSignal(object)
+    midiEvent = QtCore.pyqtSignal([object], [object, bool])
     midiConnect = QtCore.pyqtSignal(object, int, bool)
     soundNameChanged = QtCore.pyqtSignal(str)
 
@@ -876,6 +876,8 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.modMatrixBtn.clicked.connect(self.showModMatrix)
         self.modMatrixView = None
 #        self.showModMatrix()
+
+        self.keyChanCombo.setValue(min(self.main.chanSend))
 
         if self.settings.value('saveEditorGeometry', True, bool) and self.settings.contains('editorGeometry'):
             self.restoreGeometry(self.main.settings.value('editorGeometry'))
@@ -1477,11 +1479,11 @@ class EditorWindow(QtWidgets.QMainWindow):
     def noteEvent(self, eventType, note, velocity):
 #        for channel in sorted(self.main.chanSend):
         event = NoteOnEvent if eventType else NoteOffEvent
-        self.midiEvent.emit(event(1, 0, note, velocity))
+        self.midiEvent[object, bool].emit(event(1, self.keyChanCombo.currentIndex, note, velocity), True)
 
     def modEvent(self, value):
 #        for channel in sorted(self.main.chanSend):
-        self.midiEvent.emit(CtrlEvent(1, 0, 1, value))
+        self.midiEvent[object, bool].emit(CtrlEvent(1, self.keyChanCombo.currentIndex, 1, value), True)
 
     def editStatusCheck(self, data):
         #TODO verifica meglio il clean!

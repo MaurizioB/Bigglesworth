@@ -376,6 +376,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.editorWindow.importRequested.connect(self.importRequested)
         self.editorWindow.openLibrarianRequested.connect(self.mainWindow.activate)
         self.editorWindow.midiEvent.connect(self.sendMidiEvent)
+        self.editorWindow.midiEvent[object, bool].connect(self.sendMidiEvent)
         self.editorWindow.midiConnect.connect(self.midiConnect)
         self.editorWindow.editorMenuBar.dumpFromRequested.connect(self.dumpFrom)
         self.editorWindow.editorMenuBar.dumpToRequested.connect(self.dumpTo)
@@ -724,26 +725,33 @@ class Bigglesworth(QtWidgets.QApplication):
             if WaveTableWindow.openedWindows and event.type in (NOTEON, NOTEOFF):
                 WaveTableWindow.openedWindows[0].midiEventReceived(event)
 
-    def sendMidiEvent(self, event):
+    def sendMidiEvent(self, event, ignoreChanSend=False):
 #        if self.debug_sysex and event.type == SYSEX:
 #            print event.sysex
         if self.midiDevice.backend == MidiDevice.Alsa:
             alsa_event = event.get_event()
             alsa_event.source = self.output.client.id, self.output.id
             if event.type in (CTRL, NOTEOFF, NOTEON, PROGRAM):
-                for chan in sorted(self._chanSend):
-                    alsa_event.set_data({'control.channel': chan})
+                if ignoreChanSend:
                     self.seq.output_event(alsa_event)
+                else:
+                    for chan in sorted(self._chanSend):
+                        alsa_event.set_data({'control.channel': chan})
+                        self.seq.output_event(alsa_event)
             else:
                 self.seq.output_event(alsa_event)
             self.seq.drain_output()
         else:
             for port in self.seq.ports[1]:
                 if event.type in (CTRL, NOTEOFF, NOTEON, PROGRAM):
-                    for chan in sorted(self._chanSend):
-                        event.channel = chan
+                    if ignoreChanSend:
                         rtmidi_event = event.get_binary()
                         port.send_message(rtmidi_event)
+                    else:
+                        for chan in sorted(self._chanSend):
+                            event.channel = chan
+                            rtmidi_event = event.get_binary()
+                            port.send_message(rtmidi_event)
                 else:
                     rtmidi_event = event.get_binary()
                     port.send_message(rtmidi_event)
