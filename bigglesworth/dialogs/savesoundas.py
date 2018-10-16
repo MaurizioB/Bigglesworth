@@ -5,7 +5,7 @@ from unidecode import unidecode
 
 from Qt import QtCore, QtGui, QtWidgets
 
-from bigglesworth.const import UidColumn, NameColumn
+from bigglesworth.const import UidColumn, NameColumn, factoryPresets
 from bigglesworth.library import BankProxy
 from bigglesworth.utils import loadUi, localPath
 
@@ -134,7 +134,7 @@ class SaveSoundAs(QtWidgets.QDialog):
 
     def exec_(self, name='', collection=None, readOnly=False):
         self.readOnlyLbl.setVisible(readOnly)
-        if collection is None:
+        if collection is None or collection in factoryPresets:
             self.locationWidget.setEnabled(False)
         else:
             self.collectionCombo.setCurrentIndex(self.database.referenceModel.collections.index(collection) + 1)
