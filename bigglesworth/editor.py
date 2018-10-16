@@ -1072,8 +1072,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         if not res:
             return
         if res == showConnectionsAction:
-            dialog = MidiConnectionsDialog(self.main, self)
-            dialog.exec_()
+            MidiConnectionsDialog(self).exec_()
         elif res == progAction:
             setattr(self.main, progActionAttr, progAction.isChecked())
         elif res == ctrlAction:

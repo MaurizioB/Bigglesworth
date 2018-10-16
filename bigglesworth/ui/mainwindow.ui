@@ -243,8 +243,11 @@
    </property>
   </action>
   <action name="showGlobalsAction">
+   <property name="icon">
+    <iconset theme="circuit"/>
+   </property>
    <property name="text">
-    <string>Blofeld &amp;device</string>
+    <string>&amp;Blofeld device query</string>
    </property>
   </action>
   <action name="aboutQtAction">
@@ -319,6 +322,9 @@
    </property>
   </action>
   <action name="showMidiChartAction">
+   <property name="icon">
+    <iconset theme="midi"/>
+   </property>
    <property name="text">
     <string>MIDI implementation chart...</string>
    </property>

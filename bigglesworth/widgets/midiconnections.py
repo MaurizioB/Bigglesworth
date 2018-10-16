@@ -90,7 +90,7 @@ class CheckableDelegate(CheckBoxDelegate):
 
 
 class MidiConnectionsDialog(QtWidgets.QDialog):
-    def __init__(self, main, parent=None):
+    def __init__(self, parent=None):
         QtWidgets.QDialog.__init__(self, parent)
         self.setWindowTitle('MIDI connections')
         self.setWindowModality(QtCore.Qt.ApplicationModal)
@@ -100,7 +100,7 @@ class MidiConnectionsDialog(QtWidgets.QDialog):
         layout.addWidget(self.midiConnectionWidget)
 #        self.midiConnectionWidget.setMain(main)
 #        self.midiConnectionWidget.midiConnect.connect(main.editorWindow.midiConnect)
-        self.midiConnectionWidget.midiConnect.connect(main.midiConnect)
+        self.midiConnectionWidget.midiConnect.connect(QtWidgets.QApplication.instance().midiConnect)
 
 
 class MidiConnectionsWidget(QtWidgets.QWidget):

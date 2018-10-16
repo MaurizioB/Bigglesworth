@@ -396,7 +396,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.editorWindow.setTheme(self.themes.current)
 #        self.mainWindow.setPalette(self.themes.current.palette)
 
-        self.globalsDialog = GlobalsDialog(self, self.mainWindow)
+        self.globalsDialog = GlobalsDialog(self.mainWindow)
         self.globalsDialog.midiEvent.connect(self.sendMidiEvent)
 
         self.dumpReceiveDialog = DumpReceiveDialog(self, self.mainWindow)
@@ -1089,7 +1089,9 @@ class Bigglesworth(QtWidgets.QApplication):
     def showGlobals(self):
         self.globalsBlock = True
         self.midiDevice.midi_event.connect(self.globalsDialog.midiEventReceived)
+        self.midiConnChanged.connect(self.globalsDialog.midiConnChanged)
         res = self.globalsDialog.exec_()
+        self.midiConnChanged.disconnect(self.globalsDialog.midiConnChanged)
         self.midiDevice.midi_event.disconnect(self.globalsDialog.midiEventReceived)
         self.globalsBlock = False
         if not res:

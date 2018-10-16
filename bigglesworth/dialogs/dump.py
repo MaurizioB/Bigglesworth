@@ -1148,7 +1148,7 @@ class DumpDialog(QtWidgets.QDialog):
 
         self.dumper = Dumper(self)
         self.midiVisible = False
-        self.midiConnectionsDialog = MidiConnectionsDialog(self.main, self)
+        self.midiConnectionsDialog = MidiConnectionsDialog(self)
         self.midiBtn.clicked.connect(self.showMidiConnections)
 
     def showMidiConnections(self):
