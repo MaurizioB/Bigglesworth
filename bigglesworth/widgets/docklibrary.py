@@ -507,7 +507,7 @@ class DockLibrary(QtWidgets.QWidget):
             newTagAction = menu.addAction(QtGui.QIcon.fromTheme('tag-new'), 'New tag...')
             newTagAction.triggered.connect(lambda: self.editTag.emit(''))
             renameTagAction = menu.addAction(QtGui.QIcon.fromTheme('document-edit-sign'), 'Rename tag')
-            renameTagAction.triggered.connect(lambda: self.treeView.edit(index, self.treeView.AllEditTriggers, QtCore.QEvent()))
+            renameTagAction.triggered.connect(lambda: self.treeView.edit(index, self.treeView.AllEditTriggers, QtCore.QEvent(QtCore.QEvent.None_)))
             editTagAction = menu.addAction(QtGui.QIcon.fromTheme('document-edit'), 'Edit colors...')
             editTagAction.triggered.connect(lambda: self.editTag.emit(index.data()))
             removeTagAction = menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 'Delete tag')

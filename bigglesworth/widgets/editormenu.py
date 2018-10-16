@@ -57,8 +57,14 @@ class SoundsMenu(FactoryMenu):
     def __init__(self, parent):
         FactoryMenu.__init__(self, '&Library', parent)
         self.settings = QtCore.QSettings()
-        self.libraryModel = parent.libraryModel
-        self.referenceModel = parent.referenceModel
+        self.main = QtWidgets.QApplication.instance()
+        self.database = self.main.database
+        self.libraryModel = self.database.libraryModel
+        self.libraryModel.dataChanged.connect(lambda: setattr(self, 'done', False))
+        self.libraryModel.updated.connect(lambda: setattr(self, 'done', False))
+        self.referenceModel = self.database.referenceModel
+        self.tagsModel = self.database.tagsModel
+        self.tagsModel.dataChanged.connect(lambda: setattr(self, 'done', False))
         self.locationsMenu = self.addMenu('By collection')
         self.locationsMenu.menuAction().setIcon(QtGui.QIcon.fromTheme('document-open'))
         self.locationsMenu.aboutToShow.connect(self.loadLocations)
@@ -217,12 +223,15 @@ class SoundsMenu(FactoryMenu):
                 title = titleKey[mainKey]
             else:
                 title = mainKey
+            menuIcon = QtGui.QIcon()
+            if mainMenu == self.tagsMenu:
+                menuIcon = self.getTagIcon(mainKey)
             if not content:
-                subMenu = mainMenu.addMenu(title + ('empty)'))
+                subMenu = mainMenu.addMenu(menuIcon, title + ('empty)'))
                 subMenu.setEnabled(False)
                 continue
             if len(content) < 64:
-                subMenu = mainMenu.addMenu('')
+                subMenu = mainMenu.addMenu(menuIcon, '')
                 subMenu.setTitle('{} ({})'.format(title, len(content)))
                 for name, uid, location in sorted(content, key=lambda _: _[0].lower()):
                     self.createSoundAction(subMenu, name, uid, location)
@@ -265,6 +274,26 @@ class SoundsMenu(FactoryMenu):
                 escapeAmp(self.getCommonLetters(lastName, titleLast)), 
                 lastCount
                 ))
+
+    def getTagIcon(self, tag):
+        colors = self.main.database.getTagColors(tag)
+        if not colors:
+            return QtGui.QIcon()
+        bgd, fgd = colors
+        option = QtWidgets.QStyleOptionMenuItem()
+        option.initFrom(self)
+        iconSize = self.style().pixelMetric(QtWidgets.QStyle.PM_SmallIconSize, option, self)
+        icon = QtGui.QPixmap(iconSize, iconSize)
+        icon.fill(QtCore.Qt.transparent)
+        qp = QtGui.QPainter(icon)
+        qp.setRenderHints(qp.Antialiasing)
+        qp.setPen(QtGui.QPen(bgd, iconSize * .25))
+        qp.setBrush(fgd)
+#            qp.translate(.5, .5)
+        deltaPos = iconSize * .125
+        qp.drawRoundedRect(deltaPos, deltaPos, iconSize - deltaPos * 2 - 1, iconSize - deltaPos * 2 - 1, deltaPos * .5, deltaPos * .5)
+        qp.end()
+        return QtGui.QIcon(icon)
 
     def loadAlpha(self):
         if self.alphaDone:

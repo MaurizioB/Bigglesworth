@@ -10,10 +10,11 @@ import re
 from Qt import QtCore, QtGui, QtSql
 QtCore.pyqtSignal = QtCore.Signal
 
-from bigglesworth.utils import Enum, localPath, getName, getSizeStr, elapsedFrom
+from bigglesworth.utils import Enum, localPath, getName, getSizeStr, elapsedFrom, getValidQColor
 from bigglesworth.parameters import Parameters, oscShapes, categories
 from bigglesworth.libs import midifile
-from bigglesworth.const import factoryPresets, NameColumn, chr2ord, LogInfo, LogWarning, LogCritical, LogFatal, LogDebug
+from bigglesworth.const import (factoryPresets, NameColumn, chr2ord, backgroundRole, foregroundRole, 
+    LogInfo, LogWarning, LogCritical, LogFatal, LogDebug)
 from bigglesworth.library import CollectionModel, LibraryModel
 from bigglesworth.backup import BackUp
 
@@ -640,6 +641,15 @@ class BlofeldDB(QtCore.QObject):
                 return False
         self.sql.commit()
         return True
+
+    def getTagColors(self, tag):
+        res = self.tagsModel.match(self.tagsModel.index(0, 0), QtCore.Qt.DisplayRole, tag, flags=QtCore.Qt.MatchExactly)
+        if res:
+            tagIndex = res[0]
+            bgd = getValidQColor(tagIndex.sibling(tagIndex.row(), 1).data(), backgroundRole)
+            fgd = getValidQColor(tagIndex.sibling(tagIndex.row(), 2).data(), foregroundRole)
+            return bgd, fgd
+        return None
 
     def addBatchRawSoundData(self, dataDict, collection=None, overwrite=False):
         self.logger.append(LogDebug, 'Adding batch raw data to library')
