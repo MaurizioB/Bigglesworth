@@ -441,7 +441,7 @@
         <item>
          <widget class="Section" name="saveFrame">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -497,7 +497,7 @@
         <item>
          <widget class="SquareButton" name="modMatrixBtn">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
+           <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -509,6 +509,12 @@
            <size>
             <width>64</width>
             <height>8</height>
+           </size>
+          </property>
+          <property name="maximumWidgetSize" stdset="0">
+           <size>
+            <width>16777215</width>
+            <height>80</height>
            </size>
           </property>
           <property name="insideText" stdset="0">
