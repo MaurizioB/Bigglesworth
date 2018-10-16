@@ -1443,10 +1443,13 @@ class EditorWindow(QtWidgets.QMainWindow):
             self.midiInWidget.activate()
         elif event.type == CTRL:
             if event.channel not in self.main.chanReceive:
+                self.bankBuffer = None
                 return
             if event.param == 0:
                 if self.main.progReceiveState:
                     self.bankBuffer = event.value
+                else:
+                    self.bankBuffer = None
                 return
             elif event.param == 1:
                 self.modSlider.setValue(event.value)
@@ -1457,7 +1460,6 @@ class EditorWindow(QtWidgets.QMainWindow):
                 if event.source in self.main.blockForwardPorts:
                     self.canForward = False
                 self.parameters[index] = event.value
-                self.bankBuffer = None
             elif self.main.ctrlSendState and event.param != 0:
                 self.midiEvent.emit(event)
         elif event.type == SYSEX:
@@ -1470,6 +1472,7 @@ class EditorWindow(QtWidgets.QMainWindow):
             else:
                 print('unknown SysExEvent received:\n{}', ', '.join('0x{:x}'.format(e) for e in event.sysex))
         self.canForward = True
+        self.bankBuffer = None
 
     def noteEvent(self, eventType, note, velocity):
 #        for channel in sorted(self.main.chanSend):
