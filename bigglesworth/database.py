@@ -930,7 +930,6 @@ class BlofeldDB(QtCore.QObject):
                     continue
                 collections.append(collection)
         return collections
-        
 
     def getNamesFromUidList(self, uidList):
         nameList = []

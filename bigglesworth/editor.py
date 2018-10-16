@@ -1398,7 +1398,7 @@ class EditorWindow(QtWidgets.QMainWindow):
 
     def saveAs(self, readOnly=False):
         name = self.display.nameEdit.text()
-        res = SaveSoundAs(self).exec_(name, self.currentCollection if not readOnly else None, readOnly)
+        res = SaveSoundAs(self).exec_(name, self.currentCollection if not readOnly else None, readOnly, self.currentBank, self.currentProg)
         if not res:
             return
         newName, collection, index, uid = res

@@ -864,12 +864,13 @@ class BlofeldDisplay(QtWidgets.QGraphicsView):
             self.collectionLabel.setEnabled(True)
             state = True
         else:
-            if fromCollection is not None:
+            if fromCollection:
                 self.collectionLabel.setText(factoryPresetsNamesDict.get(fromCollection, fromCollection))
                 state = True
             else:
-                self.collectionLabel.setText('various...')
-                state = False
+                fromCollection = collections[0]
+                self.collectionLabel.setText('{}, ...'.format(factoryPresetsNamesDict.get(fromCollection, fromCollection)))
+                state = True
             self.collectionLabel.setEnabled(True)
             self.collectionLabel.setToolTip('This sound is part of these collections:<br/><br/>' + '<br/>'.join(collections))
             self.collectionLabel.setStatusTip('This sound is part of these collections: "' + '", "'.join(
