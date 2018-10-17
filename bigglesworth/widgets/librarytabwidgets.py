@@ -244,6 +244,7 @@ class BaseTabWidget(QtWidgets.QTabWidget):
 #        self.referenceModel = QtSql.QSqlTableModel()
         self.settings = QtCore.QSettings()
         self.menu = QtWidgets.QMenu(self)
+        self.menu.setSeparatorsCollapsible(False)
 
         metrics = {}
         dpi = (self.logicalDpiX() + self.logicalDpiY()) / 2.
@@ -387,7 +388,12 @@ class BaseTabWidget(QtWidgets.QTabWidget):
 
     def showMenu(self, index, pos):
         self.menu.clear()
-#        menu = self.getOpenCollectionMenu()
+        collection = self.widget(index).collection
+        if not collection:
+            self.menu.addSection('Main Library')
+        else:
+            self.menu.addSection(factoryPresetsNamesDict.get(collection, collection))
+
         closeAction = self.menu.addAction(QtGui.QIcon.fromTheme('window-close'), 'Close collection')
         closeAction.triggered.connect(lambda: self.tabCloseRequested.emit(index))
         otherSide = 'right' if self.side == Left else 'left'
@@ -405,13 +411,13 @@ class BaseTabWidget(QtWidgets.QTabWidget):
                 else:
                     moveTabAction.setIcon(QtGui.QIcon.fromTheme('arrow-{}'.format(otherSide)))
         else:
-            toggleDualViewAction = self.menu.addAction(QtGui.QIcon.fromTheme('view-split-left-right'), 'Move to right panel')
-            toggleDualViewAction.triggered.connect(lambda: self.tabMoveRequested.emit(index, self.siblingTabWidget))
-            if self.count() <= 1:
+            if self.count() > 1:
+                toggleDualViewAction = self.menu.addAction(QtGui.QIcon.fromTheme('view-split-left-right'), 'Move to right panel')
+                toggleDualViewAction.triggered.connect(lambda: self.tabMoveRequested.emit(index, self.siblingTabWidget))
+            else:
                 closeAction.setEnabled(False)
 
         self.menu.addSeparator()
-        collection = self.widget(index).collection
         if collection:
             dumpMenu = self.menu.addMenu(QtGui.QIcon(':/images/dump.svg'), 'Dump "{}"'.format(collection))
             dumpMenu.setSeparatorsCollapsible(False)
