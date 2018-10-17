@@ -5,8 +5,9 @@ import string, json
 from Qt import QtCore, QtWidgets, QtSql
 
 #from bigglesworth.widgets.librarytableview import LibraryTableView
-from bigglesworth.const import chr2ord, CatRole, HoverRole, TagsRole, \
-    UidColumn, LocationColumn, NameColumn, CatColumn, TagsColumn, headerLabels, factoryPresetsNames, LogCritical
+from bigglesworth.const import (chr2ord, CatRole, HoverRole, TagsRole, 
+    UidColumn, LocationColumn, NameColumn, CatColumn, TagsColumn, LogCritical, 
+    headerLabels, factoryPresetsNames, factoryPresetsNamesDict)
 
 
 class BaseLibraryModel(QtSql.QSqlQueryModel):
@@ -181,23 +182,42 @@ class LibraryModel(BaseLibraryModel):
         return self.rowCount()
 
     def data(self, index, role):
+        if role == QtCore.Qt.ToolTipRole:
+            nameIndex = index.sibling(index.row(), NameColumn)
+            name = nameIndex.data().strip()
+            location = index.sibling(index.row(), LocationColumn).data()
+            toolTip = u'<b>{}</b>'.format(name)
+            collectionsText = ''
+            for bit, collection in enumerate(self.database.referenceModel.allCollections):
+                if location & (1 << bit):
+                    soundIndex = self.database.getIndexForUid(index.sibling(index.row(), UidColumn).data(), collection)
+                    bank = soundIndex >> 7
+                    prog = (soundIndex & 127) + 1
+                    collectionsText += u'<li>{}: <b>{}{:03}</b></li>'.format(
+                        factoryPresetsNamesDict.get(collection, collection), 
+                        string.ascii_uppercase[bank], prog)
+            if collectionsText:
+                toolTip += u'<br/><br/>Collections:<br/>' \
+                    '<ul style="margin-top: 0px; margin-left: 0px; margin-right:10px; -qt-list-indent: 0;">' + \
+                    collectionsText + '</ul>'
+            return toolTip
         if role == QtCore.Qt.StatusTipRole:
             nameIndex = index.sibling(index.row(), NameColumn)
             name = nameIndex.data().strip()
             location = index.sibling(index.row(), LocationColumn).data()
             if not nameIndex.flags() & QtCore.Qt.ItemIsEditable:
-                return u'"{}" is part of the "{}" factory preset and is not editable. {}'.format(
+                return u'"{}" appears in the "{}" factory preset. Editing requires saving it as another sound slot.'.format(
                     name, 
                     self.collections[location & 7], 
-                    index.sibling(index.row(), UidColumn).data()
+#                    index.sibling(index.row(), UidColumn).data()
                     )
             collections = []
             for k, v in self.collections.items():
                 if location & k:
                     collections.append(u'"{}"'.format(v))
             if not collections:
-                return ''
-            return u'"{}" is part of: {}'.format(name, ', '.join(collections))
+                return u'"{}" is not used in any collection.'.format(name)
+            return u'"{}" appears in: {}'.format(name, ', '.join(collections))
         if role == QtCore.Qt.FontRole and index.column() == NameColumn:
             nameIndex = index.sibling(index.row(), NameColumn)
             if not nameIndex.flags() & QtCore.Qt.ItemIsEditable:
@@ -217,6 +237,7 @@ class CollectionModel(BaseLibraryModel):
     def __init__(self, collection=None):
         BaseLibraryModel.__init__(self)
         self.collection = collection
+        self.database = QtWidgets.QApplication.instance().database
         #Comments are for old implementation that created "fake" results when collection has empty slots
 #        queryPre = 'SELECT sounds.uid, reference.{} AS location, c00.char'.format(collection)
         queryPre = 'SELECT result.uid, result.location, result.Name, result.Category, result.Tags FROM fake_reference LEFT JOIN (SELECT sounds.uid as uid, reference."{}" as location, c00.char'.format(collection)
@@ -240,8 +261,40 @@ class CollectionModel(BaseLibraryModel):
         return 0
 
     def data(self, index, role):
-        if not BaseLibraryModel.data(self, index.sibling(index.row(), 0)) and index.column() == NameColumn and role == QtCore.Qt.DisplayRole:
-            return 'Empty slot'
+        if role == QtCore.Qt.DisplayRole:
+            if not BaseLibraryModel.data(self, index.sibling(index.row(), 0)) and index.column() == NameColumn:
+                return 'Empty slot'
+        elif role == QtCore.Qt.ToolTipRole:
+            nameIndex = index.sibling(index.row(), NameColumn)
+            name = nameIndex.data().strip()
+            uid = index.sibling(index.row(), UidColumn).data()
+            collections = self.database.getCollectionsFromUid(uid)
+            if len(collections) > 1:
+                toolTip = u'{} also appears in the following collections:<br/>'.format(name) + \
+                    u'<ul style="margin-top: 0px; margin-left: 0px; margin-right:10px; -qt-list-indent: 0;">'
+                for collectionId in collections:
+                    collection = self.database.referenceModel.allCollections[collectionId]
+                    if collection == self.collection:
+                        continue
+                    soundIndex = self.database.getIndexForUid(uid, collection)
+                    bank = soundIndex >> 7
+                    prog = (soundIndex & 127) + 1
+                    toolTip += u'<li>{}: <b>{}{:03}</b></li>'.format(
+                        factoryPresetsNamesDict.get(collection, collection), 
+                        string.ascii_uppercase[bank], prog)
+                return toolTip + u'</ul>'
+        elif role == QtCore.Qt.StatusTipRole:
+            nameIndex = index.sibling(index.row(), NameColumn)
+            name = nameIndex.data().strip()
+            uid = index.sibling(index.row(), UidColumn).data()
+            collections = self.database.getCollectionsFromUid(uid)
+            if len(collections) > 1:
+                names = []
+                for collectionId in collections:
+                    collection = self.database.referenceModel.allCollections[collectionId]
+                    if collection != self.collection:
+                        names.append(u'"{}"'.format(collection))
+                return u'"{}" also appears in: {}'.format(name, ', '.join(names))
 #        if not index.sibling(index.row(), 0).data() and index.column() == NameColumn and role == QtCore.Qt.DisplayRole:
 #            return 'suca'
 #        return 0
@@ -253,8 +306,8 @@ class CollectionModel(BaseLibraryModel):
 #                    return 0
 #            else:
 #                return BaseLibraryModel.data(self, index, role)
-        if role == QtCore.Qt.StatusTipRole:
-            return index.sibling(index.row(), UidColumn).data()
+#        if role == QtCore.Qt.StatusTipRole:
+#            return index.sibling(index.row(), UidColumn).data()
         return BaseLibraryModel.data(self, index, role)
 
     def flags(self, index):
