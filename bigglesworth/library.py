@@ -2,12 +2,13 @@
 
 import string, json
 
-from Qt import QtCore, QtWidgets, QtSql
+from Qt import QtCore, QtGui, QtWidgets, QtSql
 
 #from bigglesworth.widgets.librarytableview import LibraryTableView
 from bigglesworth.const import (chr2ord, CatRole, HoverRole, TagsRole, 
     UidColumn, LocationColumn, NameColumn, CatColumn, TagsColumn, LogCritical, 
     headerLabels, factoryPresetsNames, factoryPresetsNamesDict)
+from bigglesworth.parameters import categories
 
 
 class BaseLibraryModel(QtSql.QSqlQueryModel):
@@ -28,6 +29,9 @@ class BaseLibraryModel(QtSql.QSqlQueryModel):
         self.hoverDict = {}
         self.scheduledQueryUpdate = False
         self.logger = None
+        self.catIcons = []
+        for category in categories:
+            self.catIcons.append(QtGui.QIcon.fromTheme(category.strip().lower()))
 
     def dbErrorLog(self, message, extMessage='', query=None):
         print('Db error:', message)
@@ -46,6 +50,11 @@ class BaseLibraryModel(QtSql.QSqlQueryModel):
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if role == HoverRole:
             return self.hoverDict.get(index, QtCore.QPoint())
+        elif role == QtCore.Qt.DecorationRole and index.column() == CatColumn:
+            try:
+                return self.catIcons[index.data()]
+            except:
+                return
         return QtSql.QSqlQueryModel.data(self, index, role)
 
     def setData(self, index, value, role):

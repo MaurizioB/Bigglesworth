@@ -467,7 +467,7 @@ class DockLibrary(QtWidgets.QWidget):
         self.catCountItems = []
         self.catIndexes = []
         for c, cat in enumerate(categories):
-            catItem = MultiSelectItem(cat)
+            catItem = MultiSelectItem(QtGui.QIcon.fromTheme(cat.strip().lower()), cat)
             catItem.setData(c, CatRole)
             catCountItem = MultiSelectItem()
             self.catItem.appendRow([catItem, catCountItem])
