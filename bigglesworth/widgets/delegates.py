@@ -9,7 +9,9 @@ from bigglesworth.const import CatRole, HoverRole, backgroundRole, foregroundRol
 class ExpandingView(QtWidgets.QListView):
     def showEvent(self, event):
         QtWidgets.QListView.showEvent(self, event)
-        self.setMinimumWidth(self.sizeHintForColumn(0) + self.parent().parent().iconSize().width())
+        self.setMinimumWidth(self.sizeHintForColumn(0) + 
+            self.verticalScrollBar().sizeHint().width() + 
+            self.parent().parent().iconSize().width())
 
 
 class CategoryDelegate(QtWidgets.QStyledItemDelegate):
