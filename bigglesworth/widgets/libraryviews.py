@@ -445,6 +445,21 @@ class BaseLibraryView(QtWidgets.QTableView):
             return prevIndex
         return QtWidgets.QTableView.moveCursor(self, action, modifiers)
 
+    def mouseDoubleClickEvent(self, event):
+        index = self.indexAt(event.pos())
+        if not index.isValid() or index.flags() & QtCore.Qt.ItemIsEnabled:
+            return QtWidgets.QTableView.mouseDoubleClickEvent(self, event)
+        soundIndex = index.row()
+        bank = soundIndex >> 7
+        prog = soundIndex & 127
+        if QtWidgets.QMessageBox.question(self, 'Empty sound slot', 
+            'Do you want to <b>INIT</b> and open the sound at index {}{:03}?'.format(uppercase[bank], prog + 1), 
+            QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel) != QtWidgets.QMessageBox.Ok:
+                return
+        self.database.initSound(soundIndex, self.collection)
+        self.window().soundEditRequested.emit(self.database.getUidFromCollection(bank, prog, self.collection), self.collection)
+        self.setCurrentIndex(index.sibling(index.row(), NameColumn))
+
     def dragEnterEvent(self, event):
         self.dropSelectionIndexes = None
         if not self.editable:
