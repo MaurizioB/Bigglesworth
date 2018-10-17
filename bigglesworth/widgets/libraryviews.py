@@ -413,6 +413,38 @@ class BaseLibraryView(QtWidgets.QTableView):
             [(stream.readInt32(), stream.readQVariant()) for role in range(stream.readInt32())]
         return sorted(rows)
 
+    def moveCursor(self, action, modifiers):
+        if action in (self.MoveNext, self.MoveRight):
+            index = self.currentIndex()
+            if not index.isValid():
+                return self.model().index(0, 0)
+            row = index.row() + 1
+            nextIndex = index.sibling(row, NameColumn)
+            if isinstance(self, CollectionTableView):
+                rowCount = self.model().rowCount()
+                while not nextIndex.flags() & QtCore.Qt.ItemIsEnabled:
+                    row += 1
+                    if row == rowCount:
+                        break
+                    nextIndex = nextIndex.sibling(row, NameColumn)
+                self.scrollTo(nextIndex)
+            return nextIndex
+        elif action in (self.MovePrevious, self.MoveLeft):
+            index = self.currentIndex()
+            if not index.isValid():
+                return self.model().index(0, 0)
+            row = index.row() - 1
+            prevIndex = index.sibling(row, NameColumn)
+            if isinstance(self, CollectionTableView):
+                while not prevIndex.flags() & QtCore.Qt.ItemIsEnabled:
+                    row -= 1
+                    if row < 0:
+                        break
+                    prevIndex = prevIndex.sibling(row, NameColumn)
+                self.scrollTo(prevIndex)
+            return prevIndex
+        return QtWidgets.QTableView.moveCursor(self, action, modifiers)
+
     def dragEnterEvent(self, event):
         self.dropSelectionIndexes = None
         if not self.editable:
@@ -522,6 +554,7 @@ class BaseLibraryView(QtWidgets.QTableView):
 #        elif self.verticalScrollBar().isVisible():
         elif self.verticalScrollBar().maximum():
             #fixes for various scroll functions when items are not valid
+            #some of these have to be moved to moveCursor, maybe?
             if event.key() in (QtCore.Qt.Key_Up, QtCore.Qt.Key_Down):
                 if event.modifiers() == QtCore.Qt.ControlModifier:
                     delta = 1 if event.key() == QtCore.Qt.Key_Down else -1

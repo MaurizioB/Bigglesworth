@@ -265,6 +265,8 @@ class CollectionModel(BaseLibraryModel):
             if not BaseLibraryModel.data(self, index.sibling(index.row(), 0)) and index.column() == NameColumn:
                 return 'Empty slot'
         elif role == QtCore.Qt.ToolTipRole:
+            if not BaseLibraryModel.data(self, index.sibling(index.row(), 0)):
+                return
             nameIndex = index.sibling(index.row(), NameColumn)
             name = nameIndex.data().strip()
             uid = index.sibling(index.row(), UidColumn).data()
@@ -284,6 +286,8 @@ class CollectionModel(BaseLibraryModel):
                         string.ascii_uppercase[bank], prog)
                 return toolTip + u'</ul>'
         elif role == QtCore.Qt.StatusTipRole:
+            if not BaseLibraryModel.data(self, index.sibling(index.row(), 0)):
+                return 'Slot empty; drop a sound to it or right click to init a new one'
             nameIndex = index.sibling(index.row(), NameColumn)
             name = nameIndex.data().strip()
             uid = index.sibling(index.row(), UidColumn).data()
@@ -317,59 +321,59 @@ class CollectionModel(BaseLibraryModel):
             return BaseLibraryModel.flags(self, index)
 
 
-class FullLibraryProxy(QtCore.QAbstractProxyModel):
-    def setSourceModel(self, model):
-        QtCore.QAbstractProxyModel.setSourceModel(self, model)
-        model.dataChanged.connect(self.dataChanged.emit)
-
-    def rowCount(self, parent=None):
-        return 256
-
-    def columnCount(self, parent=None):
-        return self.sourceModel().columnCount()
-
-    def index(self, row, column, parent=None):
-        return self.createIndex(row, column)
-
-    def data(self, index, role=QtCore.Qt.DisplayRole):
-        return 0
-        newIndex = self.mapToSource(index)
-        if newIndex.isValid():
-            return self.sourceModel().data(newIndex, role)
-        elif role == QtCore.Qt.DisplayRole and index.column() == NameColumn:
-            return 'Empty slot'
-        return None
-
-    def flags(self, index):
-        return QtCore.Qt.ItemIsEnabled
-        newIndex = self.mapToSource(index)
-        if newIndex.isValid():
-            return self.sourceModel().flags(newIndex)
-        return QtCore.Qt.NoItemFlags
-
-    def mapToSource(self, index):
-        res = self.sourceModel().match(self.sourceModel().index(0, LocationColumn), QtCore.Qt.DisplayRole, index.row(), flags=QtCore.Qt.MatchExactly)
-        if res:
-            return res[0].sibling(res[0].row(), index.column())
-        return QtCore.QModelIndex()
-
-    def parent(self, index):
-        return QtCore.QModelIndex()
-
-    def mapFromSource(self, index):
-        print('b')
-        if index.isValid() and 0 <= index.row() < self.rowCount():
-            return self.index(self.sourceModel().index(index.row(), 1).data(), index.column())
-        return QtCore.QModelIndex()
-
-    def setData(self, index, value, role):
-        newIndex = self.mapToSource(index)
-        if newIndex.isValid():
-            res = self.sourceModel().setData(newIndex, value, role)
-            if role == HoverRole:
-                self.dataChanged.emit(index, index)
-            return res
-        return True
+#class FullLibraryProxy(QtCore.QAbstractProxyModel):
+#    def setSourceModel(self, model):
+#        QtCore.QAbstractProxyModel.setSourceModel(self, model)
+#        model.dataChanged.connect(self.dataChanged.emit)
+#
+#    def rowCount(self, parent=None):
+#        return 256
+#
+#    def columnCount(self, parent=None):
+#        return self.sourceModel().columnCount()
+#
+#    def index(self, row, column, parent=None):
+#        return self.createIndex(row, column)
+#
+#    def data(self, index, role=QtCore.Qt.DisplayRole):
+#        return 0
+#        newIndex = self.mapToSource(index)
+#        if newIndex.isValid():
+#            return self.sourceModel().data(newIndex, role)
+#        elif role == QtCore.Qt.DisplayRole and index.column() == NameColumn:
+#            return 'Empty slot'
+#        return None
+#
+#    def flags(self, index):
+#        return QtCore.Qt.ItemIsEnabled
+#        newIndex = self.mapToSource(index)
+#        if newIndex.isValid():
+#            return self.sourceModel().flags(newIndex)
+#        return QtCore.Qt.NoItemFlags
+#
+#    def mapToSource(self, index):
+#        res = self.sourceModel().match(self.sourceModel().index(0, LocationColumn), QtCore.Qt.DisplayRole, index.row(), flags=QtCore.Qt.MatchExactly)
+#        if res:
+#            return res[0].sibling(res[0].row(), index.column())
+#        return QtCore.QModelIndex()
+#
+#    def parent(self, index):
+#        return QtCore.QModelIndex()
+#
+#    def mapFromSource(self, index):
+#        print('b')
+#        if index.isValid() and 0 <= index.row() < self.rowCount():
+#            return self.index(self.sourceModel().index(index.row(), 1).data(), index.column())
+#        return QtCore.QModelIndex()
+#
+#    def setData(self, index, value, role):
+#        newIndex = self.mapToSource(index)
+#        if newIndex.isValid():
+#            res = self.sourceModel().setData(newIndex, value, role)
+#            if role == HoverRole:
+#                self.dataChanged.emit(index, index)
+#            return res
+#        return True
 
 
 class RecursiveProxy(QtCore.QSortFilterProxyModel):
