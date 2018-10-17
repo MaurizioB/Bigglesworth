@@ -1605,6 +1605,12 @@ class CollectionWidget(BaseLibraryWidget):
         self.collectionView.setCurrentIndex(index)
         self.collectionView.scrollTo(index)
 
+    def focusIndex(self, bank, prog):
+        index = self.collectionView.model().mapFromRootSource((bank << 7) + prog, NameColumn)
+        if index.isValid():
+            self.collectionView.setCurrentIndex(index)
+            self.collectionView.scrollTo(index)
+
     def deleteRequested(self, uidList):
         if RemoveSoundsMessageBox(self, self.collection, self.database.getNamesFromUidList(uidList)).exec_():
             self.database.removeSounds(uidList, self.collection)

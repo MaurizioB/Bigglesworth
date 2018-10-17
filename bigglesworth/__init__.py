@@ -133,6 +133,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.dumpBlock = False
         self.dumpBuffer = []
         self.watchedDialogs = []
+        self.bankBuffer = None
 
         self.logger = Logger(self)
 
@@ -329,7 +330,6 @@ class Bigglesworth(QtWidgets.QApplication):
 
         self.graph.port_start.connect(self.newAlsaPort)
         self.graph.conn_register.connect(self.midiConnEvent)
-        self.midiDevice.midi_event.connect(self.midiEventReceived)
 
         self.splash.showMessage('Preparing interface', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .7)
 
@@ -412,6 +412,7 @@ class Bigglesworth(QtWidgets.QApplication):
 
         self.splash.showMessage('Prepare for some coolness! ;-)', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom)
 
+        self.midiDevice.midi_event.connect(self.midiEventReceived)
         QtCore.QTimer.singleShot(200, self.loadingComplete)
 
     @property
@@ -724,6 +725,11 @@ class Bigglesworth(QtWidgets.QApplication):
             self.editorWindow.midiEventReceived(event)
             if WaveTableWindow.openedWindows and event.type in (NOTEON, NOTEOFF):
                 WaveTableWindow.openedWindows[0].midiEventReceived(event)
+            if event.type == CTRL and not event.param:
+                self.bankBuffer = event.value
+            elif event.type == PROGRAM and self.bankBuffer is not None:
+                self.mainWindow.programChange(self.bankBuffer, event.program)
+                self.bankBuffer = None
 
     def sendMidiEvent(self, event, ignoreChanSend=False):
 #        if self.debug_sysex and event.type == SYSEX:

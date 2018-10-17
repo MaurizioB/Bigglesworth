@@ -319,7 +319,17 @@ class FullLibraryProxy(QtCore.QAbstractProxyModel):
         return True
 
 
-class BaseLibraryProxy(QtCore.QSortFilterProxyModel):
+class RecursiveProxy(QtCore.QSortFilterProxyModel):
+    def mapFromRootSource(self, row, column=0):
+        sourceModel = self.sourceModel()
+        if isinstance(sourceModel, QtCore.QSortFilterProxyModel):
+            index = sourceModel.mapFromRootSource(row, column)
+        else:
+            index = sourceModel.index(row, column)
+        return self.mapFromSource(index)
+
+
+class BaseLibraryProxy(RecursiveProxy):
     invalidated = QtCore.pyqtSignal()
     def __init__(self, *args, **kwargs):
         QtCore.QSortFilterProxyModel.__init__(self, *args, **kwargs)
@@ -453,6 +463,6 @@ class CleanLibraryProxy(BaseLibraryProxy):
         return False
 
 
-class NameProxy(QtCore.QSortFilterProxyModel):
+class NameProxy(RecursiveProxy):
     def size(self):
         return self.sourceModel().size()

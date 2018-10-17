@@ -314,6 +314,12 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.openCollection(collection, self.rightTabWidget)
                         break
 
+    def programChange(self, bank, prog):
+        if isinstance(self.leftTabWidget.currentWidget(), CollectionWidget):
+            self.leftTabWidget.currentWidget().focusIndex(bank, prog)
+        if self.dualMode and isinstance(self.rightTabWidget.currentWidget(), CollectionWidget):
+            self.rightTabWidget.currentWidget().focusIndex(bank, prog)
+
     def editTag(self, oldName=''):
         new = not oldName
         dialog = TagEditDialog(self, oldName, new=new)
