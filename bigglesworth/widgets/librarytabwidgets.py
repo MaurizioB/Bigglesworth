@@ -229,8 +229,8 @@ class BaseTabWidget(QtWidgets.QTabWidget):
     panelSwapRequested = QtCore.pyqtSignal()
     toggleDualView = QtCore.pyqtSignal()
     minimizePanelRequested = QtCore.pyqtSignal()
-    fullDumpCollectionToBlofeldRequested = QtCore.pyqtSignal(str, bool)
-    fullDumpBlofeldToCollectionRequested = QtCore.pyqtSignal(str, bool)
+    fullDumpCollectionToBlofeldRequested = QtCore.pyqtSignal(str, object)
+    fullDumpBlofeldToCollectionRequested = QtCore.pyqtSignal(str, object)
     findDuplicatesRequested = QtCore.pyqtSignal(object, object)
 
     def __init__(self, *args, **kwargs):
@@ -339,6 +339,8 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         if widget.collection not in [None] + factoryPresetsNamesDict.keys():
             widget.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeldRequested)
             widget.fullDumpBlofeldToCollectionRequested.connect(self.fullDumpBlofeldToCollectionRequested)
+        elif widget.collection in factoryPresetsNamesDict.keys():
+            widget.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeldRequested)
         if not icon.isNull():
             self.setTabIcon(index, icon)
         #this is necessary at startup

@@ -236,8 +236,8 @@ class BaseLibraryView(QtWidgets.QTableView):
     dumpFromRequested = QtCore.pyqtSignal(object, object, int, bool)
     #uid, blofeld index/buffer, multi
     dumpToRequested = QtCore.pyqtSignal(object, object, bool)
-    fullDumpCollectionToBlofeldRequested = QtCore.pyqtSignal(str, bool)
-    fullDumpBlofeldToCollectionRequested = QtCore.pyqtSignal(str, bool)
+    fullDumpCollectionToBlofeldRequested = QtCore.pyqtSignal(str, object)
+    fullDumpBlofeldToCollectionRequested = QtCore.pyqtSignal(str, object)
     dropEventSignal = QtCore.pyqtSignal()
 
     def __init__(self, *args, **kwargs):
@@ -759,14 +759,15 @@ class BaseLibraryView(QtWidgets.QTableView):
                 dumpMenu.setEnabled(False)
             dumpMenu.setSeparatorsCollapsible(False)
             receiveSection = dumpMenu.addSection('Receive')
-            dumpFromSoundBuffer = dumpMenu.addAction('Dump from Sound Edit Buffer')
-            dumpFromSoundBuffer.triggered.connect(lambda: self.dumpFromRequested.emit(None, self.collection, index.row(), False))
-            dumpFromIndex = dumpMenu.addAction('Dump from {}'.format(pos))
-            dumpFromIndex.triggered.connect(lambda: self.dumpFromRequested.emit(index.row(), self.collection, index.row(), False))
-            dumpFromMultiMenu = dumpMenu.addMenu('Dump from Multi Edit Buffer')
-            for part in range(16):
-                dumpFromMultiAction = dumpFromMultiMenu.addAction('Part {}'.format(part + 1))
-                dumpFromMultiAction.triggered.connect(lambda _, part=part: self.dumpFromRequested.emit(part, self.collection, index.row(), True))
+            if self.collection not in factoryPresets:
+                dumpFromSoundBuffer = dumpMenu.addAction('Dump from Sound Edit Buffer')
+                dumpFromSoundBuffer.triggered.connect(lambda: self.dumpFromRequested.emit(None, self.collection, index.row(), False))
+                dumpFromIndex = dumpMenu.addAction('Dump from {}'.format(pos))
+                dumpFromIndex.triggered.connect(lambda: self.dumpFromRequested.emit(index.row(), self.collection, index.row(), False))
+                dumpFromMultiMenu = dumpMenu.addMenu('Dump from Multi Edit Buffer')
+                for part in range(16):
+                    dumpFromMultiAction = dumpFromMultiMenu.addAction('Part {}'.format(part + 1))
+                    dumpFromMultiAction.triggered.connect(lambda _, part=part: self.dumpFromRequested.emit(part, self.collection, index.row(), True))
 
             sendSection = dumpMenu.addSection('Send')
 
@@ -794,15 +795,20 @@ class BaseLibraryView(QtWidgets.QTableView):
 
             if isinstance(self, CollectionTableView):
                 findDuplicatesAction.triggered.connect(lambda: self.findDuplicatesRequested.emit(uid, self.collection))
+
                 receiveSection = dumpMenu.insertSection(sendSection, 'Receive')
-                dumpFromSoundBuffer = QtWidgets.QAction('Dump from Sound Edit Buffer', dumpMenu)
-                dumpFromSoundBuffer.triggered.connect(lambda: self.dumpFromRequested.emit(None, self.collection, index.row(), False))
-                pos = '{}{:03}'.format(uppercase[index.row() >> 7], (index.row() & 127) + 1)
-                dumpFromIndex = QtWidgets.QAction('Dump from {}'.format(pos), dumpMenu)
-                dumpFromIndex.triggered.connect(lambda: self.dumpFromRequested.emit(index.row(), self.collection, index.row(), False))
-                dumpMenu.insertActions(sendSection, [dumpFromSoundBuffer, dumpFromIndex])
-                dumpFromMultiMenu = QtWidgets.QMenu('Dump from Multi Edit Buffer', dumpMenu)
-                dumpMenu.insertMenu(sendSection, dumpFromMultiMenu)
+
+                if self.collection not in factoryPresets:
+                    dumpFromSoundBuffer = QtWidgets.QAction('Dump from Sound Edit Buffer', dumpMenu)
+                    dumpFromSoundBuffer.triggered.connect(lambda: self.dumpFromRequested.emit(None, self.collection, index.row(), False))
+                    pos = '{}{:03}'.format(uppercase[index.row() >> 7], (index.row() & 127) + 1)
+                    dumpFromIndex = QtWidgets.QAction('Dump from {}'.format(pos), dumpMenu)
+                    dumpFromIndex.triggered.connect(lambda: self.dumpFromRequested.emit(index.row(), self.collection, index.row(), False))
+                    dumpMenu.insertActions(sendSection, [dumpFromSoundBuffer, dumpFromIndex])
+                    dumpFromMultiMenu = QtWidgets.QMenu('Dump from Multi Edit Buffer', dumpMenu)
+                    dumpMenu.insertMenu(sendSection, dumpFromMultiMenu)
+                else:
+                    receiveSection.setVisible(False)
 
                 dumpToSoundBuffer = dumpMenu.addAction('Dump to Sound Edit Buffer')
                 dumpToSoundBuffer.triggered.connect(lambda: self.dumpToRequested.emit(uid, None, False))
@@ -811,8 +817,9 @@ class BaseLibraryView(QtWidgets.QTableView):
                 dumpToMultiMenu = dumpMenu.addMenu('Dump to Multi Edit Buffer')
 
                 for part in range(16):
-                    dumpFromMultiAction = dumpFromMultiMenu.addAction('Part {}'.format(part + 1))
-                    dumpFromMultiAction.triggered.connect(lambda _, part=part: self.dumpFromRequested.emit(part, self.collection, index.row(), True))
+                    if self.collection not in factoryPresets:
+                        dumpFromMultiAction = dumpFromMultiMenu.addAction('Part {}'.format(part + 1))
+                        dumpFromMultiAction.triggered.connect(lambda _, part=part: self.dumpFromRequested.emit(part, self.collection, index.row(), True))
                     dumpToMultiAction = dumpToMultiMenu.addAction('Part {}'.format(part + 1))
                     dumpToMultiAction.triggered.connect(lambda _, part=part: self.dumpToRequested.emit(uid, part, True))
 
@@ -854,6 +861,16 @@ class BaseLibraryView(QtWidgets.QTableView):
             uidList = [idx.sibling(idx.row(), UidColumn).data(QtCore.Qt.DisplayRole) for idx in selRows]
             menu.addSection('{} sounds selected'.format(len(selRows)))
 
+            if isinstance(self, CollectionTableView):
+                dumpMenu = menu.addMenu(QtGui.QIcon(':/images/dump.svg'), 'Dump')
+                dumpMenu.setSeparatorsCollapsible(False)
+                if not outConn:
+                    dumpMenu.setEnabled(False)
+
+                if self.collection not in factoryPresets:
+                    receiveSection = dumpMenu.addSection('Receive')
+                sendSection = dumpMenu.addSection('Send')
+
             tagsMenu = menu.addMenu(QtGui.QIcon.fromTheme('tag'), 'Tags')
             tagsMenu.aboutToShow.connect(lambda: self.populateTagsMenu(uidList))
             tagsMenu.addSeparator()
@@ -883,11 +900,19 @@ class BaseLibraryView(QtWidgets.QTableView):
                 exportAction.setEnabled(False)
 
         if isinstance(self, CollectionTableView):
-            dumpFromAllAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('arrow-left-double'), 'Show dump receive dialog...', dumpMenu)
-            dumpFromAllAction.triggered.connect(lambda: self.fullDumpBlofeldToCollectionRequested.emit(self.collection, False))
-            dumpMenu.insertAction(sendSection, dumpFromAllAction)
-            dumpToAllAction = dumpMenu.addAction(QtGui.QIcon.fromTheme('arrow-right-double'), 'Show dump send dialog...')
-            dumpToAllAction.triggered.connect(lambda: self.fullDumpCollectionToBlofeldRequested.emit(self.collection, False))
+            if len(selRows) > 1:
+                indexes = [self.model().mapToRootSource(i).row() for i in selRows]
+                fromText = toText = 'Dump {} selected sounds...'.format(len(selRows))
+            else:
+                indexes = False
+                fromText = 'Show dump receive dialog...'
+                toText = 'Show dump send dialog...'
+            if self.collection not in factoryPresets:
+                dumpFromAllAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('arrow-left-double'), fromText, dumpMenu)
+                dumpFromAllAction.triggered.connect(lambda: self.fullDumpBlofeldToCollectionRequested.emit(self.collection, indexes))
+                dumpMenu.insertAction(sendSection, dumpFromAllAction)
+            dumpToAllAction = dumpMenu.addAction(QtGui.QIcon.fromTheme('arrow-right-double'), toText)
+            dumpToAllAction.triggered.connect(lambda: self.fullDumpCollectionToBlofeldRequested.emit(self.collection, indexes))
 
         return menu, index, name, uid
 
@@ -1412,8 +1437,8 @@ class BaseLibraryWidget(QtWidgets.QWidget):
     dumpFromRequested = QtCore.pyqtSignal(object, object, int, bool)
     #uid, blofeld index/buffer, multi
     dumpToRequested = QtCore.pyqtSignal(object, object, bool)
-    fullDumpCollectionToBlofeldRequested = QtCore.pyqtSignal(str, bool)
-    fullDumpBlofeldToCollectionRequested = QtCore.pyqtSignal(str, bool)
+    fullDumpCollectionToBlofeldRequested = QtCore.pyqtSignal(str, object)
+    fullDumpBlofeldToCollectionRequested = QtCore.pyqtSignal(str, object)
 
     def __init__(self, uiPath, parent, collection=None):
         QtWidgets.QWidget.__init__(self, parent)

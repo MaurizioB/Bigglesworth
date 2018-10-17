@@ -328,6 +328,12 @@ class RecursiveProxy(QtCore.QSortFilterProxyModel):
             index = sourceModel.index(row, column)
         return self.mapFromSource(index)
 
+    def mapToRootSource(self, index):
+        sourceModel = self.sourceModel()
+        if isinstance(sourceModel, QtCore.QSortFilterProxyModel):
+            return sourceModel.mapToRootSource(self.mapToSource(index))
+        return self.mapToSource(index)
+
 
 class BaseLibraryProxy(RecursiveProxy):
     invalidated = QtCore.pyqtSignal()
