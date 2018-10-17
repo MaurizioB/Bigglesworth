@@ -400,7 +400,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if dialog.cloneChk.isChecked():
             res = self.database.createCollection(collection, dialog.cloneCombo.itemData(dialog.cloneCombo.currentIndex()), iconName=dialog.currentIconName())
         else:
-            res = self.database.createCollection(collection, iconName=dialog.currentIconName())
+            res = self.database.createCollection(collection, iconName=dialog.currentIconName(), initBanks=dialog.initBanks())
         if not res:
             QtWidgets.QMessageBox.critical(
                 self, 

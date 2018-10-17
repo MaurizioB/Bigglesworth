@@ -1101,7 +1101,7 @@ class BlofeldDB(QtCore.QObject):
         self.tagsModel.removeRow(res[0].row())
         return self.tagsModel.submitAll()
 
-    def createCollection(self, name, source=None, iconName=None):
+    def createCollection(self, name, source=None, iconName=None, initBanks=None):
         if not self.query.exec_(u'ALTER TABLE reference ADD COLUMN "{}" int'.format(name)):
             self.dbErrorLog('Error creating collection', extMessage=(name))
             return False
@@ -1157,6 +1157,13 @@ class BlofeldDB(QtCore.QObject):
                         print(index)
                 self.sql.commit()
                 self.dbErrorLog('Factory cloned successfully', LogDebug)
+        elif initBanks is not None:
+            dataDict = {}
+            data = [p.default for p in Parameters.parameterData]
+            for bank in initBanks:
+                for index in range(bank * 128, (bank + 1) * 128):
+                    dataDict[index] = data
+            self.addBatchRawSoundData(dataDict, collection=name)
 
         if iconName is not None:
             self.main.settings.beginGroup('CollectionIcons')

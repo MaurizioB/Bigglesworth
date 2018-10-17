@@ -5,6 +5,7 @@ from bigglesworth.const import factoryPresets, factoryPresetsNamesDict, backgrou
 from bigglesworth.parameters import categories
 from bigglesworth.library import NameProxy, TagsProxy, DockLibraryProxy, MultiCatProxy
 from bigglesworth.dialogs.tags import TagValidator
+from bigglesworth.dialogs.messageboxes import DeleteSoundsMessageBox
 
 from PyQt4.QtGui import QStyleOptionViewItemV4
 QtWidgets.QStyleOptionViewItemV4 = QStyleOptionViewItemV4
@@ -486,6 +487,7 @@ class DockLibrary(QtWidgets.QWidget):
 
         self.currentCollection = None
         self.libraryView.doubleClicked.disconnect()
+        self.libraryView.deleteRequested.connect(self.deleteRequested)
 #        self.libraryView.doubleClicked.connect(self.soundDoubleClicked)
         self.clearFiltersBtn.clicked.connect(self.treeView.clearSelection)
 
@@ -549,6 +551,10 @@ class DockLibrary(QtWidgets.QWidget):
 
     def soundDoubleClicked(self, index):
         self.window().soundEditRequested.emit(index.sibling(index.row(), UidColumn).data(), self.currentCollection)
+
+    def deleteRequested(self, uidList):
+        if DeleteSoundsMessageBox(self, self.database.getNamesFromUidList(uidList)).exec_():
+            self.database.deleteSounds(uidList)
 
     def doubleClicked(self, index):
         if index.parent().isValid() and self.treeModel.rowCount(index):

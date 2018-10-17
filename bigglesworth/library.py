@@ -388,7 +388,11 @@ class DockLibraryProxy(BaseLibraryProxy):
 
     def customFilter(self, row, parent):
         index = self.sourceModel().index(row, LocationColumn)
-        return index.data() & self.filter
+#        return index.data() & self.filter
+        try:
+            return index.data() & self.filter
+        except:
+            return False
 #        if self.filter == 1 and index.data() & 7:
 #            return False
 #        elif self.filter == 2 and index.data() <= 7:
