@@ -13,7 +13,8 @@ from bigglesworth.utils import loadUi, getSysExContents, sanitize, getValidQColo
 from bigglesworth.const import (TagsRole, backgroundRole, foregroundRole, UidColumn, LocationColumn, 
     NameColumn, CatColumn, TagsColumn, FactoryColumn, chr2ord, factoryPresets)
 from bigglesworth.library import CleanLibraryProxy, BankProxy, CatProxy, NameProxy, TagsProxy, MainLibraryProxy
-from bigglesworth.dialogs import SoundTagsEditDialog, MultiSoundTagsEditDialog, RemoveSoundsMessageBox, DeleteSoundsMessageBox, DropDuplicatesMessageBox
+from bigglesworth.dialogs import (SoundTagsEditDialog, MultiSoundTagsEditDialog, RemoveSoundsMessageBox, 
+    DeleteSoundsMessageBox, DropDuplicatesMessageBox, InitEmptySlotsDialog)
 from bigglesworth.dialogs.tags import TagEdit
 from bigglesworth.libs import midifile
 
@@ -799,8 +800,10 @@ class BaseLibraryView(QtWidgets.QTableView):
         if (not selRows or not valid) and isinstance(self, CollectionTableView):
             pos = '{}{:03}'.format(uppercase[index.row() >> 7], (index.row() & 127) + 1)
             menu.addSection('Empty slot ' + pos)
-            initAction = menu.addAction('INIT this slot')
+            initAction = menu.addAction(QtGui.QIcon.fromTheme('document-new'), 'INIT this slot')
             initAction.triggered.connect(lambda: self.database.initSound(index.row(), self.collection))
+            initAllAction = menu.addAction(QtGui.QIcon.fromTheme('document-new'), 'INIT all empty slots...')
+            initAllAction.triggered.connect(lambda _, index=index: self.initBanks(index.row() >> 7))
             menu.addSeparator()
             dumpMenu = menu.addMenu(QtGui.QIcon(':/images/dump.svg'), 'Dump')
             if not all((inConn, outConn)):
@@ -963,6 +966,11 @@ class BaseLibraryView(QtWidgets.QTableView):
             dumpToAllAction.triggered.connect(lambda: self.fullDumpCollectionToBlofeldRequested.emit(self.collection, indexes))
 
         return menu, index, name, uid
+
+    def initBanks(self, bank):
+        banks = InitEmptySlotsDialog(self, bank).exec_()
+        if banks is not None:
+            self.database.initBanks(banks, self.collection, allSlots=False)
 
     def populateTagsMenu(self, uidList):
         menu = self.sender()

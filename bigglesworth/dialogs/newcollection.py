@@ -21,8 +21,6 @@ class NewCollectionDialog(QtWidgets.QDialog):
 
         self.initBankModel = QtGui.QStandardItemModel()
         self.initBankList.setModel(self.initBankModel)
-        self.bankDelegate = CheckBoxDelegate(editable=True)
-#        self.initBankList.setItemDelegate(self.bankDelegate)
         banks = iter('ABCDEFGH')
         self.bankItems = []
         for row in range(2):

@@ -22,7 +22,6 @@ class CategoryDelegate(QtWidgets.QStyledItemDelegate):
         combo.view().activated.connect(lambda index, combo=combo: self.commit(index, combo))
         combo.view().clicked.connect(lambda index, combo=combo: self.commit(index, combo))
         combo.view().pressed.connect(lambda index, combo=combo: self.commit(index, combo))
-#        self.updateEditorGeometry(combo, option, index)
         return combo
 
     def updateEditorGeometry(self, editor, option, index):

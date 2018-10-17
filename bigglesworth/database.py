@@ -1158,12 +1158,7 @@ class BlofeldDB(QtCore.QObject):
                 self.sql.commit()
                 self.dbErrorLog('Factory cloned successfully', LogDebug)
         elif initBanks is not None:
-            dataDict = {}
-            data = [p.default for p in Parameters.parameterData]
-            for bank in initBanks:
-                for index in range(bank * 128, (bank + 1) * 128):
-                    dataDict[index] = data
-            self.addBatchRawSoundData(dataDict, collection=name)
+            self.initBanks(initBanks, name)
 
         if iconName is not None:
             self.main.settings.beginGroup('CollectionIcons')
@@ -1172,6 +1167,17 @@ class BlofeldDB(QtCore.QObject):
 
         self.referenceModel.refresh()
         return True
+
+    def initBanks(self, banks, collection, allSlots=True):
+        dataDict = {}
+        data = [p.default for p in Parameters.parameterData]
+        ignore = self.getIndexesForCollection(collection) if not allSlots else []
+        for bank in banks:
+            for index in range(bank * 128, (bank + 1) * 128):
+                if index in ignore:
+                    continue
+                dataDict[index] = data
+        self.addBatchRawSoundData(dataDict, collection=collection)
 
     def initSound(self, index, collection):
         self.addRawSoundData([p.default for p in Parameters.parameterData], collection=collection, index=index)
