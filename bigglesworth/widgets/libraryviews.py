@@ -1022,10 +1022,9 @@ class CollectionTableView(BaseLibraryView):
     def checkModelSize(self):
         newSize = self.model().size()
         if newSize != self.cachedSize:
-            #on windows (?), the paintEvent.rect() does not include the full geometry
+            #on windows/osx, the paintEvent.rect() does not include the full geometry
             #so we connect the scrollbars to avoid drawing artifacts on the empty
             #collection infobox
-            #TODO: !IMPORTANT! check if this applies to osx too
             if not 'linux' in sys.platform:
                 #remember, the size might be -1!
                 if newSize > 0:
@@ -1088,6 +1087,8 @@ class CollectionTableView(BaseLibraryView):
         self.menuActive = True
         menu.exec_(self.viewport().mapToGlobal(pos))
         self.menuActive = False
+        #required of MacOS
+        self.update()
 
     def dragEnterEvent(self, event):
         self.checkAutoScroll(event.pos())
