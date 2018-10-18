@@ -6,6 +6,12 @@ from PyQt4.QtGui import QStyleOptionTabV3, QStyleOptionTabWidgetFrameV2
 QtWidgets.QStyleOptionTabV3 = QStyleOptionTabV3
 QtWidgets.QStyleOptionTabWidgetFrameV2 = QStyleOptionTabWidgetFrameV2
 
+
+class MenuBar(QtWidgets.QMenuBar):
+    def contextMenuEvent(self, event):
+        pass
+
+
 class TabPlaceHolder(QtWidgets.QWidget):
     arrowTop = QtGui.QPainterPath()
     arrowTop.moveTo(-4, 0)

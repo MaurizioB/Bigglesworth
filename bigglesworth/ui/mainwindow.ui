@@ -66,7 +66,7 @@
     </item>
    </layout>
   </widget>
-  <widget class="QMenuBar" name="menubar">
+  <widget class="MenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
@@ -402,6 +402,11 @@
    <extends>QWidget</extends>
    <header>bigglesworth.widgets</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>MenuBar</class>
+   <extends>QMenuBar</extends>
+   <header>bigglesworth.widgets</header>
   </customwidget>
  </customwidgets>
  <resources/>
