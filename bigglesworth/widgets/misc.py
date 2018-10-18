@@ -763,3 +763,9 @@ class ExpandButton(QtWidgets.QPushButton):
             qp.translate(ratio, 0)
 
 
+class AlertIcon(QtWidgets.QLabel):
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QLabel.__init__(self, *args, **kwargs)
+        icon = QtGui.QIcon.fromTheme('emblem-warning')
+        self.setPixmap(icon.pixmap(self.fontMetrics().height()))
+

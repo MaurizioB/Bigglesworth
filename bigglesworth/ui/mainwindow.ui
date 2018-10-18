@@ -136,6 +136,7 @@
     <addaction name="separator"/>
     <addaction name="showSettingsAction"/>
     <addaction name="showGlobalsAction"/>
+    <addaction name="showFirmwareUtilsAction"/>
    </widget>
    <addaction name="fileMenu"/>
    <addaction name="libraryMenu"/>
@@ -208,9 +209,7 @@
   </action>
   <action name="aboutAction">
    <property name="icon">
-    <iconset theme="help-about">
-     <normaloff/>
-    </iconset>
+    <iconset theme="help-about"/>
    </property>
    <property name="text">
     <string>About &amp;Bigglesworth...</string>
@@ -231,9 +230,7 @@
   </action>
   <action name="showSettingsAction">
    <property name="icon">
-    <iconset theme="preferences-other">
-     <normaloff/>
-    </iconset>
+    <iconset theme="preferences-other"/>
    </property>
    <property name="text">
     <string>&amp;Settings</string>
@@ -244,7 +241,7 @@
   </action>
   <action name="showGlobalsAction">
    <property name="icon">
-    <iconset theme="circuit"/>
+    <iconset theme="blofeld-b"/>
    </property>
    <property name="text">
     <string>&amp;Blofeld device query</string>
@@ -252,9 +249,7 @@
   </action>
   <action name="aboutQtAction">
    <property name="icon">
-    <iconset theme="qtcreator">
-     <normaloff/>
-    </iconset>
+    <iconset theme="qtcreator"/>
    </property>
    <property name="text">
     <string>About &amp;Qt...</string>
@@ -270,9 +265,7 @@
   </action>
   <action name="showLogAction">
    <property name="icon">
-    <iconset theme="text-x-log">
-     <normaloff/>
-    </iconset>
+    <iconset theme="text-x-log"/>
    </property>
    <property name="text">
     <string>Show log</string>
@@ -331,9 +324,7 @@
   </action>
   <action name="helpAction">
    <property name="icon">
-    <iconset theme="help-contents">
-     <normaloff/>
-    </iconset>
+    <iconset theme="help-contents"/>
    </property>
    <property name="text">
     <string>Bigglesworth Manual</string>
@@ -358,6 +349,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+D</string>
+   </property>
+  </action>
+  <action name="showFirmwareUtilsAction">
+   <property name="icon">
+    <iconset theme="circuit"/>
+   </property>
+   <property name="text">
+    <string>&amp;Firmware utilities</string>
    </property>
   </action>
  </widget>

@@ -58,7 +58,7 @@ from bigglesworth.database import BlofeldDB
 from bigglesworth.widgets import SplashScreen
 from bigglesworth.mainwindow import MainWindow
 from bigglesworth.themes import ThemeCollection
-from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, GlobalsDialog, 
+from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, GlobalsDialog, FirmwareDialog, 
     DumpReceiveDialog, DumpSendDialog, WarningMessageBox, SmallDumper, FirstRunWizard, LogWindow, 
     BlofeldDumper, FindDuplicates, SoundImport, SoundExport, SoundListExport, MidiDuplicateDialog)
 from bigglesworth.help import HelpDialog
@@ -346,9 +346,13 @@ class Bigglesworth(QtWidgets.QApplication):
         self.mainWindow.helpAction.triggered.connect(HelpDialog(self.mainWindow).show)
         self.mainWindow.midiConnect.connect(self.midiConnect)
         self.mainWindow.showLogAction.triggered.connect(self.loggerWindow.show)
+
         self.mainWindow.showSettingsAction.triggered.connect(self.showSettings)
         self.mainWindow.showGlobalsAction.triggered.connect(self.showGlobals)
         self.mainWindow.showGlobalsAction.setEnabled(True if all(self.connections) else False)
+        self.mainWindow.showFirmwareUtilsAction.triggered.connect(self.showFirmwareUtils)
+        self.mainWindow.showFirmwareUtilsAction.setEnabled(True if self.connections[1] else False)
+
         self.mainWindow.leftTabWidget.fullDumpBlofeldToCollectionRequested.connect(self.fullDumpBlofeldToCollection)
         self.mainWindow.leftTabWidget.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeld)
         self.mainWindow.rightTabWidget.fullDumpBlofeldToCollectionRequested.connect(self.fullDumpBlofeldToCollection)
@@ -398,6 +402,9 @@ class Bigglesworth(QtWidgets.QApplication):
 
         self.globalsDialog = GlobalsDialog(self.mainWindow)
         self.globalsDialog.midiEvent.connect(self.sendMidiEvent)
+
+        self.firmwareDialog = FirmwareDialog(self.mainWindow)
+        self.firmwareDialog.midiEvent.connect(self.sendMidiEvent)
 
         self.dumpReceiveDialog = DumpReceiveDialog(self, self.mainWindow)
         self.dumpReceiveDialog.midiEvent.connect(self.sendMidiEvent)
@@ -1102,6 +1109,15 @@ class Bigglesworth(QtWidgets.QApplication):
         self.globalsBlock = False
         if not res:
             return
+
+    def showFirmwareUtils(self):
+        self.globalsBlock = True
+        self.midiDevice.midi_event.connect(self.firmwareDialog.midiEventReceived)
+        self.midiConnChanged.connect(self.firmwareDialog.midiConnChanged)
+        self.firmwareDialog.exec_()
+        self.midiConnChanged.disconnect(self.firmwareDialog.midiConnChanged)
+        self.midiDevice.midi_event.disconnect(self.firmwareDialog.midiEventReceived)
+        self.globalsBlock = False
 
     def showHelp(self):
         HelpDialog(self.mainWindow).show()

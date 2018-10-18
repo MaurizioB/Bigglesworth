@@ -532,5 +532,6 @@
         <file alias="32x32/poly.svg">icons/Bigglesworth/32x32/poly.svg</file>
         <file alias="32x32/audio-x-wav.svg">icons/Bigglesworth/32x32/audio-x-wav.svg</file>
         <file alias="32x32/pad.svg">icons/Bigglesworth/32x32/pad.svg</file>
+        <file alias="32x32/dump.svg">icons/Bigglesworth/32x32/dump.svg</file>
     </qresource>
 </RCC>
