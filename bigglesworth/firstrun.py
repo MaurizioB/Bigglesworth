@@ -10,6 +10,20 @@ Left, Top, Right, Bottom = range(4)
 
 events = {v:k for k, v in QtCore.QEvent.__dict__.items() if isinstance(v, int)}
 
+
+class MaskObject(QtWidgets.QWidget):
+    maskBrush = QtGui.QColor(196, 196, 196, 128)
+
+    def __init__(self, parent):
+        QtWidgets.QWidget.__init__(self, parent)
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter(self)
+        qp.setPen(QtCore.Qt.NoPen)
+        qp.setBrush(self.maskBrush)
+        qp.drawRect(self.rect())
+
+
 class Bubble(QtWidgets.QWidget):
     arrow = QtGui.QPainterPath()
     arrow.moveTo(6, 0)
@@ -281,8 +295,8 @@ class MainBubble(Bubble):
         self.message = 'This is the Librarian, where you can organize all your sounds.'
         self.targets = [
             Target('This is your Blofeld collection, which can "mirror" the contents of your Blofeld.', targetWindow.leftTabWidget, Right), 
-            Target('The side library panel contains the full library, which stores <b>every</b> available sounds, including Waldorf\'s factory presets.', targetWindow.dockLibrary, Left), 
-            Target('Sounds in the side library can be searched by using filters', targetWindow.dockLibrary, Left), 
+            Target('The side library panel contains the full library, storing <b>every</b> available sounds, including Waldorf\'s factory presets.', targetWindow.dockLibrary, Left), 
+            Target('Sounds in the side library can be searched using filters', targetWindow.dockLibrary, Left), 
             Target('For example'), 
 #            Target('Let\'s review the contents of a factory preset. Click the "+" button and select one of the 3 "Factory Presets"', 
 #                targetWindow.leftTabWidget.cornerWidget(), Left, targetWindow.leftTabWidget.currentChanged), 
@@ -364,8 +378,10 @@ class FirstRunObject(QtCore.QObject):
         self.main = main
         self.isCompleted = False
         self.mainWindow = main.mainWindow
+        self.mainWindow.createMaskObject()
         self.editorWindow = main.editorWindow
         self.dumpReceiveDialog = main.dumpReceiveDialog
+
         self.mainWindow.installEventFilter(self)
         self.editorWindow.installEventFilter(self)
         self.dumpReceiveDialog.installEventFilter(self)
@@ -418,6 +434,7 @@ class FirstRunObject(QtCore.QObject):
         self.deleteLater()
         self.isCompleted = True
         self.completed.emit(completed)
+        self.mainWindow.destroyMaskObject()
 
     def eventFilter(self, source, event):
         if source == self.mainWindow:

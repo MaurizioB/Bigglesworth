@@ -60,6 +60,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         #override sidebar and dualmode if firstrun/tutorial is on
         tutorialActive = not self.settings.value('FirstRunShown', False, bool) or self.settings.value('ShowLibrarianTutorial', True, bool)
+        self.maskObject = None
             
         sidebarMode = self.settings.value('startupSidebarMode', 2, int) if not tutorialActive else 2
         if sidebarMode == 2:
@@ -245,6 +246,15 @@ class MainWindow(QtWidgets.QMainWindow):
     def activate(self):
         self.show()
         self.activateWindow()
+
+    def createMaskObject(self):
+        from bigglesworth.firstrun import MaskObject
+        self.maskObject = MaskObject(self)
+
+    def destroyMaskObject(self):
+        self.maskObject.deleteLater()
+        self.maskObject = None
+
 
     @property
     def panelLayout(self):
@@ -526,6 +536,11 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.lastAboutEgg = not self.lastAboutEgg
             (MayTheForce, MatrixHasU)[self.lastAboutEgg](self).exec_()
+
+    def resizeEvent(self, event):
+        if self.maskObject:
+            self.maskObject.resize(self.size())
+        QtWidgets.QMainWindow.resizeEvent(self, event)
 
     def saveLayout(self):
         #prima o poi questo puoi rimuoverlo
