@@ -567,6 +567,7 @@ class Bigglesworth(QtWidgets.QApplication):
             port.name.startswith('Blofeld MIDI ') and port.name.split()[-1].isdigit:
                 port.connect(self.input)
                 self.output.connect(port)
+                self.settings.endGroup()
                 return
         autoConnect = self.settings.value('tryAutoConnect', True, bool)
         if not autoConnect:
