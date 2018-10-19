@@ -1055,14 +1055,16 @@ class Bigglesworth(QtWidgets.QApplication):
         if self.argparse.editor is not None:
             if self.argparse.librarian:
                 self.mainWindow.show()
-            self.editorWindow.show()
+#            self.editorWindow.show()
+            QtCore.QTimer.singleShot(0, self.editorWindow.activate)
             index = self.getSoundIndexFromCommandLine(self.argparse.editor)
             if index:
                 self.editorWindow.openSoundFromBankProg(*index)
         if self.argparse.wavetables:
             if self.argparse.librarian:
                 self.mainWindow.show()
-            self.showWavetable()
+#            self.showWavetable()
+            QtCore.QTimer.singleShot(0, self.showWavetable)
         else:
             self.mainWindow.show()
 
