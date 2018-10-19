@@ -10,6 +10,9 @@
     <height>719</height>
    </rect>
   </property>
+  <property name="focusPolicy">
+   <enum>Qt::StrongFocus</enum>
+  </property>
   <property name="windowTitle">
    <string>Bigglesworth Sound Editor</string>
   </property>
@@ -18,8 +21,14 @@
     <property name="margin">
      <number>1</number>
     </property>
+    <property name="spacing">
+     <number>4</number>
+    </property>
     <item row="0" column="0" rowspan="2">
      <layout class="QVBoxLayout" name="leftLayout">
+      <property name="spacing">
+       <number>4</number>
+      </property>
       <item>
        <widget class="Frame" name="mixerFrame">
         <property name="sizePolicy">
@@ -384,6 +393,9 @@
     </item>
     <item row="0" column="1">
      <layout class="QGridLayout" name="displayLayout" columnstretch="10,0,0">
+      <property name="spacing">
+       <number>4</number>
+      </property>
       <item row="0" column="1">
        <widget class="QWidget" name="widget" native="true">
         <layout class="QGridLayout" name="gridLayout_5">
@@ -432,7 +444,7 @@
         <item>
          <widget class="Section" name="saveFrame">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -488,7 +500,7 @@
         <item>
          <widget class="SquareButton" name="modMatrixBtn">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
+           <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -500,6 +512,12 @@
            <size>
             <width>64</width>
             <height>8</height>
+           </size>
+          </property>
+          <property name="maximumWidgetSize" stdset="0">
+           <size>
+            <width>16777215</width>
+            <height>80</height>
            </size>
           </property>
           <property name="insideText" stdset="0">
@@ -560,6 +578,9 @@
        </property>
        <property name="bottomMargin">
         <number>0</number>
+       </property>
+       <property name="spacing">
+        <number>4</number>
        </property>
        <item row="1" column="1">
         <widget class="Frame" name="filter2Frame">
@@ -756,6 +777,22 @@
            </property>
           </widget>
          </item>
+         <item>
+          <spacer name="horizontalSpacer_19">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::Fixed</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>4</width>
+             <height>1</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
         </layout>
        </item>
        <item row="1" column="0">
@@ -930,6 +967,9 @@
     </item>
     <item row="1" column="1">
      <layout class="QGridLayout" name="oscLfoLayout" columnstretch="388,196">
+      <property name="spacing">
+       <number>4</number>
+      </property>
       <item row="0" column="1">
        <widget class="Frame" name="lfo1Frame">
         <property name="contextMenuPolicy">
@@ -1750,8 +1790,14 @@
     </item>
     <item row="2" column="0" colspan="3">
      <layout class="QHBoxLayout" name="lowerLayout">
+      <property name="spacing">
+       <number>4</number>
+      </property>
       <item>
        <layout class="QGridLayout" name="envLayout">
+        <property name="spacing">
+         <number>4</number>
+        </property>
         <item row="0" column="0">
          <widget class="Frame" name="filterEnvelopeFrame">
           <property name="contextMenuPolicy">
@@ -2155,6 +2201,9 @@
       </item>
       <item>
        <layout class="QGridLayout" name="bottomRightLayout">
+        <property name="spacing">
+         <number>4</number>
+        </property>
         <item row="1" column="0" alignment="Qt::AlignVCenter">
          <widget class="PianoKeyboard" name="pianoKeyboard"/>
         </item>
@@ -3438,14 +3487,14 @@
    <header>dial</header>
   </customwidget>
   <customwidget>
-   <class>Frame</class>
-   <extends>QFrame</extends>
+   <class>Section</class>
+   <extends>QWidget</extends>
    <header>frame</header>
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>Section</class>
-   <extends>QWidget</extends>
+   <class>Frame</class>
+   <extends>QFrame</extends>
    <header>frame</header>
    <container>1</container>
   </customwidget>

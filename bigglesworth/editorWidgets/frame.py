@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import sys
+
 from Qt import QtCore, QtGui, QtWidgets, __binding__
 #from metawidget import BaseWidget, _getCssQColorStr, _getCssQFontStr
 from metawidget import _getCssQColorStr
@@ -18,6 +20,8 @@ QtCore.pyqtSignal = QtCore.Signal
 QtCore.pyqtProperty = QtCore.Property
 
 class Section(QtWidgets.QWidget):
+    shown = False
+
     def __init__(self, parent=None):
         QtWidgets.QWidget.__init__(self, parent)
         self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Ignored))
@@ -32,7 +36,36 @@ class Section(QtWidgets.QWidget):
     def changeEvent(self, event):
         if event.type() == QtCore.QEvent.PaletteChange:
             self.setColors(self.palette())
-            
+
+    def showEvent(self, event):
+        #add contents margins to underlying widgets to have actual margins within
+        #the section itself
+        if not self.shown:
+            self.shown = True
+            if not isinstance(self.parent(), Frame):
+                return
+            layout = self.parent().layout()
+            rowStart, colStart, rowSpan, colSpan = layout.getItemPosition(layout.indexOf(self))
+            if not colSpan:
+                return
+
+            for row in range(rowStart, rowStart + rowSpan):
+                if colSpan == 1:
+                    item = layout.itemAtPosition(row, colStart)
+                    if not item or item.widget() == self or not item.widget().layout():
+                        continue
+                    if not sum(item.widget().layout().getContentsMargins()):
+                        item.widget().layout().setContentsMargins(2, 0, 2, 0)
+                else:
+                    for col in range(colStart, colStart + colSpan):
+                        item = layout.itemAtPosition(row, col)
+                        if not item or item.widget() == self or not item.widget().layout():
+                            continue
+                        l, t, r, b = item.widget().layout().getContentsMargins()
+                        if not l + r:
+                            item.widget().layout().setContentsMargins(2, t, 2, b)
+
+
     def paintEvent(self, event):
         qp = QtGui.QPainter(self)
         qp.setRenderHints(qp.Antialiasing)
@@ -120,7 +153,7 @@ class Frame(QtWidgets.QFrame):
             #ignore invisible widgets, probally part of Qt Designer layout manager
             if widget is layout or not widget.isVisible():
                 continue
-            r, c, rs, cs =layout.getItemPosition(layout.indexOf(widget))
+            r, c, rs, cs = layout.getItemPosition(layout.indexOf(widget))
             if isinstance(widget, Section):
                 sectionRowSize = max(r + rs, sectionRowSize)
                 sectionColSize = max(c + cs, sectionColSize)
@@ -132,7 +165,11 @@ class Frame(QtWidgets.QFrame):
         for section in reversed(self._sectionWidgets):
             section.deleteLater()
             self._sectionWidgets.pop()
-#        print(self.children())
+
+        #widgets are probably not layed out yet?
+        if not rowSize or not colSize:
+            return
+
         remove = []
         self._sections = []
         for sectionStr in self._sectionsStr:
@@ -307,15 +344,24 @@ class Frame(QtWidgets.QFrame):
         self.update()
 
     def _setLabelRect(self):
-        self._labelRect = rect = QtCore.QRectF(0, 0, self.fontMetrics().width(self._label) + 4, self.fontMetrics().height() + 2)
+#        self._labelRect = rect = QtCore.QRectF(0, 0, self.fontMetrics().width(self._label) + 4, self.fontMetrics().height() + 2)
+        fontMetrics = self.fontMetrics()
+        hMargin = fontMetrics.height() / 4
+        vMargin = hMargin / 2
+        if sys.platform == 'darwin':
+            hMargin = max(8, hMargin * 2)
+        self._labelRect = rect = self.fontMetrics().boundingRect(self._label).adjusted(0, 0, hMargin, vMargin)
+        rect.translate(-rect.topLeft())
         self._labelBackgroundPath = QtGui.QPainterPath()
-        self._labelBackgroundPath.moveTo(rect.x() + rect.width() + rect.height() * 2, rect.y())
-        self._labelBackgroundPath.arcTo(rect.x(), rect.y(), 4, 4, 90, 90)
-        self._labelBackgroundPath.lineTo(rect.x(), rect.height() - 2)
-        self._labelBackgroundPath.arcTo(rect.x(), rect.y() + rect.height() - 4, 4, 4, 180, 90)
-        self._labelBackgroundPath.lineTo(rect.width(), rect.y() + rect.height())
-        self._labelBackgroundPath.arcTo(rect.width() - rect.height() / 2 - 8, rect.y(), rect.height(), rect.height(), 270, 90)
-        self._labelBackgroundPath.arcTo(rect.width() + rect.height() / 2 - 8, rect.y(), rect.height(), rect.height(), 180, -90)
+        self._labelBackgroundPath.moveTo(2, 0)
+        self._labelBackgroundPath.arcTo(0, 0, 4, 4, 90, 90)
+        self._labelBackgroundPath.arcTo(0, rect.height() - 4, 4, 4, 180, 90)
+        closeRect = QtCore.QRectF(rect.width() - rect.height() / 2 - 8, rect.y(), rect.height(), rect.height())
+        self._labelBackgroundPath.arcTo(closeRect, 270, 90)
+        closeRect.translate(rect.height(), 0)
+        self._labelBackgroundPath.arcTo(closeRect, 180, -90)
+        if sys.platform == 'darwin':
+            self._labelRect.setWidth(self._labelRect.width() - hMargin / 2)
 
     def _computeMargins(self):
         top = bottom = left = right = self._padding
@@ -410,7 +456,6 @@ class Frame(QtWidgets.QFrame):
 
 
 if __name__ == '__main__':
-    import sys
     app = QtWidgets.QApplication(sys.argv)
     f = Frame(label='asdf')
     f.borderColor = QtGui.QColor(QtCore.Qt.blue)

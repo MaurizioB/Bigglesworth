@@ -12,6 +12,7 @@ class _Button(QtWidgets.QPushButton):
     def __init__(self, parent=None):
         QtWidgets.QPushButton.__init__(self, parent)
         self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.setAttribute(QtCore.Qt.WA_LayoutUsesWidgetRect, True)
         self.setMinimumSize(self._minimumSizeHint)
         self.setMaximumSize(QtCore.QSize(80, 80))
         self.sizeHint = lambda: self._baseSizeHint

@@ -6,6 +6,12 @@ from PyQt4.QtGui import QStyleOptionTabV3, QStyleOptionTabWidgetFrameV2
 QtWidgets.QStyleOptionTabV3 = QStyleOptionTabV3
 QtWidgets.QStyleOptionTabWidgetFrameV2 = QStyleOptionTabWidgetFrameV2
 
+
+class MenuBar(QtWidgets.QMenuBar):
+    def contextMenuEvent(self, event):
+        pass
+
+
 class TabPlaceHolder(QtWidgets.QWidget):
     arrowTop = QtGui.QPainterPath()
     arrowTop.moveTo(-4, 0)
@@ -756,4 +762,10 @@ class ExpandButton(QtWidgets.QPushButton):
             qp.drawPath(self.arrowPath)
             qp.translate(ratio, 0)
 
+
+class AlertIcon(QtWidgets.QLabel):
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QLabel.__init__(self, *args, **kwargs)
+        icon = QtGui.QIcon.fromTheme('emblem-warning')
+        self.setPixmap(icon.pixmap(self.fontMetrics().height()))
 

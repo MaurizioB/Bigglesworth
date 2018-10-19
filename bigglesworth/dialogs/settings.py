@@ -196,8 +196,12 @@ class SettingsDialog(QtWidgets.QDialog):
     def globalsResponse(self, sysex):
         data = sysex[5:-2]
         channel, deviceId = data[36:38]
-        self.inputChannelWidget.setChannels(channel)
-        self.outputChannelWidget.setChannels(channel)
+        if not channel:
+            channels = range(16)
+        else:
+            channels = [channel - 1]
+        self.inputChannelWidget.setChannels(channels)
+        self.outputChannelWidget.setChannels(channels[0])
         self.deviceIdSpin.setValue(deviceId)
 
     def midiDetect(self):

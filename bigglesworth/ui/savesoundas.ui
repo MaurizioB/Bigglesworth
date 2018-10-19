@@ -7,67 +7,31 @@
     <x>0</x>
     <y>0</y>
     <width>334</width>
-    <height>267</height>
+    <height>271</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Save sound to library</string>
   </property>
   <layout class="QGridLayout" name="gridLayout_2">
-   <item row="2" column="1">
-    <widget class="QComboBox" name="collectionCombo">
-     <item>
-      <property name="text">
-       <string>Main library</string>
-      </property>
-     </item>
-    </widget>
-   </item>
-   <item row="1" column="1">
-    <widget class="QLineEdit" name="nameEdit">
-     <property name="maxLength">
-      <number>16</number>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="label_2">
-     <property name="text">
-      <string>Location:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="0" colspan="2">
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Save</set>
-     </property>
-    </widget>
-   </item>
    <item row="3" column="0" colspan="2">
     <widget class="QWidget" name="locationWidget" native="true">
      <layout class="QGridLayout" name="gridLayout">
+      <item row="3" column="1">
+       <widget class="QRadioButton" name="overwriteRadio">
+        <property name="text">
+         <string>Overwrite</string>
+        </property>
+        <attribute name="buttonGroup">
+         <string notr="true">overwriteGroup</string>
+        </attribute>
+       </widget>
+      </item>
       <item row="0" column="0">
        <widget class="QLabel" name="label_3">
         <property name="text">
          <string>Bank</string>
         </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
-       <widget class="QRadioButton" name="newRadio">
-        <property name="text">
-         <string>Create new</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-        <attribute name="buttonGroup">
-         <string notr="true">overwriteGroup</string>
-        </attribute>
        </widget>
       </item>
       <item row="0" column="1">
@@ -83,10 +47,13 @@
       <item row="1" column="1">
        <widget class="QComboBox" name="progCombo"/>
       </item>
-      <item row="3" column="1">
-       <widget class="QRadioButton" name="overwriteRadio">
+      <item row="3" column="0">
+       <widget class="QRadioButton" name="newRadio">
         <property name="text">
-         <string>Overwrite</string>
+         <string>Create new</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
         </property>
         <attribute name="buttonGroup">
          <string notr="true">overwriteGroup</string>
@@ -94,25 +61,70 @@
        </widget>
       </item>
       <item row="4" column="0" colspan="2">
-       <widget class="QLabel" name="overwriteLbl">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
+         <widget class="QLabel" name="overwriteIcon">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="overwriteLbl">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </widget>
    </item>
-   <item row="1" column="0">
-    <widget class="QLabel" name="label">
+   <item row="2" column="1">
+    <widget class="QComboBox" name="collectionCombo">
+     <item>
+      <property name="text">
+       <string>Main library</string>
+      </property>
+      <property name="icon">
+       <iconset theme="go-home">
+        <normaloff/>
+       </iconset>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="label_2">
      <property name="text">
-      <string>Name:</string>
+      <string>Location:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0" colspan="2">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Save</set>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QLineEdit" name="nameEdit">
+     <property name="maxLength">
+      <number>16</number>
      </property>
     </widget>
    </item>
@@ -123,6 +135,26 @@
 Select a new slot to save it to.</string>
      </property>
     </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Name:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
    </item>
   </layout>
  </widget>

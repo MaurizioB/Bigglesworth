@@ -58,13 +58,13 @@ from bigglesworth.database import BlofeldDB
 from bigglesworth.widgets import SplashScreen
 from bigglesworth.mainwindow import MainWindow
 from bigglesworth.themes import ThemeCollection
-from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, GlobalsDialog, 
+from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, GlobalsDialog, FirmwareDialog, 
     DumpReceiveDialog, DumpSendDialog, WarningMessageBox, SmallDumper, FirstRunWizard, LogWindow, 
     BlofeldDumper, FindDuplicates, SoundImport, SoundExport, SoundListExport, MidiDuplicateDialog)
 from bigglesworth.help import HelpDialog
 #from bigglesworth.utils import localPath
 from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR, LogInfo, LogWarning, factoryPresets, factoryPresetsNamesDict
-from bigglesworth.midiutils import SYSEX, CTRL, NOTEOFF, NOTEON, PROGRAM, SysExEvent
+from bigglesworth.midiutils import SYSEX, CTRL, NOTEOFF, NOTEON, PROGRAM, SysExEvent, Port
 
 from bigglesworth.mididevice import MidiDevice
 
@@ -133,6 +133,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.dumpBlock = False
         self.dumpBuffer = []
         self.watchedDialogs = []
+        self.bankBuffer = None
 
         self.logger = Logger(self)
 
@@ -288,6 +289,9 @@ class Bigglesworth(QtWidgets.QApplication):
         self.midi_duplex_state = False
         self.midiThread.start()
 
+        self.blockForwardPorts = set()
+        self.allowForwardPorts = set()
+
         self.settings.beginGroup('MIDI')
         blofeldDetect = self.settings.value('blofeldDetect', True, bool)
         autoConnect = self.settings.value('tryAutoConnect', True, bool)
@@ -322,9 +326,10 @@ class Bigglesworth(QtWidgets.QApplication):
                         if port.is_output and portName in autoConnectInput:
                             self.midiConnect(port, False, True)
 
+        self.updateForwardRules()
+
         self.graph.port_start.connect(self.newAlsaPort)
         self.graph.conn_register.connect(self.midiConnEvent)
-        self.midiDevice.midi_event.connect(self.midiEventReceived)
 
         self.splash.showMessage('Preparing interface', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .7)
 
@@ -341,9 +346,13 @@ class Bigglesworth(QtWidgets.QApplication):
         self.mainWindow.helpAction.triggered.connect(HelpDialog(self.mainWindow).show)
         self.mainWindow.midiConnect.connect(self.midiConnect)
         self.mainWindow.showLogAction.triggered.connect(self.loggerWindow.show)
+
         self.mainWindow.showSettingsAction.triggered.connect(self.showSettings)
         self.mainWindow.showGlobalsAction.triggered.connect(self.showGlobals)
         self.mainWindow.showGlobalsAction.setEnabled(True if all(self.connections) else False)
+        self.mainWindow.showFirmwareUtilsAction.triggered.connect(self.showFirmwareUtils)
+        self.mainWindow.showFirmwareUtilsAction.setEnabled(True if self.connections[1] else False)
+
         self.mainWindow.leftTabWidget.fullDumpBlofeldToCollectionRequested.connect(self.fullDumpBlofeldToCollection)
         self.mainWindow.leftTabWidget.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeld)
         self.mainWindow.rightTabWidget.fullDumpBlofeldToCollectionRequested.connect(self.fullDumpBlofeldToCollection)
@@ -371,6 +380,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.editorWindow.importRequested.connect(self.importRequested)
         self.editorWindow.openLibrarianRequested.connect(self.mainWindow.activate)
         self.editorWindow.midiEvent.connect(self.sendMidiEvent)
+        self.editorWindow.midiEvent[object, bool].connect(self.sendMidiEvent)
         self.editorWindow.midiConnect.connect(self.midiConnect)
         self.editorWindow.editorMenuBar.dumpFromRequested.connect(self.dumpFrom)
         self.editorWindow.editorMenuBar.dumpToRequested.connect(self.dumpTo)
@@ -390,8 +400,11 @@ class Bigglesworth(QtWidgets.QApplication):
         self.editorWindow.setTheme(self.themes.current)
 #        self.mainWindow.setPalette(self.themes.current.palette)
 
-        self.globalsDialog = GlobalsDialog(self, self.mainWindow)
+        self.globalsDialog = GlobalsDialog(self.mainWindow)
         self.globalsDialog.midiEvent.connect(self.sendMidiEvent)
+
+        self.firmwareDialog = FirmwareDialog(self.mainWindow)
+        self.firmwareDialog.midiEvent.connect(self.sendMidiEvent)
 
         self.dumpReceiveDialog = DumpReceiveDialog(self, self.mainWindow)
         self.dumpReceiveDialog.midiEvent.connect(self.sendMidiEvent)
@@ -406,6 +419,7 @@ class Bigglesworth(QtWidgets.QApplication):
 
         self.splash.showMessage('Prepare for some coolness! ;-)', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom)
 
+        self.midiDevice.midi_event.connect(self.midiEventReceived)
         QtCore.QTimer.singleShot(200, self.loadingComplete)
 
     @property
@@ -489,6 +503,60 @@ class Bigglesworth(QtWidgets.QApplication):
         self.settings.setValue('chanSend', channels)
         self.settings.endGroup()
 
+    def updateForwardRules(self):
+        self.settings.beginGroup('MIDI')
+        block = set(self.settings.value('blockForwardPorts', [], 'QStringList'))
+        allow = set(self.settings.value('allowForwardPorts', [], 'QStringList'))
+        self.settings.endGroup()
+        ports = {}
+        for conn in self.midiDevice.input.connections.input:
+            if conn.hidden:
+                continue
+            portName = conn.src.toString()
+#            if 'blofeld' in portName.lower():
+#                block.add(portName)
+            ports[portName] = conn.src.addr
+        for port in allow:
+            block.discard(port)
+        self.blockForwardPorts = set(addr for name, addr in ports.items() if name in block)
+        self.allowForwardPorts = set(addr for name, addr in ports.items() if name in allow)
+        self.blofeldPorts = allow
+
+    def allowPortForward(self, port):
+        if isinstance(port, Port):
+            addr = port.addr
+        else:
+            addr = port
+            port = self.graph.port_id_dict[port.client.id][port.id]
+        self.settings.beginGroup('MIDI')
+        block = set(self.settings.value('blockForwardPorts', [], 'QStringList'))
+        block.discard(port.toString())
+        allow = set(self.settings.value('allowForwardPorts', [], 'QStringList'))
+        allow.add(port.toString())
+        self.settings.setValue('blockForwardPorts', list(block))
+        self.settings.setValue('allowForwardPorts', list(allow))
+        self.settings.endGroup()
+        self.blockForwardPorts.discard(addr)
+        self.allowForwardPorts.add(addr)
+
+    def blockPortForward(self, port, apply=False):
+        if isinstance(port, Port):
+            addr = port.addr
+        else:
+            addr = port
+            port = self.graph.port_id_dict[port.client.id][port.id]
+        self.settings.beginGroup('MIDI')
+        block = set(self.settings.value('blockForwardPorts', [], 'QStringList'))
+        block.add(port.toString())
+        allow = set(self.settings.value('allowForwardPorts', [], 'QStringList'))
+        allow.discard(port.toString())
+        if apply:
+            self.settings.setValue('blockForwardPorts', list(block))
+            self.settings.setValue('allowForwardPorts', list(allow))
+        self.settings.endGroup()
+        self.blockForwardPorts.add(addr)
+        self.allowForwardPorts.discard(addr)
+
     def newAlsaPort(self, port):
 #        print('new alsa port', port)
         if port.hidden:
@@ -527,7 +595,9 @@ class Bigglesworth(QtWidgets.QApplication):
         else:
             direction = False
             port = conn.src
-        portName = u'{}:{}'.format(port.client.name, port.name)
+            if state and 'blofeld' in port.toString().lower():
+                self.blockPortForward(port)
+#        portName = u'{}:{}'.format(port.client.name, port.name)
 
         self.midiConnChanged.emit(*self.connections)
 #        inConn, outConn = self.connections
@@ -551,28 +621,31 @@ class Bigglesworth(QtWidgets.QApplication):
         if autoConnect:
             if direction:
                 if state:
-                    autoConnectOutput.add(portName)
+                    autoConnectOutput.add(port.toString())
                 else:
                     if (port, direction) in self.disconnectionQueue:
                         self.disconnectionQueue.discard((port, direction))
-                        autoConnectOutput.discard(portName)
+                        autoConnectOutput.discard(port.toString())
                 self.settings.setValue('autoConnectOutput', list(autoConnectOutput))
             else:
                 if state:
-                    autoConnectInput.add(portName)
+                    autoConnectInput.add(port.toString())
                 else:
                     if (port, direction) in self.disconnectionQueue:
                         self.disconnectionQueue.discard((port, direction))
-                        autoConnectInput.discard(portName)
+                        autoConnectInput.discard(port.toString())
                 self.settings.setValue('autoConnectInput', list(autoConnectInput))
         self.settings.endGroup()
         self.settings.sync()
 
     def saveConnections(self, reset=True):
+        #why is this here?!?!?
         ([conn for conn in self.midiDevice.input.connections.input if not conn.hidden], 
             [conn for conn in self.midiDevice.output.connections.output if not conn.hidden])
-        autoConnectInput = set([u'{}:{}'.format(conn.src.client.name, conn.src.name) for conn in self.midiDevice.input.connections.input if not conn.hidden])
-        autoConnectOutput = set([u'{}:{}'.format(conn.dest.client.name, conn.dest.name) for conn in self.midiDevice.output.connections.output if not conn.hidden])
+#        autoConnectInput = set([u'{}:{}'.format(conn.src.client.name, conn.src.name) for conn in self.midiDevice.input.connections.input if not conn.hidden])
+#        autoConnectOutput = set([u'{}:{}'.format(conn.dest.client.name, conn.dest.name) for conn in self.midiDevice.output.connections.output if not conn.hidden])
+        autoConnectInput = set([conn.src.toString() for conn in self.midiDevice.input.connections.input if not conn.hidden])
+        autoConnectOutput = set([conn.dest.toString() for conn in self.midiDevice.output.connections.output if not conn.hidden])
         self.settings.beginGroup('MIDI')
         if not reset:
             for port in self.settings.value('autoConnectInput', [], 'QStringList'):
@@ -657,29 +730,41 @@ class Bigglesworth(QtWidgets.QApplication):
             return
         elif event.type in (CTRL, NOTEON, NOTEOFF, PROGRAM):
             self.editorWindow.midiEventReceived(event)
-            if WaveTableWindow.openedWindows:
+            if WaveTableWindow.openedWindows and event.type in (NOTEON, NOTEOFF):
                 WaveTableWindow.openedWindows[0].midiEventReceived(event)
+            if event.type == CTRL and not event.param:
+                self.bankBuffer = event.value
+            elif event.type == PROGRAM and self.bankBuffer is not None:
+                self.mainWindow.programChange(self.bankBuffer, event.program)
+                self.bankBuffer = None
 
-    def sendMidiEvent(self, event):
+    def sendMidiEvent(self, event, ignoreChanSend=False):
 #        if self.debug_sysex and event.type == SYSEX:
 #            print event.sysex
         if self.midiDevice.backend == MidiDevice.Alsa:
             alsa_event = event.get_event()
             alsa_event.source = self.output.client.id, self.output.id
             if event.type in (CTRL, NOTEOFF, NOTEON, PROGRAM):
-                for chan in sorted(self._chanSend):
-                    alsa_event.set_data({'control.channel': chan})
+                if ignoreChanSend:
                     self.seq.output_event(alsa_event)
+                else:
+                    for chan in sorted(self._chanSend):
+                        alsa_event.set_data({'control.channel': chan})
+                        self.seq.output_event(alsa_event)
             else:
                 self.seq.output_event(alsa_event)
             self.seq.drain_output()
         else:
             for port in self.seq.ports[1]:
                 if event.type in (CTRL, NOTEOFF, NOTEON, PROGRAM):
-                    for chan in sorted(self._chanSend):
-                        event.channel = chan
+                    if ignoreChanSend:
                         rtmidi_event = event.get_binary()
                         port.send_message(rtmidi_event)
+                    else:
+                        for chan in sorted(self._chanSend):
+                            event.channel = chan
+                            rtmidi_event = event.get_binary()
+                            port.send_message(rtmidi_event)
                 else:
                     rtmidi_event = event.get_binary()
                     port.send_message(rtmidi_event)
@@ -970,14 +1055,16 @@ class Bigglesworth(QtWidgets.QApplication):
         if self.argparse.editor is not None:
             if self.argparse.librarian:
                 self.mainWindow.show()
-            self.editorWindow.show()
+#            self.editorWindow.show()
+            QtCore.QTimer.singleShot(0, self.editorWindow.activate)
             index = self.getSoundIndexFromCommandLine(self.argparse.editor)
             if index:
                 self.editorWindow.openSoundFromBankProg(*index)
         if self.argparse.wavetables:
             if self.argparse.librarian:
                 self.mainWindow.show()
-            self.showWavetable()
+#            self.showWavetable()
+            QtCore.QTimer.singleShot(0, self.showWavetable)
         else:
             self.mainWindow.show()
 
@@ -1007,6 +1094,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.globalsBlock = False
         if not res:
             return
+        self.blofeldId = self.settingsDialog.deviceIdSpin.value()
         themeName = self.settingsDialog.themeCombo.currentText()
         if themeName != self.themes.current:
             self.themes.setCurrentTheme(themeName)
@@ -1016,11 +1104,22 @@ class Bigglesworth(QtWidgets.QApplication):
     def showGlobals(self):
         self.globalsBlock = True
         self.midiDevice.midi_event.connect(self.globalsDialog.midiEventReceived)
+        self.midiConnChanged.connect(self.globalsDialog.midiConnChanged)
         res = self.globalsDialog.exec_()
+        self.midiConnChanged.disconnect(self.globalsDialog.midiConnChanged)
         self.midiDevice.midi_event.disconnect(self.globalsDialog.midiEventReceived)
         self.globalsBlock = False
         if not res:
             return
+
+    def showFirmwareUtils(self):
+        self.globalsBlock = True
+        self.midiDevice.midi_event.connect(self.firmwareDialog.midiEventReceived)
+        self.midiConnChanged.connect(self.firmwareDialog.midiConnChanged)
+        self.firmwareDialog.exec_()
+        self.midiConnChanged.disconnect(self.firmwareDialog.midiConnChanged)
+        self.midiDevice.midi_event.disconnect(self.firmwareDialog.midiEventReceived)
+        self.globalsBlock = False
 
     def showHelp(self):
         HelpDialog(self.mainWindow).show()

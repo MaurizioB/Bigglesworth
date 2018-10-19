@@ -1148,7 +1148,7 @@ class DumpDialog(QtWidgets.QDialog):
 
         self.dumper = Dumper(self)
         self.midiVisible = False
-        self.midiConnectionsDialog = MidiConnectionsDialog(self.main, self)
+        self.midiConnectionsDialog = MidiConnectionsDialog(self)
         self.midiBtn.clicked.connect(self.showMidiConnections)
 
     def showMidiConnections(self):
@@ -1435,8 +1435,9 @@ class DumpDialog(QtWidgets.QDialog):
                     self.fastChk.setChecked(True)
             else:
                 self.banksWidget.setItems()
-        else:
-            pass
+        elif isinstance(sounds, (tuple, list)):
+            for row in sounds:
+                self.tableModel.setData(self.tableModel.index(row, CheckColumn), QtCore.Qt.Checked, QtCore.Qt.CheckStateRole)
 
         res = QtWidgets.QDialog.exec_(self)
         self.collectionCombo.blockSignals(True)

@@ -13,7 +13,8 @@ from bigglesworth.utils import loadUi, getSysExContents, sanitize, getValidQColo
 from bigglesworth.const import (TagsRole, backgroundRole, foregroundRole, UidColumn, LocationColumn, 
     NameColumn, CatColumn, TagsColumn, FactoryColumn, chr2ord, factoryPresets)
 from bigglesworth.library import CleanLibraryProxy, BankProxy, CatProxy, NameProxy, TagsProxy, MainLibraryProxy
-from bigglesworth.dialogs import SoundTagsEditDialog, MultiSoundTagsEditDialog, RemoveSoundsMessageBox, DeleteSoundsMessageBox, DropDuplicatesMessageBox
+from bigglesworth.dialogs import (SoundTagsEditDialog, MultiSoundTagsEditDialog, RemoveSoundsMessageBox, 
+    DeleteSoundsMessageBox, DropDuplicatesMessageBox, InitEmptySlotsDialog)
 from bigglesworth.dialogs.tags import TagEdit
 from bigglesworth.libs import midifile
 
@@ -236,8 +237,8 @@ class BaseLibraryView(QtWidgets.QTableView):
     dumpFromRequested = QtCore.pyqtSignal(object, object, int, bool)
     #uid, blofeld index/buffer, multi
     dumpToRequested = QtCore.pyqtSignal(object, object, bool)
-    fullDumpCollectionToBlofeldRequested = QtCore.pyqtSignal(str, bool)
-    fullDumpBlofeldToCollectionRequested = QtCore.pyqtSignal(str, bool)
+    fullDumpCollectionToBlofeldRequested = QtCore.pyqtSignal(str, object)
+    fullDumpBlofeldToCollectionRequested = QtCore.pyqtSignal(str, object)
     dropEventSignal = QtCore.pyqtSignal()
 
     def __init__(self, *args, **kwargs):
@@ -413,6 +414,53 @@ class BaseLibraryView(QtWidgets.QTableView):
             [(stream.readInt32(), stream.readQVariant()) for role in range(stream.readInt32())]
         return sorted(rows)
 
+    def moveCursor(self, action, modifiers):
+        if action in (self.MoveNext, self.MoveRight):
+            index = self.currentIndex()
+            if not index.isValid():
+                return self.model().index(0, 0)
+            row = index.row() + 1
+            nextIndex = index.sibling(row, NameColumn)
+            if isinstance(self, CollectionTableView):
+                rowCount = self.model().rowCount()
+                while not nextIndex.flags() & QtCore.Qt.ItemIsEnabled:
+                    row += 1
+                    if row == rowCount:
+                        break
+                    nextIndex = nextIndex.sibling(row, NameColumn)
+                self.scrollTo(nextIndex)
+            return nextIndex
+        elif action in (self.MovePrevious, self.MoveLeft):
+            index = self.currentIndex()
+            if not index.isValid():
+                return self.model().index(0, 0)
+            row = index.row() - 1
+            prevIndex = index.sibling(row, NameColumn)
+            if isinstance(self, CollectionTableView):
+                while not prevIndex.flags() & QtCore.Qt.ItemIsEnabled:
+                    row -= 1
+                    if row < 0:
+                        break
+                    prevIndex = prevIndex.sibling(row, NameColumn)
+                self.scrollTo(prevIndex)
+            return prevIndex
+        return QtWidgets.QTableView.moveCursor(self, action, modifiers)
+
+    def mouseDoubleClickEvent(self, event):
+        index = self.indexAt(event.pos())
+        if not index.isValid() or index.flags() & QtCore.Qt.ItemIsEnabled:
+            return QtWidgets.QTableView.mouseDoubleClickEvent(self, event)
+        soundIndex = index.row()
+        bank = soundIndex >> 7
+        prog = soundIndex & 127
+        if QtWidgets.QMessageBox.question(self, 'Empty sound slot', 
+            'Do you want to <b>INIT</b> and open the sound at index {}{:03}?'.format(uppercase[bank], prog + 1), 
+            QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel) != QtWidgets.QMessageBox.Ok:
+                return
+        self.database.initSound(soundIndex, self.collection)
+        self.window().soundEditRequested.emit(self.database.getUidFromCollection(bank, prog, self.collection), self.collection)
+        self.setCurrentIndex(index.sibling(index.row(), NameColumn))
+
     def dragEnterEvent(self, event):
         self.dropSelectionIndexes = None
         if not self.editable:
@@ -522,6 +570,7 @@ class BaseLibraryView(QtWidgets.QTableView):
 #        elif self.verticalScrollBar().isVisible():
         elif self.verticalScrollBar().maximum():
             #fixes for various scroll functions when items are not valid
+            #some of these have to be moved to moveCursor, maybe?
             if event.key() in (QtCore.Qt.Key_Up, QtCore.Qt.Key_Down):
                 if event.modifiers() == QtCore.Qt.ControlModifier:
                     delta = 1 if event.key() == QtCore.Qt.Key_Down else -1
@@ -751,22 +800,25 @@ class BaseLibraryView(QtWidgets.QTableView):
         if (not selRows or not valid) and isinstance(self, CollectionTableView):
             pos = '{}{:03}'.format(uppercase[index.row() >> 7], (index.row() & 127) + 1)
             menu.addSection('Empty slot ' + pos)
-            initAction = menu.addAction('INIT this slot')
+            initAction = menu.addAction(QtGui.QIcon.fromTheme('document-new'), 'INIT this slot')
             initAction.triggered.connect(lambda: self.database.initSound(index.row(), self.collection))
+            initAllAction = menu.addAction(QtGui.QIcon.fromTheme('document-new'), 'INIT all empty slots...')
+            initAllAction.triggered.connect(lambda _, index=index: self.initBanks(index.row() >> 7))
             menu.addSeparator()
             dumpMenu = menu.addMenu(QtGui.QIcon(':/images/dump.svg'), 'Dump')
             if not all((inConn, outConn)):
                 dumpMenu.setEnabled(False)
             dumpMenu.setSeparatorsCollapsible(False)
             receiveSection = dumpMenu.addSection('Receive')
-            dumpFromSoundBuffer = dumpMenu.addAction('Dump from Sound Edit Buffer')
-            dumpFromSoundBuffer.triggered.connect(lambda: self.dumpFromRequested.emit(None, self.collection, index.row(), False))
-            dumpFromIndex = dumpMenu.addAction('Dump from {}'.format(pos))
-            dumpFromIndex.triggered.connect(lambda: self.dumpFromRequested.emit(index.row(), self.collection, index.row(), False))
-            dumpFromMultiMenu = dumpMenu.addMenu('Dump from Multi Edit Buffer')
-            for part in range(16):
-                dumpFromMultiAction = dumpFromMultiMenu.addAction('Part {}'.format(part + 1))
-                dumpFromMultiAction.triggered.connect(lambda _, part=part: self.dumpFromRequested.emit(part, self.collection, index.row(), True))
+            if self.collection not in factoryPresets:
+                dumpFromSoundBuffer = dumpMenu.addAction('Dump from Sound Edit Buffer')
+                dumpFromSoundBuffer.triggered.connect(lambda: self.dumpFromRequested.emit(None, self.collection, index.row(), False))
+                dumpFromIndex = dumpMenu.addAction('Dump from {}'.format(pos))
+                dumpFromIndex.triggered.connect(lambda: self.dumpFromRequested.emit(index.row(), self.collection, index.row(), False))
+                dumpFromMultiMenu = dumpMenu.addMenu('Dump from Multi Edit Buffer')
+                for part in range(16):
+                    dumpFromMultiAction = dumpFromMultiMenu.addAction('Part {}'.format(part + 1))
+                    dumpFromMultiAction.triggered.connect(lambda _, part=part: self.dumpFromRequested.emit(part, self.collection, index.row(), True))
 
             sendSection = dumpMenu.addSection('Send')
 
@@ -794,15 +846,20 @@ class BaseLibraryView(QtWidgets.QTableView):
 
             if isinstance(self, CollectionTableView):
                 findDuplicatesAction.triggered.connect(lambda: self.findDuplicatesRequested.emit(uid, self.collection))
+
                 receiveSection = dumpMenu.insertSection(sendSection, 'Receive')
-                dumpFromSoundBuffer = QtWidgets.QAction('Dump from Sound Edit Buffer', dumpMenu)
-                dumpFromSoundBuffer.triggered.connect(lambda: self.dumpFromRequested.emit(None, self.collection, index.row(), False))
-                pos = '{}{:03}'.format(uppercase[index.row() >> 7], (index.row() & 127) + 1)
-                dumpFromIndex = QtWidgets.QAction('Dump from {}'.format(pos), dumpMenu)
-                dumpFromIndex.triggered.connect(lambda: self.dumpFromRequested.emit(index.row(), self.collection, index.row(), False))
-                dumpMenu.insertActions(sendSection, [dumpFromSoundBuffer, dumpFromIndex])
-                dumpFromMultiMenu = QtWidgets.QMenu('Dump from Multi Edit Buffer', dumpMenu)
-                dumpMenu.insertMenu(sendSection, dumpFromMultiMenu)
+
+                if self.collection not in factoryPresets:
+                    dumpFromSoundBuffer = QtWidgets.QAction('Dump from Sound Edit Buffer', dumpMenu)
+                    dumpFromSoundBuffer.triggered.connect(lambda: self.dumpFromRequested.emit(None, self.collection, index.row(), False))
+                    pos = '{}{:03}'.format(uppercase[index.row() >> 7], (index.row() & 127) + 1)
+                    dumpFromIndex = QtWidgets.QAction('Dump from {}'.format(pos), dumpMenu)
+                    dumpFromIndex.triggered.connect(lambda: self.dumpFromRequested.emit(index.row(), self.collection, index.row(), False))
+                    dumpMenu.insertActions(sendSection, [dumpFromSoundBuffer, dumpFromIndex])
+                    dumpFromMultiMenu = QtWidgets.QMenu('Dump from Multi Edit Buffer', dumpMenu)
+                    dumpMenu.insertMenu(sendSection, dumpFromMultiMenu)
+                else:
+                    receiveSection.setVisible(False)
 
                 dumpToSoundBuffer = dumpMenu.addAction('Dump to Sound Edit Buffer')
                 dumpToSoundBuffer.triggered.connect(lambda: self.dumpToRequested.emit(uid, None, False))
@@ -811,8 +868,9 @@ class BaseLibraryView(QtWidgets.QTableView):
                 dumpToMultiMenu = dumpMenu.addMenu('Dump to Multi Edit Buffer')
 
                 for part in range(16):
-                    dumpFromMultiAction = dumpFromMultiMenu.addAction('Part {}'.format(part + 1))
-                    dumpFromMultiAction.triggered.connect(lambda _, part=part: self.dumpFromRequested.emit(part, self.collection, index.row(), True))
+                    if self.collection not in factoryPresets:
+                        dumpFromMultiAction = dumpFromMultiMenu.addAction('Part {}'.format(part + 1))
+                        dumpFromMultiAction.triggered.connect(lambda _, part=part: self.dumpFromRequested.emit(part, self.collection, index.row(), True))
                     dumpToMultiAction = dumpToMultiMenu.addAction('Part {}'.format(part + 1))
                     dumpToMultiAction.triggered.connect(lambda _, part=part: self.dumpToRequested.emit(uid, part, True))
 
@@ -854,6 +912,16 @@ class BaseLibraryView(QtWidgets.QTableView):
             uidList = [idx.sibling(idx.row(), UidColumn).data(QtCore.Qt.DisplayRole) for idx in selRows]
             menu.addSection('{} sounds selected'.format(len(selRows)))
 
+            if isinstance(self, CollectionTableView):
+                dumpMenu = menu.addMenu(QtGui.QIcon(':/images/dump.svg'), 'Dump')
+                dumpMenu.setSeparatorsCollapsible(False)
+                if not outConn:
+                    dumpMenu.setEnabled(False)
+
+                if self.collection not in factoryPresets:
+                    receiveSection = dumpMenu.addSection('Receive')
+                sendSection = dumpMenu.addSection('Send')
+
             tagsMenu = menu.addMenu(QtGui.QIcon.fromTheme('tag'), 'Tags')
             tagsMenu.aboutToShow.connect(lambda: self.populateTagsMenu(uidList))
             tagsMenu.addSeparator()
@@ -883,13 +951,26 @@ class BaseLibraryView(QtWidgets.QTableView):
                 exportAction.setEnabled(False)
 
         if isinstance(self, CollectionTableView):
-            dumpFromAllAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('arrow-left-double'), 'Show dump receive dialog...', dumpMenu)
-            dumpFromAllAction.triggered.connect(lambda: self.fullDumpBlofeldToCollectionRequested.emit(self.collection, False))
-            dumpMenu.insertAction(sendSection, dumpFromAllAction)
-            dumpToAllAction = dumpMenu.addAction(QtGui.QIcon.fromTheme('arrow-right-double'), 'Show dump send dialog...')
-            dumpToAllAction.triggered.connect(lambda: self.fullDumpCollectionToBlofeldRequested.emit(self.collection, False))
+            if len(selRows) > 1:
+                indexes = [self.model().mapToRootSource(i).row() for i in selRows]
+                fromText = toText = 'Dump {} selected sounds...'.format(len(selRows))
+            else:
+                indexes = False
+                fromText = 'Show dump receive dialog...'
+                toText = 'Show dump send dialog...'
+            if self.collection not in factoryPresets:
+                dumpFromAllAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('arrow-left-double'), fromText, dumpMenu)
+                dumpFromAllAction.triggered.connect(lambda: self.fullDumpBlofeldToCollectionRequested.emit(self.collection, indexes))
+                dumpMenu.insertAction(sendSection, dumpFromAllAction)
+            dumpToAllAction = dumpMenu.addAction(QtGui.QIcon.fromTheme('arrow-right-double'), toText)
+            dumpToAllAction.triggered.connect(lambda: self.fullDumpCollectionToBlofeldRequested.emit(self.collection, indexes))
 
         return menu, index, name, uid
+
+    def initBanks(self, bank):
+        banks = InitEmptySlotsDialog(self, bank).exec_()
+        if banks is not None:
+            self.database.initBanks(banks, self.collection, allSlots=False)
 
     def populateTagsMenu(self, uidList):
         menu = self.sender()
@@ -945,7 +1026,7 @@ class CollectionTableView(BaseLibraryView):
     def __init__(self, *args, **kwargs):
         BaseLibraryView.__init__(self, *args, **kwargs)
         self.setDropIndicatorShown(False)
-        self.menuActive = False
+        self.menuActive = None
         self.autoScrollTimer = QtCore.QTimer()
         self.autoScrollDelta = 0
         self.autoScrollAccel = 0
@@ -997,10 +1078,9 @@ class CollectionTableView(BaseLibraryView):
     def checkModelSize(self):
         newSize = self.model().size()
         if newSize != self.cachedSize:
-            #on windows (?), the paintEvent.rect() does not include the full geometry
+            #on windows/osx, the paintEvent.rect() does not include the full geometry
             #so we connect the scrollbars to avoid drawing artifacts on the empty
             #collection infobox
-            #TODO: !IMPORTANT! check if this applies to osx too
             if not 'linux' in sys.platform:
                 #remember, the size might be -1!
                 if newSize > 0:
@@ -1060,9 +1140,11 @@ class CollectionTableView(BaseLibraryView):
         if not res:
             return
         menu, index, name, uid = res
-        self.menuActive = True
+        self.menuActive = index
         menu.exec_(self.viewport().mapToGlobal(pos))
-        self.menuActive = False
+        self.menuActive = None
+        #required of MacOS
+        self.update()
 
     def dragEnterEvent(self, event):
         self.checkAutoScroll(event.pos())
@@ -1374,6 +1456,14 @@ class CollectionTableView(BaseLibraryView):
                 rect = self.visualRect(self.dropSelectionIndexes[0])
                 rect |= self.visualRect(self.dropSelectionIndexes[0].sibling(self.dropSelectionIndexes[0].row(), TagsColumn))
                 qp.drawLine(rect.x(), rect.top(), rect.width(), rect.top())
+        elif self.menuActive and self.menuActive.isValid() and not self.menuActive.flags() & QtCore.Qt.ItemIsEnabled:
+            viewport = self.viewport()
+            qp = QtGui.QPainter(viewport)
+            qp.setPen(self.dropIntoPen)
+            qp.setBrush(self.dropIntoBrush)
+            left = self.visualRect(self.menuActive.sibling(self.menuActive.row(), NameColumn))
+            right = self.visualRect(self.menuActive.sibling(self.menuActive.row(), TagsColumn))
+            qp.drawRect(left | right)
         elif not self.menuActive:
             if self.cachedSize <= 0:
                 viewport = self.viewport()
@@ -1412,8 +1502,8 @@ class BaseLibraryWidget(QtWidgets.QWidget):
     dumpFromRequested = QtCore.pyqtSignal(object, object, int, bool)
     #uid, blofeld index/buffer, multi
     dumpToRequested = QtCore.pyqtSignal(object, object, bool)
-    fullDumpCollectionToBlofeldRequested = QtCore.pyqtSignal(str, bool)
-    fullDumpBlofeldToCollectionRequested = QtCore.pyqtSignal(str, bool)
+    fullDumpCollectionToBlofeldRequested = QtCore.pyqtSignal(str, object)
+    fullDumpBlofeldToCollectionRequested = QtCore.pyqtSignal(str, object)
 
     def __init__(self, uiPath, parent, collection=None):
         QtWidgets.QWidget.__init__(self, parent)
@@ -1604,6 +1694,12 @@ class CollectionWidget(BaseLibraryWidget):
             self.database.getIndexForUid(uid, self.collection), NameColumn)
         self.collectionView.setCurrentIndex(index)
         self.collectionView.scrollTo(index)
+
+    def focusIndex(self, bank, prog):
+        index = self.collectionView.model().mapFromRootSource((bank << 7) + prog, NameColumn)
+        if index.isValid():
+            self.collectionView.setCurrentIndex(index)
+            self.collectionView.scrollTo(index)
 
     def deleteRequested(self, uidList):
         if RemoveSoundsMessageBox(self, self.collection, self.database.getNamesFromUidList(uidList)).exec_():

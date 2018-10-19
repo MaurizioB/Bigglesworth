@@ -2,23 +2,36 @@ import json
 
 from Qt import QtCore, QtGui, QtWidgets
 
-from bigglesworth.parameters import Parameters
+from bigglesworth.parameters import categories
 from bigglesworth.utils import getValidQColor
 from bigglesworth.const import CatRole, HoverRole, backgroundRole, foregroundRole
+
+class ExpandingView(QtWidgets.QListView):
+    def showEvent(self, event):
+        QtWidgets.QListView.showEvent(self, event)
+        self.setMinimumWidth(self.sizeHintForColumn(0) + 
+            self.verticalScrollBar().sizeHint().width() + 
+            self.parent().parent().iconSize().width())
+
 
 class CategoryDelegate(QtWidgets.QStyledItemDelegate):
     def createEditor(self, parent, option, index):
         combo = QtWidgets.QComboBox(parent)
-        combo.addItems(Parameters.parameterData.category.values)
+        combo.setView(ExpandingView())
+        for cat in categories:
+            combo.addItem(QtGui.QIcon.fromTheme(cat.strip().lower()), cat)
         combo.setCurrentIndex(index.data())
         combo.view().activated.connect(lambda index, combo=combo: self.commit(index, combo))
         combo.view().clicked.connect(lambda index, combo=combo: self.commit(index, combo))
         combo.view().pressed.connect(lambda index, combo=combo: self.commit(index, combo))
-#        self.updateEditorGeometry(combo, option, index)
         return combo
 
+    def updateEditorGeometry(self, editor, option, index):
+        QtWidgets.QStyledItemDelegate.updateEditorGeometry(self, editor, option, index)
+        editor.setGeometry(option.rect)
+
     def displayText(self, value, locale):
-        return Parameters.parameterData.category.values[value]
+        return categories[value]
 
     def editorEvent(self, event, model, option, index):
         if index.flags() & QtCore.Qt.ItemIsEditable and \

@@ -2056,7 +2056,7 @@
     </item>
    </layout>
   </widget>
-  <widget class="QMenuBar" name="menubar">
+  <widget class="MenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
@@ -2410,6 +2410,11 @@
    <class>PianoKeyboard</class>
    <extends>QGraphicsView</extends>
    <header>pianokeyboard</header>
+  </customwidget>
+  <customwidget>
+   <class>MenuBar</class>
+   <extends>QMenuBar</extends>
+   <header>bigglesworth.widgets</header>
   </customwidget>
   <customwidget>
    <class>SwitchablePanel</class>

@@ -66,7 +66,7 @@
     </item>
    </layout>
   </widget>
-  <widget class="QMenuBar" name="menubar">
+  <widget class="MenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
@@ -136,6 +136,7 @@
     <addaction name="separator"/>
     <addaction name="showSettingsAction"/>
     <addaction name="showGlobalsAction"/>
+    <addaction name="showFirmwareUtilsAction"/>
    </widget>
    <addaction name="fileMenu"/>
    <addaction name="libraryMenu"/>
@@ -208,9 +209,7 @@
   </action>
   <action name="aboutAction">
    <property name="icon">
-    <iconset theme="help-about">
-     <normaloff/>
-    </iconset>
+    <iconset theme="help-about"/>
    </property>
    <property name="text">
     <string>About &amp;Bigglesworth...</string>
@@ -231,9 +230,7 @@
   </action>
   <action name="showSettingsAction">
    <property name="icon">
-    <iconset theme="preferences-other">
-     <normaloff/>
-    </iconset>
+    <iconset theme="preferences-other"/>
    </property>
    <property name="text">
     <string>&amp;Settings</string>
@@ -243,15 +240,16 @@
    </property>
   </action>
   <action name="showGlobalsAction">
+   <property name="icon">
+    <iconset theme="blofeld-b"/>
+   </property>
    <property name="text">
-    <string>Blofeld &amp;device</string>
+    <string>&amp;Blofeld device query</string>
    </property>
   </action>
   <action name="aboutQtAction">
    <property name="icon">
-    <iconset theme="qtcreator">
-     <normaloff/>
-    </iconset>
+    <iconset theme="qtcreator"/>
    </property>
    <property name="text">
     <string>About &amp;Qt...</string>
@@ -267,9 +265,7 @@
   </action>
   <action name="showLogAction">
    <property name="icon">
-    <iconset theme="text-x-log">
-     <normaloff/>
-    </iconset>
+    <iconset theme="text-x-log"/>
    </property>
    <property name="text">
     <string>Show log</string>
@@ -319,15 +315,16 @@
    </property>
   </action>
   <action name="showMidiChartAction">
+   <property name="icon">
+    <iconset theme="midi"/>
+   </property>
    <property name="text">
     <string>MIDI implementation chart...</string>
    </property>
   </action>
   <action name="helpAction">
    <property name="icon">
-    <iconset theme="help-contents">
-     <normaloff/>
-    </iconset>
+    <iconset theme="help-contents"/>
    </property>
    <property name="text">
     <string>Bigglesworth Manual</string>
@@ -352,6 +349,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+D</string>
+   </property>
+  </action>
+  <action name="showFirmwareUtilsAction">
+   <property name="icon">
+    <iconset theme="circuit"/>
+   </property>
+   <property name="text">
+    <string>&amp;Firmware utilities</string>
    </property>
   </action>
  </widget>
@@ -396,6 +401,11 @@
    <extends>QWidget</extends>
    <header>bigglesworth.widgets</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>MenuBar</class>
+   <extends>QMenuBar</extends>
+   <header>bigglesworth.widgets</header>
   </customwidget>
  </customwidgets>
  <resources/>

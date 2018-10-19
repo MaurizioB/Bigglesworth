@@ -34,6 +34,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.main = parent
         self.settings = self.main.settings
         self.main.midiConnChanged.connect(lambda inConn, outConn: self.showGlobalsAction.setEnabled(True if all((inConn, outConn)) else False))
+        self.main.midiConnChanged.connect(lambda inConn, outConn: self.showFirmwareUtilsAction.setEnabled(bool(outConn)))
         self.database = parent.database
         self.database.tagsModel.dataChanged.connect(self.checkTagFilters)
 #        self.referenceModel = QtSql.QSqlTableModel()
@@ -207,17 +208,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.showWavetableAction.setIcon(QtGui.QIcon.fromTheme('wavetables'))
         self.importAction.triggered.connect(lambda: self.importRequested.emit(None, None))
         self.exportAction.triggered.connect(lambda: self.exportRequested.emit([], None))
-        self.showGlobalsAction.setIcon(QtGui.QIcon(':/images/circuit.svg'))
         self.showMidiChartAction.triggered.connect(lambda: MidiChartDialog(self).exec_())
-        self.showMidiChartAction.setIcon(QtGui.QIcon(':/images/midiicon.svg'))
         self.aboutAction.triggered.connect(self.showAbout)
         self.lastAboutEgg = randrange(2)
         self.aboutQtAction.triggered.connect(lambda: QtWidgets.QMessageBox.aboutQt(self, 'About Qt...'))
         self.toggleLibrarySidebarAction.triggered.connect(lambda: self.sidebar.setVisible(not self.sidebar.isVisible()))
         self.toggleDualViewAction.triggered.connect(self.toggleDualView)
 
-        self.openCollectionMenu.addSection('Personal collections')
-        blofeldAction = self.openCollectionMenu.addAction(QtGui.QIcon(':/images/bigglesworth_logo.svg'), 'Blofeld')
+        self.openCollectionMenu.addSection('Custom collections')
+        blofeldAction = self.openCollectionMenu.addAction(QtGui.QIcon(':/images/bigglesworth_logo.svg'), 
+            'Blofeld ({})'.format(self.database.getCountForCollection('Blofeld')))
         blofeldAction.triggered.connect(lambda: self.openCollection('Blofeld', self.leftTabWidget))
 
         self.collections = {'Blofeld': blofeldAction}
@@ -227,7 +227,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 icon = QtGui.QIcon.fromTheme(self.settings.value(collection))
             else:
                 icon = QtGui.QIcon()
-            action = self.openCollectionMenu.addAction(icon, collection)
+            action = self.openCollectionMenu.addAction(icon, '{} ({})'.format(
+                collection, self.database.getCountForCollection(collection)))
             action.triggered.connect(lambda state, collection=collection: self.openCollection(collection, self.leftTabWidget))
             self.collections[collection] = action
         self.settings.endGroup()
@@ -324,6 +325,12 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.openCollection(collection, self.rightTabWidget)
                         break
 
+    def programChange(self, bank, prog):
+        if isinstance(self.leftTabWidget.currentWidget(), CollectionWidget):
+            self.leftTabWidget.currentWidget().focusIndex(bank, prog)
+        if self.dualMode and isinstance(self.rightTabWidget.currentWidget(), CollectionWidget):
+            self.rightTabWidget.currentWidget().focusIndex(bank, prog)
+
     def editTag(self, oldName=''):
         new = not oldName
         dialog = TagEditDialog(self, oldName, new=new)
@@ -404,7 +411,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if dialog.cloneChk.isChecked():
             res = self.database.createCollection(collection, dialog.cloneCombo.itemData(dialog.cloneCombo.currentIndex()), iconName=dialog.currentIconName())
         else:
-            res = self.database.createCollection(collection, iconName=dialog.currentIconName())
+            res = self.database.createCollection(collection, iconName=dialog.currentIconName(), initBanks=dialog.initBanks())
         if not res:
             QtWidgets.QMessageBox.critical(
                 self, 

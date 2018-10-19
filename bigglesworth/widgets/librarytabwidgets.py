@@ -229,8 +229,8 @@ class BaseTabWidget(QtWidgets.QTabWidget):
     panelSwapRequested = QtCore.pyqtSignal()
     toggleDualView = QtCore.pyqtSignal()
     minimizePanelRequested = QtCore.pyqtSignal()
-    fullDumpCollectionToBlofeldRequested = QtCore.pyqtSignal(str, bool)
-    fullDumpBlofeldToCollectionRequested = QtCore.pyqtSignal(str, bool)
+    fullDumpCollectionToBlofeldRequested = QtCore.pyqtSignal(str, object)
+    fullDumpBlofeldToCollectionRequested = QtCore.pyqtSignal(str, object)
     findDuplicatesRequested = QtCore.pyqtSignal(object, object)
 
     def __init__(self, *args, **kwargs):
@@ -244,6 +244,7 @@ class BaseTabWidget(QtWidgets.QTabWidget):
 #        self.referenceModel = QtSql.QSqlTableModel()
         self.settings = QtCore.QSettings()
         self.menu = QtWidgets.QMenu(self)
+        self.menu.setSeparatorsCollapsible(False)
 
         metrics = {}
         dpi = (self.logicalDpiX() + self.logicalDpiY()) / 2.
@@ -338,6 +339,8 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         if widget.collection not in [None] + factoryPresetsNamesDict.keys():
             widget.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeldRequested)
             widget.fullDumpBlofeldToCollectionRequested.connect(self.fullDumpBlofeldToCollectionRequested)
+        elif widget.collection in factoryPresetsNamesDict.keys():
+            widget.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeldRequested)
         if not icon.isNull():
             self.setTabIcon(index, icon)
         #this is necessary at startup
@@ -387,7 +390,12 @@ class BaseTabWidget(QtWidgets.QTabWidget):
 
     def showMenu(self, index, pos):
         self.menu.clear()
-#        menu = self.getOpenCollectionMenu()
+        collection = self.widget(index).collection
+        if not collection:
+            self.menu.addSection('Main Library')
+        else:
+            self.menu.addSection(factoryPresetsNamesDict.get(collection, collection))
+
         closeAction = self.menu.addAction(QtGui.QIcon.fromTheme('window-close'), 'Close collection')
         closeAction.triggered.connect(lambda: self.tabCloseRequested.emit(index))
         otherSide = 'right' if self.side == Left else 'left'
@@ -405,13 +413,13 @@ class BaseTabWidget(QtWidgets.QTabWidget):
                 else:
                     moveTabAction.setIcon(QtGui.QIcon.fromTheme('arrow-{}'.format(otherSide)))
         else:
-            toggleDualViewAction = self.menu.addAction(QtGui.QIcon.fromTheme('view-split-left-right'), 'Move to right panel')
-            toggleDualViewAction.triggered.connect(lambda: self.tabMoveRequested.emit(index, self.siblingTabWidget))
-            if self.count() <= 1:
+            if self.count() > 1:
+                toggleDualViewAction = self.menu.addAction(QtGui.QIcon.fromTheme('view-split-left-right'), 'Move to right panel')
+                toggleDualViewAction.triggered.connect(lambda: self.tabMoveRequested.emit(index, self.siblingTabWidget))
+            else:
                 closeAction.setEnabled(False)
 
         self.menu.addSeparator()
-        collection = self.widget(index).collection
         if collection:
             dumpMenu = self.menu.addMenu(QtGui.QIcon(':/images/dump.svg'), 'Dump "{}"'.format(collection))
             dumpMenu.setSeparatorsCollapsible(False)
@@ -449,7 +457,9 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         opened = self.collections + self.siblingTabWidget.collections
         self.settings.beginGroup('CollectionIcons')
         for collection in self.referenceModel.collections:
-            action = menu.addAction(factoryPresetsNamesDict.get(collection, collection))
+            action = menu.addAction('{} ({})'.format(
+                factoryPresetsNamesDict.get(collection, collection), 
+                self.database.getCountForCollection(collection)))
             action.triggered.connect(lambda state, collection=collection: self.openCollection.emit(collection))
             if collection in opened:
                 action.setEnabled(False)
@@ -492,14 +502,19 @@ class BaseTabWidget(QtWidgets.QTabWidget):
 
     def contextMenuEvent(self, event):
         menu = QtWidgets.QMenu(self)
-        tabSwapAction = menu.addAction(QtGui.QIcon.fromTheme('document-swap'), 'Swap panels')
-        tabSwapAction.triggered.connect(self.panelSwapRequested)
-        iconName = 'arrow-left-double' if self.side == Left else 'arrow-right-double'
-        hideAction = menu.addAction(QtGui.QIcon.fromTheme(iconName), 'Minimize panel')
-        hideAction.triggered.connect(self.minimizePanelRequested)
-        if self.window().panelLayout < 3:
-            hideAction.setEnabled(False)
-        menu.addSeparator()
+        if self.window().dualMode:
+            tabSwapAction = menu.addAction(QtGui.QIcon.fromTheme('document-swap'), 'Swap panels')
+            tabSwapAction.triggered.connect(self.panelSwapRequested)
+            iconName = 'arrow-left-double' if self.side == Left else 'arrow-right-double'
+            hideAction = menu.addAction(QtGui.QIcon.fromTheme(iconName), 'Minimize panel')
+            hideAction.triggered.connect(self.minimizePanelRequested)
+            if self.window().panelLayout < 3:
+                hideAction.setEnabled(False)
+            menu.addSeparator()
+            toggleDualViewAction = menu.addAction(QtGui.QIcon.fromTheme('view-right-close'), 'Switch to single panel view')
+        else:
+            toggleDualViewAction = menu.addAction(QtGui.QIcon.fromTheme('view-split-left-right'), 'Switch to dual panel view')
+        toggleDualViewAction.triggered.connect(self.toggleDualView)
         menu.addMenu(self.getOpenCollectionMenu())
         menu.exec_(event.globalPos())
 

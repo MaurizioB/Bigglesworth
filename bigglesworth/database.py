@@ -10,10 +10,11 @@ import re
 from Qt import QtCore, QtGui, QtSql
 QtCore.pyqtSignal = QtCore.Signal
 
-from bigglesworth.utils import Enum, localPath, getName, getSizeStr, elapsedFrom
+from bigglesworth.utils import Enum, localPath, getName, getSizeStr, elapsedFrom, getValidQColor
 from bigglesworth.parameters import Parameters, oscShapes, categories
 from bigglesworth.libs import midifile
-from bigglesworth.const import factoryPresets, NameColumn, chr2ord, LogInfo, LogWarning, LogCritical, LogFatal, LogDebug
+from bigglesworth.const import (factoryPresets, NameColumn, chr2ord, backgroundRole, foregroundRole, 
+    LogInfo, LogWarning, LogCritical, LogFatal, LogDebug)
 from bigglesworth.library import CollectionModel, LibraryModel
 from bigglesworth.backup import BackUp
 
@@ -641,6 +642,15 @@ class BlofeldDB(QtCore.QObject):
         self.sql.commit()
         return True
 
+    def getTagColors(self, tag):
+        res = self.tagsModel.match(self.tagsModel.index(0, 0), QtCore.Qt.DisplayRole, tag, flags=QtCore.Qt.MatchExactly)
+        if res:
+            tagIndex = res[0]
+            bgd = getValidQColor(tagIndex.sibling(tagIndex.row(), 1).data(), backgroundRole)
+            fgd = getValidQColor(tagIndex.sibling(tagIndex.row(), 2).data(), foregroundRole)
+            return bgd, fgd
+        return None
+
     def addBatchRawSoundData(self, dataDict, collection=None, overwrite=False):
         self.logger.append(LogDebug, 'Adding batch raw data to library')
         if overwrite:
@@ -930,7 +940,6 @@ class BlofeldDB(QtCore.QObject):
                     continue
                 collections.append(collection)
         return collections
-        
 
     def getNamesFromUidList(self, uidList):
         nameList = []
@@ -1092,7 +1101,7 @@ class BlofeldDB(QtCore.QObject):
         self.tagsModel.removeRow(res[0].row())
         return self.tagsModel.submitAll()
 
-    def createCollection(self, name, source=None, iconName=None):
+    def createCollection(self, name, source=None, iconName=None, initBanks=None):
         if not self.query.exec_(u'ALTER TABLE reference ADD COLUMN "{}" int'.format(name)):
             self.dbErrorLog('Error creating collection', extMessage=(name))
             return False
@@ -1148,6 +1157,8 @@ class BlofeldDB(QtCore.QObject):
                         print(index)
                 self.sql.commit()
                 self.dbErrorLog('Factory cloned successfully', LogDebug)
+        elif initBanks is not None:
+            self.initBanks(initBanks, name)
 
         if iconName is not None:
             self.main.settings.beginGroup('CollectionIcons')
@@ -1156,6 +1167,17 @@ class BlofeldDB(QtCore.QObject):
 
         self.referenceModel.refresh()
         return True
+
+    def initBanks(self, banks, collection, allSlots=True):
+        dataDict = {}
+        data = [p.default for p in Parameters.parameterData]
+        ignore = self.getIndexesForCollection(collection) if not allSlots else []
+        for bank in banks:
+            for index in range(bank * 128, (bank + 1) * 128):
+                if index in ignore:
+                    continue
+                dataDict[index] = data
+        self.addBatchRawSoundData(dataDict, collection=collection)
 
     def initSound(self, index, collection):
         self.addRawSoundData([p.default for p in Parameters.parameterData], collection=collection, index=index)

@@ -20,3 +20,5 @@ from bigglesworth.dialogs.soundexport import SoundExport
 from bigglesworth.dialogs.soundlistexport import SoundListExport
 from bigglesworth.dialogs.midichart import MidiChartDialog
 from bigglesworth.dialogs.mididuplicate import MidiDuplicateDialog
+from bigglesworth.dialogs.initemptyslots import InitEmptySlotsDialog
+from bigglesworth.dialogs.firmware import FirmwareDialog
