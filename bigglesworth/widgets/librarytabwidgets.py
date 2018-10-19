@@ -457,7 +457,9 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         opened = self.collections + self.siblingTabWidget.collections
         self.settings.beginGroup('CollectionIcons')
         for collection in self.referenceModel.collections:
-            action = menu.addAction(factoryPresetsNamesDict.get(collection, collection))
+            action = menu.addAction('{} ({})'.format(
+                factoryPresetsNamesDict.get(collection, collection), 
+                self.database.getCountForCollection(collection)))
             action.triggered.connect(lambda state, collection=collection: self.openCollection.emit(collection))
             if collection in opened:
                 action.setEnabled(False)

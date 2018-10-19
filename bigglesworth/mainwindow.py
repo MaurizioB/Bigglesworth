@@ -207,8 +207,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.toggleLibrarySidebarAction.triggered.connect(lambda: self.sidebar.setVisible(not self.sidebar.isVisible()))
         self.toggleDualViewAction.triggered.connect(self.toggleDualView)
 
-        self.openCollectionMenu.addSection('Personal collections')
-        blofeldAction = self.openCollectionMenu.addAction(QtGui.QIcon(':/images/bigglesworth_logo.svg'), 'Blofeld')
+        self.openCollectionMenu.addSection('Custom collections')
+        blofeldAction = self.openCollectionMenu.addAction(QtGui.QIcon(':/images/bigglesworth_logo.svg'), 
+            'Blofeld ({})'.format(self.database.getCountForCollection('Blofeld')))
         blofeldAction.triggered.connect(lambda: self.openCollection('Blofeld', self.leftTabWidget))
 
         self.collections = {'Blofeld': blofeldAction}
@@ -218,7 +219,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 icon = QtGui.QIcon.fromTheme(self.settings.value(collection))
             else:
                 icon = QtGui.QIcon()
-            action = self.openCollectionMenu.addAction(icon, collection)
+            action = self.openCollectionMenu.addAction(icon, '{} ({})'.format(
+                collection, self.database.getCountForCollection(collection)))
             action.triggered.connect(lambda state, collection=collection: self.openCollection(collection, self.leftTabWidget))
             self.collections[collection] = action
         self.settings.endGroup()

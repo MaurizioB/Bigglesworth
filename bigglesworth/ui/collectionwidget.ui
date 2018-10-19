@@ -149,70 +149,112 @@
            <property name="text">
             <string>All</string>
            </property>
+           <property name="icon">
+            <iconset theme="edit-select-all"/>
+           </property>
           </item>
           <item>
            <property name="text">
             <string>Init</string>
+           </property>
+           <property name="icon">
+            <iconset theme="init"/>
            </property>
           </item>
           <item>
            <property name="text">
             <string>Arp</string>
            </property>
+           <property name="icon">
+            <iconset theme="arp"/>
+           </property>
           </item>
           <item>
            <property name="text">
             <string>Atmo</string>
+           </property>
+           <property name="icon">
+            <iconset theme="atmo"/>
            </property>
           </item>
           <item>
            <property name="text">
             <string>Bass</string>
            </property>
+           <property name="icon">
+            <iconset theme="bass"/>
+           </property>
           </item>
           <item>
            <property name="text">
             <string>Drum</string>
+           </property>
+           <property name="icon">
+            <iconset theme="drum"/>
            </property>
           </item>
           <item>
            <property name="text">
             <string>FX</string>
            </property>
+           <property name="icon">
+            <iconset theme="fx"/>
+           </property>
           </item>
           <item>
            <property name="text">
             <string>Keys</string>
+           </property>
+           <property name="icon">
+            <iconset theme="keys"/>
            </property>
           </item>
           <item>
            <property name="text">
             <string>Lead</string>
            </property>
+           <property name="icon">
+            <iconset theme="lead"/>
+           </property>
           </item>
           <item>
            <property name="text">
             <string>Mono</string>
+           </property>
+           <property name="icon">
+            <iconset theme="mono"/>
            </property>
           </item>
           <item>
            <property name="text">
             <string>Pad</string>
            </property>
+           <property name="icon">
+            <iconset theme="pad"/>
+           </property>
           </item>
           <item>
            <property name="text">
             <string>Perc</string>
+           </property>
+           <property name="icon">
+            <iconset theme="perc"/>
            </property>
           </item>
           <item>
            <property name="text">
             <string>Poly</string>
            </property>
+           <property name="icon">
+            <iconset theme="poly"/>
+           </property>
           </item>
           <item>
            <property name="text">
             <string>Seq</string>
+           </property>
+           <property name="icon">
+            <iconset theme="seq"/>
            </property>
           </item>
          </widget>
