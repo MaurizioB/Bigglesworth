@@ -16,7 +16,7 @@ from bigglesworth.midiutils import NoteOffEvent, NoteOnEvent, CtrlEvent, Program
 
 from combo import Combo
 from squarebutton import SquareButton
-from dial import Dial
+from dial import Dial, _Dial
 from slider import Slider
 from frame import Frame
 from stackedwidget import StackedWidget
@@ -809,6 +809,9 @@ class EditorWindow(QtWidgets.QMainWindow):
 
         self.pianoKeyboard.noteEvent.connect(self.noteEvent)
         self.modSlider.valueChanged.connect(self.modEvent)
+        self.keyNoteOffBtn.clicked.connect(self.allNotesOffEvent)
+        self.keySoundsOffBtn.clicked.connect(self.allSoundsOffEvent)
+        self.pianoKeyboard.focusOutEvent = self.keyboardFocusOutEvent
 
         self.osc1Frame.customContextMenuRequested.connect(self.templateMenu)
         self.osc2Frame.customContextMenuRequested.connect(self.templateMenu)
@@ -974,12 +977,26 @@ class EditorWindow(QtWidgets.QMainWindow):
 #        self.ModMatrixView.show()
 
 
-#    def keyPressEvent(self, event):
-#        print(QtWidgets.QApplication.focusWidget())
-#        QtWidgets.QMainWindow.keyPressEvent(self, event)
-#
-#    def keyReleaseEvent(self, event):
-#        QtWidgets.QMainWindow.keyReleaseEvent(self, event)
+    def keyPressEvent(self, event):
+        if not QtWidgets.QApplication.activePopupWidget():
+            self.pianoKeyboard.keyPressEvent(event)
+        else:
+            QtWidgets.QMainWindow.keyPressEvent(self, event)
+
+    def keyReleaseEvent(self, event):
+        if not QtWidgets.QApplication.activePopupWidget():
+            self.pianoKeyboard.keyReleaseEvent(event)
+        else:
+            QtWidgets.QMainWindow.keyReleaseEvent(self, event)
+
+    def focusOutEvent(self, event):
+        if not isinstance(self.focusWidget(), _Dial) and event.reason():
+            self.allNotesOffEvent()
+        QtWidgets.QMainWindow.focusOutEvent(self, event)
+
+    def keyboardFocusOutEvent(self, event):
+        if True:
+            print('me ne fotto')
 
     @property
     def editStatus(self):
@@ -1484,6 +1501,16 @@ class EditorWindow(QtWidgets.QMainWindow):
 #        for channel in sorted(self.main.chanSend):
         self.midiEvent[object, bool].emit(CtrlEvent(1, self.keyChanCombo.currentIndex, 1, value), True)
 
+    def allNotesOffEvent(self):
+        self.pianoKeyboard.setAllKeysUp()
+        for channel in range(16):
+            self.midiEvent[object, bool].emit(CtrlEvent(1, channel, 123, 0), True)
+
+    def allSoundsOffEvent(self):
+        self.pianoKeyboard.setAllKeysUp()
+        for channel in range(16):
+            self.midiEvent[object, bool].emit(CtrlEvent(1, channel, 120, 0), True)
+
     def editStatusCheck(self, data):
         #TODO verifica meglio il clean!
         if not isinstance(data, bool):
@@ -1738,6 +1765,9 @@ class EditorWindow(QtWidgets.QMainWindow):
     def changeEvent(self, event):
         if event.type() == QtCore.QEvent.PaletteChange:
             self.display.setPalette(self.palette())
+        elif event.type() == QtCore.QEvent.ActivationChange:
+            if not self.isActiveWindow():
+                self.allNotesOffEvent()
 
     def resizeEvent(self, event):
         self.nameEditMask.setGeometry(self.geometry().adjusted(-10, -10, 20, 20))

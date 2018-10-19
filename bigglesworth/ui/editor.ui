@@ -10,6 +10,9 @@
     <height>719</height>
    </rect>
   </property>
+  <property name="focusPolicy">
+   <enum>Qt::StrongFocus</enum>
+  </property>
   <property name="windowTitle">
    <string>Bigglesworth Sound Editor</string>
   </property>
@@ -3484,14 +3487,14 @@
    <header>dial</header>
   </customwidget>
   <customwidget>
-   <class>Frame</class>
-   <extends>QFrame</extends>
+   <class>Section</class>
+   <extends>QWidget</extends>
    <header>frame</header>
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>Section</class>
-   <extends>QWidget</extends>
+   <class>Frame</class>
+   <extends>QFrame</extends>
    <header>frame</header>
    <container>1</container>
   </customwidget>
