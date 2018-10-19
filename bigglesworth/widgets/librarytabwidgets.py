@@ -500,14 +500,19 @@ class BaseTabWidget(QtWidgets.QTabWidget):
 
     def contextMenuEvent(self, event):
         menu = QtWidgets.QMenu(self)
-        tabSwapAction = menu.addAction(QtGui.QIcon.fromTheme('document-swap'), 'Swap panels')
-        tabSwapAction.triggered.connect(self.panelSwapRequested)
-        iconName = 'arrow-left-double' if self.side == Left else 'arrow-right-double'
-        hideAction = menu.addAction(QtGui.QIcon.fromTheme(iconName), 'Minimize panel')
-        hideAction.triggered.connect(self.minimizePanelRequested)
-        if self.window().panelLayout < 3:
-            hideAction.setEnabled(False)
-        menu.addSeparator()
+        if self.window().dualMode:
+            tabSwapAction = menu.addAction(QtGui.QIcon.fromTheme('document-swap'), 'Swap panels')
+            tabSwapAction.triggered.connect(self.panelSwapRequested)
+            iconName = 'arrow-left-double' if self.side == Left else 'arrow-right-double'
+            hideAction = menu.addAction(QtGui.QIcon.fromTheme(iconName), 'Minimize panel')
+            hideAction.triggered.connect(self.minimizePanelRequested)
+            if self.window().panelLayout < 3:
+                hideAction.setEnabled(False)
+            menu.addSeparator()
+            toggleDualViewAction = menu.addAction(QtGui.QIcon.fromTheme('view-right-close'), 'Switch to single panel view')
+        else:
+            toggleDualViewAction = menu.addAction(QtGui.QIcon.fromTheme('view-split-left-right'), 'Switch to dual panel view')
+        toggleDualViewAction.triggered.connect(self.toggleDualView)
         menu.addMenu(self.getOpenCollectionMenu())
         menu.exec_(event.globalPos())
 

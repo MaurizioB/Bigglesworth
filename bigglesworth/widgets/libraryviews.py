@@ -1026,7 +1026,7 @@ class CollectionTableView(BaseLibraryView):
     def __init__(self, *args, **kwargs):
         BaseLibraryView.__init__(self, *args, **kwargs)
         self.setDropIndicatorShown(False)
-        self.menuActive = False
+        self.menuActive = None
         self.autoScrollTimer = QtCore.QTimer()
         self.autoScrollDelta = 0
         self.autoScrollAccel = 0
@@ -1140,9 +1140,9 @@ class CollectionTableView(BaseLibraryView):
         if not res:
             return
         menu, index, name, uid = res
-        self.menuActive = True
+        self.menuActive = index
         menu.exec_(self.viewport().mapToGlobal(pos))
-        self.menuActive = False
+        self.menuActive = None
         #required of MacOS
         self.update()
 
@@ -1456,6 +1456,14 @@ class CollectionTableView(BaseLibraryView):
                 rect = self.visualRect(self.dropSelectionIndexes[0])
                 rect |= self.visualRect(self.dropSelectionIndexes[0].sibling(self.dropSelectionIndexes[0].row(), TagsColumn))
                 qp.drawLine(rect.x(), rect.top(), rect.width(), rect.top())
+        elif self.menuActive and self.menuActive.isValid() and not self.menuActive.flags() & QtCore.Qt.ItemIsEnabled:
+            viewport = self.viewport()
+            qp = QtGui.QPainter(viewport)
+            qp.setPen(self.dropIntoPen)
+            qp.setBrush(self.dropIntoBrush)
+            left = self.visualRect(self.menuActive.sibling(self.menuActive.row(), NameColumn))
+            right = self.visualRect(self.menuActive.sibling(self.menuActive.row(), TagsColumn))
+            qp.drawRect(left | right)
         elif not self.menuActive:
             if self.cachedSize <= 0:
                 viewport = self.viewport()
