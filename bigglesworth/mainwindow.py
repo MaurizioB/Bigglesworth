@@ -62,18 +62,19 @@ class MainWindow(QtWidgets.QMainWindow):
         tutorialActive = not self.settings.value('FirstRunShown', False, bool) or self.settings.value('ShowLibrarianTutorial', True, bool)
         self.maskObject = None
             
-        sidebarMode = self.settings.value('startupSidebarMode', 2, int) if not tutorialActive else 2
-        if sidebarMode == 2:
-            if self.main.settings.value('windowState'):
-                try:
-                    self.restoreState(self.main.settings.value('windowState'), getUniqueVersionToMin())
-                    print('Window state successfully restored')
-                except Exception as e:
-                    print('Error restoring main window state: {}'.format(e))
-            elif tutorialActive:
-                self.sidebar.setVisible(True)
+        if tutorialActive:
+            self.sidebar.setVisible(True)
         else:
-            self.sidebar.setVisible(sidebarMode)
+            sidebarMode = self.settings.value('startupSidebarMode', 2, int) if not tutorialActive else 2
+            if sidebarMode == 2:
+                if self.main.settings.value('windowState'):
+                    try:
+                        self.restoreState(self.main.settings.value('windowState'), getUniqueVersionToMin())
+                        print('Window state successfully restored')
+                    except Exception as e:
+                        print('Error restoring main window state: {}'.format(e))
+            else:
+                self.sidebar.setVisible(sidebarMode)
 
         if self.main.settings.value('saveLibrarianGeometry', True, bool) and self.main.settings.contains('librarianGeometry'):
             self.restoreGeometry(self.main.settings.value('librarianGeometry'))
@@ -243,6 +244,8 @@ class MainWindow(QtWidgets.QMainWindow):
         action = self.openCollectionMenu.addAction(QtGui.QIcon.fromTheme('go-home'), 'Main library')
         action.triggered.connect(lambda: self.openCollection(''))
 
+#        self.createMaskObject()
+
     def activate(self):
         self.show()
         self.activateWindow()
@@ -250,11 +253,12 @@ class MainWindow(QtWidgets.QMainWindow):
     def createMaskObject(self):
         from bigglesworth.firstrun import MaskObject
         self.maskObject = MaskObject(self)
+        self.maskObject.setVisible(True)
 
     def destroyMaskObject(self):
-        self.maskObject.deleteLater()
-        self.maskObject = None
-
+        if self.maskObject:
+            self.maskObject.deleteLater()
+            self.maskObject = None
 
     @property
     def panelLayout(self):

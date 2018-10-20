@@ -1031,6 +1031,7 @@ class Bigglesworth(QtWidgets.QApplication):
 
     def loadingComplete(self):
         self.splash.hide()
+        showLibrarianTutorial = self.settings.value('ShowLibrarianTutorial', True, bool)
         if not self.settings.value('FirstRunShown', False, bool):
             self.firstRunWizard = FirstRunWizard(self)
             self.firstRunWizard.autoconnectPage.midiConnect.connect(self.midiConnect)
@@ -1039,19 +1040,23 @@ class Bigglesworth(QtWidgets.QApplication):
             self.graph.conn_register.connect(self.firstRunWizard.midiConnEvent)
             self.midiDevice.midi_event.connect(self.firstRunWizard.midiEventReceived)
             self.globalsBlock = True
-            res = self.firstRunWizard.exec_()
+            showLibrarianTutorial = self.firstRunWizard.exec_()
             self.globalsBlock = False
             self.midiDevice.midi_event.disconnect(self.firstRunWizard.midiEventReceived)
             self.graph.conn_register.disconnect(self.firstRunWizard.midiConnEvent)
             self.firstRunWizard.midiConnectionsWidget.midiConnect.disconnect(self.midiConnect)
             self.firstRunWizard.autoconnectPage.midiEvent.disconnect(self.sendMidiEvent)
             self.firstRunWizard.autoconnectPage.midiConnect.disconnect(self.midiConnect)
-            if res:
-                self.mainWindow.show()
-                from bigglesworth.firstrun import FirstRunObject
-                self.firstRunObject = FirstRunObject(self)
-                self.firstRunObject.completed.connect(lambda completed: self.settings.setValue('FirstRunShown', completed))
-                return
+        if showLibrarianTutorial:
+            self.mainWindow.show()
+            from bigglesworth.firstrun import FirstRunObject
+            self.firstRunObject = FirstRunObject(self)
+#            self.firstRunObject.completed.connect(lambda completed: self.settings.setValue('FirstRunShown', completed))
+            return
+        elif self.settings.value('ShowEditorTutorial', True, bool):
+            from bigglesworth.firstrun import FirstRunObject
+            self.firstRunObject = FirstRunObject(self, editorOnly=True)
+            
         if self.argparse.editor is not None:
             if self.argparse.librarian:
                 self.mainWindow.show()

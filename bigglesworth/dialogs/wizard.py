@@ -173,15 +173,17 @@ class AutoconnectPage(QtWidgets.QWizardPage):
         else:
             model = 'Unknown'
         if sysex[8:10] == [0, 0]:
-            devType = 'Blofeld Desktop'
+#            devType = 'Blofeld Desktop'
             self.setBlofeldImage('dt')
         else:
-            devType = 'Blofeld Keyboard'
+#            devType = 'Blofeld Keyboard'
             self.setBlofeldImage('kb')
         dev_version = ''.join([ord2chr[l] for l in sysex[10:14]]).strip()
         self.log('&nbsp;Found!', True, True)
-        self.log('<br/>Device info:<br/><br/>Manufacturer: {}<br/>Model: {}<br/>Type: {}<br/>Firmware version: {}'.format(
-            manufacturer, model, devType, dev_version), True, True)
+#        self.log('<br/>Device info:<br/><br/>Manufacturer: {}<br/>Model: {}<br/>Type: {}<br/>Firmware version: {}'.format(
+#            manufacturer, model, devType, dev_version), True, True)
+        self.log('<br/>Device info:<br/><br/>Manufacturer: {}<br/>Model: {}<br/>Firmware version: {}'.format(
+            manufacturer, model, dev_version), True, True)
         src = self.graph.port_id_dict[event.source[0]][event.source[1]]
         self.found.emit(True, src, self.bloTesting if self.bloTesting else self.tested[-1])
 

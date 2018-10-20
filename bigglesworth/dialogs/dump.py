@@ -1461,6 +1461,17 @@ class DumpReceiveDialog(DumpDialog):
         self.fastChk.toggled.connect(self.computeEta)
 #        self.fastChk.toggled.connect(lambda state: self.delaySpin.setEnabled(False if state and self.banksWidget.isFull() else True))
         self.fastChk.toggled.connect(self.delaySpin.setDisabled)
+        self.maskObject = None
+
+    def createMaskObject(self):
+        from bigglesworth.firstrun import MaskObject
+        self.maskObject = MaskObject(self)
+        self.maskObject.setVisible(True)
+
+    def destroyMaskObject(self):
+        if self.maskObject:
+            self.maskObject.deleteLater()
+            self.maskObject = None
 
     def dump(self):
         self.count = 0
@@ -1647,7 +1658,12 @@ class DumpReceiveDialog(DumpDialog):
                 if self.tableModel.item(row, 0).data(QtCore.Qt.CheckStateRole):
                     time += interval
         self.setEta(time)
-    
+
+    def resizeEvent(self, event):
+        if self.maskObject:
+            self.maskObject.resize(self.size())
+        QtWidgets.QDialog.resizeEvent(self, event)
+
     def exec_(self, collection, sounds=False):
         self.soundData = {}
         self.overwriteChk.setEnabled(True)
@@ -1660,6 +1676,7 @@ class DumpReceiveDialog(DumpDialog):
         self.delaySpin.setEnabled(True)
         self.directChk.setEnabled(True)
         res = DumpDialog.exec_(self, collection, sounds)
+        self.destroyMaskObject()
         self.tableModel.dataChanged.disconnect()
         if not res:
             self.sourceModel = self.tableModel = self.selectedCollection = None

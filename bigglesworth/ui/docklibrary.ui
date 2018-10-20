@@ -196,7 +196,7 @@
              <set>QAbstractItemView::NoEditTriggers</set>
             </property>
             <property name="dragDropMode">
-             <enum>QAbstractItemView::DropOnly</enum>
+             <enum>QAbstractItemView::NoDragDrop</enum>
             </property>
             <property name="movement">
              <enum>QListView::Static</enum>

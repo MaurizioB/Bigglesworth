@@ -291,7 +291,7 @@ class BaseTabWidget(QtWidgets.QTabWidget):
                 siblingFocusWidget = self.siblingTabWidget.focusWidget()
                 if siblingFocusWidget and not isinstance(siblingFocusWidget, (QtWidgets.QTabWidget, QtWidgets.QTabBar)):
                     siblingFocusWidget.setFocus()
-                else:
+                elif self.window().dualMode and self.window().panelLayout >= 2:
                     self.siblingTabWidget.currentWidget().filterNameEdit.setFocus()
                 return
             elif event.key() in NumKeys:
@@ -446,6 +446,15 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         self.menu.addSeparator()
         findDuplicatesAction = self.menu.addAction(QtGui.QIcon.fromTheme('edit-find'), 'Find duplicates...')
         findDuplicatesAction.triggered.connect(lambda: self.findDuplicatesRequested.emit(None, collection))
+
+        if self.window().maskObject:
+            for action in self.menu.actions():
+                action.setEnabled(False)
+            dumpMenu.menuAction().setEnabled(True)
+            for action in dumpMenu.actions():
+                if action != dumpFromAllAction:
+                    action.setEnabled(False)
+
         self.menu.exec_(pos)
 
     def getOpenCollectionMenu(self):
