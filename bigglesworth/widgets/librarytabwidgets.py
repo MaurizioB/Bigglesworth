@@ -291,7 +291,7 @@ class BaseTabWidget(QtWidgets.QTabWidget):
                 siblingFocusWidget = self.siblingTabWidget.focusWidget()
                 if siblingFocusWidget and not isinstance(siblingFocusWidget, (QtWidgets.QTabWidget, QtWidgets.QTabBar)):
                     siblingFocusWidget.setFocus()
-                else:
+                elif self.window().dualMode and self.window().panelLayout >= 2:
                     self.siblingTabWidget.currentWidget().filterNameEdit.setFocus()
                 return
             elif event.key() in NumKeys:
@@ -425,10 +425,10 @@ class BaseTabWidget(QtWidgets.QTabWidget):
             dumpMenu.setSeparatorsCollapsible(False)
             if collection not in factoryPresetsNamesDict:
                 dumpMenu.addSection('Receive')
-                self.dumpFromAllAction = dumpMenu.addAction('Dump all sounds FROM Blofeld')
-                self.dumpFromAllAction.triggered.connect(lambda: self.fullDumpBlofeldToCollectionRequested.emit(collection, True))
-                dumpFromPromptAction = dumpMenu.addAction('Dump sounds FROM Blofeld...')
-                dumpFromPromptAction.triggered.connect(lambda: self.fullDumpBlofeldToCollectionRequested.emit(collection, False))
+                dumpFromAllAction = dumpMenu.addAction('Dump sounds FROM Blofeld')
+                dumpFromAllAction.triggered.connect(lambda: self.fullDumpBlofeldToCollectionRequested.emit(collection, True))
+#                dumpFromPromptAction = dumpMenu.addAction('Dump sounds FROM Blofeld...')
+#                dumpFromPromptAction.triggered.connect(lambda: self.fullDumpBlofeldToCollectionRequested.emit(collection, False))
             dumpMenu.addSection('Send')
             dumpToAllAction = dumpMenu.addAction('Dump all sounds TO Blofeld')
             dumpToAllAction.triggered.connect(lambda: self.fullDumpCollectionToBlofeldRequested.emit(collection, True))
@@ -446,6 +446,15 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         self.menu.addSeparator()
         findDuplicatesAction = self.menu.addAction(QtGui.QIcon.fromTheme('edit-find'), 'Find duplicates...')
         findDuplicatesAction.triggered.connect(lambda: self.findDuplicatesRequested.emit(None, collection))
+
+        if self.window().maskObject:
+            for action in self.menu.actions():
+                action.setEnabled(False)
+            dumpMenu.menuAction().setEnabled(True)
+            for action in dumpMenu.actions():
+                if action != dumpFromAllAction:
+                    action.setEnabled(False)
+
         self.menu.exec_(pos)
 
     def getOpenCollectionMenu(self):

@@ -543,11 +543,28 @@ class DockLibrary(QtWidgets.QWidget):
         clearFiltersAction.setEnabled(self.filterModel.rowCount())
         menu.exec_(QtGui.QCursor.pos())
 
+    def expandFactory(self):
+        self.treeView.expand(self.factoryIndex)
+
     def expandCollections(self):
         self.treeView.expand(self.userIndex)
 
     def expandTags(self):
         self.treeView.expand(self.tagsIndex)
+
+    def expandCategories(self):
+        self.treeView.expand(self.catIndex)
+
+    def firstRunExpand(self):
+        self.expandFactory()
+        self.expandCategories()
+
+    def firstRunFilter(self):
+        selection = QtCore.QItemSelection(self.factoryIndex.child(2, 0), self.factoryIndex.child(2, 1))
+        selection.merge(QtCore.QItemSelection(self.catIndexes[4], self.catIndexes[4]), 
+            QtCore.QItemSelectionModel.Select)
+        self.treeView.selectionModel().select(selection, QtCore.QItemSelectionModel.SelectCurrent|QtCore.QItemSelectionModel.Rows)
+        self.updateFilters(self.treeView.selectionModel().selectedRows())
 
     def soundDoubleClicked(self, index):
         self.window().soundEditRequested.emit(index.sibling(index.row(), UidColumn).data(), self.currentCollection)

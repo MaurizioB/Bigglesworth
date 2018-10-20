@@ -590,6 +590,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.referenceModel = self.database.referenceModel
         self.libraryModel = self.database.libraryModel
 
+        self.maskObject = None
         self.bankBuffer = None
         self.currentUid = None
         self.currentCollection = None
@@ -888,6 +889,16 @@ class EditorWindow(QtWidgets.QMainWindow):
     def activate(self):
         self.show()
         self.activateWindow()
+
+    def createMaskObject(self):
+        from bigglesworth.firstrun import MaskObject
+        self.maskObject = MaskObject(self)
+        self.maskObject.setVisible(True)
+
+    def destroyMaskObject(self):
+        if self.maskObject:
+            self.maskObject.deleteLater()
+            self.maskObject = None
 
     def expandMixer(self, expand):
         self.ampFrame.setVisible(not expand)
@@ -1770,6 +1781,8 @@ class EditorWindow(QtWidgets.QMainWindow):
                 self.allNotesOffEvent()
 
     def resizeEvent(self, event):
+        if self.maskObject:
+            self.maskObject.resize(self.size())
         self.nameEditMask.setGeometry(self.geometry().adjusted(-10, -10, 20, 20))
         width = self.midiSection.width() + self.saveFrame.width() + self.displayLayout.horizontalSpacing()
         self.bigglesworthLogo.setPixmap(self.bigglesworthLogoPixmap.scaledToWidth(width, QtCore.Qt.SmoothTransformation))

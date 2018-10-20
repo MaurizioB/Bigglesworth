@@ -58,16 +58,23 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rightTabWidget.minimizePanelRequested.connect(lambda: self.setRightVisible(False))
         self.rightTabBar.maximize.connect(lambda tab: self.setRightVisible(True, tab))
 
-        sidebarMode = self.settings.value('startupSidebarMode', 2, int)
-        if sidebarMode == 2:
-            if self.main.settings.value('windowState'):
-                try:
-                    self.restoreState(self.main.settings.value('windowState'), getUniqueVersionToMin())
-                    print('Window state successfully restored')
-                except Exception as e:
-                    print('Error restoring main window state: {}'.format(e))
+        #override sidebar and dualmode if firstrun/tutorial is on
+        tutorialActive = not self.settings.value('FirstRunShown', False, bool) or self.settings.value('ShowLibrarianTutorial', True, bool)
+        self.maskObject = None
+            
+        if tutorialActive:
+            self.sidebar.setVisible(True)
         else:
-            self.sidebar.setVisible(sidebarMode)
+            sidebarMode = self.settings.value('startupSidebarMode', 2, int) if not tutorialActive else 2
+            if sidebarMode == 2:
+                if self.main.settings.value('windowState'):
+                    try:
+                        self.restoreState(self.main.settings.value('windowState'), getUniqueVersionToMin())
+                        print('Window state successfully restored')
+                    except Exception as e:
+                        print('Error restoring main window state: {}'.format(e))
+            else:
+                self.sidebar.setVisible(sidebarMode)
 
         if self.main.settings.value('saveLibrarianGeometry', True, bool) and self.main.settings.contains('librarianGeometry'):
             self.restoreGeometry(self.main.settings.value('librarianGeometry'))
@@ -79,7 +86,8 @@ class MainWindow(QtWidgets.QMainWindow):
         startupDualMode = self.main.settings.value('startupDualMode', 2, int)
         dualMode = self.main.settings.value('dualMode', False, bool)
         startupSessionMode = self.main.settings.value('startupSessionMode', 2, int)
-        if (startupDualMode and dualMode) or (not existsStartupDualMode and self.main.settings.contains('sessionLayoutRight')):
+
+        if not tutorialActive and ((startupDualMode and dualMode) or (not existsStartupDualMode and self.main.settings.contains('sessionLayoutRight'))):
             if startupSessionMode >= 2:
                 left = list(OrderedDict.fromkeys(self.main.settings.value('sessionLayoutLeft', ['Blofeld'], 'QStringList')))
                 right = list(OrderedDict.fromkeys(self.main.settings.value('sessionLayoutRight', [None], 'QStringList')))
@@ -137,7 +145,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.splitter.restoreState(sizes)
 
         else:
-            if startupSessionMode >= 2:
+            if tutorialActive:
+                left = ['Blofeld']
+            elif startupSessionMode >= 2:
                 left = list(OrderedDict.fromkeys(self.main.settings.value('sessionLayoutLeft', ['Blofeld'], 'QStringList')))
             elif startupSessionMode:
                 left = [None]
@@ -234,9 +244,21 @@ class MainWindow(QtWidgets.QMainWindow):
         action = self.openCollectionMenu.addAction(QtGui.QIcon.fromTheme('go-home'), 'Main library')
         action.triggered.connect(lambda: self.openCollection(''))
 
+#        self.createMaskObject()
+
     def activate(self):
         self.show()
         self.activateWindow()
+
+    def createMaskObject(self):
+        from bigglesworth.firstrun import MaskObject
+        self.maskObject = MaskObject(self)
+        self.maskObject.setVisible(True)
+
+    def destroyMaskObject(self):
+        if self.maskObject:
+            self.maskObject.deleteLater()
+            self.maskObject = None
 
     @property
     def panelLayout(self):
@@ -518,6 +540,11 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.lastAboutEgg = not self.lastAboutEgg
             (MayTheForce, MatrixHasU)[self.lastAboutEgg](self).exec_()
+
+    def resizeEvent(self, event):
+        if self.maskObject:
+            self.maskObject.resize(self.size())
+        QtWidgets.QMainWindow.resizeEvent(self, event)
 
     def saveLayout(self):
         #prima o poi questo puoi rimuoverlo
