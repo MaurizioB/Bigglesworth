@@ -37,24 +37,41 @@ class RemoveSoundsMessageBox(MessageBoxDetailedHtml):
         self.setStandardButtons(self.Ok|self.Cancel)
 
     def exec_(self):
-        return True if QtWidgets.QMessageBox.exec_(self) == self.Ok else False
+        return QtWidgets.QMessageBox.exec_(self) == self.Ok
 
 
 class DeleteSoundsMessageBox(MessageBoxDetailedHtml):
-    def __init__(self, parent, nameList):
+    def __init__(self, parent, uidList):
         MessageBoxDetailedHtml.__init__(self, parent)
         self.setIcon(self.Warning)
         self.setWindowTitle('Delete sounds from library')
         self.setInformativeText('<b>NOTE</b>: This operation <u>cannot</u> be undone!')
-        if len(nameList) == 1:
-            self.setText('Do you want to delete "{}" from the library?'.format(nameList[0].strip()))
+        database = QtWidgets.QApplication.instance().database
+        collections = database.referenceModel.allCollections
+        if len(uidList) == 1:
+            name = database.getNameFromUid(uidList[0]).strip()
+            text = 'Do you want to delete "{}" from the library?'.format(name)
+            collectionIds = database.getCollectionsFromUid(uidList[0])
+            if collectionIds:
+                text += '<br/><br/>This sound is used in the following collections:<br/>' + \
+                    ', '.join('"{}"'.format(collections[c]) for c in collectionIds)
+            self.setText(text)
         else:
-            self.setText('Do you want to delete {} sounds from the library?'.format(len(nameList)))
-            self.setDetailedText(', '.join('"<b>{}</b>"'.format(name.strip()) for name in nameList))
+            text = 'Do you want to delete {} sounds from the library?'.format(len(uidList))
+            collectionIds = set()
+            for uid in uidList:
+                collectionIds |= set(database.getCollectionsFromUid(uid))
+            if collectionIds:
+                text += '<br/><br/>This operation affects the following collections:<br/>' + \
+                    ', '.join('"{}"'.format(collections[c]) for c in collectionIds)
+            self.setText(text)
+            self.setDetailedText(', '.join(
+                '"<b>{}</b>"'.format(name.strip()) for name in database.getNamesFromUidList(uidList)))
         self.setStandardButtons(self.Ok|self.Cancel)
 
     def exec_(self):
-        return True if QtWidgets.QMessageBox.exec_(self) == self.Ok else False
+        return QtWidgets.QMessageBox.exec_(self) == self.Ok
+
 
 class DropDuplicatesMessageBox(MessageBoxDetailedHtml):
     def __init__(self, parent, nameList, collection, all=False):

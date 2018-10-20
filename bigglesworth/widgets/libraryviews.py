@@ -1864,6 +1864,6 @@ class LibraryWidget(BaseLibraryWidget):
             self.collectionView.setCurrentIndex(self.model.index(self.model.rowCount() - 1, NameColumn))
 
     def deleteRequested(self, uidList):
-        if DeleteSoundsMessageBox(self, self.database.getNamesFromUidList(uidList)).exec_():
+        if DeleteSoundsMessageBox(self, uidList).exec_():
             self.database.deleteSounds(uidList)
 

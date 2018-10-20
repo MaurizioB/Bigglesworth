@@ -684,7 +684,7 @@ class Bigglesworth(QtWidgets.QApplication):
     def midiEventReceived(self, event):
         if event.source[0] == self.midiDevice.output.client.id:
             return
-        print('midi event received', event, 'source:', event.source, self.graph.port_id_dict[event.source[0]][event.source[1]])
+        print('midi event received', event.type, 'source:', event.source, self.graph.port_id_dict[event.source[0]][event.source[1]])
         if event == self.lastMidiEvent and self.lastMidiEvent.source != event.source:
             if self.startTimer.elapsed() - self.lastMidiTime < 200:
                 self.midiDuplicateDialog.activate(self.dumpBlock, set((self.lastMidiEvent.source, event.source)))

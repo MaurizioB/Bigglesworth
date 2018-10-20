@@ -570,7 +570,7 @@ class DockLibrary(QtWidgets.QWidget):
         self.window().soundEditRequested.emit(index.sibling(index.row(), UidColumn).data(), self.currentCollection)
 
     def deleteRequested(self, uidList):
-        if DeleteSoundsMessageBox(self, self.database.getNamesFromUidList(uidList)).exec_():
+        if DeleteSoundsMessageBox(self, uidList).exec_():
             self.database.deleteSounds(uidList)
 
     def doubleClicked(self, index):

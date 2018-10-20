@@ -249,6 +249,11 @@ class BaseImportDialog(QtWidgets.QDialog):
         self.dumper.rejected.connect(self.checkImport)
         self.dumper.rejected.connect(self.timeout.stop)
 
+        self.adjustTimer = QtCore.QTimer()
+        self.adjustTimer.setSingleShot(True)
+        self.adjustTimer.setInterval(50)
+        self.adjustTimer.timeout.connect(self.adjustTableContents)
+
         self.tot = 0
         while dumpBuffer:
             self.processData(dumpBuffer.pop(0))
@@ -314,11 +319,6 @@ class BaseImportDialog(QtWidgets.QDialog):
         self.queueTimer.setSingleShot(True)
         self.queueTimer.setInterval(8)
         self.queueTimer.timeout.connect(self.checkImport)
-
-        self.adjustTimer = QtCore.QTimer()
-        self.adjustTimer.setSingleShot(True)
-        self.adjustTimer.setInterval(50)
-        self.adjustTimer.timeout.connect(self.adjustTableContents)
 
     def openSound(self):
         self.mode |= self.OpenSound
@@ -1158,8 +1158,8 @@ class DumpDialog(QtWidgets.QDialog):
 
     def tableMenu(self, pos):
         menu = QtWidgets.QMenu()
-        checkAction = menu.addAction('Check selected sounds')
-        uncheckAction = menu.addAction('Uncheck selected sounds')
+        checkAction = menu.addAction(QtGui.QIcon.fromTheme('checkmark'), 'Check selected sounds')
+        uncheckAction = menu.addAction(QtGui.QIcon.fromTheme('list-remove'), 'Uncheck selected sounds')
 #        if not self.collectionTable.selectionModel().selectedRows():
         if not self.collectionTable.selectedIndexes():
             checkAction.setEnabled(False)
@@ -1169,7 +1169,7 @@ class DumpDialog(QtWidgets.QDialog):
             checkAction.setEnabled(enable)
             uncheckAction.setEnabled(enable)
         menu.addSeparator()
-        selectAllAction = menu.addAction('Select all')
+        selectAllAction = menu.addAction(QtGui.QIcon.fromTheme('edit-select-all'), 'Select all')
         res = menu.exec_(self.collectionTable.viewport().mapToGlobal(pos))
         if not res:
             return
@@ -1431,7 +1431,7 @@ class DumpDialog(QtWidgets.QDialog):
                 #TODO: cambia questi if ed usa un attributo generico
                 self.banksWidget.setAll()
                 if self.overwriteChk:
-                    self.overwriteChk.toggled.emit(True)
+                    self.overwriteChk.toggled.emit(False)
                     self.fastChk.setChecked(True)
             else:
                 self.banksWidget.setItems()
@@ -1480,16 +1480,20 @@ class DumpReceiveDialog(DumpDialog):
         if self.banksWidget.isFull() and self.fastChk.isChecked():
             event = SysExEvent(1, [INIT, IDW, IDE, self.main.blofeldId, SNDR, 0x40, 00, CHK, END])
         else:
-            if self.overwriteChk.isChecked():
-                for row in range(self.tableModel.rowCount()):
-                    if self.tableModel.item(row, 0).data(QtCore.Qt.CheckStateRole):
-                        self.soundList.append(row)
-            else:
-                for row in range(self.tableModel.rowCount()):
-                    if self.tableModel.item(row, 0).data(QtCore.Qt.CheckStateRole) and \
-                        not row in self.soundsDict:
-                            self.soundList.append(row)
+#            if self.overwriteChk.isChecked():
+#                for row in range(self.tableModel.rowCount()):
+#                    if self.tableModel.item(row, 0).data(QtCore.Qt.CheckStateRole):
+#                        self.soundList.append(row)
+#            else:
+#                for row in range(self.tableModel.rowCount()):
+#                    if self.tableModel.item(row, 0).data(QtCore.Qt.CheckStateRole) and \
+#                        not row in self.soundsDict:
+#                            self.soundList.append(row)
+            for row in range(self.tableModel.rowCount()):
+                if self.tableModel.item(row, 0).data(QtCore.Qt.CheckStateRole):
+                    self.soundList.append(row)
             if not self.soundList:
+                self.dumpBtn.setEnabled(False)
                 return
             first = self.soundList[0]
             event = SysExEvent(1, [INIT, IDW, IDE, self.main.blofeldId, SNDR, first >> 7, first & 127, CHK, END])
@@ -1517,6 +1521,7 @@ class DumpReceiveDialog(DumpDialog):
         DumpDialog.bankSelect(self, banks, save=True)
         self.fastChk.setEnabled(self.banksWidget.isFull())
         self.delaySpin.setEnabled(False if self.banksWidget.isFull() and self.fastChk.isChecked() else True)
+        self.overwrite(self.overwriteChk.isChecked())
 
     def overwrite(self, state, save=True):
         self.tableModel.blockSignals(True)
@@ -1525,8 +1530,8 @@ class DumpReceiveDialog(DumpDialog):
                 font = self.strokeFont
             else:
                 font = self.normalFont
-            checkItem.setEnabled(state)
             nameItem.setData(font, QtCore.Qt.FontRole)
+#            checkItem.setEnabled(state)
         self.tableModel.blockSignals(False)
         self.collectionTable.viewport().update()
         if save:
@@ -1668,7 +1673,7 @@ class DumpReceiveDialog(DumpDialog):
         self.soundData = {}
         self.overwriteChk.setEnabled(True)
         self.overwriteChk.blockSignals(True)
-        self.overwriteChk.setChecked(True)
+        self.overwriteChk.setChecked(False)
         self.overwriteChk.blockSignals(False)
         self.okBtn.setEnabled(False)
         self.dumpBtn.setEnabled(all(self.main.connections))
