@@ -389,6 +389,7 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         self.sideTabBar.setTabIcon(index, QtGui.QIcon(pixmap))
 
     def showMenu(self, index, pos):
+        self.setCurrentIndex(index)
         self.menu.clear()
         collection = self.widget(index).collection
         if not collection:
