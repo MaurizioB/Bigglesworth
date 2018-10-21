@@ -192,6 +192,7 @@ class SettingsDialog(QtWidgets.QDialog):
             if sysex_type == GLBD:
                 self.waiter.accept()
                 self.globalsResponse(event.sysex)
+                self.main.blockPortForward(event.source, apply=True)
 
     def globalsResponse(self, sysex):
         data = sysex[5:-2]

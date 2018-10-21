@@ -285,6 +285,9 @@ class GlobalsDialog(QtWidgets.QDialog):
                 self.globalsResponse(event.sysex)
             elif len(event.sysex) == 15 and event.sysex[3:5] == [6, 2]:
                 self.deviceResponse(event.sysex)
+            else:
+                return
+            self.main.blockPortForward(event.source, apply=True)
 
     def exec_(self):
         self.queryDeviceIdSpin.setValue(self.main.blofeldId)

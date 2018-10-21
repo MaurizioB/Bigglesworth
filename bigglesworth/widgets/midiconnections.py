@@ -239,15 +239,15 @@ class MidiConnectionsWidget(QtWidgets.QWidget):
             disconnectAllAction.setEnabled(False)
 
         blofeldActionGroup = QtWidgets.QActionGroup(menu)
-        if not direction and index.sibling(index.row(), 1).data(BlofeldRole):
+        if not direction:
             menu.addSeparator()
-            state = index.sibling(index.row(), 1).data(BlofeldRole)
             blofeldSetAction = menu.addAction('This is my Blofeld')
             blofeldSetAction.setCheckable(True)
             blofeldUnsetAction = menu.addAction('This is NOT my Blofeld')
             blofeldUnsetAction.setCheckable(True)
             blofeldActionGroup.addAction(blofeldSetAction)
             blofeldActionGroup.addAction(blofeldUnsetAction)
+            state = index.sibling(index.row(), 1).data(BlofeldRole)
             if state == BlofeldDelegate.Enabled:
                 blofeldSetAction.setChecked(True)
             elif state == BlofeldDelegate.Disabled:
@@ -351,16 +351,15 @@ class MidiConnectionsWidget(QtWidgets.QWidget):
                     portItem.setData(port, PortRole)
                     blofeldItem = QtGui.QStandardItem()
                     blofeldItem.setFlags(portFlags)
-                    if 'blofeld' in port.toString().lower():
-                        if port.addr in allowForwardPorts:
-                            blofeldItem.setData(-1, BlofeldRole)
-                            toolTip += u'<br/><br/>This port is not to be considered as a possible Blofeld Synthesizer'
-                        elif port.addr in blockForwardPorts:
-                            blofeldItem.setData(2, BlofeldRole)
-                            toolTip += u'<br/><br/>This port has been marked as a Blofeld Synthesizer'
-                        else:
-                            blofeldItem.setData(1, BlofeldRole)
-                            toolTip += u'<br/><br/>This port is considered a possible Blofeld Synthesizer'
+                    if port.addr in allowForwardPorts:
+                        blofeldItem.setData(-1, BlofeldRole)
+                        toolTip += u'<br/><br/>This port is not to be considered as a possible Blofeld Synthesizer'
+                    elif port.addr in blockForwardPorts:
+                        blofeldItem.setData(2, BlofeldRole)
+                        toolTip += u'<br/><br/>This port has been marked as a Blofeld Synthesizer'
+                    elif 'blofeld' in port.toString().lower():
+                        blofeldItem.setData(1, BlofeldRole)
+                        toolTip += u'<br/><br/>This port is considered a possible Blofeld Synthesizer'
 #                        blofeldItem.setToolTip('This port is considered a possible Blofeld Synthesizer')
 #                    if port.addr in blockForwardPorts:
 #                        blofeldItem.setData(2, BlofeldRole)

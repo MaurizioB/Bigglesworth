@@ -546,18 +546,19 @@ class Bigglesworth(QtWidgets.QApplication):
             addr = port.addr
         else:
             addr = port
-            port = self.graph.port_id_dict[port.client.id][port.id]
+            port = self.graph.port_id_dict[addr[0]][addr[1]]
         self.settings.beginGroup('MIDI')
         block = set(self.settings.value('blockForwardPorts', [], 'QStringList'))
         block.add(port.toString())
         allow = set(self.settings.value('allowForwardPorts', [], 'QStringList'))
         allow.discard(port.toString())
+        self.blockForwardPorts.add(addr)
+        self.allowForwardPorts.discard(addr)
         if apply:
             self.settings.setValue('blockForwardPorts', list(block))
             self.settings.setValue('allowForwardPorts', list(allow))
+            self.graph.graph_changed.emit()
         self.settings.endGroup()
-        self.blockForwardPorts.add(addr)
-        self.allowForwardPorts.discard(addr)
 
     def newAlsaPort(self, port):
 #        print('new alsa port', port)
