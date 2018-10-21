@@ -27,7 +27,7 @@ and 64 respectively). Other are less used and sometimes manufacturers decide to 
 other purposes than commonly used because the original purpose is not appliable and there is
 no standard id for what that control achieves.
 
-CC identifiers for the BLofeld can be found at page 113 in the User Manual, or by mean of the
+CC identifiers for the Blofeld can be found at page 113 in the User Manual, or by mean of the
 "Midi implementation chart" item in the "?" menu of Bigglesworth.
 
 .. _deviceid:
