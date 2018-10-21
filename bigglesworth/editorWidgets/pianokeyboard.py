@@ -808,6 +808,12 @@ class PianoKeyboard(QtWidgets.QGraphicsView):
                 key.shortcut = ''
         self.pianoScene.update(self.pianoScene.sceneRect())
 
+    def setAllKeysUp(self):
+        for key in self.keys.values():
+            if key.pressed:
+                key.triggerNoteEvent(False, 127)
+        self.pianoScene.update()
+
     @QtCore.pyqtSlot(bool, int)
     @QtCore.pyqtSlot(bool, int, int)
     def triggerNoteEvent(self, eventType, note, velocity=None):
@@ -833,6 +839,11 @@ class PianoKeyboard(QtWidgets.QGraphicsView):
             self.shortcuts[event.text()].triggerNoteEvent(False, 0)
         except:
             pass
+
+    def focusOutEvent(self, event):
+        self.setAllKeysUp()
+        QtWidgets.QGraphicsView.focusOutEvent(self, event)
+
 
 def printEvent(eventType, note, velocity):
     print('Note{eventType} {note} {noteName} {velocity}'.format(
