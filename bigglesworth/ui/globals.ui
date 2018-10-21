@@ -243,7 +243,7 @@
       <bool>false</bool>
      </property>
      <property name="title">
-      <string>MIDI settings</string>
+      <string>MIDI</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2" columnstretch="2,0,0,2,0">
       <item row="2" column="1">
@@ -631,7 +631,7 @@ Firmware version:</string>
       <enum>Qt::Horizontal</enum>
      </property>
      <property name="standardButtons">
-      <set>QDialogButtonBox::Apply|QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+      <set>QDialogButtonBox::Apply|QDialogButtonBox::Cancel|QDialogButtonBox::Help|QDialogButtonBox::Ok</set>
      </property>
     </widget>
    </item>

@@ -177,7 +177,7 @@ class GlobalsDialog(QtWidgets.QDialog):
         self.sysex[-2] = 0x7f
         self.midiEvent.emit(SysExEvent(1, self.sysex))
 
-        QtCore.QTimer.singleShot(100, self.startQuery)
+        QtCore.QTimer.singleShot(500, self.startQuery)
         res = self.waiter.exec_(True)
         if not res or not self.waiter.result():
             return False

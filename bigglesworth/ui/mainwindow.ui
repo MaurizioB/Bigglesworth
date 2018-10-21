@@ -209,7 +209,9 @@
   </action>
   <action name="aboutAction">
    <property name="icon">
-    <iconset theme="help-about"/>
+    <iconset theme="help-about">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>About &amp;Bigglesworth...</string>
@@ -230,7 +232,9 @@
   </action>
   <action name="showSettingsAction">
    <property name="icon">
-    <iconset theme="preferences-other"/>
+    <iconset theme="preferences-other">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>&amp;Settings</string>
@@ -249,7 +253,9 @@
   </action>
   <action name="aboutQtAction">
    <property name="icon">
-    <iconset theme="qtcreator"/>
+    <iconset theme="qtcreator">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>About &amp;Qt...</string>
@@ -265,7 +271,9 @@
   </action>
   <action name="showLogAction">
    <property name="icon">
-    <iconset theme="text-x-log"/>
+    <iconset theme="text-x-log">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>Show log</string>
@@ -316,7 +324,9 @@
   </action>
   <action name="showMidiChartAction">
    <property name="icon">
-    <iconset theme="midi"/>
+    <iconset theme="midi">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>MIDI implementation chart...</string>
@@ -324,7 +334,9 @@
   </action>
   <action name="helpAction">
    <property name="icon">
-    <iconset theme="help-contents"/>
+    <iconset theme="help-contents">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>Bigglesworth Manual</string>
@@ -353,7 +365,9 @@
   </action>
   <action name="showFirmwareUtilsAction">
    <property name="icon">
-    <iconset theme="circuit"/>
+    <iconset theme="circuit">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>&amp;Firmware utilities</string>

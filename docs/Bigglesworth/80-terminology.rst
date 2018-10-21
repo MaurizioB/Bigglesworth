@@ -4,6 +4,7 @@ Reference terminology
 .. role:: subsection
 
 - `Control Change <ctrlchange_>`__
+- `Device ID <deviceid_>`__
 - `Note Event <noteevent_>`__
 - `Program Change <progchange_>`__
 - `SysEx <sysEx_>`__
@@ -28,6 +29,26 @@ no standard id for what that control achieves.
 
 CC identifiers for the BLofeld can be found at page 113 in the User Manual, or by mean of the
 "Midi implementation chart" item in the "?" menu of Bigglesworth.
+
+.. _deviceid:
+
+:subsection:`Device ID`
+^^^^^^^^^^^^^^^^^^^^^^^
+
+The Device ID is a special number that can be used to identify a specific device whenever
+the user has more identical devices connected in their setup, and is used when sending or 
+receiving SysEx messages (which are not subject to channel numbers).
+Suppose you have 2 Blofelds, the first has Device ID set to 0, and the second one to 10.
+If a SysEx with Device ID 0 is sent, only the former will use it, while the 
+latter will just ignore it.
+
+This allows the controller (Bigglesworth, in our case) to specifically target that 
+device when sending SysEx messages, and receive only messages sent from it while
+ignoring others.
+
+Bigglesworth can be set to send and receive a single Device ID, which can also be
+"Broadcast" (0x7F, or 127). In Broadcast mode, every connected Blofeld will accept
+SysEx events, and Bigglesworth will accept events disregarding their Device ID.
 
 
 .. _noteevent:
@@ -65,6 +86,12 @@ linear values.
 These messages are sometimes used to send "bulk" messages, such as memory/sound dumps or firmware 
 updates.
 
+SysEx messages usually start with a manufacturer number, a model number and, possibly, a 
+`Device ID <deviceid_>`__. In the case of Blofeld synthesizers, the first is 0x3E (integer
+62), the second is 0x13 (integer 19), while the Device ID defaults to 0 and can be changed 
+from the Blofeld's Global menu or Bigglesworth's "`Blofeld Device`_" utility.
 
 .. meta::
     :icon: help-about
+
+.. _`Blofeld Device`: "Settings and utilities/globals.html"

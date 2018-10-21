@@ -134,6 +134,8 @@ def getRootContents():
     return contents
 
 #create contents
+_sectionSort = {}
+
 for dirPath, dirs, files in os.walk(srcPath):
     docPath = dirPath[len(pwd):].rstrip('/').split('/')
     section = docPath[-1]
@@ -147,7 +149,8 @@ for dirPath, dirs, files in os.walk(srcPath):
         if fileName == 'sort':
             with open(os.path.join(dirPath, fileName)) as sf:
                 i = int(sf.readlines()[0])
-                sections.insert(i, section)
+                _sectionSort[i] = section
+#                sections.insert(i, section)
         elif fileName == 'index.rst':
             continue
         elif fileName.endswith('.rst'):
@@ -173,6 +176,7 @@ for dirPath, dirs, files in os.walk(srcPath):
     htmlFiles.sort(key=lambda c: c[0])
     indexContents[section] = [(h, t) for _, h, t in htmlFiles]
 
+sections = [_sectionSort[s] for s in sorted(_sectionSort.keys())]
 
 #create indexes
 for dirPath, dirs, files in os.walk(srcPath):

@@ -55,6 +55,26 @@ table.curvetable {
     color: red;
 }
 
+.gray {
+    color: gray;
+}
+
+.graybold {
+    color: gray;
+    font-weight: 600;
+}
+
+.blofeldkey {
+    color: orange;
+    font-weight: 600;
+}
+
+.blofeldshift {
+    color: white;
+    background-color: orange;
+    font-weight: 600;
+}
+
 .toc li {
     line-height: 16px;
 }
