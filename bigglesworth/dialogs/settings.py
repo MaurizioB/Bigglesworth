@@ -118,6 +118,17 @@ class SettingsDialog(QtWidgets.QDialog):
         self.backendGroup.setId(self.alsaBackendRadio, 0)
         self.backendGroup.setId(self.rtmidiBackendRadio, 1)
         self.autoconnectClearChk.clicked.connect(self.clearAutoconnect)
+        self.outputChannelWidget.itemsChanged.connect(self.checkChannelSend)
+        self.alertIcon = QtGui.QIcon.fromTheme('emblem-warning')
+
+    def checkChannelSend(self, channels):
+        if len(channels) > 1:
+            self.omniAlertIcon.setPixmap(self.alertIcon.pixmap(self.fontMetrics().height()))
+            self.omniAlertIcon.setToolTip('Using more than one output channel is <b>not</b> suggested.<br/>'
+                'See manual for further information on this topic.')
+        else:
+            self.omniAlertIcon.setPixmap(QtGui.QPixmap())
+            self.omniAlertIcon.setToolTip('')
 
     def updateStartupSessionCombo(self, startupDualMode):
         for index, label in enumerate(startupSessionModes[startupDualMode]):
@@ -184,7 +195,6 @@ class SettingsDialog(QtWidgets.QDialog):
                         self.dbPathRestoreBtn.setEnabled(True)
             else:
                 self.dbPathRestoreBtn.setEnabled(False)
-
 
     def midiEventReceived(self, event):
         if event.type == SYSEX:
