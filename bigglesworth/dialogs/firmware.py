@@ -226,7 +226,16 @@ class FirmwareDialog(QtWidgets.QDialog):
         if self.detectedVersion is not None:
             detectedMaj, detectedMin = self.detectedVersion
             selectedMaj, selectedMin = self.firmwareCombo.itemData(self.firmwareCombo.currentIndex(), FirmwareVersionRole)
-            if selectedMaj < detectedMaj or selectedMin < detectedMin:
+            if selectedMaj == detectedMaj and selectedMin == detectedMin:
+                if WarningMessageBox(self, 'Same firmware detected', 
+                    'The firmware version currently detected ({dMaj}.{dMin}) is the same as '
+                    'the selected one. It should not be necessary to dump the firmware.<br/>'
+                    'Proceed only if you know what you are doing!'.format(
+                        dMaj=detectedMaj, dMin=detectedMin, sMaj=selectedMaj, sMin=selectedMin), 
+                    buttons={WarningMessageBox.Ok: 'Proceed anyway', 
+                        WarningMessageBox.Cancel: None}).exec_() != WarningMessageBox.Ok:
+                            return
+            elif selectedMaj <= detectedMaj and selectedMin < detectedMin:
                 if WarningMessageBox(self, 'Firmware downgrade detected', 
                     'The firmware version currently detected ({dMaj}.{dMin}) is newer than the '
                     'one selected ({sMaj}.{sMin}). This is <u>highly</u> discouraged.<br/>'
@@ -244,7 +253,6 @@ class FirmwareDialog(QtWidgets.QDialog):
             buttons={QuestionMessageBox.Ok: 'Dump!', 
                 QtWidgets.QMessageBox.Cancel: None}).exec_() != QuestionMessageBox.Ok:
                     return
-
         self.finalize = self.dumpFirmwareFinalized
         fileName = self.firmwareCombo.itemData(self.firmwareCombo.currentIndex(), FirmwareFileRole)
         midiFile = QtCore.QDir(localPath('firmware/')).absoluteFilePath(fileName)
