@@ -343,7 +343,7 @@ class Bigglesworth(QtWidgets.QApplication):
 #        self.mainWindow.quitAction.setIcon(QtGui.QIcon(':/icons/Bigglesworth/16x16/dialog-information.svg'))
         self.mainWindow.closed.connect(self.checkClose)
         self.mainWindow.quitAction.triggered.connect(self.quit)
-        self.mainWindow.helpAction.triggered.connect(HelpDialog(self.mainWindow).show)
+        self.mainWindow.helpAction.triggered.connect(self.showHelp)
         self.mainWindow.midiConnect.connect(self.midiConnect)
         self.mainWindow.showLogAction.triggered.connect(self.loggerWindow.show)
 
@@ -402,6 +402,7 @@ class Bigglesworth(QtWidgets.QApplication):
 
         self.globalsDialog = GlobalsDialog(self.mainWindow)
         self.globalsDialog.midiEvent.connect(self.sendMidiEvent)
+        self.globalsDialog.helpRequested.connect(self.showHelp)
 
         self.firmwareDialog = FirmwareDialog(self.mainWindow)
         self.firmwareDialog.midiEvent.connect(self.sendMidiEvent)
@@ -416,6 +417,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.editorDumper.accepted.connect(lambda: setattr(self, 'dumpBlock', False))
 #        self.mainDumper.rejected.connect(lambda: setattr(self, 'dumpBlock', False))
 
+        self.helpDialog = HelpDialog()
 
         self.splash.showMessage('Prepare for some coolness! ;-)', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom)
 
@@ -1127,8 +1129,21 @@ class Bigglesworth(QtWidgets.QApplication):
         self.midiDevice.midi_event.disconnect(self.firmwareDialog.midiEventReceived)
         self.globalsBlock = False
 
-    def showHelp(self):
-        HelpDialog(self.mainWindow).show()
+    @QtCore.pyqtSlot(str)
+    def showHelp(self, keyword=''):
+        try:
+            parent = self.sender().window()
+        except:
+            parent = self.sender()
+            while parent:
+                parent = parent.parent()
+                if isinstance(parent, (QtWidgets.QMainWindow, QtWidgets.QDialog)):
+                    break
+        if not keyword and parent:
+            keyword = parent.objectName()
+        elif isinstance(keyword, QtCore.QObject):
+            keyword = keyword.objectName()
+        self.helpDialog.openKeyword(keyword, parentWindow=parent)
 
     def eventFilter(self, source, event):
         if source in self.watchedDialogs and event.type() == QtCore.QEvent.QCloseEvent:

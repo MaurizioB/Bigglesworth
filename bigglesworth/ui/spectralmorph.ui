@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Dialog</class>
- <widget class="QDialog" name="Dialog">
+ <class>SpectralMorph</class>
+ <widget class="QDialog" name="SpectralMorph">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -230,7 +230,7 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
-       <property name="wordWrap">
+       <property name="wordWrap" stdset="0">
         <bool>true</bool>
        </property>
       </widget>
@@ -454,6 +454,11 @@
  </widget>
  <customwidgets>
   <customwidget>
+   <class>StatusBar</class>
+   <extends>QLabel</extends>
+   <header>bigglesworth.wavetables.spectral</header>
+  </customwidget>
+  <customwidget>
    <class>ToolTipSlider</class>
    <extends>QSlider</extends>
    <header>bigglesworth.wavetables.spectral</header>
@@ -479,11 +484,6 @@
    <header>bigglesworth.wavetables.widgets</header>
   </customwidget>
   <customwidget>
-   <class>StatusBar</class>
-   <extends>QLabel</extends>
-   <header>bigglesworth.wavetables.spectral</header>
-  </customwidget>
-  <customwidget>
    <class>SpecHarmonicsScrollArea</class>
    <extends>QScrollArea</extends>
    <header>bigglesworth.wavetables.spectral</header>
@@ -500,7 +500,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>Dialog</receiver>
+   <receiver>SpectralMorph</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -516,7 +516,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>Dialog</receiver>
+   <receiver>SpectralMorph</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

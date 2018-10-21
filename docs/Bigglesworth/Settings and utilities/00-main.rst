@@ -70,3 +70,6 @@ this feature blocks the MIDI device detection process.
 
 .. _Bigglesworth website: http://bigglesworth.it/support
 .. _Facebook page: https://fb.me/bigglesworthapp
+
+.. meta::
+    :icon: window

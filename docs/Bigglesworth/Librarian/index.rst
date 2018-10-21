@@ -42,3 +42,4 @@ be used to "mirror" the contents of your beloved synthesizer.
 
 .. meta::
     :icon: bigglesworth
+    :keyword: MainWindow

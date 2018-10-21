@@ -67,3 +67,6 @@ The dialog also allows to edit tags (and add new ones) from the "Manage tags" bu
 .. |editIcon| image:: :/icons/Bigglesworth/16x16/document-edit
 
 .. _`SysEx`: ../terminology.html#sysex
+
+.. meta::
+    :icon: tag

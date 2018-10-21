@@ -45,3 +45,6 @@ specific items will appear. See the relative sections to learn more.
 .. _`Duplicate sounds`: duplicates.html
 .. _`Program Change`: ../terminology.html#progchange
 .. _`SysEx`: ../terminology.html#sysex
+
+.. meta::
+    :icon: window

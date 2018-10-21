@@ -83,3 +83,4 @@ it only uses SysEx messages to send parameter changes.
 
 .. meta::
     :icon: blofeld-b
+    :keyword: GlobalsDialog

@@ -15,3 +15,6 @@ and computes the intermediate values as a `Linear curve <curves.html#linear>`_.
 
 To fully achieve the desired effect, the destination keyframe should have a wave shape similar to the
 first and shifted by the amount of samples selected.
+
+.. meta::
+    :icon: kdenlive-object-width

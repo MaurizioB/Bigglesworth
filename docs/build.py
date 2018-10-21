@@ -1,7 +1,8 @@
 #!/usr/bin/env python2.7
 
-import os, shutil, glob, sys
+import os, shutil, sys
 from commands import getoutput
+from xml.etree import ElementTree as et
 
 os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
 from Qt import QtWidgets
@@ -58,9 +59,7 @@ qhfContents = '''<?xml version="1.0" encoding="UTF-8"?>
             </section>
         </toc>
         <keywords>
-            <keyword name="foo" id="MyApplication::foo" ref="doc.html#foo"/>
-            <keyword name="bar" ref="doc.html#bar"/>
-            <keyword id="MyApplication::foobar" ref="doc.html#foobar"/>
+{keywords}
         </keywords>
         <files>
             <file>main.css</file>
@@ -133,6 +132,16 @@ def getRootContents():
     contents += '</ul>\n'
     return contents
 
+keywords = {}
+
+def findKeywords(htmlPath):
+    _root = et.parse(htmlPath)
+    _head = _root.getiterator('{http://www.w3.org/1999/xhtml}head')[0]
+    for _meta in _head.findall('{http://www.w3.org/1999/xhtml}meta'):
+        if _meta.get('name') == 'keyword':
+            keywords[_meta.get('content')] = htmlPath
+            break
+
 #create contents
 _sectionSort = {}
 
@@ -171,6 +180,8 @@ for dirPath, dirs, files in os.walk(srcPath):
                         ))
                     if output:
                         print('Error?\n{}'.format(output))
+                    else:
+                        findKeywords(htmlPath)
                     print(htmlPath)
                     filePaths.append(htmlPath)
     htmlFiles.sort(key=lambda c: c[0])
@@ -204,6 +215,8 @@ for dirPath, dirs, files in os.walk(srcPath):
                 ))
             if output:
                 print('Error?\n{}'.format(output))
+            else:
+                findKeywords(htmlPath)
             filePaths.append(htmlPath)
 
 qhfSections = ''
@@ -226,11 +239,14 @@ qhfFiles = ''
 for f in filePaths:
     qhfFiles += '\t\t\t<file>{}</file>\n'.format(f[len(destPath):])
 
+qhfKeywords = ''
+for k, v in keywords.items():
+    qhfKeywords += '\t\t\t<keyword id="{}" ref="{}"/>\n'.format(k, v[len(destPath):])
 
 shutil.copyfile('main.css', 'html/main.css')
 
 with open('html/bigglesworth.qhp', 'w') as qhcp:
-    qhcp.write(qhfContents.format(sections=qhfSections, files=qhfFiles))
+    qhcp.write(qhfContents.format(sections=qhfSections, files=qhfFiles, keywords=qhfKeywords))
 
 print(getoutput('qcollectiongenerator bigglesworth.qhcp -o bigglesworth.qhc'))
 shutil.copyfile('bigglesworth.qhc', '../bigglesworth/help.qhc')

@@ -100,6 +100,7 @@ class GlobalsWaiter(QtWidgets.QDialog):
 
 class GlobalsDialog(QtWidgets.QDialog):
     midiEvent = QtCore.pyqtSignal(object)
+    helpRequested = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
         QtWidgets.QDialog.__init__(self, parent)
@@ -159,6 +160,8 @@ class GlobalsDialog(QtWidgets.QDialog):
         self.okBtn = self.buttonBox.button(self.buttonBox.Ok)
         self.applyBtn = self.buttonBox.button(self.buttonBox.Apply)
         self.applyBtn.clicked.connect(self.apply)
+        self.buttonBox.button(self.buttonBox.Help).clicked.connect(self.helpRequested)
+
         self.data = None
         self.originalData = []
 

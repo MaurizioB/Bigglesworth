@@ -46,3 +46,5 @@ Here is the complete list.
 
 .. include:: CURVES
 
+.. meta::
+    :icon: labplot-xy-curve-segments

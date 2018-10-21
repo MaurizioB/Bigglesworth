@@ -93,3 +93,6 @@ used in another collection, the editing of its name or category will reflect on 
 
 .. _tag: tags.html
 .. _Main Library: main-library.html
+
+.. meta::
+    :icon: document-open

@@ -58,3 +58,6 @@ Read more about this in `Receive sounds`_ and `Send sounds`_.
 .. _`Firmware updates`: firmware.html
 .. _`Receive sounds`: dumpreceive.html
 .. _`Send sounds`: dumpsend.html
+
+.. meta::
+    :icon: dump

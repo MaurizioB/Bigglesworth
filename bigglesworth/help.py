@@ -140,6 +140,7 @@ class HelpDialog(QtWidgets.QDialog):
         self.help.setupFinished.connect(self.setLoaded)
         self.proxy = ContentProxy(self.help)
         self.help.setupData()
+        self.currentParent = parent
 
 #        self.contentWidget = self.help.contentWidget()
         self.contentWidget.setModel(self.proxy)
@@ -159,6 +160,16 @@ class HelpDialog(QtWidgets.QDialog):
         self.fwdBtn.clicked.connect(self.helpBrowser.forward)
         self.homeBtn.clicked.connect(lambda: self.helpBrowser.setSource(QtCore.QUrl('qthelp://jidesk.net.Bigglesworth.1.0/html/index.html')))
 
+    def setParentWindow(self, parent):
+        if self.isVisible() and parent == self.currentParent:
+            return
+        self.currentParent = parent
+        if parent and parent.windowModality():
+            self.setParent(parent, QtCore.Qt.Dialog)
+            self.setWindowModality(QtCore.Qt.NonModal)
+        else:
+            self.setParent(parent, QtCore.Qt.Window)
+
     def setLoaded(self):
         self.loaded = True
         self.checkExpanded()
@@ -168,6 +179,26 @@ class HelpDialog(QtWidgets.QDialog):
             QtCore.QTimer.singleShot(10, self.checkExpanded)
         else:
             self.contentWidget.expand(self.proxy.index(0, 0))
+
+    def openKeyword(self, keyword='', start=None, parentWindow=None):
+        urlDict = self.help.linksForIdentifier(keyword)
+        self.setParentWindow(parentWindow)
+        if urlDict:
+            url = urlDict.values()[0]
+        else:
+            return
+        if url.isValid() and not url.isEmpty():
+            if start is None:
+                start = not self.isVisible()
+            self.show()
+            if not (self.loaded and self.shown and self.proxy.rowCount()):
+                QtCore.QTimer.singleShot(0, lambda: self.openKeyword(keyword, start, parentWindow))
+        else:
+            return
+        self.anchorClicked(url)
+        self.activateWindow()
+        if start:
+            self.helpBrowser.clearHistory()
 
     def openUrl(self, textUrl, start=False):
         if not (self.loaded and self.shown and self.proxy.rowCount()):
@@ -202,10 +233,22 @@ class HelpDialog(QtWidgets.QDialog):
         print(url)
         self.helpBrowser.setSource(url)
 
+    def activateWindow(self):
+        QtWidgets.QDialog.activateWindow(self)
+        self.center()
+
+    def center(self):
+        if self.currentParent:
+            geometry = self.currentParent.geometry()
+        else:
+            geometry = QtWidgets.QApplication.desktop().availableGeometry()
+        self.move(geometry.center() - self.rect().center())
+
     def showEvent(self, event):
         if not self.shown:
             self.shown = True
             self.checkExpanded()
+            self.center()
 
 if __name__ == '__main__':
     import sys

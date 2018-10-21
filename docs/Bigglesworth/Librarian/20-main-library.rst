@@ -22,3 +22,6 @@ an existing slot in a collection, keep CTRL pressed while dropping.
 
 .. _collection: collections.html
 .. _tag: tags.html
+
+.. meta::
+    :icon: tab-duplicate

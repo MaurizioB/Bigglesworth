@@ -36,7 +36,7 @@ CC identifiers for the BLofeld can be found at page 113 in the User Manual, or b
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 The Device ID is a special number that can be used to identify a specific device whenever
-the user has more identical devices connected in their setup, and is used when sending or 
+users have more identical devices connected in their setup, and is used when sending or 
 receiving SysEx messages (which are not subject to channel numbers).
 Suppose you have 2 Blofelds, the first has Device ID set to 0, and the second one to 10.
 If a SysEx with Device ID 0 is sent, only the former will use it, while the 

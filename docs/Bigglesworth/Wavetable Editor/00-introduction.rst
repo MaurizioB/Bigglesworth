@@ -81,3 +81,6 @@ It is obviously possible to import and export wavetables to file: using Bigglesw
 .. _Translate: translate.html
 .. _Spectral: spectral.html
 .. _`SysEx`: ../terminology.html#sysex
+
+.. meta::
+    :icon: wavetables

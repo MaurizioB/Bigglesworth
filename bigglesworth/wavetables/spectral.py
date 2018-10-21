@@ -8,7 +8,6 @@ from Qt import QtCore, QtGui, QtWidgets
 from bigglesworth.utils import loadUi, getCardinal, sanitize
 from bigglesworth.wavetables.widgets import HarmonicsSlider, CurveIcon, EnvelopeHarmonicsSlider, AddSliderButton
 from bigglesworth.wavetables.utils import curves, waveFunction, cubicTranslation, getCurveFunc, Envelope, waveColors, WaveLabelsExt
-from bigglesworth.help import HelpDialog
 
 FractRole = QtCore.Qt.UserRole + 1
 
@@ -1257,12 +1256,8 @@ class SpecTransformDialog(QtWidgets.QDialog):
         self.updatePaths()
         self.addToolBtn.addRequested.connect(self.addMultiEnvelopes)
 
-        self.helpDialog = HelpDialog(self)
-        self.buttonBox.button(self.buttonBox.Help).clicked.connect(self.getHelp)
-
-    def getHelp(self):
-        self.helpDialog.show()
-        self.helpDialog.openUrl('qthelp://jidesk.net.bigglesworth.1.0/html/Wavetable Editor/spectral.html', True)
+        self.buttonBox.button(self.buttonBox.Help).clicked.connect(
+            lambda: QtWidgets.QApplication.instance().showHelp(self))
 
     @property
     def currentSlider(self):
