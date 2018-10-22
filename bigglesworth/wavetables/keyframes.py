@@ -3,6 +3,7 @@ import numpy as np
 from uuid import UUID
 
 from Qt import QtCore
+from PyQt4.QtCore import qUncompress
 
 from bigglesworth.utils import sanitize
 from bigglesworth.wavetables.utils import baseSineValues, pow20, pow22, noteFrequency
@@ -821,6 +822,15 @@ class KeyFrames(QtCore.QObject):
         fullList = [None for _ in range(64)]
         allItems = []
         prevItem = prevTransform = None
+
+        if isinstance(content, QtCore.QByteArray):
+            try:
+                unpacked = qUncompress(content)
+                content = QtCore.QDataStream(unpacked, QtCore.QIODevice.ReadOnly).readQVariant()
+            except Exception as e:
+                print(e)
+                return
+
         for layoutIndex, itemData in enumerate(content):
             if isinstance(itemData[0], UUID):
                 uuid, index, values = itemData
@@ -1029,6 +1039,8 @@ class KeyFrames(QtCore.QObject):
         self.fullClean = True
         return self.fullAudioValues
 
+
+#virtual objects operations that do not require GUI implementation
 class FakeObject(object):
     @property
     def changed(self):
@@ -1039,6 +1051,7 @@ class FakeObject(object):
 
 class FakeContainer(object):
     fakeObject = FakeObject()
+    fakeObject.waveTableChanged = FakeObject()
     def layout(self):
         return self.fakeObject
 
@@ -1047,8 +1060,9 @@ class FakeContainer(object):
 
 
 class VirtualKeyFrames(KeyFrames):
-    def __init__(self, snapshot):
+    def __init__(self, snapshot=None):
         KeyFrames.__init__(self, FakeContainer())
-        self.setSnapshot(snapshot)
+        if snapshot:
+            self.setSnapshot(snapshot)
 
 from bigglesworth.wavetables.graphics import SampleItem, WaveTransformItem

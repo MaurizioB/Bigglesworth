@@ -243,21 +243,25 @@
            <property name="bottomMargin">
             <number>2</number>
            </property>
+           <item row="3" column="0">
+            <widget class="Line" name="line_4">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="label_10">
+             <property name="text">
+              <string>Computed wave</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
            <item row="7" column="0">
             <widget class="TransformWidget" name="mainTransformWidget" native="true"/>
-           </item>
-           <item row="8" column="0">
-            <spacer name="verticalSpacer_2">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>0</height>
-              </size>
-             </property>
-            </spacer>
            </item>
            <item row="11" column="0">
             <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -323,6 +327,82 @@
                </property>
                <property name="icon">
                 <iconset theme="edit-undo-history">
+                 <normaloff>../../../../../../../../.designer/backup</normaloff>../../../../../../../../.designer/backup</iconset>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item row="5" column="0">
+            <widget class="WaveTableCurrentView" name="waveTableCurrentWaveView">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="backgroundBrush">
+              <brush brushstyle="SolidPattern">
+               <color alpha="255">
+                <red>0</red>
+                <green>0</green>
+                <blue>0</blue>
+               </color>
+              </brush>
+             </property>
+             <property name="interactive">
+              <bool>false</bool>
+             </property>
+             <property name="renderHints">
+              <set>QPainter::Antialiasing|QPainter::TextAntialiasing</set>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="0">
+            <layout class="QHBoxLayout" name="horizontalLayout_7">
+             <property name="spacing">
+              <number>0</number>
+             </property>
+             <property name="leftMargin">
+              <number>4</number>
+             </property>
+             <property name="rightMargin">
+              <number>4</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="label_2">
+               <property name="text">
+                <string>Wave</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="IndexSlider" name="indexSlider">
+               <property name="maximum">
+                <number>63</number>
+               </property>
+               <property name="pageStep">
+                <number>1</number>
+               </property>
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="WaveIndexSpin" name="indexSpin">
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <number>64</number>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="waveEditBtn">
+               <property name="icon">
+                <iconset theme="document-edit">
                  <normaloff>../../../../../../../../.designer/backup</normaloff>../../../../../../../../.designer/backup</iconset>
                </property>
               </widget>
@@ -402,7 +482,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QSpinBox" name="slotSpin">
+                 <widget class="SlotSpin" name="slotSpin">
                   <property name="minimum">
                    <number>80</number>
                   </property>
@@ -446,98 +526,18 @@
              </layout>
             </widget>
            </item>
-           <item row="6" column="0">
-            <layout class="QHBoxLayout" name="horizontalLayout_7">
-             <property name="spacing">
-              <number>0</number>
-             </property>
-             <property name="leftMargin">
-              <number>4</number>
-             </property>
-             <property name="rightMargin">
-              <number>4</number>
-             </property>
-             <item>
-              <widget class="QLabel" name="label_2">
-               <property name="text">
-                <string>Wave</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="IndexSlider" name="indexSlider">
-               <property name="maximum">
-                <number>63</number>
-               </property>
-               <property name="pageStep">
-                <number>1</number>
-               </property>
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="WaveIndexSpin" name="indexSpin">
-               <property name="minimum">
-                <number>1</number>
-               </property>
-               <property name="maximum">
-                <number>64</number>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="waveEditBtn">
-               <property name="icon">
-                <iconset theme="document-edit">
-                 <normaloff>../../../../../../../../.designer/backup</normaloff>../../../../../../../../.designer/backup</iconset>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item row="3" column="0">
-            <widget class="Line" name="line_4">
+           <item row="8" column="0">
+            <spacer name="verticalSpacer_2">
              <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+              <enum>Qt::Vertical</enum>
              </property>
-            </widget>
-           </item>
-           <item row="5" column="0">
-            <widget class="WaveTableCurrentView" name="waveTableCurrentWaveView">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>0</height>
+              </size>
              </property>
-             <property name="backgroundBrush">
-              <brush brushstyle="SolidPattern">
-               <color alpha="255">
-                <red>0</red>
-                <green>0</green>
-                <blue>0</blue>
-               </color>
-              </brush>
-             </property>
-             <property name="interactive">
-              <bool>false</bool>
-             </property>
-             <property name="renderHints">
-              <set>QPainter::Antialiasing|QPainter::TextAntialiasing</set>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="0">
-            <widget class="QLabel" name="label_10">
-             <property name="text">
-              <string>Computed wave</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-            </widget>
+            </spacer>
            </item>
           </layout>
          </widget>
@@ -2073,6 +2073,7 @@
     <addaction name="separator"/>
     <addaction name="importAction"/>
     <addaction name="exportAction"/>
+    <addaction name="devArchiveAction"/>
    </widget>
    <widget class="QMenu" name="windowsMenu">
     <property name="title">
@@ -2404,6 +2405,11 @@
     <string>Audio settings</string>
    </property>
   </action>
+  <action name="devArchiveAction">
+   <property name="text">
+    <string>Create archive</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -2546,6 +2552,11 @@
   </customwidget>
   <customwidget>
    <class>PositiveSpin</class>
+   <extends>QSpinBox</extends>
+   <header>bigglesworth.wavetables.widgets</header>
+  </customwidget>
+  <customwidget>
+   <class>SlotSpin</class>
    <extends>QSpinBox</extends>
    <header>bigglesworth.wavetables.widgets</header>
   </customwidget>

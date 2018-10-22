@@ -171,6 +171,8 @@
         <file alias="16x16/arrow-down.svg">icons/Bigglesworth/16x16/arrow-down.svg</file>
         <file alias="22x22/arrow-down.svg">icons/Bigglesworth/22x22/arrow-down.svg</file>
         <file alias="24x24/arrow-down.svg">icons/Bigglesworth/24x24/arrow-down.svg</file>
+        <file alias="16x16/unlock.svg">icons/Bigglesworth/16x16/unlock.svg</file>
+        <file alias="22x22/unlock.svg">icons/Bigglesworth/22x22/unlock.svg</file>
         <file alias="16x16/format-justify-right.svg">icons/Bigglesworth/16x16/format-justify-right.svg</file>
         <file alias="22x22/format-justify-right.svg">icons/Bigglesworth/22x22/format-justify-right.svg</file>
         <file alias="24x24/format-justify-right.svg">icons/Bigglesworth/24x24/format-justify-right.svg</file>
@@ -389,6 +391,8 @@
         <file alias="24x24/edit-delete.svg">icons/Bigglesworth/24x24/edit-delete.svg</file>
         <file alias="16x16/tool_rect_selection.svg">icons/Bigglesworth/16x16/tool_rect_selection.svg</file>
         <file alias="22x22/tool_rect_selection.svg">icons/Bigglesworth/22x22/tool_rect_selection.svg</file>
+        <file alias="16x16/lock.svg">icons/Bigglesworth/16x16/lock.svg</file>
+        <file alias="22x22/lock.svg">icons/Bigglesworth/22x22/lock.svg</file>
         <file alias="32x32/audio-x-generic.svg">icons/Bigglesworth/32x32/audio-x-generic.svg</file>
         <file alias="16x16/audio-x-generic.svg">icons/Bigglesworth/16x16/audio-x-generic.svg</file>
         <file alias="22x22/audio-x-generic.svg">icons/Bigglesworth/22x22/audio-x-generic.svg</file>

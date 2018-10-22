@@ -1,10 +1,198 @@
 import numpy as np
 
+from xml.etree import ElementTree as ET
 from Qt import QtCore, QtGui, QtWidgets
+from PyQt4.QtCore import qCompress
 
-from bigglesworth.utils import loadUi
+from bigglesworth.utils import loadUi, localPath
 from bigglesworth.widgets import Waiter
 from bigglesworth.wavetables.utils import parseTime
+
+import soundfile
+
+FileInfoRole = QtCore.Qt.UserRole + 1
+FilePathRole = FileInfoRole + 1
+WaveDataRole = FilePathRole + 1
+
+#this is for dev mode only...
+class WaveTableArchiver(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        QtWidgets.QDialog.__init__(self, parent)
+        loadUi('ui/wtarchiver.ui', self)
+        self.fileModel = QtGui.QStandardItemModel()
+        self.fileView.setModel(self.fileModel)
+        self.fileModel.setHorizontalHeaderLabels(['Name', 'Slot', 'File'])
+
+        self.fileView.horizontalHeader().setResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        self.fileView.horizontalHeader().setResizeMode(1, QtWidgets.QHeaderView.Fixed)
+        self.fileView.horizontalHeader().setResizeMode(2, QtWidgets.QHeaderView.Stretch)
+        self.fileView.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() * 1.2)
+        self.fileView.resizeColumnToContents(1)
+
+        self.addBtn.clicked.connect(self.addFiles)
+        self.removeBtn.clicked.connect(self.removeFiles)
+        self.removePrefixBtn.clicked.connect(self.removePrefix)
+
+        self.fileView.clicked.connect(self.updatePanel)
+
+        self.nameEdit.textEdited.connect(self.updateData)
+        self.slotSpin.valueChanged.connect(self.updateData)
+
+        self.saveBtn = self.buttonBox.button(self.buttonBox.Save)
+        self.saveBtn.setEnabled(False)
+        self.saveBtn.clicked.connect(self.export)
+
+        self.fileModel.dataChanged.connect(self.checkData)
+
+    def removeFiles(self):
+        selected = self.fileView.selectionModel().selectedRows()
+        if not selected:
+            return
+        for index in sorted(selected, key=lambda i: i.row(), reverse=True):
+            self.fileModel.takeRow(index.row())
+
+    def addFiles(self):
+        files = QtWidgets.QFileDialog.getOpenFileNames(self, 'Select files', localPath('../test/blofeld'))
+        for filePath in sorted(files):
+            try:
+                info = soundfile.info(filePath)
+                assert info.channels == 1, 'Not mono!'
+                assert info.frames <= 8192, 'Too long!: {}'.format(info.frames)
+                waveData, sampling = soundfile.read(filePath, always_2d=True, dtype='float32')
+                self.addData(filePath, waveData[:, 0])
+            except Exception as e:
+                print(filePath, e)
+        self.updatePanel()
+        self.checkData()
+
+    def addData(self, filePath, waveData):
+        res = self.fileModel.match(self.fileModel.index(0, 2), FilePathRole, filePath, flags=QtCore.Qt.MatchExactly)
+        if res:
+            self.fileView.setCurrentIndex(res[0])
+            return
+        fileInfo = QtCore.QFileInfo(filePath)
+        fileItem = QtGui.QStandardItem(fileInfo.fileName())
+        fileItem.setEditable(False)
+        fileItem.setData(fileInfo, FileInfoRole)
+        fileItem.setData(filePath, FilePathRole)
+        fileItem.setData([waveData[p:p+128] for p in xrange(0, len(waveData), 128)], WaveDataRole)
+        slotCount = self.fileModel.rowCount()
+        if slotCount:
+            for slot in range(1, slotCount + 1):
+                if not self.fileModel.match(self.fileModel.index(0, 1), QtCore.Qt.DisplayRole, slot, flags=QtCore.Qt.MatchExactly):
+                    break
+            else:
+                slot += 1
+        else:
+            slot = 1
+        slotItem = QtGui.QStandardItem()
+        slotItem.setData(slot, QtCore.Qt.DisplayRole)
+
+        nameItem = QtGui.QStandardItem(fileInfo.completeBaseName())
+
+        self.fileModel.appendRow([nameItem, slotItem, fileItem])
+
+    def updatePanel(self, index=None):
+        self.slotSpin.blockSignals(True)
+        if not index or len(self.fileView.selectionModel().selectedRows()) > 1:
+            self.nameEdit.setText('')
+            self.nameEdit.setEnabled(False)
+            self.slotSpin.setValue(0)
+            self.slotSpin.setEnabled(False)
+        else:
+            self.nameEdit.setText(index.sibling(index.row(), 0).data())
+            self.nameEdit.setEnabled(True)
+            self.slotSpin.setValue(index.sibling(index.row(), 1).data())
+            self.slotSpin.setEnabled(True)
+        self.slotSpin.blockSignals(False)
+
+    def updateData(self):
+        current = self.fileView.currentIndex()
+        if not current or not current.isValid():
+            return
+        self.fileModel.setData(current.sibling(current.row(), 0), self.nameEdit.text())
+        self.fileModel.setData(current.sibling(current.row(), 1), self.slotSpin.value())
+
+    def checkData(self):
+        names = set()
+        slots = set()
+        for row in range(self.fileModel.rowCount()):
+            name = self.fileModel.item(row, 0).text()
+            if name in names:
+                break
+            names.add(name)
+            slot = self.fileModel.item(row, 1).data(QtCore.Qt.DisplayRole)
+            if slot in slots:
+                break
+            slots.add(slot)
+        else:
+            self.saveBtn.setEnabled(True)
+            return
+        self.saveBtn.setEnabled(False)
+
+    def removePrefix(self):
+        for row in range(self.fileModel.rowCount()):
+            item = self.fileModel.item(row, 0)
+            splitted = item.text().split()
+            for i, s in enumerate(splitted):
+                if s.isdigit():
+                    continue
+                break
+            item.setText(' '.join(splitted[i:]))
+
+    def export(self):
+        filePath = QtWidgets.QFileDialog.getSaveFileName(self, 'Export wavetables', QtCore.QDir.tempPath() + '/export.bwt')
+        if not filePath:
+            return
+
+        file = QtCore.QFile(filePath)
+        file.open(QtCore.QIODevice.WriteOnly)
+        stream = QtCore.QDataStream(file)
+
+        count = self.fileModel.rowCount()
+        progress = QtWidgets.QProgressDialog('Exporting', '', 0, count, self)
+        progress.setWindowTitle('Exporting {} wavetables'.format(count))
+        progress.setCancelButton(None)
+        root = ET.Element('Bigglesworth')
+        typeElement = ET.SubElement(root, 'WaveTableData')
+        countElement = ET.SubElement(typeElement, 'Count')
+        countElement.text = str(count)
+        fullData = []
+        
+        from bigglesworth.wavetables.keyframes import VirtualKeyFrames
+        keyFrames = VirtualKeyFrames()
+
+        for row in range(count):
+            progress.setValue(row)
+
+            waveData = self.fileModel.index(row, 2).data(WaveDataRole)
+            print(type(waveData))
+            keyFrames.setValuesMulti(0, waveData, fromFile=True)
+
+            name = self.fileModel.index(row, 0).data()
+            slot = self.fileModel.index(row, 1).data()
+
+            byteArray = QtCore.QByteArray()
+            kfStream = QtCore.QDataStream(byteArray, QtCore.QIODevice.WriteOnly)
+            kfStream.writeQVariant(keyFrames.getSnapshot())
+            fullData.append(qCompress(byteArray))
+
+            wtElement = ET.SubElement(typeElement, 'WaveTable')
+            ET.SubElement(wtElement, 'Name').text = name
+            ET.SubElement(wtElement, 'Slot').text = str(slot)
+            ET.SubElement(wtElement, 'WaveCount').text = str(len(keyFrames))
+
+
+        stream.writeString(ET.tostring(root))
+        try:
+            for data in fullData:
+                stream.writeQVariant(data)
+        except Exception as e:
+            print('Error writing?', e)
+
+        progress.setValue(progress.maximum())
+
+        file.close()
 
 
 class WaveExportDialog(QtWidgets.QDialog):
@@ -25,6 +213,7 @@ class WaveExportDialog(QtWidgets.QDialog):
         QtWidgets.QDialog.__init__(self, parent)
         loadUi('ui/waveexport.ui', self)
         iconHeight = int(self.fontMetrics().height() * .8)
+        self.firstSampleChk.setVisible(parent.devMode)
         for wave in waveData:
             for value in wave:
                 if not -32768 <= value <= 32767:

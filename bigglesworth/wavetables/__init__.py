@@ -14,6 +14,7 @@ os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
 sys.path.append('../..')
 
 from Qt import QtCore, QtGui, QtWidgets, QtSql
+from PyQt4.QtCore import qUncompress
 
 def colorAdjusted(color, **kwargs):
     if not kwargs:
@@ -58,7 +59,7 @@ QtGui.QColor.adjusted = colorAdjusted
 #from collections import OrderedDict, namedtuple
 #
 #polyPoints = namedtuple('polyPoints', 'topLeft topRight bottomRight bottomLeft')
-UidColumn, NameColumn, SlotColumn, EditedColumn, DataColumn, PreviewColumn, DumpedColumn = range(7)
+UidColumn, NameColumn, SlotColumn, EditedColumn, DataColumn, PreviewColumn, DumpedColumn, WritableColumn = range(8)
 
 try:
     from Qt import QtMultimedia
@@ -735,6 +736,9 @@ class BlofeldProxyModel(QtCore.QSortFilterProxyModel):
         self.invalidateFilter()
 
     def checkValidity(self, index, uid):
+        '''
+            Verify that the wavetable data exists, is saved, dumped and it's stored locally
+        '''
         if uid:
             sourceRow = index.row()
             res = self.waveTableModel.match(self.waveTableModel.index(0, UidColumn), QtCore.Qt.DisplayRole, uid)
@@ -792,6 +796,8 @@ class BlofeldProxyModel(QtCore.QSortFilterProxyModel):
             if self.mapToSource(index).row() >= 86 and not index.sibling(index.row(), DumpedColumn).data():
                 return self.undumpedForegroundColor
         elif role == QtCore.Qt.StatusTipRole:
+            if not index.sibling(index.row(), WritableColumn).data():
+                return 'This slot is set as read-only'
             uid = index.sibling(index.row(), UidColumn).data()
             slot = index.sibling(index.row(), SlotColumn).data()
             if not uid:
@@ -810,6 +816,8 @@ class BlofeldProxyModel(QtCore.QSortFilterProxyModel):
             uid = index.sibling(index.row(), UidColumn).data()
             slot = index.sibling(index.row(), SlotColumn).data()
             if not uid:
+                if not index.sibling(index.row(), WritableColumn).data():
+                    return 'This slot is set as read-only'
                 return 'Wavetable {} has not been dumped yet.<br/><br/>Bigglesworth does not know ' \
                     'its content on your Blofeld, which means that it could be an empty sine wave ' \
                     'or a previously dumped wavetable'.format(slot)
@@ -822,6 +830,9 @@ class BlofeldProxyModel(QtCore.QSortFilterProxyModel):
                 if uid == 'blofeld':
                     return 'This is an internal Blofeld wave'
                 pm = ''
+            if not index.sibling(index.row(), WritableColumn).data():
+                return '<table><td style="vertical-align: middle;">{}</td><td>Wavetable {} ' \
+                    'is set as read-only</td></table>'.format(pm, slot)
             valid = self.checkValidity(index, uid)
             if not valid:
                 return '<table><td style="vertical-align: middle;">{}</td><td>Wavetable {} ' \
@@ -842,6 +853,8 @@ class BlofeldProxyModel(QtCore.QSortFilterProxyModel):
         elif role == QtCore.Qt.CheckStateRole and index.column() == UidColumn:
             if self.mapToSource(index).row() < 86:
                 return QtCore.Qt.PartiallyChecked
+            elif not index.sibling(index.row(), WritableColumn).data():
+                return -2
             valid = self.checkValidity(index, index.data())
             if valid:
                 return valid
@@ -853,7 +866,9 @@ class BlofeldProxyModel(QtCore.QSortFilterProxyModel):
     def flags(self, index):
         flags = QtCore.QSortFilterProxyModel.flags(self, index)
 #        if index.row() < 73 or self.checkValidity(index, index.sibling(index.row(), UidColumn).data()):
-        if self.checkValidity(index, index.sibling(index.row(), UidColumn).data()) or \
+        if self.mapToSource(index).row() >= 86 and not index.sibling(index.row(), WritableColumn).data():
+            flags ^= QtCore.Qt.ItemIsSelectable
+        elif self.checkValidity(index, index.sibling(index.row(), UidColumn).data()) or \
             (self.mapToSource(index).row() >= 86 and index.sibling(index.row(), UidColumn).data()):
                 flags |= QtCore.Qt.ItemIsDragEnabled
         else:
@@ -929,6 +944,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
     openedWindows = []
     lastActive = []
     recentTables = []
+    writableSlots = set()
     _checkWindowOverlap = None
     slopeIconGrad = QtGui.QLinearGradient(0, 0, 0, 1)
     slopeIconGrad.setCoordinateMode(slopeIconGrad.ObjectBoundingMode)
@@ -937,6 +953,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 
     midiEvent = QtCore.pyqtSignal(object)
     midiConnect = QtCore.pyqtSignal(object, int, bool)
+    writableSlotsChanged = QtCore.pyqtSignal()
 
     def __init__(self, waveTable=None):
         QtWidgets.QMainWindow.__init__(self)
@@ -981,6 +998,8 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.openedWindows.append(self)
 
         if __name__ == '__main__':
+            self.devMode = True
+            self.devArchiveAction.triggered.connect(self.createArchive)
 #            self.midiWidget.setMenuEnabled(False)
             if not self.midiDevice:
                 self.__class__.midiDevice = TestMidiDevice(self)
@@ -993,6 +1012,8 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 self.midiEvent.connect(self.openedWindows[0].midiEvent)
 #                self.midiEvent.connect(self.midiDevice.outputEvent)
         else:
+            self.devMode = False
+            self.devArchiveAction.setVisible(False)
             self.main = QtWidgets.QApplication.instance()
             self.main.midiConnChanged.connect(self.midiConnChanged)
             self.midiDevice = self.main.midiDevice
@@ -1079,6 +1100,13 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.waveTableModel.beforeDelete.connect(self.checkRemoval)
         self.localProxy = LocalProxyModel(self.waveTableModel, self.dumpModel)
         self.dumpModel.dataChanged.connect(self.checkDumps)
+        if self.openedWindows[0] == self:
+            self.dumpModel.dataChanged.connect(self.checkWritable)
+            self.updateWritable()
+            self.writableSlotsChanged.connect(self.slotSpin.writableSlotsChanged)
+        else:
+            self.openedWindows[0].writableSlotsChanged.connect(self.slotSpin.writableSlotsChanged)
+        self.slotSpin.writableSlotsChanged()
 
         self.localWaveTableList.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() * 1.5)
         self.localWaveTableList.setModel(self.localProxy)
@@ -1111,6 +1139,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.blofeldWaveTableList.setColumnHidden(DataColumn, True)
         self.blofeldWaveTableList.setColumnHidden(PreviewColumn, True)
         self.blofeldWaveTableList.setColumnHidden(DumpedColumn, True)
+        self.blofeldWaveTableList.setColumnHidden(WritableColumn, True)
         self.blofeldWaveTableList.doubleClicked.connect(self.openFromDumpList)
         blHeader = self.blofeldWaveTableList.horizontalHeader()
         self.blofeldWaveTableList.setColumnWidth(UidColumn, self.localWaveTableList.columnWidth(UidColumn))
@@ -1419,6 +1448,11 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 
         self.settings.endGroup()
 
+    def createArchive(self):
+        from bigglesworth.wavetables.dialogs import WaveTableArchiver
+        dialog = WaveTableArchiver(self)
+        dialog.exec_()
+
     def isPlaying(self):
         return self.player.isPlaying()
 
@@ -1527,7 +1561,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 
         if not 'dumpedwt' in db.tables():
 #            if not query.exec_('CREATE TABLE dumpedwt(slot int primary key, uid varchar, name varchar(14), edited int)'):
-            if not query.exec_('CREATE TABLE dumpedwt(uid varchar, name varchar(14), slot int primary key, edited int, data blob, preview blob, dumped int)'):
+            if not query.exec_('CREATE TABLE dumpedwt(uid varchar, name varchar(14), slot int primary key, edited int, data blob, preview blob, dumped int, writable int)'):
                 print(query.lastError().databaseText())
             query.prepare('INSERT INTO dumpedwt(uid, name, slot,preview) VALUES("blofeld", :name, :slot, :preview)')
             shapes = self.drawOscShapes()
@@ -1543,11 +1577,22 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 query.bindValue(':slot', slot - 6)
                 if not query.exec_():
                     print(query.lastError().databaseText())
-            query.prepare('INSERT INTO dumpedwt(name, slot) VALUES(:name, :slot)')
+            query.prepare('INSERT INTO dumpedwt(name, slot, writable) VALUES(:name, :slot, 1)')
             for slot in range(86, 125):
                 query.bindValue(':name', oscShapes[slot])
                 query.bindValue(':slot', slot - 6)
                 if not query.exec_():
+                    print(query.lastError().databaseText())
+                print(query.executedQuery())
+        else:
+            query.exec_('PRAGMA table_info(dumpedwt)')
+            columns = []
+            while query.next():
+                columns.append(query.value(1))
+            if not 'writable' in columns:
+                if not query.exec_('ALTER TABLE dumpedwt ADD COLUMN "writable" int'):
+                    print(query.lastError().databaseText())
+                if not query.exec_('UPDATE dumpedwt SET writable=1 WHERE slot BETWEEN 80 AND 118'):
                     print(query.lastError().databaseText())
 
     def drawOscShapes(self):
@@ -2364,7 +2409,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         rows = []
         for wtElement in typeElement.findall('WaveTable'):
             name = wtElement.find('Name').text
-            slot = int(wtElement.find('Slot').text)
+            slot = max(80, int(wtElement.find('Slot').text))
             waveCount = int(wtElement.find('WaveCount').text)
 
             byteArray = QtCore.QByteArray()
@@ -2581,9 +2626,12 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         else:
             waves = self.keyFrames.fullTableValues(-1, 1, -1, export=True)
 
-        res = WaveExportDialog(self, waves).exec_()
+        dialog = WaveExportDialog(self, waves)
+        res = dialog.exec_()
         if res:
             waveData, subType = res
+            if dialog.firstSampleChk.isChecked():
+                waveData = waveData[:128]
             soundfile.write(path, waveData, 44100, subType)
 
     def exportCurrent(self):
@@ -2676,10 +2724,10 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 countElement.text = str(len(selection))
                 fullData = []
                 for index in selection:
-                    name = index.sibling(index.row(), 1).data()
-                    slot = index.sibling(index.row(), 2).data()
-                    raw = self.localProxy.index(index.row(), 3).data()
-                    ds = (QtCore.QDataStream(raw, QtCore.QIODevice.ReadOnly))
+                    name = index.sibling(index.row(), NameColumn).data()
+                    slot = index.sibling(index.row(), SlotColumn).data()
+                    raw = self.localProxy.mapToSource(self.localProxy.index(index.row(), DataColumn)).data()
+                    ds = QtCore.QDataStream(raw, QtCore.QIODevice.ReadOnly)
                     count = ds.readInt()
                     fullData.append(ds.readQVariant())
                     wtElement = ET.SubElement(typeElement, 'WaveTable')
@@ -2696,8 +2744,55 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 'There was a problem while writing data, check file permissions and available space', 
                 QtWidgets.QMessageBox.Ok)
 
+    def setSlotWritable(self, slot, writable):
+        if slot < 80:
+            print('Slot less than 80?!?', self.sender())
+            return
+        writable = int(writable)
+        index = self.dumpModel.index(slot + 6, WritableColumn)
+        self.dumpModel.setData(index, writable)
+        if not self.dumpModel.submitAll():
+            print(self.dumpModel.lastError().databaseText())
+
+    def setWritable(self, indexList, writable):
+        writable = int(writable)
+        for index in indexList:
+            if index.model() == self.blofeldProxy:
+                index = self.blofeldProxy.mapToSource(index.sibling(index.row(), WritableColumn))
+            else:
+                index = index.sibling(index.row(), WritableColumn)
+            self.dumpModel.setData(index, writable)
+        if not self.dumpModel.submitAll():
+            print(self.dumpModel.lastError().databaseText())
+
+    def clearBlofeldSlots(self, indexList, writable=1):
+        for index in indexList:
+            index = self.blofeldProxy.mapToSource(index.sibling(index.row(), UidColumn))
+            row = index.row()
+            self.dumpModel.setData(index, None)
+            self.dumpModel.setData(index.sibling(row, NameColumn), 'User Wt. {}'.format(row - 6))
+            self.dumpModel.setData(index.sibling(row, EditedColumn), None)
+            self.dumpModel.setData(index.sibling(row, DataColumn), None)
+            self.dumpModel.setData(index.sibling(row, PreviewColumn), None)
+            self.dumpModel.setData(index.sibling(row, DumpedColumn), None)
+            self.dumpModel.setData(index.sibling(row, WritableColumn), writable)
+        if not self.dumpModel.submitAll():
+            print(self.dumpModel.lastError().databaseText())
+
+    def copyFromDumpRow(self, row):
+        #This should be the right method to use in any case, I'm just lazy...
+        if row < 86:
+            print('porcozziooooooo', row)
+#            return
+        return self.copyFromDumpIndex(self.dumpModel.index(row, UidColumn), isNew=row < 86)
+
     def copyFromDumpSlot(self, slot, clone=False):
         index = self.dumpModel.index(slot + 6, UidColumn)
+        return self.copyFromDumpIndex(index, clone)
+
+    def copyFromDumpIndex(self, index, clone=False, isNew=False):
+        if index.column() != UidColumn:
+            index = index.sibling(index.row(), UidColumn)
         found = self.waveTableModel.match(self.waveTableModel.index(0, UidColumn), QtCore.Qt.DisplayRole, 
             index.data(), flags=QtCore.Qt.MatchExactly)
         if found:
@@ -2710,17 +2805,29 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.waveTableModel.insertRows(row, 1)
         self.waveTableModel.setData(self.waveTableModel.index(row, UidColumn), uid)
         self.waveTableModel.setData(self.waveTableModel.index(row, NameColumn), index.sibling(index.row(), NameColumn).data())
-        self.waveTableModel.setData(self.waveTableModel.index(row, SlotColumn), index.sibling(index.row(), SlotColumn).data())
-        self.waveTableModel.setData(self.waveTableModel.index(row, EditedColumn), index.sibling(index.row(), EditedColumn).data())
+        if isNew:
+            edited = QtCore.QDateTime.currentMSecsSinceEpoch()
+            slot = 80
+            while slot not in self.writableSlots:
+                slot += 1
+                if slot > 118:
+                    slot = 80
+                    break
+        else:
+            edited = index.sibling(index.row(), EditedColumn).data()
+            slot = index.sibling(index.row(), SlotColumn).data()
+        self.waveTableModel.setData(self.waveTableModel.index(row, SlotColumn), slot)
+        self.waveTableModel.setData(self.waveTableModel.index(row, EditedColumn), edited)
         self.waveTableModel.setData(self.waveTableModel.index(row, DataColumn), index.sibling(index.row(), DataColumn).data())
         self.waveTableModel.setData(self.waveTableModel.index(row, PreviewColumn), index.sibling(index.row(), PreviewColumn).data())
         if not self.waveTableModel.submitAll():
             print(self.waveTableModel.lastError().databaseText())
+        return self.waveTableModel.index(row, NameColumn)
 #        print('correttamente aggiornato, riga {}'.format(row))
 
     def copyFromDumpUid(self, uid, clone=False):
         found = self.dumpModel.match(self.dumpModel.index(0, UidColumn), QtCore.Qt.DisplayRole, uid, flags=QtCore.Qt.MatchExactly)[0]
-        self.copyFromDumpSlot(found.sibling(found.row(), SlotColumn).data(), clone)
+        return self.copyFromDumpSlot(found.sibling(found.row(), SlotColumn).data(), clone)
 
 #    def restoreFromDumpUid(self, uid):
 #        found = self.dumpModel.match(self.dumpModel.index(0, UidColumn), QtCore.Qt.DisplayRole, uid)[0]
@@ -2746,6 +2853,16 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             return found.sibling(found.row(), NameColumn).data()
 
     def saveAndDump(self):
+        slot = self.slotSpin.value()
+        if slot not in self.writableSlots:
+            if AdvancedMessageBox(self, 'Read-only slot', 
+                'Slot {} has been previously set as read-only.<br/>You probably had a good '
+                'reason to do that.<br/><br/>Do you want to save and dump it anyway, '
+                'while implicitly setting it as writable again?'.format(slot), 
+                buttons=AdvancedMessageBox.Save|AdvancedMessageBox.Cancel, 
+                icon=AdvancedMessageBox.Warning).exec_() != AdvancedMessageBox.Save:
+                    return
+            self.setSlotWritable(slot, True)
         self.settings.beginGroup('MessageBoxes')
         if not self.canDump() and self.settings.value('WaveTableNoMidiDump', True, bool):
             msgBox = AdvancedMessageBox(self, 'No MIDI connection', 
@@ -2757,7 +2874,6 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 self.settings.setValue('WaveTableNoMidiDump', False)
         self.settings.endGroup()
 
-        slot = self.slotSpin.value()
         sameUid = sameUidSlot = None
         if self.currentWaveTable:
             sameUid = self.blofeldProxy.match(self.blofeldProxy.index(0, UidColumn), QtCore.Qt.DisplayRole, 
@@ -2960,15 +3076,16 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 
     def openFromLocalList(self, index, showDock=False, tabIndex=0):
         uid = self.localProxy.index(index.row(), UidColumn).data()
+        window = None
         if not self.currentWaveTable and self.isClean():
             self.openFromUid(uid)
             window = self
         elif self.currentWaveTable != uid:
             window = self.windowsDict.get(uid)
-            if not window:
-                window = WaveTableWindow(uid)
-            window.show()
-            window.activateWindow()
+        if not window:
+            window = WaveTableWindow(uid)
+        window.show()
+        window.activateWindow()
         if showDock:
             window.waveTableDock.setVisible(True)
             window.dockTabWidget.setCurrentIndex(tabIndex)
@@ -3208,6 +3325,21 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 count += 1
         return count
 
+    def updateWritable(self):
+        old = set(self.writableSlots)
+        for row in range(86, 125):
+            slot = row - 6
+            if self.dumpModel.index(row, WritableColumn).data():
+                self.writableSlots.add(slot)
+            else:
+                self.writableSlots.discard(slot)
+        if old != self.writableSlots:
+            self.writableSlotsChanged.emit()
+
+    def checkWritable(self, first, last):
+        if first.column() == WritableColumn or last.column() == WritableColumn:
+            self.updateWritable()
+
     @QtCore.pyqtSlot()
     def checkDumps(self, canDump=None):
         res = self.isDumpClean()
@@ -3268,10 +3400,21 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             return
 
         menu = QtWidgets.QMenu()
-        editAction = restoreAction = newAction = dumpAction = False
+        editAction = restoreAction = newAction = dumpAction = clearAction = writableAction = cloneAction = False
         
         if not selectedUids:
-            newAction = menu.addAction(QtGui.QIcon.fromTheme('document-new'), 'Create wavetable for slot {}'.format(slot))
+            if slot >= 80:
+                if index.sibling(index.row(), WritableColumn).data():
+                    newAction = menu.addAction(QtGui.QIcon.fromTheme('document-new'), 'Create wavetable for slot {}'.format(slot))
+                    writableAction = menu.addAction(QtGui.QIcon.fromTheme('unlock'), 'Set as read-only')
+                    writableAction.setData(([index], False))
+                else:
+                    writableAction = menu.addAction(QtGui.QIcon.fromTheme('unlock'), 'Set as writable')
+                    writableAction.setData(([index], True))
+            elif slot and slot < 0 or index.sibling(index.row(), DataColumn).data():
+                name = index.sibling(index.row(), NameColumn).data()
+                cloneAction = menu.addAction(QtGui.QIcon.fromTheme('edit-copy'), 'Create wavetable based on "{}"'.format(name))
+                cloneAction.setData(index.row())
         if count == 1:
             uid = selectedUids[0]
             valid = self.blofeldProxy.checkValidity(proxyIndex, uid)
@@ -3279,16 +3422,34 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 editAction = menu.addAction(QtGui.QIcon.fromTheme('document-edit'), 'Edit wavetable')
             else:
                 restoreAction = menu.addAction(QtGui.QIcon.fromTheme('document-save'), 'Restore wavetable')
+            clearAction = menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 'Clear slot {}'.format(slot))
+            writableAction = menu.addAction(QtGui.QIcon.fromTheme('lock'), 'Set as read-only')
+            writableAction.setData((selection, False))
             menu.addSeparator()
-            dumpAction = menu.addAction(QtGui.QIcon(':/images/dump.svg'), 'Dump wavetable')
+            dumpAction = menu.addAction(QtGui.QIcon.fromTheme('dump'), 'Dump wavetable')
             dumpAction.setEnabled(self.canDump())
-        else:
-            dumpAction = menu.addAction(QtGui.QIcon(':/images/dump.svg'), 'Dump {} wavetables'.format(count))
+        elif count:
+            clearAction = menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 'Clear selected slots')
+            dumpAction = menu.addAction(QtGui.QIcon.fromTheme('dump'), 'Dump {} wavetables'.format(count))
             dumpAction.setEnabled(self.canDump())
 
+
+        updated = 0
+        for row in range(86, 125):
+            index = self.dumpModel.index(row, UidColumn)
+            if index.data() and not index.sibling(index.row(), DumpedColumn).data():
+                updated += 1
+        if updated:
+            menu.addSeparator()
+            dumpUpdatedAction = menu.addAction(QtGui.QIcon(':/images/dump.svg'), 'Dump {} updated wavetables'.format(updated))
+            dumpUpdatedAction.triggered.connect(self.dumpUpdated)
+
         res = menu.exec_(QtGui.QCursor.pos())
+
         if res == editAction:
             self.openFromUid(uid)
+        elif res == cloneAction:
+            self.copyFromDumpRow(res.data())
         elif res == newAction:
             if not self.currentWaveTable and self.isClean():
                 window = self
@@ -3306,12 +3467,32 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         elif res == dumpAction:
             if count > 2:
                 time = parseTime(int(count * 64 * self.dumpTimer.interval() * .0015), True, True, False)
-                if not AdvancedMessageBox(self, 'Dump selected wavetables', 
+                if AdvancedMessageBox(self, 'Dump selected wavetables', 
                     'Do you want to dump {} wavetables?\n\nThe process will take about {}.'.format(count, time), 
                     buttons=AdvancedMessageBox.Ok|AdvancedMessageBox.Cancel, 
-                    icon=AdvancedMessageBox.Question).exec_() == AdvancedMessageBox.Ok:
+                    icon=AdvancedMessageBox.Question).exec_() != AdvancedMessageBox.Ok:
                         return
             self.initializeDump(selection)
+        elif res == writableAction:
+            self.setWritable(*res.data())
+        elif res == clearAction:
+            res = AdvancedMessageBox(self, 'Clear Blofeld slots', 
+                'Do you want to clear the selected slots?<br/><br/>'
+                'This operation <b>will not</b> erase content on your Blofeld, '
+                'but will mark those slots as empty. See "Details" to know more.', 
+                detailed='There is no way to know the actual contents of the '
+                'Blofeld wavetable slots.<br/>"Clearing" slots means that they will be just '
+                'marked as empty for Bigglesworth, and it can be useful if you saved '
+                'a wavetable on the wrong slot by mistake, or you used another software '
+                'to dump a wavetable to that slot.<br/>You can also choose "Clear and set read-only", '
+                'to avoid further writing on that slot.', 
+                buttons={AdvancedMessageBox.Ok: QtGui.QIcon.fromTheme('edit-delete'), 
+                    AdvancedMessageBox.Apply: (QtGui.QIcon.fromTheme('lock'), 'Clear and set read-only'), 
+                    AdvancedMessageBox.Cancel: None}, 
+                icon=AdvancedMessageBox.Question).exec_()
+            if res not in (AdvancedMessageBox.Ok, AdvancedMessageBox.Apply):
+                return
+            self.clearBlofeldSlots(selection, int(res != AdvancedMessageBox.Apply))
 
     def setLastActive(self, active=True):
         if active:
@@ -3479,7 +3660,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 
 from bigglesworth.wavetables.keyframes import VirtualKeyFrames
 from bigglesworth.wavetables.widgets import CheckBoxDelegate, PianoStatusWidget
-from bigglesworth.wavetables.graphics import WaveScene, SampleItem, WaveTransformItem, WaveTableScene, KeyFrameScene
+from bigglesworth.wavetables.graphics import WaveScene, SampleItem, WaveTransformItem, WaveTableScene, KeyFrameScene, VirtualWaveTableScene
 from bigglesworth.wavetables.audioimport import AudioImportTab
 from bigglesworth.wavetables.spectral import SpecTransformDialog
 

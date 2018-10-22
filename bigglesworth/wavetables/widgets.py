@@ -2534,6 +2534,26 @@ class MainTabWidget(QtWidgets.QTabWidget):
         QtWidgets.QTabWidget.dragLeaveEvent(self, event)
 
 
+class SlotSpin(QtWidgets.QSpinBox):
+    shown = False
+
+    def showEvent(self, event):
+        if not self.shown:
+            self.shown = True
+            self.valueChanged.connect(self.checkWritable)
+
+    def checkWritable(self, value):
+        if value not in self.window().writableSlots:
+            self.lineEdit().setStyleSheet('color: red;')
+            self.setToolTip('The selected slot has been set as read-only')
+        else:
+            self.lineEdit().setStyleSheet('')
+            self.setToolTip('')
+
+    def writableSlotsChanged(self):
+        self.checkWritable(self.value())
+
+
 class WaveIndexSpin(QtWidgets.QSpinBox):
     def setKeyFrames(self, keyFrames):
         self.keyFrames = keyFrames
@@ -2687,6 +2707,9 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
         self.square = QtCore.QRectF(0, 0, self.squareSize, self.squareSize)
         scale = self.squareSize / 7.
         self.path = self._path.toFillPolygon(QtGui.QTransform().scale(scale, scale))
+        self.readOnlyIcon = QtGui.QIcon.fromTheme('lock').pixmap(self.squareSize)
+#        if self.readOnlyIcon.height() != self.squareSize:
+#            self.readOnlyIcon = self.readOnlyIcon.scaledToHeight(self.squareSize, QtCore.Qt.SmoothTransformation)
         if self.tinyNumber:
             self.tinyFont = QtWidgets.QApplication.font()
             self.tinyFont.setPointSizeF(self.squareSize - 2)
@@ -2726,8 +2749,11 @@ class CheckBoxDelegate(QtWidgets.QStyledItemDelegate):
             painter.translate(self.square.center())
             painter.drawPolygon(self.path)
         elif checked < 0:
-            painter.setPen(QtCore.Qt.red)
-            painter.drawText(self.square, QtCore.Qt.AlignCenter, '?')
+            if checked == -2:
+                painter.drawPixmap(self.square.toRect(), self.readOnlyIcon, self.readOnlyIcon.rect())
+            else:
+                painter.setPen(QtCore.Qt.red)
+                painter.drawText(self.square, QtCore.Qt.AlignCenter, '?')
         painter.restore()
         if self.tinyNumber:
             painter.save()

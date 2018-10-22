@@ -5,6 +5,7 @@ import string
 import uuid
 import json
 import re
+from xml.etree import ElementTree as ET
 #from threading import Lock
 
 from Qt import QtCore, QtGui, QtSql
@@ -446,8 +447,19 @@ class BlofeldDB(QtCore.QObject):
         self.logger.append(LogDebug, 'Checking dumped wavetables table')
         if not 'dumpedwt' in tables:
             self.logger.append(LogDebug, 'Preparing creation of dumped wavetables table')
-            self.query.exec_('CREATE TABLE dumpedwt(uid varchar, name varchar(14), slot int primary key, edited int, data blob, preview blob, dumped int)')
+            self.query.exec_('CREATE TABLE dumpedwt(uid varchar, name varchar(14), slot int primary key, edited int, data blob, preview blob, dumped int, writable int)')
             createBit |= self.WaveTablesEmpty
+        else:
+            self.logger.append(LogDebug, 'Updating dumped wavetable columns')
+            self.query.exec_('PRAGMA table_info(dumpedwt)')
+            columns = []
+            while self.query.next():
+                columns.append(self.query.value(1))
+            if not 'writable' in columns:
+                if not self.query.exec_('ALTER TABLE dumpedwt ADD COLUMN "writable" int'):
+                    self.dbErrorLog('Error updating dumped wavetable columns')
+                elif not self.query.exec_('UPDATE dumpedwt SET writable=1 WHERE slot BETWEEN 80 AND 118'):
+                    self.dbErrorLog('Error updating dumped wavetable writable column')
 
         if createBit:
             self.logger.append(LogWarning, 'Reference and sound tables empty', 'createBit: {}'.format(createBit))
@@ -473,6 +485,7 @@ class BlofeldDB(QtCore.QObject):
                 self.logger.append(LogCritical, 'Unknown error creating reference', 'createBit: {}'.format(createBit))
                 self.lastError = createBit
                 return False
+
         self.logger.append(LogInfo, 'Reference/sounds completed successfully!')
         return True
 
@@ -521,6 +534,7 @@ class BlofeldDB(QtCore.QObject):
                             self.logger.append(LogDebug, 'starting bank ' + bank)
                             self.factoryStatus.emit(preset, data[0])
                             print('starting bank ' + bank)
+
             self.query.exec_('PRAGMA journal_mode=DELETE')
             self.referenceModel.refresh()
 
@@ -529,26 +543,61 @@ class BlofeldDB(QtCore.QObject):
 
     def initializeWavetables(self):
         from bigglesworth.wavetables.utils import getOscPaths
-        self.query.prepare('INSERT INTO dumpedwt(uid, name, slot,preview) VALUES("blofeld", :name, :slot, :preview)')
-        shapes = getOscPaths()
+        self.query.prepare('INSERT INTO dumpedwt(uid, name, slot, preview, data) VALUES("blofeld", :name, :slot, :preview, :data)')
+        baseShapes = getOscPaths()
+        wavetableMap = self.getWavetableTemplateData()
         for slot in range(7):
             self.query.bindValue(':name', oscShapes[slot])
             self.query.bindValue(':slot', -slot)
-            self.query.bindValue(':preview', shapes.get(slot))
+            self.query.bindValue(':preview', baseShapes.get(slot))
+            if slot:
+                self.query.bindValue(':data', wavetableMap[slot])
             if not self.query.exec_():
                 print(self.query.lastError().databaseText())
-        self.query.prepare('INSERT INTO dumpedwt(uid, name, slot) VALUES("blofeld", :name, :slot)')
+        self.query.prepare('INSERT INTO dumpedwt(uid, name, slot, data) VALUES("blofeld", :name, :slot, :data)')
         for slot in range(7, 86):
             self.query.bindValue(':name', oscShapes[slot])
             self.query.bindValue(':slot', slot - 6)
+            if slot <= 72:
+                self.query.bindValue(':data', wavetableMap[slot])
             if not self.query.exec_():
                 print(self.query.lastError().databaseText())
-        self.query.prepare('INSERT INTO dumpedwt(name, slot) VALUES(:name, :slot)')
+        self.query.prepare('INSERT INTO dumpedwt(name, slot, writable) VALUES(:name, :slot, 1)')
         for slot in range(86, 125):
             self.query.bindValue(':name', oscShapes[slot])
             self.query.bindValue(':slot', slot - 6)
             if not self.query.exec_():
                 print(self.query.lastError().databaseText())
+
+    def getWavetableTemplateData(self):
+        file = QtCore.QFile(localPath('presets/wavetables.bwt'))
+        file.open(QtCore.QIODevice.ReadOnly)
+        stream = QtCore.QDataStream(file)
+        rawXml = stream.readString()
+        data = []
+        while not stream.atEnd():
+            data.append(stream.readQVariant())
+
+        root = ET.fromstring(rawXml)
+        if root.tag != 'Bigglesworth' and not 'WaveTableData' in root.getchildren():
+            return
+        typeElement = root.find('WaveTableData')
+#        count = int(typeElement.find('Count'))
+        iterData = iter(data)
+        wavetableMap = {}
+        for wtElement in typeElement.findall('WaveTable'):
+#            name = wtElement.find('Name').text
+            slot = int(wtElement.find('Slot').text)
+            waveCount = int(wtElement.find('WaveCount').text)
+
+            byteArray = QtCore.QByteArray()
+            stream = QtCore.QDataStream(byteArray, QtCore.QIODevice.WriteOnly)
+            stream.writeInt(waveCount)
+            stream.writeQVariant(iterData.next())
+
+            wavetableMap[slot] = byteArray
+
+        return wavetableMap
 
     def getTemplatesByName(self, name=None):
         templates = {}
