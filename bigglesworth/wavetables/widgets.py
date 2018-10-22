@@ -2537,10 +2537,15 @@ class MainTabWidget(QtWidgets.QTabWidget):
 class SlotSpin(QtWidgets.QSpinBox):
     shown = False
 
+    def setValue(self, value):
+        QtWidgets.QSpinBox.setValue(self, value)
+        if self.shown:
+            self.checkWritable(value)
+
     def showEvent(self, event):
         if not self.shown:
             self.shown = True
-            self.valueChanged.connect(self.checkWritable)
+            self.checkWritable(self.value())
 
     def checkWritable(self, value):
         if value not in self.window().writableSlots:

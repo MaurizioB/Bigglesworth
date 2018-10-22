@@ -1445,6 +1445,8 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 ])
         self.playComputedBtn.setChecked(self.settings.value('PlayComputedWave', True, bool))
         self.playComputedBtn.toggled.connect(self.rememberSettings)
+        self.blofeldFilterChk.setChecked(self.settings.value('ShowSystemWaves', True, bool))
+        self.blofeldFilterChk.toggled.connect(self.rememberSettings)
 
         self.settings.endGroup()
 
@@ -2832,9 +2834,6 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 
     def copyFromDumpRow(self, row):
         #This should be the right method to use in any case, I'm just lazy...
-        if row < 86:
-            print('porcozziooooooo', row)
-#            return
         return self.copyFromDumpIndex(self.dumpModel.index(row, UidColumn), isNew=row < 86)
 
     def copyFromDumpSlot(self, slot, clone=False):
@@ -3500,7 +3499,14 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         if res == editAction:
             self.openFromUid(uid)
         elif res == cloneAction:
-            self.copyFromDumpRow(res.data())
+            newIndex = self.copyFromDumpRow(res.data())
+            if not self.currentWaveTable and self.isClean():
+                window = self
+            else:
+                window = self.createNewWindow()
+            window.openFromUid(newIndex.sibling(newIndex.row(), UidColumn).data())
+            if window.waveTableDock.isVisible():
+                window.dockTabWidget.setCurrentIndex(0)
         elif res == newAction:
             if not self.currentWaveTable and self.isClean():
                 window = self
@@ -3623,6 +3629,8 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             self.settings.setValue('Crosshair', self.showCrosshairChk.isChecked())
         elif self.sender() == self.playComputedBtn:
             self.settings.setValue('PlayComputedWave', self.playComputedBtn.isChecked())
+        elif self.sender() == self.blofeldFilterChk:
+            self.settings.setValue('ShowSystemWaves', self.blofeldFilterChk.isChecked())
         self.settings.endGroup()
 
     def closeEvent(self, event):
@@ -3677,6 +3685,10 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             #This is necessary as changing the icon invalidates the *whole* layout. we don't want that...
             self.waveEditBtn.setFixedSize(self.waveEditBtn.size())
             self.miniView.setVisible(False)
+            if self.blofeldFilterChk.isChecked():
+                firstUserSlot = self.blofeldProxy.index(72, 0)
+                self.blofeldWaveTableList.setCurrentIndex(firstUserSlot)
+                self.blofeldWaveTableList.scrollTo(firstUserSlot, self.blofeldWaveTableList.PositionAtTop)
 
 #            self.waveTableCurrentWaveView.fitInView(self.waveTableCurrentWaveScene.sceneRect())
             self.setCurrentKeyFrame(self.keyFrames[0])
