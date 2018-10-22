@@ -4400,6 +4400,7 @@ class VirtualWaveTableScene(WaveTableScene):
         return QtGui.QPolygonF([rect.topLeft(), rect.topRight(), rect.bottomRight(), rect.bottomLeft()])
 
     def getPreview(self):
+        self.updateKeyFrames()
         pixmap = QtGui.QPixmap(128, 72)
         pixmap.fill(QtCore.Qt.transparent)
         qp = QtGui.QPainter(pixmap)
@@ -4417,7 +4418,7 @@ class VirtualWaveTableScene(WaveTableScene):
             targetRect = QtCore.QRectF(0, 0, 128, 64)
             sourceRect = self.front.sceneBoundingRect()
             sourceRect |= self.back.sceneBoundingRect()
-            qp.setTransform(self.waveTableView.shearTransform)
+            qp.setTransform(self.shearTransform)
             qp.translate(0, -10)
             self.render(qp, targetRect, sourceRect)
         qp.end()

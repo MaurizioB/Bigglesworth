@@ -236,6 +236,7 @@ class Bigglesworth(QtWidgets.QApplication):
         if not self.database.initialize(self.argparse.database):
             if self.database.lastError & self.database.EmptyMask:
                 self.database.factoryStatus.connect(self.updateSplashFactory)
+                self.database.wavetableStatus.connect(self.updateSplashWavetables)
 #                self.splash.showMessage('Creating factory database, this could take a while...', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .25)
                 self.database.initializeFactory(self.database.lastError)
             elif self.database.lastError & self.database.DatabaseFormatError:
@@ -1195,7 +1196,13 @@ class Bigglesworth(QtWidgets.QApplication):
         factoryIndex = factoryPresets.index(factory)
         pos = (factoryIndex * 8 + bank + 1) / .24
         status = '{} ({} of 3) {}%'.format(factoryPresetsNamesDict[factory], factoryIndex + 1, int(pos))
-        self.splash.showMessage('Creating factory database, please wait...\n{}'.format(status), QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .25 + pos * .0025)
+        self.splash.showMessage('Creating factory database, please wait...\n{}'.format(status), QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .25 + pos * .00125)
+
+    def updateSplashWavetables(self, name, slot):
+        pos = int(slot * .8)
+        status = 'Slot {} of 125: {} ({}%)'.format(slot + 1, name, pos)
+        self.splash.showMessage('Creating wavetable preset data, please wait...\n{}'.format(status), QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .375 + pos * .00125)
+
 
     def exec_(self):
         #TODO: fix, maybe with some polished signal from the splash?

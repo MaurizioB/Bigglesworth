@@ -74,7 +74,7 @@ import soundfile
 
 from bigglesworth.libs import midifile
 #from bigglesworth.mididevice import MidiDevice
-from bigglesworth.utils import loadUi, setItalic
+from bigglesworth.utils import loadUi, setItalic, localPath
 from bigglesworth.midiutils import SysExEvent, NoteOnEvent, NoteOffEvent, NOTEOFF, NOTEON
 
 from bigglesworth.const import INIT, END, CHK, IDW, IDE, WTBD
@@ -1560,21 +1560,44 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 #            print(columns)
 
         if not 'dumpedwt' in db.tables():
-#            if not query.exec_('CREATE TABLE dumpedwt(slot int primary key, uid varchar, name varchar(14), edited int)'):
             if not query.exec_('CREATE TABLE dumpedwt(uid varchar, name varchar(14), slot int primary key, edited int, data blob, preview blob, dumped int, writable int)'):
                 print(query.lastError().databaseText())
-            query.prepare('INSERT INTO dumpedwt(uid, name, slot,preview) VALUES("blofeld", :name, :slot, :preview)')
-            shapes = self.drawOscShapes()
+
+            def getPreview(slot):
+                if not slot:
+                    return None
+                if slot in baseShapes:
+                    return baseShapes[slot]
+                if slot in wavetableMap:
+                    stream = QtCore.QDataStream(wavetableMap[slot], QtCore.QIODevice.ReadOnly)
+                    frames = stream.readInt()
+                    snapshot = stream.readQVariant()
+                    keyFrames.setSnapshot(snapshot)
+                    print('creating preview, slot {} waves {} (reported: {})'.format(slot, len(keyFrames), frames))
+                    return virtualScene.getPreview()
+                return None
+
+            keyFrames = VirtualKeyFrames()
+            virtualScene = VirtualWaveTableScene(keyFrames)
+
+            baseShapes = self.drawOscShapes()
+            wavetableMap = self.getWavetablePresetData()
+
+            query.prepare('INSERT INTO dumpedwt(uid, name, slot, data, preview) VALUES("blofeld", :name, :slot, :data, :preview)')
+
             for slot in range(7):
                 query.bindValue(':name', oscShapes[slot])
                 query.bindValue(':slot', -slot)
-                query.bindValue(':preview', shapes.get(slot))
+                query.bindValue(':data', wavetableMap[slot] if slot else None)
+                query.bindValue(':preview', getPreview(slot))
                 if not query.exec_():
                     print(query.lastError().databaseText())
-            query.prepare('INSERT INTO dumpedwt(uid, name, slot) VALUES("blofeld", :name, :slot)')
+            query.prepare('INSERT INTO dumpedwt(uid, name, slot, data, preview) VALUES("blofeld", :name, :slot, :data, :preview)')
             for slot in range(7, 86):
                 query.bindValue(':name', oscShapes[slot])
                 query.bindValue(':slot', slot - 6)
+                query.bindValue(':data', wavetableMap[slot] if slot <= 72 else None)
+                query.bindValue(':preview', getPreview(slot))
                 if not query.exec_():
                     print(query.lastError().databaseText())
             query.prepare('INSERT INTO dumpedwt(name, slot, writable) VALUES(:name, :slot, 1)')
@@ -1594,6 +1617,34 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                     print(query.lastError().databaseText())
                 if not query.exec_('UPDATE dumpedwt SET writable=1 WHERE slot BETWEEN 80 AND 118'):
                     print(query.lastError().databaseText())
+
+    def getWavetablePresetData(self):
+        file = QtCore.QFile(localPath('presets/wavetables.bwt'))
+        assert file.open(QtCore.QIODevice.ReadOnly)
+        stream = QtCore.QDataStream(file)
+        rawXml = stream.readString()
+        data = []
+        while not stream.atEnd():
+            data.append(stream.readQVariant())
+
+        root = ET.fromstring(rawXml)
+        if root.tag != 'Bigglesworth' and not 'WaveTableData' in root.getchildren():
+            return
+        typeElement = root.find('WaveTableData')
+        iterData = iter(data)
+        wavetableMap = {}
+        for wtElement in typeElement.findall('WaveTable'):
+            slot = int(wtElement.find('Slot').text)
+            waveCount = int(wtElement.find('WaveCount').text)
+
+            byteArray = QtCore.QByteArray()
+            stream = QtCore.QDataStream(byteArray, QtCore.QIODevice.WriteOnly)
+            stream.writeInt(waveCount)
+            stream.writeQVariant(iterData.next())
+
+            wavetableMap[slot] = byteArray
+
+        return wavetableMap
 
     def drawOscShapes(self):
         wavePen = QtGui.QPen(QtGui.QColor(64, 192, 216), 1.2, cap=QtCore.Qt.RoundCap)

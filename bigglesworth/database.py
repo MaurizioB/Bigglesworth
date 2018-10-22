@@ -61,6 +61,7 @@ class BlofeldDB(QtCore.QObject):
     backupFinished = QtCore.pyqtSignal()
     backupError = QtCore.pyqtSignal(str)
     factoryStatus = QtCore.pyqtSignal(str, int)
+    wavetableStatus = QtCore.pyqtSignal(str, int)
 
     def __init__(self, main):
         QtCore.QObject.__init__(self)
@@ -461,6 +462,13 @@ class BlofeldDB(QtCore.QObject):
                 elif not self.query.exec_('UPDATE dumpedwt SET writable=1 WHERE slot BETWEEN 80 AND 118'):
                     self.dbErrorLog('Error updating dumped wavetable writable column')
 
+            self.query.exec_('SELECT slot, data, preview FROM dumpedwt WHERE (data IS NULL OR preview IS NULL) AND slot != 0 and slot < 67')
+            toCheck = []
+            while self.query.next():
+                toCheck.append((self.query.value(0), self.query.value(1),  self.query.value(2)))
+            if toCheck:
+                self.updateWavetablePresets(toCheck)
+
         if createBit:
             self.logger.append(LogWarning, 'Reference and sound tables empty', 'createBit: {}'.format(createBit))
             self.lastError = createBit
@@ -488,6 +496,7 @@ class BlofeldDB(QtCore.QObject):
 
         self.logger.append(LogInfo, 'Reference/sounds completed successfully!')
         return True
+
 
     def initializeFactory(self, createBit):
         self.logger.append(LogInfo, 'Filling factory presets')
@@ -542,33 +551,103 @@ class BlofeldDB(QtCore.QObject):
             self.initializeWavetables()
 
     def initializeWavetables(self):
+        def getPreview(slot):
+            if not slot:
+                return None
+            if slot in baseShapes:
+                return baseShapes[slot]
+            if slot in wavetableMap:
+                stream = QtCore.QDataStream(wavetableMap[slot], QtCore.QIODevice.ReadOnly)
+                stream.readInt()
+                snapshot = stream.readQVariant()
+                keyFrames.setSnapshot(snapshot)
+                return virtualScene.getPreview()
+            return None
+
         from bigglesworth.wavetables.utils import getOscPaths
-        self.query.prepare('INSERT INTO dumpedwt(uid, name, slot, preview, data) VALUES("blofeld", :name, :slot, :preview, :data)')
+        from bigglesworth.wavetables.keyframes import VirtualKeyFrames
+        from bigglesworth.wavetables.graphics import VirtualWaveTableScene
+
+        keyFrames = VirtualKeyFrames()
+        virtualScene = VirtualWaveTableScene(keyFrames)
         baseShapes = getOscPaths()
-        wavetableMap = self.getWavetableTemplateData()
+        wavetableMap = self.getWavetablePresetData()
+
+        self.query.prepare('INSERT INTO dumpedwt(uid, name, slot, data, preview) VALUES("blofeld", :name, :slot, :data, :preview)')
         for slot in range(7):
-            self.query.bindValue(':name', oscShapes[slot])
+            name = oscShapes[slot]
+            self.wavetableStatus.emit(name, slot)
+            self.query.bindValue(':name', name)
             self.query.bindValue(':slot', -slot)
-            self.query.bindValue(':preview', baseShapes.get(slot))
             self.query.bindValue(':data', wavetableMap[slot] if slot else None)
+            self.query.bindValue(':preview', getPreview(slot))
             if not self.query.exec_():
                 print(self.query.lastError().databaseText())
-        self.query.prepare('INSERT INTO dumpedwt(uid, name, slot, data) VALUES("blofeld", :name, :slot, :data)')
         for slot in range(7, 86):
-            self.query.bindValue(':name', oscShapes[slot])
+            name = oscShapes[slot]
+            self.wavetableStatus.emit(name, slot)
+            self.query.bindValue(':name', name)
             self.query.bindValue(':slot', slot - 6)
-            if slot <= 72:
-                self.query.bindValue(':data', wavetableMap[slot])
+            self.query.bindValue(':data', wavetableMap[slot] if slot <= 72 else None)
+            self.query.bindValue(':preview', getPreview(slot))
             if not self.query.exec_():
                 print(self.query.lastError().databaseText())
         self.query.prepare('INSERT INTO dumpedwt(name, slot, writable) VALUES(:name, :slot, 1)')
         for slot in range(86, 125):
-            self.query.bindValue(':name', oscShapes[slot])
+            name = oscShapes[slot]
+            self.wavetableStatus.emit(name, slot)
+            self.query.bindValue(':name', name)
             self.query.bindValue(':slot', slot - 6)
             if not self.query.exec_():
                 print(self.query.lastError().databaseText())
 
-    def getWavetableTemplateData(self):
+    def updateWavetablePresets(self, data):
+        if not data:
+            return
+        self.logger.append(LogDebug, 'Preset wavetable data missing or incomplete', extMessage=len(data))
+
+        def getPreview(slot):
+            if not slot:
+                return None
+            if slot in baseShapes:
+                return baseShapes[slot]
+            if slot in wavetableMap:
+                stream = QtCore.QDataStream(wavetableMap[slot], QtCore.QIODevice.ReadOnly)
+                stream.readInt()
+                snapshot = stream.readQVariant()
+                keyFrames.setSnapshot(snapshot)
+                return virtualScene.getPreview()
+            return None
+
+        from bigglesworth.wavetables.utils import getOscPaths
+        from bigglesworth.wavetables.keyframes import VirtualKeyFrames
+        from bigglesworth.wavetables.graphics import VirtualWaveTableScene
+
+        keyFrames = VirtualKeyFrames()
+        virtualScene = VirtualWaveTableScene(keyFrames)
+        baseShapes = getOscPaths()
+        wavetableMap = self.getWavetablePresetData()
+
+        slots = []
+        for slot, data, preview in data:
+            self.query.prepare('UPDATE dumpedwt SET data=:data, preview=:preview WHERE slot={}'.format(slot))
+            if slot < 0:
+                slot = abs(slot)
+            else:
+                slot += 6
+            if not data:
+                data = wavetableMap[slot] if slot else None
+            self.query.bindValue(':data', data)
+            if not preview:
+                preview = getPreview(slot)
+            self.query.bindValue(':preview', preview)
+            if not self.query.exec_():
+                self.dbErrorLog('Error updating preset wavetable data', extMessage=slot)
+                return
+            slots.append(oscShapes[slot])
+        self.logger.append(LogDebug, 'Wavetable preset data successfully updated', extMessage=', '.join(slots))
+
+    def getWavetablePresetData(self):
         file = QtCore.QFile(localPath('presets/wavetables.bwt'))
         file.open(QtCore.QIODevice.ReadOnly)
         stream = QtCore.QDataStream(file)
@@ -581,11 +660,9 @@ class BlofeldDB(QtCore.QObject):
         if root.tag != 'Bigglesworth' and not 'WaveTableData' in root.getchildren():
             return
         typeElement = root.find('WaveTableData')
-#        count = int(typeElement.find('Count'))
         iterData = iter(data)
         wavetableMap = {}
         for wtElement in typeElement.findall('WaveTable'):
-#            name = wtElement.find('Name').text
             slot = int(wtElement.find('Slot').text)
             waveCount = int(wtElement.find('WaveCount').text)
 
