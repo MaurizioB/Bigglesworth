@@ -550,8 +550,7 @@ class BlofeldDB(QtCore.QObject):
             self.query.bindValue(':name', oscShapes[slot])
             self.query.bindValue(':slot', -slot)
             self.query.bindValue(':preview', baseShapes.get(slot))
-            if slot:
-                self.query.bindValue(':data', wavetableMap[slot])
+            self.query.bindValue(':data', wavetableMap[slot] if slot else None)
             if not self.query.exec_():
                 print(self.query.lastError().databaseText())
         self.query.prepare('INSERT INTO dumpedwt(uid, name, slot, data) VALUES("blofeld", :name, :slot, :data)')
