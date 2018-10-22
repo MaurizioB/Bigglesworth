@@ -104,7 +104,7 @@ class Bubble(QtWidgets.QWidget):
     closeRequested = QtCore.pyqtSignal()
 
     def __init__(self, main, targetWindow):
-        QtWidgets.QWidget.__init__(self, targetWindow, QtCore.Qt.Tool|QtCore.Qt.Window|QtCore.Qt.ToolTip|QtCore.Qt.FramelessWindowHint|QtCore.Qt.CustomizeWindowHint)
+        QtWidgets.QWidget.__init__(self, targetWindow, QtCore.Qt.WindowStaysOnTopHint|QtCore.Qt.Tool|QtCore.Qt.Window|QtCore.Qt.ToolTip|QtCore.Qt.FramelessWindowHint|QtCore.Qt.CustomizeWindowHint)
         self.main = main
         self.matrix = QMatrix()
         self.targetWindow = targetWindow
@@ -129,7 +129,7 @@ class Bubble(QtWidgets.QWidget):
             }
             ''')
 
-        self.setFixedSize(180, 120)
+#        self.setFixedSize(180, 120)
         layout = QtWidgets.QGridLayout()
         self.setLayout(layout)
 
@@ -216,6 +216,7 @@ class Bubble(QtWidgets.QWidget):
             self.targetSignal = self.targetEvent = self.targetWidget = self.targetEventWidget = None
             return self.nextPage()
         self.message = self.currentTarget.message
+        self.adjustSize()
 #        targetEvent, self.targetEventWidget = self.targets[self.count]
         if not self.currentTarget.targetWidget:
             self.targetWidget = None
@@ -401,7 +402,10 @@ class Bubble(QtWidgets.QWidget):
         qp.end()
         self.setMask(pm.mask())
 
-    
+
+    def sizeHint(self):
+        return QtCore.QSize(180, 120)
+
     def eventFilter(self, source, event):
 #        print(source, events.get(event.type(), 'Unknown event {}'.format(event.type())))
         if self.targetWidget and source == self.targetWidget and event.type() in (QtCore.QEvent.Move, QtCore.QEvent.Show) and \
@@ -636,6 +640,7 @@ class FirstRunObject(QtCore.QObject):
 
             self.bubbles = [self.editorBubble]
 
+            self.editorBubble.closeRequested.connect(self.closeRequested)
             self.editorBubble.finished.connect(lambda: self.settings.setValue('ShowEditorTutorial', False))
 
         self.bubbles[-1].finished.connect(self.closeAll)
