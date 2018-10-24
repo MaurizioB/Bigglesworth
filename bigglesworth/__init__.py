@@ -70,6 +70,8 @@ from bigglesworth.mididevice import MidiDevice
 
 from bigglesworth.wavetables import WaveTableWindow, UidColumn, NameColumn, SlotColumn, DataColumn, EditedColumn
 
+from bigglesworth.welcome import Welcome
+
 
 class SqlTableModelFix(QtSql.QSqlTableModel):
     def submitAll(self):
@@ -203,6 +205,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self._chanSend = self.settings.value('chanSend', set((0, )), set)
         self.settings.endGroup()
 
+        self.lastWindowClosed.connect(self.checkWelcomeOnClose)
         self.aboutToQuit.connect(self.closeSession)
 
     def closeSession(self):
@@ -386,7 +389,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.editorWindow.editorMenuBar.dumpFromRequested.connect(self.dumpFrom)
         self.editorWindow.editorMenuBar.dumpToRequested.connect(self.dumpTo)
         self.mainWindow.showEditorAction.triggered.connect(self.editorWindow.show)
-        self.mainWindow.showWavetableAction.triggered.connect(self.showWavetable)
+        self.mainWindow.showWavetableAction.triggered.connect(self.showWavetables)
         self.mainWindow.soundEditRequested.connect(self.editorWindow.openSoundFromUid)
 #        self.editorWindow.midiInWidget.setConnections(len([conn for conn in self.midiDevice.input.connections.input if not conn.hidden]))
 #        self.editorWindow.midiOutWidget.setConnections(len([conn for conn in self.midiDevice.output.connections.output if not conn.hidden]))
@@ -417,6 +420,13 @@ class Bigglesworth(QtWidgets.QApplication):
         self.editorDumper = SmallDumper(self.editorWindow)
         self.editorDumper.accepted.connect(lambda: setattr(self, 'dumpBlock', False))
 #        self.mainDumper.rejected.connect(lambda: setattr(self, 'dumpBlock', False))
+
+        self.welcome = Welcome(self)
+        self.welcome.showLibrarian.connect(self.mainWindow.activate)
+        self.welcome.showEditor.connect(self.editorWindow.activate)
+        self.welcome.showWavetables.connect(self.showWavetables)
+        self.welcome.showUtils.connect(self.showFirmwareUtils)
+        self.welcome.destroyed.connect(self.quit)
 
         self.helpDialog = HelpDialog()
 
@@ -1063,7 +1073,9 @@ class Bigglesworth(QtWidgets.QApplication):
             from bigglesworth.firstrun import FirstRunObject
             self.firstRunObject = FirstRunObject(self, editorOnly=True)
             
-        if self.argparse.editor is not None:
+        startUp = self.settings.value('StartUpWindow', 0, int)
+        if self.argparse.editor is not None or startUp == 2:
+            startUp = 2
             if self.argparse.librarian:
                 self.mainWindow.show()
 #            self.editorWindow.show()
@@ -1071,15 +1083,19 @@ class Bigglesworth(QtWidgets.QApplication):
             index = self.getSoundIndexFromCommandLine(self.argparse.editor)
             if index:
                 self.editorWindow.openSoundFromBankProg(*index)
-        if self.argparse.wavetables:
+        if self.argparse.wavetables or startUp == 3:
+            startUp = 3
             if self.argparse.librarian:
                 self.mainWindow.show()
 #            self.showWavetable()
-            QtCore.QTimer.singleShot(0, self.showWavetable)
-        else:
+            QtCore.QTimer.singleShot(0, self.showWavetables)
+        if self.argparse.librarian or startUp == 1:
+            startUp = 1
             self.mainWindow.show()
+        if not startUp:
+            self.welcome.show()
 
-    def showWavetable(self):
+    def showWavetables(self):
         if WaveTableWindow.openedWindows:
 #            wtWindow = WaveTableWindow.openedWindows[-1]
             if WaveTableWindow.lastActive:
@@ -1124,6 +1140,11 @@ class Bigglesworth(QtWidgets.QApplication):
             return
 
     def showFirmwareUtils(self):
+        if self.sender() == self.welcome:
+            parent = self.welcome
+        else:
+            parent = self.mainWindow
+        self.firmwareDialog.setParent(parent, QtCore.Qt.Dialog)
         self.globalsBlock = True
         self.midiDevice.midi_event.connect(self.firmwareDialog.midiEventReceived)
         self.midiConnChanged.connect(self.firmwareDialog.midiConnChanged)
@@ -1192,6 +1213,9 @@ class Bigglesworth(QtWidgets.QApplication):
         if not (self.mainWindow.isVisible() and self.editorWindow.isVisible()) and \
             self.loggerWindow.isVisible():
                 self.loggerWindow.close()
+
+    def checkWelcomeOnClose(self):
+        self.welcome.show()
 
     def updateSplashFactory(self, factory, bank):
         factoryIndex = factoryPresets.index(factory)
