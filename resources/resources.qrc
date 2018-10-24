@@ -505,6 +505,7 @@
         <file alias="24x24/harmonics-even.svg">icons/Bigglesworth/24x24/harmonics-even.svg</file>
         <file alias="24x24/audio-volume-max.svg">icons/Bigglesworth/24x24/audio-volume-max.svg</file>
         <file alias="24x24/harmonics-odd.svg">icons/Bigglesworth/24x24/harmonics-odd.svg</file>
+        <file alias="128x128/settings.svg">icons/Bigglesworth/128x128/settings.svg</file>
         <file alias="32x32/document-edit-bright.svg">icons/Bigglesworth/32x32/document-edit-bright.svg</file>
         <file alias="32x32/bigglesworth-round.svg">icons/Bigglesworth/32x32/bigglesworth-round.svg</file>
         <file alias="32x32/audio-x-flac.svg">icons/Bigglesworth/32x32/audio-x-flac.svg</file>

@@ -19,38 +19,7 @@ QtCore.QIdentityProxyModel = _QIdentityProxyModel
 import bigglesworth.resources
 QtGui.QIcon.setThemeName('Bigglesworth')
 
-def topMostDumpDialog(instance):
-    if instance._isDumpDialog:
-        return instance
-    if instance.parent() and isinstance(instance.parent(), QtWidgets.QDialog):
-            return instance.parent().topMostDumpDialog()
-    return instance
-
-def topMostDialog(instance):
-    if not instance.parent():
-        return instance
-    if isinstance(instance.parent(), QtWidgets.QDialog):
-        return instance.parent().topMostDialog()
-    return instance
-
-QtWidgets.QDialog._isDumpDialog = False
-QtWidgets.QDialog.topMostDumpDialog = topMostDumpDialog
-
-if 'linux' in sys.platform:
-    def addSection(self, text=''):
-        action = self.addSeparator()
-        action.setText(text)
-        return action
-
-    def insertSection(self, before, text=''):
-        action = self.insertSeparator(before)
-        action.setText(text)
-        return action
-else:
-    from bigglesworth.compatibility import addSection, insertSection
-
-QtWidgets.QMenu.addSection = addSection
-QtWidgets.QMenu.insertSection = insertSection
+from bigglesworth import compatibility
 
 from bigglesworth.logger import Logger
 from bigglesworth.editor import EditorWindow
@@ -62,7 +31,7 @@ from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, 
     DumpReceiveDialog, DumpSendDialog, WarningMessageBox, SmallDumper, FirstRunWizard, LogWindow, 
     BlofeldDumper, FindDuplicates, SoundImport, SoundExport, SoundListExport, MidiDuplicateDialog)
 from bigglesworth.help import HelpDialog
-#from bigglesworth.utils import localPath
+
 from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR, LogInfo, LogWarning, factoryPresets, factoryPresetsNamesDict
 from bigglesworth.midiutils import SYSEX, CTRL, NOTEOFF, NOTEON, PROGRAM, SysExEvent, Port
 
@@ -426,6 +395,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.welcome.showEditor.connect(self.editorWindow.activate)
         self.welcome.showWavetables.connect(self.showWavetables)
         self.welcome.showUtils.connect(self.showFirmwareUtils)
+        self.welcome.showSettings.connect(self.showSettings)
         self.welcome.destroyed.connect(self.quit)
 
         self.helpDialog = HelpDialog()
@@ -1112,6 +1082,10 @@ class Bigglesworth(QtWidgets.QApplication):
         wtWindow.activateWindow()
 
     def showSettings(self):
+        parent = self.sender()
+        while not isinstance(parent, QtWidgets.QWidget) or not parent.isWindow():
+            parent = parent.parent()
+        self.settingsDialog.setParent(parent, QtCore.Qt.Dialog)
         self.globalsBlock = True
         self.midiDevice.midi_event.connect(self.settingsDialog.midiEventReceived)
         self.graph.conn_register.connect(self.settingsDialog.midiConnEvent)
@@ -1142,10 +1116,9 @@ class Bigglesworth(QtWidgets.QApplication):
             return
 
     def showFirmwareUtils(self):
-        if self.sender() == self.welcome:
-            parent = self.welcome
-        else:
-            parent = self.mainWindow
+        parent = self.sender()
+        while not isinstance(parent, QtWidgets.QWidget) or not parent.isWindow():
+            parent = parent.parent()
         self.firmwareDialog.setParent(parent, QtCore.Qt.Dialog)
         self.globalsBlock = True
         self.midiDevice.midi_event.connect(self.firmwareDialog.midiEventReceived)

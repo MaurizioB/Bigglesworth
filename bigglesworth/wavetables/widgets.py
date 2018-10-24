@@ -3,9 +3,6 @@ import sys
 from uuid import uuid4
 
 from Qt import QtCore, QtGui, QtWidgets
-from PyQt4.QtGui import QStyleOptionTabV3, QIconEngineV2
-QtWidgets.QStyleOptionTabV3 = QStyleOptionTabV3
-QtGui.QIconEngineV2 = QIconEngineV2
 
 from bigglesworth.utils import sanitize, loadUi, getCardinal
 from bigglesworth.dialogs.messageboxes import AdvancedMessageBox

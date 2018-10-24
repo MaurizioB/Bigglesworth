@@ -14,51 +14,7 @@ os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
 sys.path.append('../..')
 
 from Qt import QtCore, QtGui, QtWidgets, QtSql
-from PyQt4.QtCore import qUncompress
 
-def colorAdjusted(color, **kwargs):
-    if not kwargs:
-        raise ValueError('Color arguments expected')
-    newColor = QtGui.QColor(color)
-    if set(('r', 'g', 'b')) & set(kwargs):
-        r = kwargs.get('b', color.red())
-        if isinstance(r, float):
-            r *= 255
-        g = kwargs.get('g', color.green())
-        if isinstance(g, float):
-            g *= 255
-        b = kwargs.get('b', color.blue())
-        if isinstance(b, float):
-            b *= 255
-        newColor.setRgb(r, g, b)
-    elif set(('c', 'm', 'y', 'k')) & set(kwargs):
-        c = kwargs.get('c', color.cyan())
-        if isinstance(c, float):
-            c *= 255
-        m = kwargs.get('m', color.magenta())
-        if isinstance(m, float):
-            m *= 255
-        y = kwargs.get('y', color.yellow())
-        if isinstance(y, float):
-            y *= 255
-        k = kwargs.get('k', color.black())
-        if isinstance(k, float):
-            k *= 255
-        newColor.setCmyk(c, m, y, k)
-    a = kwargs.get('a', color.alpha())
-    if isinstance(a, float):
-        a *= 255
-    newColor.setAlpha(a)
-    return newColor
-
-QtGui.QColor.adjusted = colorAdjusted
-
-#from PyQt4.uic import loadUi
-#from dial import _Dial
-
-#from collections import OrderedDict, namedtuple
-#
-#polyPoints = namedtuple('polyPoints', 'topLeft topRight bottomRight bottomLeft')
 UidColumn, NameColumn, SlotColumn, EditedColumn, DataColumn, PreviewColumn, DumpedColumn, WritableColumn = range(8)
 
 try:

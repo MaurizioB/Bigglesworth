@@ -3,7 +3,6 @@ import numpy as np
 from uuid import UUID
 
 from Qt import QtCore
-from PyQt4.QtCore import qUncompress
 
 from bigglesworth.utils import sanitize
 from bigglesworth.wavetables.utils import baseSineValues, pow20, pow22, noteFrequency
@@ -825,7 +824,7 @@ class KeyFrames(QtCore.QObject):
 
         if isinstance(content, QtCore.QByteArray):
             try:
-                unpacked = qUncompress(content)
+                unpacked = QtCore.qUncompress(content)
                 content = QtCore.QDataStream(unpacked, QtCore.QIODevice.ReadOnly).readQVariant()
             except Exception as e:
                 print(e)

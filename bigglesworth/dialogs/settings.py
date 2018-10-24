@@ -108,7 +108,7 @@ class SettingsDialog(QtWidgets.QDialog):
             ('Editor', 'dial', self.editorPage), 
             ('Themes', 'document-edit', self.themePage), 
             ('Database', 'server-database', self.databasePage), 
-            ('Miscellaneous', 'preferences-other', self.miscPage), 
+            ('Miscellaneous', 'settings', self.miscPage), 
         ]
 
         self.pageDict = {}

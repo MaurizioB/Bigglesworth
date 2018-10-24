@@ -65,9 +65,15 @@ class BigButton(QtWidgets.QWidget):
         font.setPointSizeF(max(14, height * .15))
         self.setFont(font)
 
+        metrics = QtGui.QFontMetrics(font)
+        lines = len(self.text.splitlines())
         self.iconRect = QtCore.QRectF((self.width() - iconSize) * .5, margin, iconSize, iconSize).toRect()
 #        textTop = self.iconRect.bottom() + margin * .5
-        self.textRect = QtCore.QRect(0, 0, self.width(), QtGui.QFontMetrics(font).height() * 1.1).translated(0, self.height() - margin * 3)
+        self.textRect = QtCore.QRect(0, 0, self.width(), metrics.height() * 1.1 * lines).translated(0, self.height() - margin * 3)
+        if lines > 1:
+            delta = - metrics.height() / lines
+            self.iconRect.translate(0, delta)
+            self.textRect.translate(0, delta)
 
     def paintEvent(self, event):
         qp = QtGui.QPainter(self)
@@ -114,7 +120,7 @@ class ButtonsContainer(QtWidgets.QWidget):
         layout.addWidget(self.editorBtn, 3, 3)
         self.wavetablesBtn = BigButton(self, 'Wavetables', 'wavetables', bgColor=QtGui.QColor(255, 139, 126))
         layout.addWidget(self.wavetablesBtn, 5, 1)
-        self.utilsBtn = BigButton(self, 'Utilities', 'circuit', bgColor=QtGui.QColor(222, 173, 255))
+        self.utilsBtn = BigButton(self, 'Blofeld\nUtilities', 'circuit', bgColor=QtGui.QColor(222, 173, 255))
         layout.addWidget(self.utilsBtn, 5, 3)
 
         getSpacer = lambda: QtWidgets.QSpacerItem(10, 10, QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
@@ -167,10 +173,15 @@ class ButtonsContainer(QtWidgets.QWidget):
         qp.drawRoundedRect(self.rect().adjusted(0, 0, -1, -1), borderRadius, borderRadius)
 
 
+class WelcomeButton(QtWidgets.QPushButton):
+    pass
+
+
 class Welcome(QtWidgets.QDialog):
     showLibrarian = QtCore.pyqtSignal()
     showEditor = QtCore.pyqtSignal()
     showWavetables = QtCore.pyqtSignal()
+    showSettings = QtCore.pyqtSignal()
     showUtils = QtCore.pyqtSignal()
 
     def __init__(self, main):
@@ -209,26 +220,35 @@ class Welcome(QtWidgets.QDialog):
 
         bottom.addStretch(1)
 
-        self.quitBtn = QtWidgets.QPushButton(QtGui.QIcon.fromTheme('window-close'), '')
+        self.settingsBtn = WelcomeButton(QtGui.QIcon.fromTheme('settings'), 'Settings')
+        bottom.addWidget(self.settingsBtn)
+        self.settingsBtn.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
+        self.settingsBtn.clicked.connect(self.showSettings)
+
+        bottom.addStretch(2)
+
+        self.quitBtn = WelcomeButton(QtGui.QIcon.fromTheme('window-close'), '')
         bottom.addWidget(self.quitBtn)
         self.quitBtn.setToolTip('Quit Bigglesworth :-(')
         self.quitBtn.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
         self.quitBtn.setFixedWidth(self.fontMetrics().height() * 2)
-        self.quitBtn.setStyleSheet('''
-            QPushButton {
+        self.quitBtn.clicked.connect(self.close)
+
+        self.setStyleSheet('''
+            WelcomeButton {
                 border: 1px solid palette(mid);
                 border-radius: 4px;
+                padding-left: 4px;
+                padding-right: 4px;
             }
-            QPushButton:hover {
+            WelcomeButton:hover {
                 border-color: palette(dark);
                 border-style: outset;
             }
-            QPushButton:pressed {
+            WelcomeButton:pressed {
                 border-style: inset;
             }
         ''')
-        self.quitBtn.clicked.connect(self.close)
-
         self.shown = False
         self.doResize = True
 

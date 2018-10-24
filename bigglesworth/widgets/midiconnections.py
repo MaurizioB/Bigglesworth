@@ -3,9 +3,6 @@ from Qt import QtCore, QtGui, QtWidgets
 from bigglesworth.utils import loadUi, localPath, setBold
 from bigglesworth.widgets.delegates import CheckBoxDelegate
 
-from PyQt4.QtGui import QStyleOptionViewItemV4
-QtWidgets.QStyleOptionViewItemV4 = QStyleOptionViewItemV4
-
 PortRole = QtCore.Qt.UserRole + 1
 BlofeldRole = PortRole + 1
 

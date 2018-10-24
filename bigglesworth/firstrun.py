@@ -1,7 +1,6 @@
 import sys
 
 from Qt import QtCore, QtGui, QtWidgets
-from PyQt4.QtGui import QMatrix
 
 #Target = namedtuple('Target', 'message widget center event eventWidget')
 #Target.__new__.__defaults__ = (None, None, None, None)
@@ -106,7 +105,7 @@ class Bubble(QtWidgets.QWidget):
     def __init__(self, main, targetWindow):
         QtWidgets.QWidget.__init__(self, targetWindow, QtCore.Qt.WindowStaysOnTopHint|QtCore.Qt.Tool|QtCore.Qt.Window|QtCore.Qt.ToolTip|QtCore.Qt.FramelessWindowHint|QtCore.Qt.CustomizeWindowHint)
         self.main = main
-        self.matrix = QMatrix()
+        self.matrix = QtGui.QMatrix()
         self.targetWindow = targetWindow
         self.currentTarget = None
         self.movePos = None

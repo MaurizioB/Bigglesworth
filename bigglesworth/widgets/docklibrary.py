@@ -1,14 +1,12 @@
 from Qt import QtCore, QtGui, QtWidgets
 
-from bigglesworth.utils import loadUi, getValidQColor, getQtFlags
+from bigglesworth.utils import loadUi, getValidQColor
 from bigglesworth.const import factoryPresets, factoryPresetsNamesDict, backgroundRole, foregroundRole, NameColumn, UidColumn
 from bigglesworth.parameters import categories
 from bigglesworth.library import NameProxy, TagsProxy, DockLibraryProxy, MultiCatProxy
 from bigglesworth.dialogs.tags import TagValidator
 from bigglesworth.dialogs.messageboxes import DeleteSoundsMessageBox
 
-from PyQt4.QtGui import QStyleOptionViewItemV4
-QtWidgets.QStyleOptionViewItemV4 = QStyleOptionViewItemV4
 
 CollectionRole = QtCore.Qt.UserRole + 1
 CatRole = CollectionRole + 1

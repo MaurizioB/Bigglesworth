@@ -2,7 +2,6 @@ import numpy as np
 
 from xml.etree import ElementTree as ET
 from Qt import QtCore, QtGui, QtWidgets
-from PyQt4.QtCore import qCompress
 
 from bigglesworth.utils import loadUi, localPath
 from bigglesworth.widgets import Waiter
@@ -175,7 +174,7 @@ class WaveTableArchiver(QtWidgets.QDialog):
             byteArray = QtCore.QByteArray()
             kfStream = QtCore.QDataStream(byteArray, QtCore.QIODevice.WriteOnly)
             kfStream.writeQVariant(keyFrames.getSnapshot())
-            fullData.append(qCompress(byteArray))
+            fullData.append(QtCore.qCompress(byteArray))
 
             wtElement = ET.SubElement(typeElement, 'WaveTable')
             ET.SubElement(wtElement, 'Name').text = name

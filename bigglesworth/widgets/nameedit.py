@@ -3,10 +3,6 @@
 from unidecode import unidecode
 
 from Qt import QtCore, QtGui, QtWidgets
-from PyQt4.QtGui import QStyleOptionFrameV3 as _QStyleOptionFrameV3
-from PyQt4.QtGui import QStyleOptionFrameV2 as _QStyleOptionFrameV2
-QtWidgets.QStyleOptionFrameV3 = _QStyleOptionFrameV3
-QtWidgets.QStyleOptionFrameV2 = _QStyleOptionFrameV2
 
 try:
     from bigglesworth.const import ord2chr

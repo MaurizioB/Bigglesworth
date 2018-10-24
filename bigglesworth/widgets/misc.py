@@ -2,9 +2,6 @@ import sys
 from bisect import bisect_left
 
 from Qt import QtCore, QtGui, QtWidgets
-from PyQt4.QtGui import QStyleOptionTabV3, QStyleOptionTabWidgetFrameV2
-QtWidgets.QStyleOptionTabV3 = QStyleOptionTabV3
-QtWidgets.QStyleOptionTabWidgetFrameV2 = QStyleOptionTabWidgetFrameV2
 
 
 class MenuBar(QtWidgets.QMenuBar):

@@ -232,7 +232,7 @@
   </action>
   <action name="showSettingsAction">
    <property name="icon">
-    <iconset theme="preferences-other">
+    <iconset theme="settings">
      <normaloff/>
     </iconset>
    </property>
@@ -245,7 +245,9 @@
   </action>
   <action name="showGlobalsAction">
    <property name="icon">
-    <iconset theme="blofeld-b"/>
+    <iconset theme="blofeld-b">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>&amp;Blofeld device query</string>
