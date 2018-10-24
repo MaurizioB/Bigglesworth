@@ -1215,7 +1215,8 @@ class Bigglesworth(QtWidgets.QApplication):
                 self.loggerWindow.close()
 
     def checkWelcomeOnClose(self):
-        self.welcome.show()
+        if self.settings.value('WelcomeOnClose', True, bool):
+            self.welcome.show()
 
     def updateSplashFactory(self, factory, bank):
         factoryIndex = factoryPresets.index(factory)

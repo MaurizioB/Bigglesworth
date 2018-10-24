@@ -11,6 +11,7 @@ from bigglesworth.utils import loadUi
 from bigglesworth.themes import ThemeCollection
 from bigglesworth.midiutils import SysExEvent, SYSEX, GLBD, INIT, IDW, IDE, GLBR, END
 from bigglesworth.dialogs import ThemeEditor, GlobalsWaiter, BaseFileDialog
+from bigglesworth.widgets import MidiChannelWidget
 
 startupSessionModes = [
     ['Blofeld', 'Main library'], 
@@ -93,11 +94,40 @@ class SettingsDialog(QtWidgets.QDialog):
         self.main = main
         self.settings = main.settings
 
+        self.treeModel = QtGui.QStandardItemModel()
+        self.treeView.setModel(self.treeModel)
+        font = self.font()
+        font.setPointSize(font.pointSize() * 1.5)
+        self.titleLabel.setFont(font)
+
+        items = [
+            ('Startup', 'bigglesworth-round', self.startUpPage), 
+            ('MIDI configuration', 'midi', self.midiConfPage), 
+            ('MIDI connections', 'midi', self.midiConnectionsPage), 
+            ('MIDI backend', 'circuit', self.midiBackendPage), 
+            ('Editor', 'dial', self.editorPage), 
+            ('Themes', 'document-edit', self.themePage), 
+            ('Database', 'server-database', self.databasePage), 
+            ('Miscellaneous', 'preferences-other', self.miscPage), 
+        ]
+
+        self.pageDict = {}
+        for label, iconName, page in items:
+            if not 'linux' in sys.platform and page == self.midiBackendPage:
+                continue
+            item = QtGui.QStandardItem(QtGui.QIcon.fromTheme(iconName), label)
+            self.treeModel.appendRow(item)
+            self.pageDict[item] = page, label
+
+        self.treeView.setMinimumWidth(self.treeView.sizeHintForColumn(0) + self.treeView.lineWidth() * 2)
+        self.treeView.clicked.connect(self.setPage)
+
+        self.omniAlertIcon.setMinimumWidth(self.fontMetrics().height())
         self.dualModeCombo.currentIndexChanged.connect(self.updateStartupSessionCombo)
 
         self.themes = main.themes
 #        self.themeSettings = QtCore.QSettings()
-        self.themeTab.layout().addWidget(QtWidgets.QWidget(), *self.themeTab.layout().getItemPosition(self.themeTab.layout().indexOf(self.previewWidget)))
+#        self.themeTab.layout().addWidget(QtWidgets.QWidget(), *self.themeTab.layout().getItemPosition(self.themeTab.layout().indexOf(self.previewWidget)))
         self.themeCombo.currentIndexChanged.connect(self.applyThemeId)
         self.pressedBtn.widget.setDown(True)
         self.pressedBtnDisabled.widget.setDown(True)
@@ -120,6 +150,44 @@ class SettingsDialog(QtWidgets.QDialog):
         self.autoconnectClearChk.clicked.connect(self.clearAutoconnect)
         self.outputChannelWidget.itemsChanged.connect(self.checkChannelSend)
         self.alertIcon = QtGui.QIcon.fromTheme('emblem-warning')
+
+        self.setPage(self.treeModel.index(0, 0))
+        self.previewWidget.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents, True)
+
+    def getStates(self):
+        states = {}
+        for widget in self.findChildren(QtWidgets.QComboBox):
+            states[widget] = widget.currentIndex()
+        for widget in self.findChildren(QtWidgets.QAbstractButton):
+            if widget.isCheckable():
+                states[widget] = widget.isChecked()
+        for widget in self.findChildren(QtWidgets.QSpinBox):
+            states[widget] = widget.value()
+        for widget in self.findChildren(QtWidgets.QLineEdit):
+            states[widget] = widget.text()
+        for widget in self.findChildren(MidiChannelWidget):
+            states[widget] = widget.items
+        return states
+
+    def saveStates(self):
+        self.savedStates = self.getStates()
+
+    def checkStates(self):
+        for widget, state in self.getStates().items():
+            if self.savedStates[widget] != state:
+                return False
+        return True
+
+    def reject(self):
+        if not self.checkStates() and QtWidgets.QMessageBox.question(self, 'Ignore changes', 
+            'Do you want to ignore changes?', QtWidgets.QMessageBox.Ignore|QtWidgets.QMessageBox.Cancel) != QtWidgets.QMessageBox.Ignore:
+                return
+        QtWidgets.QDialog.reject(self)
+
+    def setPage(self, index):
+        page, label = self.pageDict[self.treeModel.itemFromIndex(index)]
+        self.stackedWidget.setCurrentWidget(page)
+        self.titleLabel.setText(label)
 
     def checkChannelSend(self, channels):
         if len(channels) > 1:
@@ -307,6 +375,9 @@ class SettingsDialog(QtWidgets.QDialog):
             child.labelColor = theme.frameLabelColor
 
     def exec_(self):
+        self.startUpWindowCombo.setCurrentIndex(self.settings.value('StartUpWindow', 0, int))
+        self.welcomeOnCloseChk.setChecked(self.settings.value('WelcomeOnClose', True, bool))
+
         self.restoreLibrarianGeometryChk.setChecked(self.settings.value('saveLibrarianGeometry', True, bool))
         self.restoreEditorGeometryChk.setChecked(self.settings.value('saveEditorGeometry', True, bool))
         self.dualModeCombo.setCurrentIndex(self.settings.value('startupDualMode', 2, int))
@@ -367,12 +438,16 @@ class SettingsDialog(QtWidgets.QDialog):
         self.applyTheme(currentTheme)
         self.themeCombo.blockSignals(False)
 
+        self.saveStates()
         res = QtWidgets.QDialog.exec_(self)
         if res:
             restart = False
 
             if self.restoreMsgBoxBtn.isChecked():
                 self.settings.remove('MessageBoxes')
+
+            self.settings.setValue('StartUpWindow', self.startUpWindowCombo.currentIndex())
+            self.settings.setValue('WelcomeOnClose', self.welcomeOnCloseChk.isChecked())
 
             self.settings.setValue('saveLibrarianGeometry', self.restoreLibrarianGeometryChk.isChecked())
             if not self.restoreLibrarianGeometryChk.isChecked():

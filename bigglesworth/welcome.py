@@ -15,8 +15,8 @@ class BigButton(QtWidgets.QWidget):
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.text = text
         self.icon = QtGui.QIcon.fromTheme(iconName)
-        self._bgColor = bgColor
-        self._fgColor = fgColor
+        self.bgColor = bgColor
+        self.fgColor = fgColor
         self.pixmap = QtGui.QPixmap()
 
         self.setMinimumSize(88, 88)
@@ -34,10 +34,6 @@ class BigButton(QtWidgets.QWidget):
     @hoverAlpha.setter
     def hoverAlpha(self, alpha):
         self._hoverAlpha = alpha
-        self.bgColor = QtGui.QColor(self._bgColor)
-        self.bgColor.setAlphaF(alpha)
-        self.fgColor = QtGui.QColor(self._fgColor)
-        self.fgColor.setAlphaF(alpha)
         self.update()
 
     def enterEvent(self, event):
@@ -77,13 +73,11 @@ class BigButton(QtWidgets.QWidget):
         qp = QtGui.QPainter(self)
         qp.setRenderHints(qp.Antialiasing)
         qp.translate(.5, .5)
+        qp.setOpacity(self.hoverAlpha)
         qp.setPen(QtCore.Qt.NoPen)
         qp.setBrush(self.bgColor)
         qp.drawRoundedRect(self.rect().adjusted(0, 0, -1, -1), self.borderRadius, self.borderRadius)
-#        qp.translate(self.contentRect.topLeft())
         if not self.pixmap.isNull():
-#            qp.setPen(QtCore.Qt.black)
-#            qp.drawRect(self.pixmap.rect().translated(self.contentRect.topLeft()))
             qp.drawPixmap(self.iconRect, self.pixmap, self.pixmap.rect())
         qp.setPen(self.fgColor)
         qp.drawText(self.textRect, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignBottom, self.text)
@@ -213,6 +207,26 @@ class Welcome(QtWidgets.QDialog):
         self.showAgainCombo.currentIndexChanged.connect(self.setDefault)
 
         bottom.addStretch(1)
+
+        self.quitBtn = QtWidgets.QPushButton(QtGui.QIcon.fromTheme('window-close'), '')
+        bottom.addWidget(self.quitBtn)
+        self.quitBtn.setToolTip('Quit Bigglesworth :-(')
+        self.quitBtn.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
+        self.quitBtn.setFixedWidth(self.fontMetrics().height() * 2)
+        self.quitBtn.setStyleSheet('''
+            QPushButton {
+                border: 1px solid palette(mid);
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                border-color: palette(dark);
+                border-style: outset;
+            }
+            QPushButton:pressed {
+                border-style: inset;
+            }
+        ''')
+        self.quitBtn.clicked.connect(self.close)
 
         self.shown = False
 
