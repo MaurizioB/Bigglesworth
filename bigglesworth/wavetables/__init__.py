@@ -1031,6 +1031,8 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         if self.openedWindows[0] != self:
             self.pianoIcon.stateChanged.connect(self.openedWindows[0].pianoIcon.setState)
             self.openedWindows[0].pianoIcon.stateChanged.connect(self.pianoIcon.setState)
+            self.showLibrarianAction.triggered.connect(self.openedWindows[0].showLibrarianAction.trigger)
+            self.showEditorAction.triggered.connect(self.openedWindows[0].showEditorAction.trigger)
 
         self.dumper = Dumper(self)
         self.dumper.stopRequested.connect(self.stopRequested)
@@ -3056,14 +3058,14 @@ class WaveTableWindow(QtWidgets.QMainWindow):
     def sendData(self):
         if self.currentSysexData:
 #            print('sending sysex {}'.format(len(sysex)))
-            sysex = self.currentSysexData.pop()
+            sysex = map(int, self.currentSysexData.pop())
             self.midiEvent.emit(SysExEvent(1, sysex))
             self.dumpTimer.start()
             return
         elif not self.stopped and self.sysexList:
 #            print('new wavetable, sending first sysex')
             self.currentSysexData = self.sysexList.pop(0)
-            sysex = self.currentSysexData.pop()
+            sysex = map(int, self.currentSysexData.pop())
             self.midiEvent.emit(SysExEvent(1, sysex))
             self.dumpTimer.start()
 
@@ -3247,15 +3249,17 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         pixmap.fill(QtCore.Qt.transparent)
         qp = QtGui.QPainter(pixmap)
         qp.setRenderHints(qp.Antialiasing)
-        if len(self.keyFrames) == 1:
-            targetRect = QtCore.QRectF(0, 4, 128, 64)
-            qp.setPen(self.waveScene.wavePen)
-            wavePath = self.keyFrames[0].wavePath
-            scale = QtGui.QTransform()
-            #for some reason, using QRectF doesn't work
-            QtGui.QTransform.quadToQuad(self.rect2Poly(wavePath.boundingRect()), self.rect2Poly(targetRect), scale)
-            qp.setTransform(scale)
-            qp.drawPath(wavePath)
+        firstTransform = self.keyFrames[0].nextTransform
+        if len(self.keyFrames) == 1 and not \
+            (firstTransform.mode in (firstTransform.TransMorph, firstTransform.SpecMorph) and not firstTransform.isLinear()):
+                targetRect = QtCore.QRectF(0, 4, 128, 64)
+                qp.setPen(self.waveScene.wavePen)
+                wavePath = self.keyFrames[0].wavePath
+                scale = QtGui.QTransform()
+                #for some reason, using QRectF doesn't work
+                QtGui.QTransform.quadToQuad(self.rect2Poly(wavePath.boundingRect()), self.rect2Poly(targetRect), scale)
+                qp.setTransform(scale)
+                qp.drawPath(wavePath)
         else:
             targetRect = QtCore.QRectF(0, 0, 128, 64)
             sourceRect = self.waveTableScene.front.sceneBoundingRect()

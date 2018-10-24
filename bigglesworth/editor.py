@@ -452,6 +452,7 @@ class OscShapeWidget(QtWidgets.QWidget):
         if not self.initialized:
             self.__class__.initialized = True
             self.model.dataChanged.connect(self.updateCacheFromModel)
+            self.updateCacheFromModel()
         self.combo.enterEvent = self.comboEnterEvent
         self.combo.leaveEvent = self.comboLeaveEvent
         self.comboView = self.combo.combo.view()
@@ -508,9 +509,13 @@ class OscShapeWidget(QtWidgets.QWidget):
             self.pixmap = None
             self.hide()
 
-    def updateCacheFromModel(self, first, last):
-        rows = set([first.row(), last.row()])
-        for index in range(min(rows), max(rows) + 1):
+    def updateCacheFromModel(self, first=None, last=None):
+        if first is None:
+            rowRange = range(self.model.rowCount())
+        else:
+            rows = set([first.row(), last.row()])
+            rowRange = range(min(rows), max(rows) + 1)
+        for index in rowRange:
             data = self.model.index(index, 5).data()
             if data:
                 pixmap = QtGui.QPixmap()

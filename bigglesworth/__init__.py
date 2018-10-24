@@ -1106,8 +1106,8 @@ class Bigglesworth(QtWidgets.QApplication):
             wtWindow = WaveTableWindow()
             wtWindow.midiEvent.connect(self.sendMidiEvent)
             wtWindow.midiConnect.connect(self.midiConnect)
-        wtWindow.showLibrarianAction.triggered.connect(self.mainWindow.activate)
-        wtWindow.showEditorAction.triggered.connect(self.editorWindow.activate)
+            wtWindow.showLibrarianAction.triggered.connect(self.mainWindow.activate)
+            wtWindow.showEditorAction.triggered.connect(self.editorWindow.activate)
         wtWindow.show()
         wtWindow.activateWindow()
 
