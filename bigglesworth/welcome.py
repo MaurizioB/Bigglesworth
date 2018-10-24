@@ -180,6 +180,7 @@ class Welcome(QtWidgets.QDialog):
         self.main = main
         self.settings = QtCore.QSettings()
         layout = QtWidgets.QVBoxLayout()
+        layout.setSpacing(12)
         self.setLayout(layout)
         self.buttons = ButtonsContainer(self)
         layout.addWidget(self.buttons)
@@ -229,6 +230,7 @@ class Welcome(QtWidgets.QDialog):
         self.quitBtn.clicked.connect(self.close)
 
         self.shown = False
+        self.doResize = True
 
     def showButtonMenu(self, pos):
         pass
@@ -236,13 +238,19 @@ class Welcome(QtWidgets.QDialog):
     def setDefault(self, index):
         self.settings.setValue('StartUpWindow', index)
 
+    def hide(self):
+        QtWidgets.QDialog.hide(self)
+        self.shown = False
+
     def showEvent(self, event):
         if not self.shown:
             self.shown = True
             geo = QtWidgets.QApplication.desktop().availableGeometry()
-            reference = min(geo.width(), geo.height())
-            minSize = min(1000, max(self.minimumWidth(), self.minimumHeight(), reference * .4))
-            self.resize(minSize, minSize)
+            if self.doResize:
+                self.doResize = False
+                reference = min(geo.width(), geo.height())
+                minSize = min(1000, max(self.minimumWidth(), self.minimumHeight(), reference * .4))
+                self.resize(minSize, minSize)
             self.move(geo.center().x() - self.width() / 2, geo.center().y() - self.height() / 2)
 
 if __name__ == '__main__':

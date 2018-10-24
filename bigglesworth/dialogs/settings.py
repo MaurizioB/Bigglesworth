@@ -141,10 +141,6 @@ class SettingsDialog(QtWidgets.QDialog):
         self.dbPathEdit.setText = lambda text: QtWidgets.QLineEdit.setText(
             self.dbPathEdit, QtCore.QDir.toNativeSeparators(text))
         self.dbPathEdit.text = lambda: QtCore.QDir.fromNativeSeparators(QtWidgets.QLineEdit.text(self.dbPathEdit))
-        if not 'linux' in sys.platform:
-            self.backendGroupBox.setVisible(False)
-        else:
-            self.alsaBackendRadio.setText(self.alsaBackendRadio.text() + ' (recommended)')
         self.backendGroup.setId(self.alsaBackendRadio, 0)
         self.backendGroup.setId(self.rtmidiBackendRadio, 1)
         self.autoconnectClearChk.clicked.connect(self.clearAutoconnect)
@@ -403,9 +399,7 @@ class SettingsDialog(QtWidgets.QDialog):
         self.settings.endGroup()
 
         self.settings.beginGroup('MIDI')
-        if not 'linux' in sys.platform:
-            self.rtmidiBackendRadio.setChecked(True)
-        else:
+        if 'linux' in sys.platform:
             if not self.main.argparse.rtmidi:
                 if self.settings.value('rtmidi', 0, int):
                     self.rtmidiBackendRadio.setChecked(True)
