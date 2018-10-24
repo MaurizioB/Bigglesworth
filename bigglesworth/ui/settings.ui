@@ -59,7 +59,7 @@
    <item row="2" column="1">
     <widget class="QStackedWidget" name="stackedWidget">
      <property name="currentIndex">
-      <number>5</number>
+      <number>4</number>
      </property>
      <widget class="QWidget" name="startUpPage">
       <layout class="QGridLayout" name="gridLayout_2">
@@ -804,7 +804,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QLabel" name="omniAlertIcon">
+          <widget class="QLabel" name="outputAlertIcon">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
              <horstretch>0</horstretch>
@@ -846,6 +846,16 @@
            </property>
            <property name="text">
             <string>Receive channel</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="inputAlertIcon">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
            </property>
           </widget>
          </item>

@@ -528,6 +528,7 @@
         <file alias="32x32/mono.svg">icons/Bigglesworth/32x32/mono.svg</file>
         <file alias="32x32/fx.svg">icons/Bigglesworth/32x32/fx.svg</file>
         <file alias="32x32/init.svg">icons/Bigglesworth/32x32/init.svg</file>
+        <file alias="32x32/midi-warning.svg">icons/Bigglesworth/32x32/midi-warning.svg</file>
         <file alias="32x32/perc.svg">icons/Bigglesworth/32x32/perc.svg</file>
         <file alias="32x32/keys.svg">icons/Bigglesworth/32x32/keys.svg</file>
         <file alias="32x32/audio-x-mpeg.svg">icons/Bigglesworth/32x32/audio-x-mpeg.svg</file>

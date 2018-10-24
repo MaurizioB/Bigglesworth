@@ -116,13 +116,15 @@ class SettingsDialog(QtWidgets.QDialog):
             if not 'linux' in sys.platform and page == self.midiBackendPage:
                 continue
             item = QtGui.QStandardItem(QtGui.QIcon.fromTheme(iconName), label)
+            setattr(self, page.objectName()[:-4] + 'Item', item)
             self.treeModel.appendRow(item)
             self.pageDict[item] = page, label
 
         self.treeView.setMinimumWidth(self.treeView.sizeHintForColumn(0) + self.treeView.lineWidth() * 2)
         self.treeView.clicked.connect(self.setPage)
 
-        self.omniAlertIcon.setMinimumWidth(self.fontMetrics().height())
+        self.outputAlertIcon.setMinimumWidth(self.fontMetrics().height())
+        self.inputAlertIcon.setMinimumWidth(self.outputAlertIcon.minimumWidth())
         self.dualModeCombo.currentIndexChanged.connect(self.updateStartupSessionCombo)
 
         self.themes = main.themes
@@ -145,9 +147,11 @@ class SettingsDialog(QtWidgets.QDialog):
         self.backendGroup.setId(self.rtmidiBackendRadio, 1)
         self.autoconnectClearChk.clicked.connect(self.clearAutoconnect)
         self.outputChannelWidget.itemsChanged.connect(self.checkChannelSend)
+        self.inputChannelWidget.itemsChanged.connect(self.checkChannelReceive)
         self.alertIcon = QtGui.QIcon.fromTheme('emblem-warning')
 
-        self.setPage(self.treeModel.index(0, 0))
+        self.treeView.setCurrentIndex(self.treeModel.index(0, 0))
+        self.setPage(self.treeView.currentIndex())
         self.previewWidget.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents, True)
 
     def getStates(self):
@@ -165,17 +169,8 @@ class SettingsDialog(QtWidgets.QDialog):
             states[widget] = widget.items
         return states
 
-    def saveStates(self):
-        self.savedStates = self.getStates()
-
-    def checkStates(self):
-        for widget, state in self.getStates().items():
-            if self.savedStates[widget] != state:
-                return False
-        return True
-
     def reject(self):
-        if not self.checkStates() and QtWidgets.QMessageBox.question(self, 'Ignore changes', 
+        if self.getStates() != self.savedStates and QtWidgets.QMessageBox.question(self, 'Ignore changes', 
             'Do you want to ignore changes?', QtWidgets.QMessageBox.Ignore|QtWidgets.QMessageBox.Cancel) != QtWidgets.QMessageBox.Ignore:
                 return
         QtWidgets.QDialog.reject(self)
@@ -187,12 +182,33 @@ class SettingsDialog(QtWidgets.QDialog):
 
     def checkChannelSend(self, channels):
         if len(channels) > 1:
-            self.omniAlertIcon.setPixmap(self.alertIcon.pixmap(self.fontMetrics().height()))
-            self.omniAlertIcon.setToolTip('Using more than one output channel is <b>not</b> suggested.<br/>'
+            self.outputAlertIcon.setPixmap(self.alertIcon.pixmap(self.fontMetrics().height()))
+            self.outputAlertIcon.setToolTip('Using more than one output channel is <b>not</b> suggested.<br/>'
                 'See manual for further information on this topic.')
+        elif not channels:
+            self.outputAlertIcon.setPixmap(self.alertIcon.pixmap(self.fontMetrics().height()))
+            self.outputAlertIcon.setToolTip('One output channel should be selected for proper usage<br/>'
+                'Using more than one channel is <b>not</b> suggested.')
         else:
-            self.omniAlertIcon.setPixmap(QtGui.QPixmap())
-            self.omniAlertIcon.setToolTip('')
+            self.outputAlertIcon.setPixmap(QtGui.QPixmap())
+            self.outputAlertIcon.setToolTip('')
+        self.setMidiConfIcon()
+
+    def checkChannelReceive(self, channels):
+        if not channels:
+            self.inputAlertIcon.setPixmap(self.alertIcon.pixmap(self.fontMetrics().height()))
+            self.inputAlertIcon.setToolTip('At least one input channel should be selected for proper usage<br/>'
+                'Using all channels (<b>OMNI</b>) is recommended')
+        else:
+            self.inputAlertIcon.setPixmap(QtGui.QPixmap())
+            self.inputAlertIcon.setToolTip('')
+        self.setMidiConfIcon()
+
+    def setMidiConfIcon(self):
+        if self.inputChannelWidget.items and len(self.outputChannelWidget.items) == 1:
+            self.midiConfItem.setIcon(QtGui.QIcon.fromTheme('midi'))
+        else:
+            self.midiConfItem.setIcon(QtGui.QIcon.fromTheme('midi-warning'))
 
     def updateStartupSessionCombo(self, startupDualMode):
         for index, label in enumerate(startupSessionModes[startupDualMode]):
@@ -206,6 +222,9 @@ class SettingsDialog(QtWidgets.QDialog):
         self.autoconnectClearChk.setEnabled(False)
 
     def midiConnEvent(self, *args):
+        connections = self.main.connections
+        self.detectBtn.setEnabled(all(connections))
+        self.midiConnectionsItem.setIcon(QtGui.QIcon.fromTheme('midi' if any(connections) else 'midi-warning'))
         self.settings.beginGroup('MIDI')
         self.autoconnectClearChk.setEnabled(bool(
             self.settings.value('autoConnectOutput') or self.settings.value('autoConnectInput')))
@@ -432,7 +451,11 @@ class SettingsDialog(QtWidgets.QDialog):
         self.applyTheme(currentTheme)
         self.themeCombo.blockSignals(False)
 
-        self.saveStates()
+        self.detectBtn.setEnabled(all(self.main.connections))
+        self.savedStates = self.getStates()
+        self.checkChannelSend(self.outputChannelWidget.items)
+        self.checkChannelReceive(self.inputChannelWidget.items)
+
         res = QtWidgets.QDialog.exec_(self)
         if res:
             restart = False

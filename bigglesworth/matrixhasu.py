@@ -647,6 +647,7 @@ class MatrixHasU(QtWidgets.QDialog):
         (_conv(u'Kudos to\nThe people at Synth Cafe\nand all the users...'), False, 4000, 4000), 
         (_conv(u'Ok. now go back to work_\nand do some fine patches...'), True, 2000, 8000), 
         _conv(u'Seriously.\nWe are done here.'), 
+        (_conv(u'ok. Since you\'re doing nothing\nI would suggest to make a donation...'), False, 6000, 6000), 
         (_conv(u'Ok. Have fun.\nI will leave you to this blank screen.\n\nBye'), True, 4000), 
         ]
         self.currentSlide = -1

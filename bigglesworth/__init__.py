@@ -1115,7 +1115,9 @@ class Bigglesworth(QtWidgets.QApplication):
         self.globalsBlock = True
         self.midiDevice.midi_event.connect(self.settingsDialog.midiEventReceived)
         self.graph.conn_register.connect(self.settingsDialog.midiConnEvent)
+        self.midiConnChanged.connect(self.settingsDialog.midiConnEvent)
         res = self.settingsDialog.exec_()
+        self.midiConnChanged.disconnect(self.settingsDialog.midiConnEvent)
         self.graph.conn_register.disconnect(self.settingsDialog.midiConnEvent)
         self.midiDevice.midi_event.disconnect(self.settingsDialog.midiEventReceived)
         self.globalsBlock = False
