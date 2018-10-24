@@ -390,15 +390,23 @@ class MidiConnectionsWidget(QtWidgets.QWidget):
 
         self.inputModel.dataChanged.connect(self.toggleConnection)
         self.outputModel.dataChanged.connect(self.toggleConnection)
+        #TODO: controllare, qual era la logica?!?
         if inConn <= 1 or self.hideAlert:
             self.infoLbl.setText('')
             self.infoIcon.setVisible(False)
-        elif not self.infoLbl.text():
+        if not outConn:
+            self.infoLbl.setText('At least one output connection is required for Bigglesworth to properly work. '
+                'One MIDI input connection to your Blofeld is also suggested, if available.')
+            if not self.infoIcon.pixmap():
+                self.infoIcon.setPixmap(QtGui.QIcon.fromTheme('emblem-warning').pixmap(self.fontMetrics().height() * .8))
+            self.infoIcon.setVisible(True)
+        elif inConn > 1:
             self.infoLbl.setText('Be careful when connecting to more than one MIDI input, as some devices, programs or ' \
                 'system utilities might duplicate events incoming from your Blofeld.')
             self.infoIcon.setVisible(True)
             if not self.infoIcon.pixmap():
                 self.infoIcon.setPixmap(QtGui.QIcon.fromTheme('emblem-warning').pixmap(self.fontMetrics().height() * .8))
+            self.infoIcon.setVisible(True)
 
     def showEvent(self, event):
         if not self.shown:

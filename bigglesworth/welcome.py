@@ -242,6 +242,10 @@ class Welcome(QtWidgets.QDialog):
         QtWidgets.QDialog.hide(self)
         self.shown = False
 
+    def keyPressEvent(self, event):
+        if event.key() != QtCore.Qt.Key_Escape:
+            QtWidgets.QDialog.keyPressEvent(self, event)
+
     def showEvent(self, event):
         if not self.shown:
             self.shown = True
