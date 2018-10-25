@@ -526,7 +526,7 @@ class PianoStatusWidget(QtWidgets.QFrame):
         self.setToolTip('Enable/Disable input keyboard events')
 
     def minimumSizeHint(self):
-        size = QtWidgets.QApplication.fontMetrics().height() * 2
+        size = QtWidgets.QApplication.fontMetrics().height() * 1.5
         return QtCore.QSize(size, size)
 
     def mousePressEvent(self, event):
@@ -2129,6 +2129,7 @@ class KeyFrameView(QtWidgets.QGraphicsView):
                 if not index:
                     return
                 qp = QtGui.QPainter(self.viewport())
+                qp.translate(0, self.scene().topMargin)
                 qp.setRenderHints(qp.Antialiasing)
                 scenePos = self.mapToScene(localPos)
                 delta = (item.mapFromScene(scenePos).x() - item.hoverRect.center().x()) * 2
@@ -2332,6 +2333,7 @@ class WaveTableCurrentView(QtWidgets.QGraphicsView):
                 wavePathItem.setPath(wavePath)
 
     def resizeEvent(self, event):
+        QtWidgets.QGraphicsView.resizeEvent(self, event)
         self.fitInView(self.scene().sceneRect(), QtCore.Qt.IgnoreAspectRatio)
 
     def showEvent(self, event):
@@ -2343,7 +2345,6 @@ class WaveTableCurrentView(QtWidgets.QGraphicsView):
                 self.scheduleUpdate()
             else:
                 self.rebuildPaths()
-
 
 
 class WaveTableMiniView(QtWidgets.QGraphicsView):

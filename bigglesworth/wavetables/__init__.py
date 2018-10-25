@@ -1070,6 +1070,10 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         else:
             self.openedWindows[0].writableSlotsChanged.connect(self.slotSpin.writableSlotsChanged)
         self.slotSpin.writableSlotsChanged()
+        if self.writableSlots:
+            self.slotSpin.blockSignals(True)
+            self.slotSpin.setValue(min(self.writableSlots))
+            self.slotSpin.blockSignals(False)
 
         self.localWaveTableList.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() * 1.5)
         self.localWaveTableList.setModel(self.localProxy)
@@ -3093,7 +3097,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         if not self.currentWaveTable and self.isClean():
             self.openFromUid(uid)
             window = self
-        elif self.currentWaveTable != uid:
+        else:
             window = self.windowsDict.get(uid)
         if not window:
             window = WaveTableWindow(uid)
@@ -3184,7 +3188,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.settings.setValue('Recent', recent[:10])
         self.settings.endGroup()
 
-        QtCore.QTimer.singleShot(1, lambda: self.keyFrameView.setSceneRect(self.keyFrames.container.geometry()))
+#        QtCore.QTimer.singleShot(1, lambda: self.keyFrameView.setSceneRect(self.keyFrames.container.geometry()))
 
     def createNewWindow(self):
         for window in self.openedWindows:
@@ -3645,7 +3649,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
     def showEvent(self, event):
         if not self.shown:
             self.shown = True
-            self.waveTableCurrentWaveView.setFixedHeight(self.waveTableCurrentWaveView.width() * .5)
+            self.waveTableCurrentWaveView.setMaximumHeight(self.waveTableCurrentWaveView.width() * .5)
             self.selectionLeftBtn.setMaximumHeight(self.selectionMinusBtn.geometry().bottom() - self.selectionPlusBtn.geometry().top())
             self.selectionRightBtn.setMaximumHeight(self.selectionLeftBtn.maximumHeight())
             self.selectionListView.setFixedHeight(self.fontMetrics().height() * 3.5)
@@ -3680,7 +3684,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 
     def resizeEvent(self, event):
         QtWidgets.QMainWindow.resizeEvent(self, event)
-        self.waveTableCurrentWaveView.setFixedHeight(self.waveTableCurrentWaveView.width() * .5)
+#        self.waveTableCurrentWaveView.setFixedHeight(self.waveTableCurrentWaveView.width() * .5)
 #        self.waveTableCurrentWaveView.fitInView(self.waveTableCurrentWaveScene.sceneRect())
 #        rect = QtCore.QRectF(0, 0, SampleItem.wavePathMaxWidth, SampleItem.wavePathMaxHeight)
 #        self.waveTableCurrentWaveView.fitInView(rect)

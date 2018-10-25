@@ -1365,6 +1365,10 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
         self.view = view
         self.changed.connect(lambda: self.view.viewport().update())
         self.addItem(self.keyFrameContainer)
+        margin = self.keyFrameContainer.layout().getContentsMargins()[1]
+        height = SampleItem.normalRect.height() + margin * 2
+        self.topMargin = margin
+        self.setSceneRect(QtCore.QRectF(margin, -margin, 0, height))
         self.currentDropIndex = None
         self.currentDropPos = self.OnItem
         self.currentSelection = None

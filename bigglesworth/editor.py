@@ -97,6 +97,15 @@ _effects = [
 MidiIn, MidiOut = range(2)
 
 
+class Osc3Proxy(QtCore.QSortFilterProxyModel):
+    def __init__(self, sourceModel):
+        QtCore.QSortFilterProxyModel.__init__(self)
+        self.setSourceModel(sourceModel)
+
+    def filterAcceptsRow(self, row, parent):
+        return row <= 4
+
+
 class UndoView(QtWidgets.QUndoView):
     def __init__(self, parent):
         QtWidgets.QUndoView.__init__(self, parent.undoStack, parent)
@@ -558,14 +567,13 @@ class OscShapeWidget(QtWidgets.QWidget):
 
     def paintEvent(self, event):
         qp = QtGui.QPainter(self)
-        qp.setRenderHints(qp.Antialiasing)
+        qp.setRenderHints(qp.SmoothPixmapTransform)
         qp.setBrush(QtCore.Qt.black)
         qp.drawRect(self.rect())
         if self.currentIndex == 1:
 #            qp.translate(self.pwmDial.value * .5, 0)
             qp.setPen(self.wavePen)
             x = self.pwmDial.value * .5 / 128 * self.width()
-            print(x)
             self.pulsePath.setElementPositionAt(2, x, self.pulseTop)
             self.pulsePath.setElementPositionAt(3, x, self.pulseBottom)
             qp.drawPath(self.pulsePath)
@@ -872,8 +880,13 @@ class EditorWindow(QtWidgets.QMainWindow):
 #            self.oscShapeModel.select()
             self.osc1Shape.setModel(self.oscShapeModel)
             self.osc1Shape.setModelColumn(1)
+            self.osc1Shape.setExpanding(True)
             self.osc2Shape.setModel(self.oscShapeModel)
             self.osc2Shape.setModelColumn(1)
+            self.osc2Shape.setExpanding(True)
+            self.osc3Shape.setModel(Osc3Proxy(self.oscShapeModel))
+            self.osc3Shape.setModelColumn(1)
+            self.osc3Shape.setExpanding(True)
         except Exception as e:
             print(e)
 
@@ -881,6 +894,7 @@ class EditorWindow(QtWidgets.QMainWindow):
 
         self.osc1ShapeWidget = OscShapeWidget(self, self.osc1Shape, self.osc1Pulsewidth)
         self.osc2ShapeWidget = OscShapeWidget(self, self.osc2Shape, self.osc2Pulsewidth)
+        self.osc3ShapeWidget = OscShapeWidget(self, self.osc3Shape, self.osc3Pulsewidth)
 
         self.modMatrixBtn.clicked.connect(self.showModMatrix)
         self.modMatrixView = None

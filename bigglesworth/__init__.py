@@ -1150,6 +1150,7 @@ class Bigglesworth(QtWidgets.QApplication):
             if anonymous:
                 url += '&anonymous=true'
             QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
+            self.settings.setValue('DonationDone', True)
 
     @QtCore.pyqtSlot(str)
     def showHelp(self, keyword=''):
