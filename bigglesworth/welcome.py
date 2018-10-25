@@ -276,6 +276,11 @@ class Welcome(QtWidgets.QDialog):
         if event.key() != QtCore.Qt.Key_Escape:
             QtWidgets.QDialog.keyPressEvent(self, event)
 
+    def closeEvent(self, event):
+        #required for MacOS
+        self.main.lastWindowClosed.disconnect()
+        QtWidgets.QDialog.closeEvent(self, event)
+
     def showEvent(self, event):
         if not self.shown:
             self.shown = True
