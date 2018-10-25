@@ -210,7 +210,7 @@ class Welcome(QtWidgets.QDialog):
 
         bottom = QtWidgets.QHBoxLayout()
         layout.addLayout(bottom)
-        bottom.setSpacing(5)
+        bottom.setSpacing(10 if sys.platform != 'darwin' else 20)
         self.showAgainCombo = QtWidgets.QComboBox()
         bottom.addWidget(self.showAgainCombo)
 

@@ -179,6 +179,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.aboutToQuit.connect(self.closeSession)
 
     def closeSession(self):
+        self.lastWindowClosed.disconnect()
         if sys.platform == 'darwin':
             self.mainWindow.saveLayout()
         #maybe not necessary?
