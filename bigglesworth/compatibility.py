@@ -250,7 +250,7 @@ else:
     
         #workaround for QIcon.fromTheme not properly working on OSX with cx_freeze
         QtGui.QIcon._fromTheme = QtGui.QIcon.fromTheme
-        sizes = (64, 32, 24, 22, 16, 8)
+        sizes = (128, 64, 32, 24, 22, 16, 8)
         iconCache = {}
         iconDir = QtCore.QDir(':/icons/{}/'.format(QtGui.QIcon.themeName()))
 
