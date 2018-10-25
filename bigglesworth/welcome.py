@@ -259,7 +259,6 @@ class Welcome(QtWidgets.QDialog):
         self.donationLbl.setVisible(False)
         self.donationLbl.linkActivated.connect(self.showDonation)
 
-        self.shown = False
         self.doResize = True
 
     def showButtonMenu(self, pos):
@@ -267,10 +266,6 @@ class Welcome(QtWidgets.QDialog):
 
     def setDefault(self, index):
         self.settings.setValue('StartUpWindow', index)
-
-    def hide(self):
-        QtWidgets.QDialog.hide(self)
-        self.shown = False
 
     def keyPressEvent(self, event):
         if event.key() != QtCore.Qt.Key_Escape:
@@ -282,8 +277,7 @@ class Welcome(QtWidgets.QDialog):
         QtWidgets.QDialog.closeEvent(self, event)
 
     def showEvent(self, event):
-        if not self.shown:
-            self.shown = True
+        if not event.spontaneous():
             geo = QtWidgets.QApplication.desktop().availableGeometry()
             if self.doResize:
                 self.doResize = False

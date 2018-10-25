@@ -1081,6 +1081,8 @@ class Bigglesworth(QtWidgets.QApplication):
             wtWindow.midiConnect.connect(self.midiConnect)
             wtWindow.showLibrarianAction.triggered.connect(self.mainWindow.activate)
             wtWindow.showEditorAction.triggered.connect(self.editorWindow.activate)
+            if sys.platform == 'darwin':
+                wtWindow.closed.connect(self.checkCloseMacOS)
 
         wtWindow.showSettings.connect(self.showSettings)
         wtWindow.show()
@@ -1209,10 +1211,18 @@ class Bigglesworth(QtWidgets.QApplication):
         if not (self.mainWindow.isVisible() and self.editorWindow.isVisible()) and \
             self.loggerWindow.isVisible():
                 self.loggerWindow.close()
+        elif sys.platform == 'darwin':
+            QtCore.QTimer.singleShot(0, self.checkCloseMacOS)
+
+    def checkCloseMacOS(self):
+        if not self.activeWindow():
+            self.checkWelcomeOnClose()
 
     def checkWelcomeOnClose(self):
         if self.settings.value('WelcomeOnClose', True, bool):
             self.welcome.show()
+        elif sys.platform == 'darwin':
+            self.quit()
 
     def updateSplashFactory(self, factory, bank):
         factoryIndex = factoryPresets.index(factory)
