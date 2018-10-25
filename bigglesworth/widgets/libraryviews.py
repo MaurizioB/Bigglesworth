@@ -1053,7 +1053,7 @@ class CollectionTableView(BaseLibraryView):
             'This collection is empty.\n\n'
             'Drag sounds from a collection or the Main Library, '
             'otherwise use the right click menu to create a new sound '
-            'or dump content from your Blofeld.')
+            'or to dump content from your Blofeld.')
         option = self.emptyInfoBox.defaultTextOption()
         option.setWrapMode(option.WordWrap)
         option.setAlignment(QtCore.Qt.AlignCenter)

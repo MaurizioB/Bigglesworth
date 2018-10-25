@@ -124,6 +124,7 @@
     <addaction name="separator"/>
     <addaction name="aboutAction"/>
     <addaction name="aboutQtAction"/>
+    <addaction name="showDonationAction"/>
     <addaction name="separator"/>
     <addaction name="updatesAction"/>
    </widget>
@@ -373,6 +374,14 @@
    </property>
    <property name="text">
     <string>&amp;Firmware utilities</string>
+   </property>
+  </action>
+  <action name="showDonationAction">
+   <property name="icon">
+    <iconset theme="help-donate"/>
+   </property>
+   <property name="text">
+    <string>Donate...</string>
    </property>
   </action>
  </widget>

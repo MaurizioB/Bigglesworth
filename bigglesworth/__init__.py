@@ -29,7 +29,8 @@ from bigglesworth.mainwindow import MainWindow
 from bigglesworth.themes import ThemeCollection
 from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, GlobalsDialog, FirmwareDialog, 
     DumpReceiveDialog, DumpSendDialog, WarningMessageBox, SmallDumper, FirstRunWizard, LogWindow, 
-    BlofeldDumper, FindDuplicates, SoundImport, SoundExport, SoundListExport, MidiDuplicateDialog)
+    BlofeldDumper, FindDuplicates, SoundImport, SoundExport, SoundListExport, MidiDuplicateDialog, 
+    DonateDialog)
 from bigglesworth.help import HelpDialog
 
 from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR, LogInfo, LogWarning, factoryPresets, factoryPresetsNamesDict
@@ -325,6 +326,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.mainWindow.showGlobalsAction.setEnabled(True if all(self.connections) else False)
         self.mainWindow.showFirmwareUtilsAction.triggered.connect(self.showFirmwareUtils)
         self.mainWindow.showFirmwareUtilsAction.setEnabled(True if self.connections[1] else False)
+        self.mainWindow.showDonationAction.triggered.connect(self.showDonation)
 
         self.mainWindow.leftTabWidget.fullDumpBlofeldToCollectionRequested.connect(self.fullDumpBlofeldToCollection)
         self.mainWindow.leftTabWidget.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeld)
@@ -396,6 +398,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.welcome.showWavetables.connect(self.showWavetables)
         self.welcome.showUtils.connect(self.showFirmwareUtils)
         self.welcome.showSettings.connect(self.showSettings)
+        self.welcome.showDonation.connect(self.showDonation)
         self.welcome.destroyed.connect(self.quit)
 
         self.helpDialog = HelpDialog()
@@ -1131,6 +1134,20 @@ class Bigglesworth(QtWidgets.QApplication):
         self.midiConnChanged.disconnect(self.firmwareDialog.midiConnChanged)
         self.midiDevice.midi_event.disconnect(self.firmwareDialog.midiEventReceived)
         self.globalsBlock = False
+
+    def showDonation(self, parent=None):
+        if not isinstance(parent, QtWidgets.QWidget):
+            parent = self.sender()
+            while not isinstance(parent, QtWidgets.QWidget) or not parent.isWindow():
+                parent = parent.parent()
+        res = DonateDialog(parent).exec_()
+        if res:
+            amount, currency, anonymous = res
+            url = 'http://bigglesworth.it/pp/donate.php?amount={}&currency={}'.format(
+                amount, currency)
+            if anonymous:
+                url += '&anonymous=true'
+            QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
 
     @QtCore.pyqtSlot(str)
     def showHelp(self, keyword=''):

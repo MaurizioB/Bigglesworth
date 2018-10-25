@@ -65,6 +65,34 @@ factoryInfo = [
     '''
 ]
 
+keyboardInfo = '''
+    <p>This is the <i><b>Keyboard Controller Firmware</b></i> update, 
+    and is valid <b>ONLY</b> if you own a Blofeld Keyboard.</p>
+
+    <p>Dumping this firmware update is suggested only for Blofeld 
+    devices produced before 2014 and have not been update since then.</p>
+
+    <p><b>DO NOT</b> use it if you do not own a Blofeld Keyboard.<br/>
+    <b>DO NOT</b> upload this firmware if you don't know what you are doing.</p>
+'''
+
+recoveryInfo = '''
+    <p>This recovery system is for emergency use only.</p>
+
+    <p>If you tried to dump a firmware update and for some reason something 
+    went wrong (like a power failure), this system allows recovery from an 
+    unusable Blofeld.</p>
+
+    <p>The recovery dump requires that you connect your Blofeld using its 
+    MIDI connection, not <b>USB</b>.<br/>
+    Bigglesworth is unable to be 100% sure about the connection type you 
+    are using, and it will alert you if it thinks that USB is used. In 
+    the rare case this is not true, you can proceed it anyway, 
+    <b>at your own risk</b>.</p>
+
+    <p>After the recovery procedure has been completed, a firmware dump is 
+    usually required.</p>
+'''
 
 class Dumper(QtWidgets.QProgressDialog):
     def __init__(self, parent=None):
@@ -130,6 +158,7 @@ class FirmwareDialog(QtWidgets.QDialog):
         loadUi('ui/firmware.ui', self)
         self.main = QtWidgets.QApplication.instance()
 
+        self.tabWidget.tabBar().setElideMode(QtCore.Qt.ElideNone)
         self.tabWidget.currentChanged.connect(self.resetSizes)
 
         self.detectFirmwareBtn.clicked.connect(self.detectFirmware)
@@ -161,6 +190,9 @@ class FirmwareDialog(QtWidgets.QDialog):
         self.waiter = GlobalsWaiter(self)
         self.waiter.rejected.connect(self.undetected)
         self.midiConnectionsBtn.clicked.connect(lambda: MidiConnectionsDialog(self).exec_())
+
+        self.keyboardInfo.setHtml(keyboardInfo)
+        self.recoveryInfo.setHtml(recoveryInfo)
 
     def undetected(self):
         if not self.waiter.cancelled:

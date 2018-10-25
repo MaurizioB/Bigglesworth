@@ -183,6 +183,7 @@ class Welcome(QtWidgets.QDialog):
     showWavetables = QtCore.pyqtSignal()
     showSettings = QtCore.pyqtSignal()
     showUtils = QtCore.pyqtSignal()
+    showDonation = QtCore.pyqtSignal()
 
     def __init__(self, main):
         QtWidgets.QDialog.__init__(self)
@@ -209,13 +210,14 @@ class Welcome(QtWidgets.QDialog):
 
         bottom = QtWidgets.QHBoxLayout()
         layout.addLayout(bottom)
+        bottom.setSpacing(5)
         self.showAgainCombo = QtWidgets.QComboBox()
         bottom.addWidget(self.showAgainCombo)
 
-        self.showAgainCombo.addItem('Always show this window on startup')
-        self.showAgainCombo.addItem('Always start with the Librarian')
-        self.showAgainCombo.addItem('Always start with the Sound editor')
-        self.showAgainCombo.addItem('Always start with the Wavetable editor')
+        self.showAgainCombo.addItem('Show this window on startup')
+        self.showAgainCombo.addItem('Start with Librarian')
+        self.showAgainCombo.addItem('Start with Sound editor')
+        self.showAgainCombo.addItem('Start with Wavetable editor')
         self.showAgainCombo.currentIndexChanged.connect(self.setDefault)
 
         bottom.addStretch(1)
@@ -225,7 +227,7 @@ class Welcome(QtWidgets.QDialog):
         self.settingsBtn.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
         self.settingsBtn.clicked.connect(self.showSettings)
 
-        bottom.addStretch(2)
+        bottom.addStretch(1)
 
         self.quitBtn = WelcomeButton(QtGui.QIcon.fromTheme('window-close'), '')
         bottom.addWidget(self.quitBtn)
@@ -249,6 +251,14 @@ class Welcome(QtWidgets.QDialog):
                 border-style: inset;
             }
         ''')
+        
+        donationLayout = QtWidgets.QHBoxLayout()
+        layout.addLayout(donationLayout)
+        self.donationLbl = QtWidgets.QLabel('Do you like Bigglesworth? Consider a <a href="donate">donation!</a>')
+        donationLayout.addWidget(self.donationLbl)
+        self.donationLbl.setVisible(False)
+        self.donationLbl.linkActivated.connect(self.showDonation)
+
         self.shown = False
         self.doResize = True
 
@@ -276,6 +286,8 @@ class Welcome(QtWidgets.QDialog):
                 minSize = min(1000, max(self.minimumWidth(), self.minimumHeight(), reference * .4))
                 self.resize(minSize, minSize)
             self.move(geo.center().x() - self.width() / 2, geo.center().y() - self.height() / 2)
+        if self.main.startTimer.elapsed() / 60000 > 5 and not self.donationLbl.isVisible():
+            self.donationLbl.setVisible(True)
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)

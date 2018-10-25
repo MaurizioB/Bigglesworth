@@ -26,6 +26,9 @@
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout">
+         <property name="spacing">
+          <number>6</number>
+         </property>
          <property name="margin">
           <number>0</number>
          </property>
@@ -130,6 +133,9 @@
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <property name="spacing">
+          <number>6</number>
+         </property>
          <property name="margin">
           <number>0</number>
          </property>
@@ -218,18 +224,6 @@
          <property name="readOnly">
           <bool>true</bool>
          </property>
-         <property name="html">
-          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;This is the &lt;span style=&quot; font-weight:600; font-style:italic;&quot;&gt;Keyboard Controller Firmware&lt;/span&gt; update, and is valid &lt;span style=&quot; font-weight:600;&quot;&gt;ONLY&lt;/span&gt; if you own a Blofeld Keyboard.&lt;/p&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Dumping this firmware update is suggested only for Blofeld devices produced before 2014 and have not been update since then.&lt;/p&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;DO NOT&lt;/span&gt; use it if you do not own a Blofeld Keyboard.&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;DO NOT&lt;/span&gt; upload this firmware if you don't know what you are doing.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
         </widget>
        </item>
        <item>
@@ -277,17 +271,6 @@ p, li { white-space: pre-wrap; }
         <widget class="QTextEdit" name="recoveryInfo">
          <property name="readOnly">
           <bool>true</bool>
-         </property>
-         <property name="html">
-          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;This recovery system is for emergency use only.&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;If you tried to dump a firmware update and for some reason something went wrong (like a power failure), this system allows recovery from an unusable Blofeld.&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;The recovery dump requires that you connect your Blofeld using its MIDI connection, &lt;span style=&quot; font-weight:600;&quot;&gt;not&lt;/span&gt; USB.&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Bigglesworth is unable to be 100% sure about the connection type you are using, and it will alert you if it &lt;span style=&quot; font-style:italic;&quot;&gt;thinks&lt;/span&gt; that USB is used. In the rare case this is not true, you can proceed it anyway, &lt;span style=&quot; font-weight:600;&quot;&gt;at your own risk&lt;/span&gt;.&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;After the recovery procedure has been completed, a firmware dump is usually required.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
         </widget>
        </item>
@@ -356,7 +339,9 @@ p, li { white-space: pre-wrap; }
             <string>Dump firmware</string>
            </property>
            <property name="icon">
-            <iconset theme="dump"/>
+            <iconset theme="dump">
+             <normaloff/>
+            </iconset>
            </property>
           </widget>
          </item>
@@ -370,7 +355,9 @@ p, li { white-space: pre-wrap; }
             <string>Dump preset</string>
            </property>
            <property name="icon">
-            <iconset theme="dump"/>
+            <iconset theme="dump">
+             <normaloff/>
+            </iconset>
            </property>
           </widget>
          </item>
@@ -384,7 +371,9 @@ p, li { white-space: pre-wrap; }
             <string>Dump firmware</string>
            </property>
            <property name="icon">
-            <iconset theme="dump"/>
+            <iconset theme="dump">
+             <normaloff/>
+            </iconset>
            </property>
           </widget>
          </item>
@@ -398,7 +387,9 @@ p, li { white-space: pre-wrap; }
             <string>Begin recovery</string>
            </property>
            <property name="icon">
-            <iconset theme="dump"/>
+            <iconset theme="dump">
+             <normaloff/>
+            </iconset>
            </property>
           </widget>
          </item>

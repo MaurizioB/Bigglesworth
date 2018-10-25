@@ -447,6 +447,10 @@
         <file alias="16x16/arrow-right.svg">icons/Bigglesworth/16x16/arrow-right.svg</file>
         <file alias="22x22/arrow-right.svg">icons/Bigglesworth/22x22/arrow-right.svg</file>
         <file alias="24x24/arrow-right.svg">icons/Bigglesworth/24x24/arrow-right.svg</file>
+        <file alias="32x32/help-donate.svg">icons/Bigglesworth/32x32/help-donate.svg</file>
+        <file alias="16x16/help-donate.svg">icons/Bigglesworth/16x16/help-donate.svg</file>
+        <file alias="22x22/help-donate.svg">icons/Bigglesworth/22x22/help-donate.svg</file>
+        <file alias="24x24/help-donate.svg">icons/Bigglesworth/24x24/help-donate.svg</file>
         <file alias="16x16/list-remove.svg">icons/Bigglesworth/16x16/list-remove.svg</file>
         <file alias="22x22/list-remove.svg">icons/Bigglesworth/22x22/list-remove.svg</file>
         <file alias="24x24/list-remove.svg">icons/Bigglesworth/24x24/list-remove.svg</file>
