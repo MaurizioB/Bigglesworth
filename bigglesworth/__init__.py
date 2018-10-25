@@ -1078,13 +1078,16 @@ class Bigglesworth(QtWidgets.QApplication):
             wtWindow.midiConnect.connect(self.midiConnect)
             wtWindow.showLibrarianAction.triggered.connect(self.mainWindow.activate)
             wtWindow.showEditorAction.triggered.connect(self.editorWindow.activate)
+
+        wtWindow.showSettings.connect(self.showSettings)
         wtWindow.show()
         wtWindow.activateWindow()
 
-    def showSettings(self):
-        parent = self.sender()
-        while not isinstance(parent, QtWidgets.QWidget) or not parent.isWindow():
-            parent = parent.parent()
+    def showSettings(self, parent=None):
+        if not isinstance(parent, QtWidgets.QWidget):
+            parent = self.sender()
+            while not isinstance(parent, QtWidgets.QWidget) or not parent.isWindow():
+                parent = parent.parent()
         self.settingsDialog.setParent(parent, QtCore.Qt.Dialog)
         self.globalsBlock = True
         self.midiDevice.midi_event.connect(self.settingsDialog.midiEventReceived)
@@ -1115,10 +1118,11 @@ class Bigglesworth(QtWidgets.QApplication):
         if not res:
             return
 
-    def showFirmwareUtils(self):
-        parent = self.sender()
-        while not isinstance(parent, QtWidgets.QWidget) or not parent.isWindow():
-            parent = parent.parent()
+    def showFirmwareUtils(self, parent=None):
+        if not isinstance(parent, QtWidgets.QWidget):
+            parent = self.sender()
+            while not isinstance(parent, QtWidgets.QWidget) or not parent.isWindow():
+                parent = parent.parent()
         self.firmwareDialog.setParent(parent, QtCore.Qt.Dialog)
         self.globalsBlock = True
         self.midiDevice.midi_event.connect(self.firmwareDialog.midiEventReceived)

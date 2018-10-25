@@ -2079,10 +2079,11 @@
     <property name="title">
      <string>Windows</string>
     </property>
-    <addaction name="audioSettingsAction"/>
-    <addaction name="separator"/>
     <addaction name="showLibrarianAction"/>
     <addaction name="showEditorAction"/>
+    <addaction name="separator"/>
+    <addaction name="audioSettingsAction"/>
+    <addaction name="showSettingsAction"/>
     <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="waveTableMenu">
@@ -2408,6 +2409,19 @@
   <action name="devArchiveAction">
    <property name="text">
     <string>Create archive</string>
+   </property>
+  </action>
+  <action name="showSettingsAction">
+   <property name="icon">
+    <iconset theme="settings">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Settings</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+P</string>
    </property>
   </action>
  </widget>

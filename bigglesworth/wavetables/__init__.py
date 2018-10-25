@@ -910,6 +910,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
     midiEvent = QtCore.pyqtSignal(object)
     midiConnect = QtCore.pyqtSignal(object, int, bool)
     writableSlotsChanged = QtCore.pyqtSignal()
+    showSettings = QtCore.pyqtSignal(object)
 
     def __init__(self, waveTable=None):
         QtWidgets.QMainWindow.__init__(self)
@@ -989,6 +990,8 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             self.openedWindows[0].pianoIcon.stateChanged.connect(self.pianoIcon.setState)
             self.showLibrarianAction.triggered.connect(self.openedWindows[0].showLibrarianAction.trigger)
             self.showEditorAction.triggered.connect(self.openedWindows[0].showEditorAction.trigger)
+
+        self.showSettingsAction.triggered.connect(lambda: self.openedWindows[0].showSettings.emit(self))
 
         self.dumper = Dumper(self)
         self.dumper.stopRequested.connect(self.stopRequested)

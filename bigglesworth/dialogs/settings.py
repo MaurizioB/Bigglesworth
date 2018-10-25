@@ -451,7 +451,9 @@ class SettingsDialog(QtWidgets.QDialog):
         self.applyTheme(currentTheme)
         self.themeCombo.blockSignals(False)
 
-        self.detectBtn.setEnabled(all(self.main.connections))
+        connections = self.main.connections
+        self.midiConnectionsItem.setIcon(QtGui.QIcon.fromTheme('midi' if any(connections) else 'midi-warning'))
+        self.detectBtn.setEnabled(all(connections))
         self.savedStates = self.getStates()
         self.checkChannelSend(self.outputChannelWidget.items)
         self.checkChannelReceive(self.inputChannelWidget.items)
