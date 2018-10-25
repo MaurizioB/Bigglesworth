@@ -68,12 +68,11 @@ class BigButton(QtWidgets.QWidget):
         metrics = QtGui.QFontMetrics(font)
         lines = len(self.text.splitlines())
         self.iconRect = QtCore.QRectF((self.width() - iconSize) * .5, margin, iconSize, iconSize).toRect()
-#        textTop = self.iconRect.bottom() + margin * .5
         self.textRect = QtCore.QRect(0, 0, self.width(), metrics.height() * 1.1 * lines).translated(0, self.height() - margin * 3)
         if lines > 1:
-            delta = - metrics.height() / lines
-            self.iconRect.translate(0, delta)
-            self.textRect.translate(0, delta)
+            delta = self.rect().center() - (self.iconRect | self.textRect).center()
+            self.iconRect.translate(delta)
+            self.textRect.translate(delta)
 
     def paintEvent(self, event):
         qp = QtGui.QPainter(self)
@@ -120,7 +119,7 @@ class ButtonsContainer(QtWidgets.QWidget):
         layout.addWidget(self.editorBtn, 3, 3)
         self.wavetablesBtn = BigButton(self, 'Wavetables', 'wavetables', bgColor=QtGui.QColor(255, 139, 126))
         layout.addWidget(self.wavetablesBtn, 5, 1)
-        self.utilsBtn = BigButton(self, 'Blofeld\nUtilities', 'circuit', bgColor=QtGui.QColor(222, 173, 255))
+        self.utilsBtn = BigButton(self, 'Blofeld\nutilities', 'blofeld-b', bgColor=QtGui.QColor(222, 173, 255))
         layout.addWidget(self.utilsBtn, 5, 3)
 
         getSpacer = lambda: QtWidgets.QSpacerItem(10, 10, QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
@@ -220,7 +219,7 @@ class Welcome(QtWidgets.QDialog):
         self.showAgainCombo.addItem('Start with Wavetable editor')
         self.showAgainCombo.currentIndexChanged.connect(self.setDefault)
 
-        bottom.addStretch(1)
+        bottom.addSpacing(10)
 
         self.settingsBtn = WelcomeButton(QtGui.QIcon.fromTheme('settings'), 'Settings')
         bottom.addWidget(self.settingsBtn)
@@ -256,8 +255,8 @@ class Welcome(QtWidgets.QDialog):
         layout.addLayout(donationLayout)
         self.donationLbl = QtWidgets.QLabel('Do you like Bigglesworth? Consider a <a href="donate">donation!</a>')
         donationLayout.addWidget(self.donationLbl)
-        self.donationLbl.setVisible(False)
         self.donationLbl.linkActivated.connect(self.showDonation)
+        self.donationLbl.setVisible(False)
 
         self.doResize = True
 
@@ -285,7 +284,7 @@ class Welcome(QtWidgets.QDialog):
                 minSize = min(1000, max(self.minimumWidth(), self.minimumHeight(), reference * .4))
                 self.resize(minSize, minSize)
             self.move(geo.center().x() - self.width() / 2, geo.center().y() - self.height() / 2)
-        if self.main.startTimer.elapsed() / 60000 > 5 and not self.donationLbl.isVisible():
+        if not self.settings.value('DonationDone', True, bool) and self.main.startTimer.elapsed() / 60000 > 5 and not self.donationLbl.isVisible():
             self.donationLbl.setVisible(True)
 
 if __name__ == '__main__':
