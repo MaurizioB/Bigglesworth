@@ -2117,7 +2117,7 @@ class KeyFrameView(QtWidgets.QGraphicsView):
             qp.setPen(self.selectionPen)
             qp.setBrush(self.selectionBrush)
             qp.drawPath(self.scene().selectionArea())
-        elif self.scene().hoverMode:
+        elif self.scene().hoverMode and not self.scene().isDragging:
             localPos = self.mapFromGlobal(QtGui.QCursor.pos())
             item = self.itemAt(localPos)
             first = self.keyFrames[0]

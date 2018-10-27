@@ -1263,58 +1263,6 @@ class KeyFrameContainer(QtWidgets.QGraphicsWidget):
             self.layout().setItemSpacing(i, 0)
         self.placeHolder = None
 
-    def moveKeyFrames(self, items, targetPos, dropPos):
-        print('move', items)
-#        if len(indexes) == 1:
-#            self.layout().removeItem()
-#        taken = []
-#        
-#        layoutIndexes = iter(reversed(range(self.layout().count())))
-#        while True:
-#            try:
-#                index = layoutIndexes.next()
-#                item = self.layout().itemAt(index)
-#                if isinstance(item, SampleItem):
-#                    if item.index in indexes:
-#                        taken.append(item)
-#                        self.layout().removeItem(item)
-#                        transformItem = self.layout().itemAt(layoutIndexes.next())
-#                        if transformItem.mode:
-#                            taken.append(transformItem)
-#                        self.layout().removeItem(transformItem)
-#                        self.scene().removeItem(transformItem)
-#            except:
-#                break
-#        if min(indexes) < targetPos:
-##            targetPos += 1 - len(indexes) * 2
-##        else:
-##            print('targetPos', targetPos, len(indexes))
-#            targetPos += 1 - len(indexes) * 2
-#        for item in taken:
-#            self.layout().insertItem(targetPos, item)
-#        self.checkIndexes()
-#
-#    def copyKeyFrames(self, indexes, targetPos, dropPos):
-#        print('copying', indexes, 'to', targetPos, dropPos)
-#
-#    def checkIndexes(self):
-#        keyIndex = 0
-#        self.keyFrames = []
-#        for index in range(self.layout().count()):
-#            item = self.layout().itemAt(index)
-#            if not isinstance(item, SampleItem):
-#                continue
-#            self.keyFrames.append(item)
-#            item.setFinal(False)
-#            if keyIndex == 0 and item.index > 0:
-#                item.setIndex(keyIndex)
-#            elif item.index > keyIndex:
-#                keyIndex = item.index
-#            elif item.index < keyIndex:
-#                item.setIndex(keyIndex)
-#            keyIndex += 1
-#        self.keyFrames[-1].setFinal(True)
-
     def setMaximized(self, maximized):
         for item in self.allVisibleItems:
             item.setMaximized(maximized)
@@ -1374,6 +1322,7 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
         self.currentSelection = None
         self.maximized = False
         self.hoverMode = True
+        self.isDragging = False
 
     def keyFrameAdded(self, keyFrame):
         keyFrame.deleteRequested.connect(lambda: self.deleteRequested.emit(keyFrame))
@@ -1602,6 +1551,7 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
 #        return transform.valuesAt(keyFrameIndex), transform
 
     def dragEnterEvent(self, event):
+        self.isDragging = True
         mimeData = event.mimeData()
         if mimeData.hasFormat('bigglesworth/SampleItemSelection'):
             self.view.window().statusBar().showMessage('Keep SHIFT pressed to duplicate waves')
@@ -1612,6 +1562,7 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
             event.ignore()
 
     def dragLeaveEvent(self, event):
+        self.isDragging = False
         self.currentDropIndex = None
         self.keyFrameContainer.removePlaceHolders()
         self.view.window().statusBar().clearMessage()
@@ -1725,6 +1676,7 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
         return sorted(targets), sorted(overwrite), movedBefore, movedAfter
 
     def dragMoveEvent(self, event):
+        self.isDragging = True
         mimeData = event.mimeData()
         if mimeData.hasFormat('bigglesworth/SampleItemSelection'):
             item = self.itemAt(event.scenePos())
@@ -1782,7 +1734,11 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
 
             else:
                 event.setDropAction(QtCore.Qt.MoveAction)
-            event.accept()
+
+            if self.currentDropPos == self.OnItem:
+                event.ignore()
+            else:
+                event.accept()
 
         elif mimeData.hasFormat('bigglesworth/WaveFileData'):
             item = self.itemAt(event.scenePos())
@@ -1827,6 +1783,7 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
             [k.setSelected(k.index in overwrite) for k in self.keyFrames]
 
     def dropEvent(self, event):
+        self.isDragging = False
         self.view.window().statusBar().clearMessage()
         self.keyFrameContainer.removePlaceHolders()
         mimeData = event.mimeData()
@@ -1853,10 +1810,8 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
                             if done < total:
                                 items.append(keyFrame.nextTransform)
                 if event.modifiers() == QtCore.Qt.ShiftModifier:
-                    print('copio')
                     self.copyKeyFrames(items, self.currentDropIndex, self.currentDropPos)
                 else:
-                    print('mouvo')
                     self.moveKeyFrames(items, self.currentDropIndex, self.currentDropPos)
             else:
                 dropData = self.getDropTargets(len(indexes))
@@ -1892,120 +1847,10 @@ class KeyFrameScene(QtWidgets.QGraphicsScene):
             self.waveDrop.emit(dropData, values, filePath)
 
     def copyKeyFrames(self, items, dropIndex, dropPos):
-        print(dropIndex, dropPos)
-#        values = {}
-#        print([k.index for k in items if isinstance(k, SampleItem)])
+        print(items, dropIndex, dropPos)
 
     def moveKeyFrames(self, items, dropIndex, dropPos):
-        print(dropIndex, dropPos)
-
-#    def _moveKeyFrames(self, items, dropIndex, dropPos):
-##        print(dropIndex, dropPos)
-#        layout = self.keyFrameContainer.layout()
-#        firstIndex = self.getLayoutIndex(items[0])
-#        if len(items) > 1:
-#            lastIndex = self.getLayoutIndex(items[-1])
-#            indexRange = range(firstIndex, lastIndex + 1)
-#        else:
-#            lastIndex = firstIndex
-#            indexRange = [firstIndex]
-#        if dropIndex in indexRange or (dropPos == self.AfterItem and dropIndex + 2 == firstIndex) or \
-#            (dropPos == self.BeforeItem and dropIndex -2 == lastIndex):
-#                print('ignoro')
-#                return
-#        print('procedo')
-#        for item in items:
-#            layout.removeItem(item)
-#        wasAfter = True
-#        if firstIndex < dropIndex:
-#            wasAfter = False
-#            dropIndex -= len(items) - (1 if dropPos > 0 else 0)
-#        elif dropPos == self.AfterItem:
-#            dropIndex += 1
-#        for item in reversed(items):
-#            layout.insertItem(dropIndex, item)
-#        self.checkIndexes(wasAfter)
-
-    def checkIndexes(self, wasAfter=False):
-        self.blockSignals(True)
-        keyIndex = 0
-#        self.keyFrames = []
-        layout = self.keyFrameContainer.layout()
-        prevItem = None
-        changed = []
-        emptyTransforms = []
-        newTransformReferences = []
-
-        for index in range(layout.count()):
-            item = layout.itemAt(index)
-
-            if isinstance(item, WaveTransformItem):
-                if isinstance(prevItem, WaveTransformItem):
-                    if (not item.mode and prevItem.mode) or item.isContiguous():
-                        emptyTransforms.append(item)
-                    elif (item.mode and not prevItem.mode) or prevItem.isContiguous():
-                        emptyTransforms.append(prevItem)
-                prevItem = item
-                continue
-
-            elif isinstance(prevItem, SampleItem):
-                newTransformReferences.append((prevItem, item))
-
-            if item not in self.keyFrames:
-                self.keyFrames.append(item)
-
-            if keyIndex:
-                changed.append(item)
-                item.blockSignals(True)
-                item.setFinal(False)
-                item.blockSignals(False)
-            if keyIndex == 0 and item.index > 0:
-                changed.append(item)
-                item.blockSignals(True)
-                item.setIndex(keyIndex)
-                item.blockSignals(False)
-            elif item.index > keyIndex:
-                if wasAfter:
-                    changed.append(item)
-                    item.blockSignals(True)
-                    item.setIndex(keyIndex)
-                    item.blockSignals(False)
-                else:
-                    keyIndex = item.index
-            elif item.index < keyIndex:
-                changed.append(item)
-                item.blockSignals(True)
-                item.setIndex(keyIndex)
-                item.blockSignals(False)
-            keyIndex += 1
-            prevItem = item
-
-        #sort *before* adding or removing new transformations
-#        self.keyFrames.sort(key=lambda k: k.index)
-        last = self.keyFrames[-1]
-        last.blockSignals(True)
-        last.setFinal(True)
-        last.blockSignals(False)
-
-        for empty in emptyTransforms:
-            layout.removeItem(empty)
-            self.removeItem(empty)
-        for newPrev, newNext in newTransformReferences:
-            transform = WaveTransformItem(self.keyFrames, newPrev, newNext)
-            layout.insertItem(self.getLayoutIndex(newNext), transform)
-
-        #reset transformations targets
-        count = layout.count()
-        for index in range(count):
-            item = layout.itemAt(index)
-            if isinstance(item, WaveTransformItem):
-                prevItem = layout.itemAt(index - 1) if index else None
-                nextItem = layout.itemAt(index + 1) if index < count else None
-                item.setTargets(prevItem, nextItem)
-
-        self.keyFrames.rebuild()
-        self.blockSignals(False)
-        self.changed.emit()
+        print(items, dropIndex, dropPos)
 
     def getLayoutIndex(self, item):
         for index in range(self.keyFrameContainer.layout().count()):
