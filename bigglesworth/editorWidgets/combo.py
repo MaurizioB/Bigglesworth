@@ -245,6 +245,7 @@ class Combo(BaseWidget):
         self.setModel = self.combo.setModel
         self.setModelColumn = self.combo.setModelColumn
         self.itemText = self.combo.itemText
+        self.setExpanding = self.combo.view().setExpanding
 
     opaque = makeQtChildProperty(bool, 'opaque', '_setOpaque')
 

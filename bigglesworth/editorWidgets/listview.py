@@ -10,6 +10,12 @@ class ListView(QtWidgets.QListView):
 #        verticalScrollBar = CustomScrollBar(QtCore.Qt.Vertical)
 #        self.setVerticalScrollBar(verticalScrollBar)
 
+    def setExpanding(self, expanding):
+        if expanding:
+            self.showEvent = self.showEventExpanding
+        else:
+            self.showEvent = self.showEventNormal
+
     def computeMetrics(self):
         self._metrics = {}
         dpi = (self.logicalDpiX() + self.logicalDpiY()) / 2.
@@ -20,6 +26,12 @@ class ListView(QtWidgets.QListView):
     def changeEvent(self, event):
         if event.type() == QtCore.QEvent.PaletteChange:
             self.setPalette(self.palette())
+
+    showEvent = showEventNormal = lambda *args: QtWidgets.QListView.showEvent(*args)
+
+    def showEventExpanding(self, event):
+        QtWidgets.QListView.showEvent(self, event)
+        self.setMinimumWidth(self.sizeHintForColumn(self.modelColumn()) + self.parent().parent().iconSize().width())
 
     def setPalette(self, palette):
         scrollSheet = '''
