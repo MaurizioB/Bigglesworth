@@ -1682,9 +1682,10 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         res = AudioSettingsDialog(self.window(), self.player).exec_()
         if not res:
             return
-        device, conversion, bufferSize = res
+        backend, device, conversion, bufferSize = res
         if device is not None:
-            self.player.setAudioDevice(device)
+            self.player.setAudioDevice(backend=backend, audioDevice=device)
+        self.settings.setValue('AudioBackend', backend)
         self.player.setSampleRateConversion(conversion)
         self.player.setBufferSize(bufferSize)
 
@@ -1952,6 +1953,10 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         self.waveTableView.setInteractive(not state)
         if state:
             multiplier = max(1, self.speedSlider.value())
+            if self.player.backend == 'qt':
+                self.setFullTablePlayhead = self.setFullTablePlayheadQt
+            else:
+                self.setFullTablePlayhead = self.setFullTablePlayheadPy
             self.player.notify.connect(self.setFullTablePlayhead)
             self.player.playData(
                 self.keyFrames.fullTableValues(note, multiplier, self.player.sampleRate, index=None, reverse=self.backForthChk.isChecked()), 
@@ -1975,11 +1980,14 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             data = self.keyFrames.fullTableValues(note, 1, self.player.sampleRate, index=index, computed=self.playComputedBtn.isChecked())
             self.player.playData(data, volume=max(1, velocity) / 127.)
 
-    def setFullTablePlayhead(self):
-#        inBuffer = self.player.output.bufferSize() - self.player.output.bytesFree()
-#        usInBuffer = inBuffer * 1000000 / (2 * self.player.sampleSize / 8.) / self.player.sampleRate
-#        secs = (self.player.output.processedUSecs() - usInBuffer) / 1000000.
+    def setFullTablePlayheadQt(self):
         secs = self.player.output.processedUSecs() / 1000000.
+        rest, pos = divmod(int(secs * self.keyFrames.sampleRatio), 64)
+        if self.backForthChk.isChecked() and rest & 1:
+            pos = 64 - pos
+        self.waveTableScene.highlight.emit(pos)
+
+    def setFullTablePlayheadPy(self, secs):
         rest, pos = divmod(int(secs * self.keyFrames.sampleRatio), 64)
         if self.backForthChk.isChecked() and rest & 1:
             pos = 64 - pos

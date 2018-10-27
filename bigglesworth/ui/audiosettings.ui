@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>446</width>
-    <height>387</height>
+    <width>445</width>
+    <height>519</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -36,7 +36,27 @@
        <string>Audio device</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_2">
-       <item row="0" column="2" colspan="2">
+       <item row="1" column="0" colspan="2">
+        <widget class="QLabel" name="label_8">
+         <property name="text">
+          <string>Current device</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="label">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Available devices</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="2" colspan="2">
         <widget class="QLabel" name="currentLbl">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
@@ -55,7 +75,10 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="1">
+       <item row="2" column="2">
+        <widget class="QComboBox" name="deviceCombo"/>
+       </item>
+       <item row="2" column="1">
         <widget class="QPushButton" name="testDeviceBtn">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
@@ -68,174 +91,7 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="label">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>Available devices</string>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="0" colspan="4">
-        <layout class="QHBoxLayout" name="horizontalLayout">
-         <item>
-          <widget class="QLabel" name="label_6">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>Buffer size</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="bufferCombo">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="currentIndex">
-            <number>-1</number>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <spacer name="horizontalSpacer">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeType">
-            <enum>QSizePolicy::Fixed</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_7">
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Changing the buffer size can improve performance on older systems. If you get broken and crackling sound when playing a wavetable or previewing an audio file, you can try to increase this value.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="wordWrap">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item row="2" column="0" colspan="4">
-        <widget class="QGroupBox" name="deviceInfoBox">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="title">
-          <string>Device properties</string>
-         </property>
-         <layout class="QGridLayout" name="gridLayout">
-          <item row="3" column="2">
-           <widget class="QCheckBox" name="depth32Chk">
-            <property name="text">
-             <string>32 bit (float)</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="QCheckBox" name="depth8Chk">
-            <property name="text">
-             <string>8 bit</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="label_2">
-            <property name="text">
-             <string>Sample rates:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1" rowspan="4">
-           <widget class="Line" name="line_2">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="2">
-           <widget class="QCheckBox" name="depth16Chk">
-            <property name="text">
-             <string>16 bit</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="2">
-           <widget class="QLabel" name="label_3">
-            <property name="text">
-             <string>Sample sizes:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="4" rowspan="3">
-           <widget class="QListView" name="channelsList">
-            <property name="editTriggers">
-             <set>QAbstractItemView::NoEditTriggers</set>
-            </property>
-            <property name="selectionMode">
-             <enum>QAbstractItemView::NoSelection</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="4">
-           <widget class="QLabel" name="label_4">
-            <property name="text">
-             <string>Channels:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0" rowspan="3">
-           <widget class="QListView" name="sampleRatesList">
-            <property name="editTriggers">
-             <set>QAbstractItemView::NoEditTriggers</set>
-            </property>
-            <property name="selectionMode">
-             <enum>QAbstractItemView::NoSelection</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="3" rowspan="4">
-           <widget class="Line" name="line_3">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item row="1" column="2">
-        <widget class="QComboBox" name="deviceCombo"/>
-       </item>
-       <item row="0" column="0" colspan="2">
-        <widget class="QLabel" name="label_8">
-         <property name="text">
-          <string>Current device</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="3">
+       <item row="2" column="3">
         <widget class="QPushButton" name="reloadBtn">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
@@ -251,10 +107,261 @@
         </widget>
        </item>
        <item row="3" column="0" colspan="4">
+        <widget class="QGroupBox" name="deviceInfoBox">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="title">
+          <string>Device properties</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="2" column="0" rowspan="3">
+           <widget class="QListView" name="sampleRatesList">
+            <property name="editTriggers">
+             <set>QAbstractItemView::NoEditTriggers</set>
+            </property>
+            <property name="selectionMode">
+             <enum>QAbstractItemView::NoSelection</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="3" rowspan="4">
+           <widget class="Line" name="line_3">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QCheckBox" name="depth16Chk">
+            <property name="text">
+             <string>16 bit</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="4" rowspan="3">
+           <widget class="QListView" name="channelsList">
+            <property name="editTriggers">
+             <set>QAbstractItemView::NoEditTriggers</set>
+            </property>
+            <property name="selectionMode">
+             <enum>QAbstractItemView::NoSelection</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>Sample rates:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1" rowspan="4">
+           <widget class="Line" name="line_2">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="4">
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>Channels:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QCheckBox" name="depth8Chk">
+            <property name="text">
+             <string>8 bit</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Sample sizes:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="2">
+           <widget class="QCheckBox" name="depth32Chk">
+            <property name="text">
+             <string>32 bit (float)</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0" colspan="5">
+           <layout class="QHBoxLayout" name="horizontalLayout_2">
+            <item>
+             <widget class="QLabel" name="label_11">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>Name:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="deviceNameLbl">
+              <property name="text">
+               <string>No device selected</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="apiLbl">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>API:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="apiTypeLbl">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="4" column="0" colspan="4">
         <widget class="Line" name="line">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
+        </widget>
+       </item>
+       <item row="0" column="0" colspan="4">
+        <layout class="QGridLayout" name="gridLayout_5">
+         <item row="1" column="0">
+          <widget class="QRadioButton" name="qtMultimediaRadio">
+           <property name="text">
+            <string>QtMultimedia</string>
+           </property>
+           <attribute name="buttonGroup">
+            <string notr="true">backendGroup</string>
+           </attribute>
+          </widget>
+         </item>
+         <item row="2" column="0" colspan="2">
+          <widget class="QLabel" name="label_10">
+           <property name="text">
+            <string>Bigglesworth tries to automatically select the best backend for your system.
+Change this setting only if you have problems with playback or if no audio device is found.</string>
+           </property>
+           <property name="wordWrap">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QRadioButton" name="pyAudioRadio">
+           <property name="text">
+            <string>PyAudio</string>
+           </property>
+           <attribute name="buttonGroup">
+            <string notr="true">backendGroup</string>
+           </attribute>
+          </widget>
+         </item>
+         <item row="0" column="0" colspan="2">
+          <widget class="QLabel" name="label_9">
+           <property name="text">
+            <string>Backend</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0" colspan="2">
+          <widget class="Line" name="line_4">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item row="5" column="0" colspan="4">
+        <widget class="QWidget" name="bufferSizeWidget" native="true">
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <property name="spacing">
+           <number>4</number>
+          </property>
+          <property name="margin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="QLabel" name="label_6">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Buffer size</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="bufferCombo">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="currentIndex">
+             <number>-1</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Fixed</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_7">
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Changing the buffer size can improve performance on older systems. If you get broken and crackling sound when playing a wavetable or previewing an audio file, you can try to increase this value.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
       </layout>
@@ -401,5 +508,6 @@
  </connections>
  <buttongroups>
   <buttongroup name="sampleRateGroup"/>
+  <buttongroup name="backendGroup"/>
  </buttongroups>
 </ui>

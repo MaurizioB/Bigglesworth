@@ -4,7 +4,7 @@ import re
 
 from Qt import QtCore, QtGui
 
-defaultBufferSize = 8192
+defaultBufferSize = 1024 if not 'linux' in sys.platform else 8192
 
 #noteFreqs = (16.35, 17.32, 18.35, 19.45, 20.6, 21.83, 23.12, 24.5, 25.96, 27.5, 29.14, 30.87, 
 #    32.7, 34.65, 36.71, 38.89, 41.2, 43.65, 46.25, 49.0, 51.91, 55.0, 58.27, 61.74, 

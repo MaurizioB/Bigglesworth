@@ -122,6 +122,8 @@ class OpenAudioFileDialog(QtWidgets.QFileDialog):
         self.volumeSlider = self.preview.volumeSlider
 
         self.volumeSlider.setValue(AudioImportTab.defaultVolume)
+        self.volumeSlider.valueChanged.connect(self.player.setVolume)
+
         self.settings = QtCore.QSettings()
         self.settings.beginGroup('WaveTables')
         self.autoPlayChk.setChecked(self.settings.value('AutoPlayFileImport', False, bool))
@@ -198,26 +200,34 @@ class OpenAudioFileDialog(QtWidgets.QFileDialog):
             self.waveScene.playhead.setX(0)
             self.waveScene.playhead.setVisible(True)
             self.player.playWaveFile(self.currentData, self.currentInfo, self.volumeSlider.value() * .01)
-            self.volumeSlider.setEnabled(False)
-            self.volumeIcon.setEnabled(False)
+#            self.volumeSlider.setEnabled(False)
+#            self.volumeIcon.setEnabled(False)
 
     def stopped(self):
-        self.waveScene.playhead.setVisible(False)
         self.playBtn.blockSignals(True)
         self.playBtn.setChecked(False)
         self.playBtn.blockSignals(False)
         self.playBtn.setIcon(QtGui.QIcon.fromTheme('media-playback-start'))
-        self.volumeSlider.setEnabled(True)
-        self.volumeIcon.setEnabled(True)
+        if self.waveScene.playhead:
+            self.waveScene.playhead.setVisible(False)
+#        self.volumeSlider.setEnabled(True)
+#        self.volumeIcon.setEnabled(True)
 
-    def movePlayhead(self):
+    def movePlayheadQt(self):
         self.waveScene.setPlayhead(self.player.output.processedUSecs() / 1000000.)
+
+    def movePlayheadPy(self, secs):
+        self.waveScene.setPlayhead(secs)
 
     def accept(self):
         if self.isValid:
             QtWidgets.QFileDialog.accept(self)
 
     def exec_(self):
+        if self.player.backend == 'qt':
+            self.movePlayhead = self.movePlayheadQt
+        else:
+            self.movePlayhead = self.movePlayheadPy
         self.player.notify.connect(self.movePlayhead)
         self.player.stopped.connect(self.stopped)
         res = QtWidgets.QFileDialog.exec_(self)
@@ -798,8 +808,11 @@ class AudioImportTab(QtWidgets.QWidget):
     def openFileDialog(self):
         self.player.stop()
         try:
-            self.player.notify.disconnect(self.movePlayhead)
             self.player.stopped.disconnect(self.stopped)
+        except:
+            pass
+        try:
+            self.player.notify.disconnect(self.movePlayhead)
         except:
             pass
         path = OpenAudioFileDialog(self).exec_()
@@ -808,6 +821,13 @@ class AudioImportTab(QtWidgets.QWidget):
             self.importFile()
         try:
             self.player.stopped.connect(self.stopped, QtCore.Qt.UniqueConnection)
+        except:
+            pass
+        try:
+            if self.player.backend == 'qt':
+                self.movePlayhead = self.movePlayheadQt
+            else:
+                self.movePlayhead = self.movePlayheadPy
             self.player.notify.connect(self.movePlayhead, QtCore.Qt.UniqueConnection)
         except:
             pass
@@ -815,13 +835,14 @@ class AudioImportTab(QtWidgets.QWidget):
     def setVolume(self, volume):
         self.volumeSpin.setValue(volume)
         self.volumeIcon.setVolume(volume)
+        self.player.setVolume(volume)
         if self.previewMode:
             self.__class__.defaultVolume = volume
 
     def play(self, state):
-        self.volumeSlider.setEnabled(False)
-        self.volumeSpin.setEnabled(False)
-        self.volumeIcon.setEnabled(False)
+#        self.volumeSlider.setEnabled(False)
+#        self.volumeSpin.setEnabled(False)
+#        self.volumeIcon.setEnabled(False)
         self.selectionWidget.setEnabled(False)
         self.waveView.setEnabled(False)
         if state:
@@ -859,20 +880,28 @@ class AudioImportTab(QtWidgets.QWidget):
     def stop(self):
         self.player.stop()
 
+    #to ensure that the [dis]connection is actually made for UniqueConnection, the
+    #pyqtSlot decorator is required!!!
+    @QtCore.pyqtSlot()
     def stopped(self):
         self.playBtn.blockSignals(True)
         self.playBtn.setChecked(False)
         self.playBtn.blockSignals(False)
         self.playBtn.setIcon(QtGui.QIcon.fromTheme('media-playback-start'))
-        self.volumeSlider.setEnabled(True)
-        self.volumeSpin.setEnabled(True)
-        self.volumeIcon.setEnabled(True)
         self.selectionWidget.setEnabled(True)
         self.waveView.setEnabled(True)
-        self.waveScene.playhead.setVisible(False)
+        if self.waveScene.playhead:
+            self.waveScene.playhead.setVisible(False)
 
-    def movePlayhead(self):
+    @QtCore.pyqtSlot()
+    def movePlayheadQt(self):
         self.waveScene.setPlayhead(self.player.output.processedUSecs() / 1000000.)
+        if not self.previewMode:
+            self.waveView.ensureVisible(self.waveScene.playhead)
+
+    @QtCore.pyqtSlot(float)
+    def movePlayheadPy(self, secs):
+        self.waveScene.setPlayhead(secs)
         if not self.previewMode:
             self.waveView.ensureVisible(self.waveScene.playhead)
 
@@ -1093,6 +1122,10 @@ class AudioImportTab(QtWidgets.QWidget):
 
         try:
             self.player.stopped.connect(self.stopped, QtCore.Qt.UniqueConnection)
+            if self.player.backend == 'qt':
+                self.movePlayhead = self.movePlayheadQt
+            else:
+                self.movePlayhead = self.movePlayheadPy
             self.player.notify.connect(self.movePlayhead, QtCore.Qt.UniqueConnection)
         except:
             pass
@@ -1590,6 +1623,7 @@ class WaveSourceScene(QtWidgets.QGraphicsScene):
         self.updateTimer.setSingleShot(True)
         self.updateTimer.setInterval(250)
         self.updateTimer.timeout.connect(self.updateChunks)
+        self.playhead = None
 
     def setEmpty(self):
         self.clear()
