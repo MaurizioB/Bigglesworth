@@ -76,6 +76,7 @@ files = [
     'bigglesworth/presets/blofeld_fact_200801.mid', 
     'bigglesworth/presets/blofeld_fact_200802.mid', 
     'bigglesworth/presets/blofeld_fact_201200.mid', 
+    'bigglesworth/presets/wavetables.bwt',
     'bigglesworth/help.qch', 
     'bigglesworth/help.qhc', 
     ]

@@ -207,7 +207,7 @@ Change this setting only if you have problems with playback or if no audio devic
             <string>QtMultimedia</string>
            </property>
            <attribute name="buttonGroup">
-            <string notr="true">backendGroup</string>
+            <string notr="true">sampleRateGroup</string>
            </attribute>
           </widget>
          </item>
@@ -216,6 +216,9 @@ Change this setting only if you have problems with playback or if no audio devic
            <property name="text">
             <string>PyAudio</string>
            </property>
+           <attribute name="buttonGroup">
+            <string notr="true">sampleRateGroup</string>
+           </attribute>
           </widget>
          </item>
         </layout>
@@ -504,7 +507,6 @@ Change this setting only if you have problems with playback or if no audio devic
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="backendGroup"/>
   <buttongroup name="sampleRateGroup"/>
  </buttongroups>
 </ui>
