@@ -169,10 +169,18 @@ class Bigglesworth(QtWidgets.QApplication):
         self._blofeldId = self.settings.value('blofeldId', 0x7f, int)
         self._progReceiveState = self.settings.value('progReceive', True, bool)
         self._ctrlReceiveState = self.settings.value('ctrlReceive', True, bool)
-        self._chanReceive = self.settings.value('chanReceive', set(range(16)), set)
         self._progSendState = self.settings.value('progSend', True, bool)
         self._ctrlSendState = self.settings.value('ctrlSend', True, bool)
-        self._chanSend = self.settings.value('chanSend', set((0, )), set)
+        try:
+            self._chanReceive = self.settings.value('chanReceive', set(range(16)), set)
+        except:
+            self._chanReceive = set(range(16))
+            self.settings.setValue('chanReceive', self._chanReceive)
+        try:
+            self._chanSend = self.settings.value('chanSend', set((0, )), set)
+        except:
+            self._chanSend = set((0, ))
+            self.settings.setValue('chanSend', self._chanSend)
         self.settings.endGroup()
 
         self.lastWindowClosed.connect(self.checkWelcomeOnClose)
