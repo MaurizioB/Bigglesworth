@@ -36,76 +36,6 @@
        <string>Audio device</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_2">
-       <item row="1" column="0" colspan="2">
-        <widget class="QLabel" name="label_8">
-         <property name="text">
-          <string>Current device</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="label">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>Available devices</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="2" colspan="2">
-        <widget class="QLabel" name="currentLbl">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">padding: 4px;</string>
-         </property>
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Sunken</enum>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="2">
-        <widget class="QComboBox" name="deviceCombo"/>
-       </item>
-       <item row="2" column="1">
-        <widget class="QPushButton" name="testDeviceBtn">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>Test</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="3">
-        <widget class="QPushButton" name="reloadBtn">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="icon">
-          <iconset theme="view-refresh">
-           <normaloff/>
-          </iconset>
-         </property>
-        </widget>
-       </item>
        <item row="3" column="0" colspan="4">
         <widget class="QGroupBox" name="deviceInfoBox">
          <property name="enabled">
@@ -241,25 +171,8 @@
          </layout>
         </widget>
        </item>
-       <item row="4" column="0" colspan="4">
-        <widget class="Line" name="line">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
-       </item>
        <item row="0" column="0" colspan="4">
         <layout class="QGridLayout" name="gridLayout_5">
-         <item row="1" column="0">
-          <widget class="QRadioButton" name="qtMultimediaRadio">
-           <property name="text">
-            <string>QtMultimedia</string>
-           </property>
-           <attribute name="buttonGroup">
-            <string notr="true">backendGroup</string>
-           </attribute>
-          </widget>
-         </item>
          <item row="2" column="0" colspan="2">
           <widget class="QLabel" name="label_10">
            <property name="text">
@@ -269,16 +182,6 @@ Change this setting only if you have problems with playback or if no audio devic
            <property name="wordWrap">
             <bool>true</bool>
            </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QRadioButton" name="pyAudioRadio">
-           <property name="text">
-            <string>PyAudio</string>
-           </property>
-           <attribute name="buttonGroup">
-            <string notr="true">backendGroup</string>
-           </attribute>
           </widget>
          </item>
          <item row="0" column="0" colspan="2">
@@ -298,7 +201,66 @@ Change this setting only if you have problems with playback or if no audio devic
            </property>
           </widget>
          </item>
+         <item row="1" column="1">
+          <widget class="QRadioButton" name="qtMultimediaRadio">
+           <property name="text">
+            <string>QtMultimedia</string>
+           </property>
+           <attribute name="buttonGroup">
+            <string notr="true">backendGroup</string>
+           </attribute>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QRadioButton" name="pyAudioRadio">
+           <property name="text">
+            <string>PyAudio</string>
+           </property>
+          </widget>
+         </item>
         </layout>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="label">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Available devices</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1" colspan="3">
+        <widget class="QLabel" name="currentLbl">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">padding: 4px;</string>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Sunken</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0" colspan="4">
+        <widget class="Line" name="line">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="2">
+        <widget class="QComboBox" name="deviceCombo"/>
        </item>
        <item row="5" column="0" colspan="4">
         <widget class="QWidget" name="bufferSizeWidget" native="true">
@@ -362,6 +324,41 @@ Change this setting only if you have problems with playback or if no audio devic
            </widget>
           </item>
          </layout>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_8">
+         <property name="text">
+          <string>Current device</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QPushButton" name="reloadBtn">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="icon">
+          <iconset theme="view-refresh">
+           <normaloff/>
+          </iconset>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="3">
+        <widget class="QPushButton" name="testDeviceBtn">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Test</string>
+         </property>
         </widget>
        </item>
       </layout>
@@ -507,7 +504,7 @@ Change this setting only if you have problems with playback or if no audio devic
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="sampleRateGroup"/>
   <buttongroup name="backendGroup"/>
+  <buttongroup name="sampleRateGroup"/>
  </buttongroups>
 </ui>

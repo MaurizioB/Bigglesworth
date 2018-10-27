@@ -1958,9 +1958,22 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             else:
                 self.setFullTablePlayhead = self.setFullTablePlayheadPy
             self.player.notify.connect(self.setFullTablePlayhead)
+            self.player.stopped.connect(self.disconnectPlayhead)
             self.player.playData(
                 self.keyFrames.fullTableValues(note, multiplier, self.player.sampleRate, index=None, reverse=self.backForthChk.isChecked()), 
                 volume=max(1, velocity) / 127.)
+
+    def disconnectPlayhead(self):
+        #this should prevent the playhead to keep going when there is still
+        #audio in the buffer
+        try:
+            self.player.notify.disconnect(self.setFullTablePlayhead)
+        except:
+            pass
+        try:
+            self.player.stopped.disconnect(self.disconnectPlayhead)
+        except:
+            pass
 
     def playWaveNote(self, state, note, velocity):
         try:

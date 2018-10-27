@@ -284,6 +284,7 @@ class AudioDeviceProber(QtCore.QObject):
     def probeQt(self):
         deviceList = []
         for device in QtMultimedia.QAudioDeviceInfo.availableDevices(QtMultimedia.QAudio.AudioOutput):
+            QtWidgets.QApplication.processEvents()
             deviceInfo = audioDevice(device, device.deviceName(), device.supportedSampleRates(), device.supportedSampleSizes(), device.supportedChannelCounts())
             deviceList.append(deviceInfo)
         self.deviceList.emit(deviceList)
@@ -295,6 +296,7 @@ class AudioDeviceProber(QtCore.QObject):
             device = PyAudioDevice(index)
             if not device.isOutput():
                 continue
+            QtWidgets.QApplication.processEvents()
             deviceInfo = audioDevice(device, device.deviceName(), device.supportedSampleRates(), device.supportedSampleSizes(), device.supportedChannelCounts())
             deviceList.append(deviceInfo)
         self.deviceList.emit(deviceList)
@@ -802,4 +804,5 @@ class Player(QtCore.QObject):
         self.output.resume()
 
     def setVolume(self, volume):
-        self.waveIODevice.setVolume(volume * .01)
+        if self.isActive():
+            self.waveIODevice.setVolume(volume * .01)
