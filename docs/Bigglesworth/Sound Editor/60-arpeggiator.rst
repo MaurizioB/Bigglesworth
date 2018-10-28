@@ -1,0 +1,5 @@
+Arpeggiator
+============
+
+.. meta::
+    :icon: seq

@@ -34,6 +34,29 @@ While increasing the delay will obviously make the whole process take much more 
 (the computed estimate time appears at the bottom of the dialog), it is a safer 
 approach in some cases.
 
-
 .. _single:
 
+:subsection:`Single sound dump`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sounds can be dumped singularly from any collection. Right click on a slot, open 
+its "Dump" submenu and look at the "Send" section.
+
+- **Dump to Sound Edit Buffer**: dump the selected sound to the sound buffer of your
+  Blofeld. This operation will not save it to its memory. Note that if you are editing
+  the selected sound in the Sound Editor and you have not saved it yet, this operation
+  will send the *saved* values of that sound. To send the current edited sound, use the
+  "Dump" menu in the Sound Editor window.
+- **Dump to INDEX** (where "INDEX" is the index of the currently selected slot): dump
+  the sound to the Blofeld, at the selected Bank/Program index.
+- **Dump to Multi Edit Buffer**: if you are in Multi Mode on you Blofeld, dump the 
+  sound values to the selected Multi Mode slot.
+- **Show dump send dialog...**: shows the dialog `explained above <full_>`__
+
+Similar items are available in the Sound Editor "Dump" menu.
+
+In that case, the contents of the dump will not be those stored in the library, but 
+will be the value of the parameters set in the Editor at the moment the dump occurs.
+
+.. meta::
+    :icon: arrow-right-double

@@ -1,0 +1,5 @@
+Controls
+=========
+
+.. meta::
+    :icon: dial

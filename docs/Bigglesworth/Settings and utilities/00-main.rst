@@ -1,11 +1,13 @@
 Main settings
 =============
 
+.. role:: subsection
+
 Library
-.......
+^^^^^^^^
 
 Database path
-^^^^^^^^^^^^^
+...............
 
 The database where all data about your collections, tags, templates, and wavetables is stored.
 Normally you should not edit this, but in some cases it can be necessary. For example, when
@@ -13,7 +15,7 @@ trying to restore a previous database because the current one is corrupted, or w
 have reinstalled your system and want to import the database from a previous installation.
 
 Database backup
-^^^^^^^^^^^^^^^
+.................
 
 The backup process automatically creates a copy of your backup, and is enabled by default.
 It can be useful in case something goes wrong (the system crashes during a dump or you deleted
@@ -36,7 +38,7 @@ If the problem doesn't occur anymore, please report this using the official
 `Facebook page`_.
 
 Startup options
-^^^^^^^^^^^^^^^
+.................
 
 These are pretty self-explanatory. Usually you don't need to change anything here, but
 are provided for further customization anyway, though.
@@ -44,10 +46,12 @@ On some systems it could also be useful to disable the "Restore window position"
 it happens that the Librarian is showed a bit "off" screen on startup.
 
 Editor
-.......
+^^^^^^
 
-Autosave
-^^^^^^^^
+.. _autosave:
+
+:subsection:`Autosave`
+......................
 
 The Autosave option is useful to automatically save a sounds while editing, but remember
 that every editing translates in a writing on the database. As said before, if you own
@@ -55,10 +59,10 @@ an old computer or use an old SSD, it might be better to automatically disable t
 feature.
 
 Other options
-.............
+^^^^^^^^^^^^^
 
 First-run wizard
-^^^^^^^^^^^^^^^^
+.................
 
 The first-run wizard is an assistant that is shown just the first time you started 
 Bigglesworth, walking through the first configuration process after installation 

@@ -73,19 +73,24 @@ everything is in place, click "Import sounds"... Et voilà!
 :subsection:`Single sound dump`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Sounds can be dumped singularly from any collection. Right click on a slot, open 
+Bidirectional MIDI communication is required for this feature: if you own a
+Blofeld Desktop you will need to use the USB connection.
+
+Sounds can be dumped singularly to any collection. Right click on a slot, open 
 its "Dump" submenu and look at the "Receive" section.
 
 - **Dump from Sound Edit Buffer**: dump the current (possible edited) sound currently
   active on your Blofeld to the selected slot.
-- **Dump from INDEX** (where "INDEX" is the index of the currently selected slot): dump
-  the sound stored in the Blofeld in the selected Bank/Program index.
+- **Dump from <INDEX>** (where <INDEX> is the index of the currently selected slot, such
+  as A032 or F110): dump the sound stored in the Blofeld in the selected 
+  Bank/Program index.
 - **Dump from Multi Edit Buffer**: if you are in Multi Mode on you Blofeld, dump the 
   current data of the sound at the selected Multi Mode slot.
 - **Show dump receive dialog...**: shows the dialog `explained above <full_>`__
 
 Similar items are available in the Sound Editor "Dump" menu.
-In this case, the contents of the dump will not be stored in the library, but will
+
+In that case, the contents of the dump will not be stored in the library, but will
 be applied to the Sound Editor itself, and the sound will have to be manually
 saved.
 
@@ -107,6 +112,9 @@ the right side of the dialog.
 At this point, you can decide to create a completely new collection including 
 the selected sounds, import them to an existing one (eventually overwriting 
 existing slots), or, if only one sound is selected, edit it in the Sound Editor.
+
+In this particular case only, the MIDI input alone is sufficient (as Bigglesworth 
+does not need to actively communicate with your Blofeld).
 
 .. meta::
     :icon: arrow-left-double
