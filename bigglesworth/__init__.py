@@ -35,7 +35,7 @@ from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, 
 from bigglesworth.help import HelpDialog
 
 from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR, LogInfo, LogWarning, factoryPresets, factoryPresetsNamesDict
-from bigglesworth.midiutils import SYSEX, CTRL, NOTEOFF, NOTEON, PROGRAM, SysExEvent, Port
+from bigglesworth.midiutils import SYSEX, CTRL, NOTEOFF, NOTEON, PROGRAM, SysExEvent, ClockEvent, Port
 
 from bigglesworth.mididevice import MidiDevice
 
@@ -76,6 +76,59 @@ class SessionWatcher(QtCore.QObject):
             self.pidFile.seek(0)
             self.pidFile.write(self.pid)
         self.pidFile.close()
+
+
+class MidiClock(QtCore.QObject):
+    pulse = QtCore.pyqtSignal(object)
+    beat = QtCore.pyqtSignal()
+    stateChanged = QtCore.pyqtSignal(bool)
+
+    def __init__(self):
+        QtCore.QObject.__init__(self)
+        self.bpm = 120.
+        self.pulseTimer = QtCore.QTimer()
+        self.pulseTimer.timeout.connect(self.sendPulse)
+        self.pulseTimer.setInterval(2500./self.bpm)
+        self.queue = Queue()
+        self.pulseIndex = 0
+
+    def run(self):
+        while True:
+            func = self.queue.get(True)
+            if not func:
+                break
+            func()
+
+    def quit(self):
+        self.runOnThread(None)
+
+    def isActive(self):
+        return self.pulseTimer.isActive()
+
+    def start(self):
+        self.pulseIndex = 0
+        self.queue.put(self.pulseTimer.start)
+        self.queue.put(lambda: self.pulse.emit(ClockEvent(1)))
+        self.queue.put(self.beat.emit)
+        self.queue.put(lambda: self.stateChanged.emit(True))
+
+    def stop(self):
+        self.queue.put((self.pulseTimer.stop))
+        self.queue.put(lambda: self.stateChanged.emit(False))
+
+    def setBpm(self, bpm):
+        if bpm == self.bpm:
+            return
+        self.bpm = bpm
+        #timing is (60000ms / bpm) / 24ppqn
+        self.queue.put(lambda: self.pulseTimer.setInterval(2500. / (self.bpm)))
+
+    def sendPulse(self):
+        self.pulseIndex += 1
+        self.pulse.emit(ClockEvent(1))
+        if self.pulseIndex >= 24:
+            self.pulseIndex = 0
+            self.beat.emit()
 
 
 class Bigglesworth(QtWidgets.QApplication):
@@ -310,6 +363,13 @@ class Bigglesworth(QtWidgets.QApplication):
                             self.midiConnect(port, False, True)
 
         self.updateForwardRules()
+
+        self.midiClock = MidiClock()
+        self.midiClockThread = QtCore.QThread()
+        self.midiClock.moveToThread(self.midiClockThread)
+        self.midiClock.pulse.connect(self.sendMidiEvent)
+        self.midiClockThread.started.connect(self.midiClock.run)
+        self.midiClockThread.start()
 
         self.graph.port_start.connect(self.newAlsaPort)
         self.graph.conn_register.connect(self.midiConnEvent)

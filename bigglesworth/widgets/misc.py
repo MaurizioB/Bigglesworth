@@ -214,7 +214,50 @@ class DevicePopupSpin(QtWidgets.QDoubleSpinBox):
         return pos - 1
 
 
-class LedWidget(QtWidgets.QWidget):
+class MidiClockLed(QtWidgets.QWidget):
+    pen = QtGui.QColor(QtCore.Qt.darkGreen)
+    inactiveBrush = QtGui.QRadialGradient(.5, .5, .6, .3, .3)
+    inactiveBrush.setCoordinateMode(inactiveBrush.ObjectBoundingMode)
+    inactiveBrush.setColorAt(0, QtGui.QColor(80, 140, 80))
+    inactiveBrush.setColorAt(1, QtGui.QColor(0, 80, 0))
+    activeBrush = QtGui.QRadialGradient(.5, .5, .5, .3, .3)
+    activeBrush.setCoordinateMode(activeBrush.ObjectBoundingMode)
+    activeBrush.setColorAt(0, QtGui.QColor(160, 255, 160))
+    activeBrush.setColorAt(1, QtGui.QColor(0, 255, 0))
+    brush = inactiveBrush
+
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QWidget.__init__(self, *args, **kwargs)
+        self.active = False
+        self.setMinimumSize(10, 10)
+        self.timer = QtCore.QTimer()
+        self.timer.setSingleShot(True)
+        self.timer.setInterval(100)
+        self.timer.timeout.connect(self.deactivate)
+
+    def activate(self):
+        self.brush = self.activeBrush
+        self.update()
+        self.timer.start()
+
+    def deactivate(self):
+        self.brush = self.inactiveBrush
+        self.update()
+
+    def resizeEvent(self, event):
+        if self.height() != self.width():
+            self.setFixedWidth(self.height())
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter(self)
+        qp.setRenderHints(qp.Antialiasing)
+        qp.translate(.5, .5)
+        qp.setPen(self.pen)
+        qp.setBrush(self.brush)
+        qp.drawEllipse(0, 0, 8, 8)
+
+
+class MidiLedWidget(QtWidgets.QWidget):
     shown = False
 
     def __init__(self, *args, **kwargs):
@@ -263,7 +306,7 @@ class LedWidget(QtWidgets.QWidget):
         qp.drawPath(self.connPath)
 
 
-class LedInWidget(LedWidget):
+class LedInWidget(MidiLedWidget):
     pen = QtGui.QColor(QtCore.Qt.darkRed)
     inactiveBrush = QtGui.QRadialGradient(.5, .5, .6, .3, .3)
     inactiveBrush.setCoordinateMode(inactiveBrush.ObjectBoundingMode)
@@ -283,7 +326,7 @@ class LedInWidget(LedWidget):
     connPath.arcTo(2, 1, 6, 6, 135, -270)
 
 
-class LedOutWidget(LedWidget):
+class LedOutWidget(MidiLedWidget):
     pen = QtGui.QColor(QtCore.Qt.darkGreen)
     inactiveBrush = QtGui.QRadialGradient(.5, .5, .6, .3, .3)
     inactiveBrush.setCoordinateMode(inactiveBrush.ObjectBoundingMode)

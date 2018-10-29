@@ -671,6 +671,19 @@ class SysRtResetEvent(MidiEvent):
     def alsa_event(cls, port):
         return MidiEvent.alsa_event(SYSRT_RESET, port, None, None, None)
 
+class ClockEvent(MidiEvent):
+    def __new__(self, port):
+        return MidiEvent(SYSRT_CLOCK, port, None, None, None)
+
+    @classmethod
+    def jack_event(cls, port, sysex):
+        return port, 248
+
+    @classmethod
+    def alsa_event(cls, port):
+        return MidiEvent.alsa_event(SYSRT_CLOCK, port, None, None, None)
+
+
 #TODO: finish event types
 
 

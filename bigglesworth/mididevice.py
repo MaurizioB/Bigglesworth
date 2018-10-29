@@ -374,7 +374,7 @@ class MidiDevice(QtCore.QObject):
                             print 'event {} unrecognized'.format(event)
                             print e
                     elif event.type in [alsaseq.SEQ_EVENT_CLOCK, alsaseq.SEQ_EVENT_SENSING]:
-                        pass
+                        print(event, data)
                     elif event.type == alsaseq.SEQ_EVENT_SYSEX:
                         self.sysexCheck(event)
             except Exception as e:

@@ -14,7 +14,8 @@ from bigglesworth.parameters import Parameters, fullRangeCenterZero, driveCurves
 from bigglesworth.widgets import SoundsMenu, EditorMenu, EnvelopeView, MidiConnectionsDialog, ModMatrixView
 from bigglesworth.dialogs import (RandomDialog, InputMessageBox, TemplateManager, SaveSoundAs, 
     WarningMessageBox, LocationRequestDialog)
-from bigglesworth.midiutils import NoteOffEvent, NoteOnEvent, CtrlEvent, ProgramEvent, SysExEvent, SYSEX, CTRL, NOTEON, NOTEOFF, PROGRAM
+from bigglesworth.midiutils import (SYSEX, CTRL, NOTEON, NOTEOFF, PROGRAM, 
+    NoteOffEvent, NoteOnEvent, CtrlEvent, ProgramEvent, SysExEvent)
 
 from combo import Combo
 from squarebutton import SquareButton
@@ -951,6 +952,27 @@ class EditorWindow(QtWidgets.QMainWindow):
 
         if self.settings.value('saveEditorGeometry', True, bool) and self.settings.contains('editorGeometry'):
             self.restoreGeometry(self.main.settings.value('editorGeometry'))
+
+        self.clockCombo.valueList = [str(v) for v in range(60, 221)]
+        self.clockCombo.combo.setCurrentIndex(60)
+        self.clockCombo.combo.currentIndexChanged.connect(self.setMidiClockTempo)
+        self.clockBtn.clicked.connect(self.toggleMidiClock)
+        self.main.midiClock.beat.connect(self.midiClockLed.activate)
+        self.main.midiClock.stateChanged.connect(self.setMidiClockButton)
+
+    def toggleMidiClock(self):
+        if self.main.midiClock.isActive():
+            self.main.midiClock.stop()
+        else:
+            self.main.midiClock.start()
+
+    def setMidiClockTempo(self, index):
+        self.main.midiClock.setBpm(index + 60)
+
+    def setMidiClockButton(self, state):
+        self.clockBtn.button.setIcon(
+            QtGui.QIcon.fromTheme(('media-playback-start', 'media-playback-stop')[state]))
+        self.clockBtn.button.setDown(state)
 
     def activate(self):
         self.show()

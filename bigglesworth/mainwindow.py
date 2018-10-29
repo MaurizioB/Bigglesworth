@@ -31,8 +31,6 @@ class MainWindow(QtWidgets.QMainWindow):
 #        QtGui.QIcon.setThemeName('iconTheme')
         self.main = parent
         self.settings = self.main.settings
-        self.main.midiConnChanged.connect(lambda inConn, outConn: self.showGlobalsAction.setEnabled(True if all((inConn, outConn)) else False))
-        self.main.midiConnChanged.connect(lambda inConn, outConn: self.showFirmwareUtilsAction.setEnabled(bool(outConn)))
         self.database = parent.database
         self.database.tagsModel.dataChanged.connect(self.checkTagFilters)
 #        self.referenceModel = QtSql.QSqlTableModel()
