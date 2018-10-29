@@ -3,16 +3,14 @@
 
 from random import randrange
 from collections import OrderedDict
-from Qt import QtCore, QtGui, QtWidgets, QtSql
+from Qt import QtCore, QtGui, QtWidgets
 
 from bigglesworth.const import factoryPresetsNamesDict
-from bigglesworth.utils import loadUi, setBold
+from bigglesworth.utils import loadUi
 #from bigglesworth.library import LibraryModel
 from bigglesworth.widgets import LibraryWidget, CollectionWidget, MidiStatusBarWidget
-from bigglesworth.dialogs import NewCollectionDialog, ManageCollectionsDialog, TagsDialog, AboutDialog, SoundListExport, MidiChartDialog, TagEditDialog
-from bigglesworth.forcebwu import MayTheForce
-from bigglesworth.matrixhasu import MatrixHasU
-from bigglesworth.version import getUniqueVersionToMin, MAJ_VERSION, MIN_VERSION, REV_VERSION
+from bigglesworth.dialogs import NewCollectionDialog, ManageCollectionsDialog, TagsDialog, SoundListExport, TagEditDialog
+from bigglesworth.version import getUniqueVersionToMin
 #import icons
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -206,14 +204,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.libraryMenu.aboutToShow.connect(self.updateLibraryMenu)
 #        self.openCollectionAction.triggered.connect(self.openCollection)
 
-        self.showEditorAction.setIcon(QtGui.QIcon.fromTheme('dial'))
-        self.showWavetableAction.setIcon(QtGui.QIcon.fromTheme('wavetables'))
         self.importAction.triggered.connect(lambda: self.importRequested.emit(None, None))
         self.exportAction.triggered.connect(lambda: self.exportRequested.emit([], None))
-        self.showMidiChartAction.triggered.connect(lambda: MidiChartDialog(self).exec_())
-        self.aboutAction.triggered.connect(self.showAbout)
-        self.lastAboutEgg = randrange(2)
-        self.aboutQtAction.triggered.connect(lambda: QtWidgets.QMessageBox.aboutQt(self, 'About Qt...'))
         self.toggleLibrarySidebarAction.triggered.connect(lambda: self.sidebar.setVisible(not self.sidebar.isVisible()))
         self.toggleDualViewAction.triggered.connect(self.toggleDualView)
 
@@ -243,6 +235,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.openCollectionMenu.addSeparator()
         action = self.openCollectionMenu.addAction(QtGui.QIcon.fromTheme('go-home'), 'Main library')
         action.triggered.connect(lambda: self.openCollection(''))
+
+        self.menubar.addMenu(self.main.getWindowsMenu(self))
+        self.menubar.addMenu(self.main.getAboutMenu(self))
 
 #        self.createMaskObject()
 
@@ -533,13 +528,6 @@ class MainWindow(QtWidgets.QMainWindow):
         for widget in self.leftTabWidget.collections + self.rightTabWidget.collections:
             if isinstance(widget, CollectionWidget):
                 widget.filterTagsEdit.setTags()
-
-    def showAbout(self):
-        if randrange(100) / 33:
-            AboutDialog(self).exec_()
-        else:
-            self.lastAboutEgg = not self.lastAboutEgg
-            (MayTheForce, MatrixHasU)[self.lastAboutEgg](self).exec_()
 
     def resizeEvent(self, event):
         if self.maskObject:

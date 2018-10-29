@@ -469,7 +469,7 @@ class AudioSettingsDialog(QtWidgets.QDialog):
         prober.moveToThread(self.proberThread)
         self.proberThread.started.connect(prober.probeQt if self.backend == 'qt' else prober.probePy)
         prober.deviceList.connect(self.probed)
-        prober.deviceList.connect(lambda _: [self.proberThread.quit(), prober.deleteLater()])
+        prober.deviceList.connect(lambda _, self=self, prober=prober: [self.proberThread.quit(), prober.deleteLater()])
         self.proberThread.start()
 
     def exec_(self):

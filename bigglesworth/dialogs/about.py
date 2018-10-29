@@ -10,7 +10,8 @@ helpers = 'Fabio "Faber" Vescarelli', 'Benedetto Schiavone',
 contributors = 'Thibault Appourchaux', 
 testers = 'Don Petersen', 
 donors = (
-    'Nick Sherman', 'Piet Wagner', 'Arnaud Pecqueur', 'Pierre Letzelter', 'David Stanton'
+    'Nick Sherman', 'Piet Wagner', 'Arnaud Pecqueur', 'Pierre Letzelter', 'David Stanton', 
+    u'Frederik Brückner', 
 )
 
 thanksto = helpers + contributors + testers + donors

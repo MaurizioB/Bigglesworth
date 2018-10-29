@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>MainWindow</class>
- <widget class="QMainWindow" name="MainWindow">
+ <class>EditorWindow</class>
+ <widget class="QMainWindow" name="EditorWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -412,6 +412,9 @@
            </property>
            <layout class="QGridLayout" name="gridLayout_6">
             <property name="margin">
+             <number>1</number>
+            </property>
+            <property name="spacing">
              <number>2</number>
             </property>
             <item row="0" column="0" rowspan="2">
@@ -437,67 +440,17 @@
        </widget>
       </item>
       <item row="0" column="2">
-       <layout class="QVBoxLayout" name="verticalLayout">
-        <property name="spacing">
+       <layout class="QGridLayout" name="gridLayout_8">
+        <property name="horizontalSpacing">
          <number>4</number>
         </property>
-        <item>
-         <widget class="Section" name="saveFrame">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_5">
-           <property name="spacing">
-            <number>2</number>
-           </property>
-           <property name="margin">
-            <number>2</number>
-           </property>
-           <item>
-            <widget class="SquareButton" name="saveBtn">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="label" stdset="0">
-              <string/>
-             </property>
-             <property name="insideText" stdset="0">
-              <string>▾</string>
-             </property>
-             <property name="popup" stdset="0">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="SquareButton" name="autosaveBtn">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="label" stdset="0">
-              <string/>
-             </property>
-             <property name="switchable" stdset="0">
-              <bool>true</bool>
-             </property>
-             <property name="insideText" stdset="0">
-              <string>Auto</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
+        <property name="verticalSpacing">
+         <number>2</number>
+        </property>
+        <property name="margin">
+         <number>0</number>
+        </property>
+        <item row="1" column="1">
          <widget class="SquareButton" name="modMatrixBtn">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
@@ -524,6 +477,91 @@
            <string>Mod Matrix</string>
           </property>
          </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="SquareButton" name="randomizeBtn">
+          <property name="insideText" stdset="0">
+           <string>Randomize</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0" colspan="2">
+         <layout class="QHBoxLayout" name="horizontalLayout_6">
+          <property name="spacing">
+           <number>4</number>
+          </property>
+          <property name="margin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="SquareButton" name="dumpBtn">
+            <property name="insideText" stdset="0">
+             <string>Dump</string>
+            </property>
+            <property name="popup" stdset="0">
+             <bool>true</bool>
+            </property>
+            <property name="hidePopupArrow" stdset="0">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="Section" name="saveFrame">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_5">
+             <property name="spacing">
+              <number>2</number>
+             </property>
+             <property name="margin">
+              <number>2</number>
+             </property>
+             <item>
+              <widget class="SquareButton" name="saveBtn">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="popup" stdset="0">
+                <bool>true</bool>
+               </property>
+               <property name="icon" stdset="0">
+                <iconset theme="document-save">
+                 <normaloff/>
+                </iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="SquareButton" name="autosaveBtn">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="label" stdset="0">
+                <string/>
+               </property>
+               <property name="switchable" stdset="0">
+                <bool>true</bool>
+               </property>
+               <property name="insideText" stdset="0">
+                <string>Auto</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </item>

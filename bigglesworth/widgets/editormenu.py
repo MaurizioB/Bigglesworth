@@ -7,7 +7,6 @@ from Qt import QtCore, QtGui, QtWidgets
 from bigglesworth.const import factoryPresetsNames, factoryPresetsNamesDict, UidColumn, LocationColumn, NameColumn, CatColumn, TagsColumn
 from bigglesworth.parameters import categories
 from bigglesworth.utils import setItalic, setBold
-from bigglesworth.dialogs import LocationRequestDialog, WarningMessageBox
 
 _mnemonics = re.compile('(?<!&)&(?!&)')
 
@@ -93,7 +92,8 @@ class SoundsMenu(FactoryMenu):
     def checkAge(self):
         if isinstance(self.parent(), QtWidgets.QMenuBar) and not self.openLibrarianAction:
             first = self.actions()[0]
-            self.openLibrarianAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('view-list-details'), 'Open &librarian', self)
+            #old icon: view-list-details
+            self.openLibrarianAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('tab-duplicate'), 'Open &librarian', self)
 #            self.openLibrarianAction.setShortcut(QtGui.QKeySequence('Ctrl+Alt+L'))
             self.openLibrarianAction.triggered.connect(self.parent().window().openLibrarianRequested)
             self.insertAction(first, self.openLibrarianAction)
@@ -171,9 +171,9 @@ class SoundsMenu(FactoryMenu):
         self.settings.beginGroup('CollectionIcons')
         for c, collection in enumerate(self.collections):
             if collection in factoryPresetsNamesDict:
-                icon = QtGui.QIcon(':/images/factory.svg')
+                icon = QtGui.QIcon('factory')
             elif collection == 'Blofeld':
-                icon = QtGui.QIcon(':/images/bigglesworth_logo.svg')
+                icon = QtGui.QIcon('blofeld-b')
             else:
                 icon = QtGui.QIcon.fromTheme(self.settings.value(collection))
             colMenu = self.locationsMenu.addMenu(icon, '')
@@ -317,12 +317,6 @@ class SoundsMenu(FactoryMenu):
 class EditorMenu(QtWidgets.QMenuBar):
     openSoundRequested = QtCore.pyqtSignal(object)
     importRequested = QtCore.pyqtSignal()
-    #blofeld index/buffer, collection, index, multi
-    dumpFromRequested = QtCore.pyqtSignal(object, object, object, bool)
-    #uid, blofeld index/buffer, multi
-    dumpToRequested = QtCore.pyqtSignal(object, object, bool)
-    randomAllRequest = QtCore.pyqtSignal()
-    randomCustomRequest = QtCore.pyqtSignal()
 
     def __init__(self, parent):
         QtWidgets.QMenuBar.__init__(self, parent)
@@ -338,145 +332,13 @@ class EditorMenu(QtWidgets.QMenuBar):
         self.libraryMenu = SoundsMenu(self)
         self.libraryMenu.triggered.connect(self.openSoundTriggered)
         self.addMenu(self.libraryMenu)
-#        self.openLibrarianAction = self.libraryMenu.openLibrarianAction
-#        self.addAction(self.openLibrarianAction)
 
         #Due to the menu section hack for osx, the dump menu has to be 
         #manually created, otherwise PyQt will complain about unaccessible 
         #objects when they're not created from python
-        self.dumpMenu = QtWidgets.QMenu('&Dump', self)
-        self.addMenu(self.dumpMenu)
-        self.dumpMenu.aboutToShow.connect(self.updateDumpMenu)
-        self.dumpMenu.setSeparatorsCollapsible(False)
-        self.dumpMenu.addSection('Receive')
-        self.dumpFromSoundEditAction = self.dumpMenu.addAction('Request from Sound Edit buffer')
-        self.dumpFromSoundEditAction.triggered.connect(lambda: self.dumpFromRequested.emit(None, None, None, False))
-        self.dumpFromCurrentIndexAction = self.dumpMenu.addAction('')
-        self.dumpFromCurrentIndexAction.triggered.connect(self.dumpFromCurrentRequestCheck)
-        self.dumpFromAskIndexAction = self.dumpMenu.addAction('Request from location...')
-        self.dumpFromAskIndexAction.triggered.connect(self.dumpFromAsk)
-        self.dumpFromMultiMenu = self.dumpMenu.addMenu('Multi')
-        dumpFromMultiAction = self.dumpFromMultiMenu.addAction('Request all Multi parts')
-        dumpFromMultiAction.setEnabled(False)
+        self.addMenu(self.main.getWindowsMenu(parent))
 
-        self.dumpMenu.addSection('Send')
-        self.dumpToSoundEditAction = self.dumpMenu.addAction('Send to Blofeld Sound Edit Buffer')
-        self.dumpToSoundEditAction.triggered.connect(lambda: self.dumpToRequested.emit(None, None, False))
-        self.dumpToCurrentIndexAction = self.dumpMenu.addAction('')
-        self.dumpToAskIndexAction = self.dumpMenu.addAction('Send to Blofeld at location...')
-        self.dumpToAskIndexAction.triggered.connect(self.dumpToAsk)
-        self.dumpToMultiMenu = self.dumpMenu.addMenu('Multi')
-        dumpToMultiAction = self.dumpToMultiMenu.addAction('Send all Multi parts')
-        dumpToMultiAction.setEnabled(False)
-
-        for part in range(16):
-            dumpFromMultiPartAction = self.dumpFromMultiMenu.addAction('Part {}'.format(part + 1))
-            dumpFromMultiPartAction.triggered.connect(lambda part=part: self.dumpFromRequested.emit(part, None, None, True))
-            dumpToMultiPartAction = self.dumpToMultiMenu.addAction('Part {}'.format(part + 1))
-            dumpToMultiPartAction.triggered.connect(lambda part=part: self.dumpToRequested.emit(None, part, True))
-
-        randomMenu = self.addMenu('&Randomize')
-        randomAllAction = randomMenu.addAction('Randomize &all parameters')
-        randomAllAction.triggered.connect(self.randomAllRequest)
-        randomCustomAction = randomMenu.addAction('Custom randomize...')
-        randomCustomAction.triggered.connect(self.randomCustomRequest)
-
-    def updateDumpMenu(self):
-        inConn, outConn = map(any, self.main.connections)
-
-        self.dumpFromSoundEditAction.setEnabled(inConn)
-        self.dumpFromCurrentIndexAction.setEnabled(inConn)
-        self.dumpFromAskIndexAction.setEnabled(inConn)
-        self.dumpFromMultiMenu.setEnabled(inConn)
-
-        self.dumpToSoundEditAction.setEnabled(outConn)
-        self.dumpToCurrentIndexAction.setEnabled(outConn)
-        self.dumpToAskIndexAction.setEnabled(outConn)
-        self.dumpToMultiMenu.setEnabled(outConn)
-        try:
-            self.dumpToCurrentIndexAction.triggered.disconnect()
-        except:
-            pass
-        if self.editorWindow.currentBank is not None and self.editorWindow.currentProg is not None:
-            location = '{}{:03}'.format(
-                uppercase[self.editorWindow.currentBank], 
-                self.editorWindow.currentProg + 1)
-            self.dumpFromCurrentIndexAction.setText('Request from current location ({})'.format(location))
-            self.dumpFromCurrentIndexAction.setVisible(True)
-
-            self.dumpToCurrentIndexAction.setText('Send to Blofeld at current location({}'.format(location))
-            index = (self.editorWindow.currentBank << 7) + self.editorWindow.currentProg
-            self.dumpToCurrentIndexAction.triggered.connect(lambda: self.dumpToRequested.emit(None, index, False))
-            self.dumpToCurrentIndexAction.setVisible(True)
-        else:
-            self.dumpFromCurrentIndexAction.setVisible(False)
-            self.dumpToCurrentIndexAction.setVisible(False)
-
-    def dumpFromCurrentRequestCheck(self):
-        detailed = 'Bigglesworth uses a database that stores all sounds, some of which are shared amongst collections; ' \
-            'if a shared sound is changed, its changes will reflect on all collections containing it.<br/>' \
-            'If you want to keep the existing sound, press {}, otherwise by choosing "Overwrite" it will be lost. Forever.'
-
-        if self.editorWindow._editStatus == self.editorWindow.Modified or self.editorWindow.setFromDump:
-            if self.editorWindow._editStatus == self.editorWindow.Modified:
-                title = 'Sound modified'
-                message = 'The current sound has been modified\nWhat do you want to do?'
-            else:
-                title = 'Sound dumped'
-                message = 'The current sound has been dumped from the Blofeld\nWhat do you want to do?'
-                detailed = ''
-            buttons = {QtWidgets.QMessageBox.Save: 'Save and proceed', 
-                QtWidgets.QMessageBox.Discard: (QtGui.QIcon.fromTheme('document-save'), 'Overwrite'), 
-                QtWidgets.QMessageBox.Ignore: None, QtWidgets.QMessageBox.Cancel: None}
-            altText = '"Save and proceed" or "Ignore"'
-        else:
-            title = 'Sound stored in library'
-            message = 'The current sound is stored in the library\nWhat do you want to do?'
-            buttons = {QtWidgets.QMessageBox.Discard: (QtGui.QIcon.fromTheme('document-save'), 'Overwrite'), 
-                QtWidgets.QMessageBox.Ignore: None, QtWidgets.QMessageBox.Cancel: None}
-            altText = '"Ignore"'
-        res = WarningMessageBox(self, title, message, detailed.format(altText), buttons).exec_()
-        if not res or res == QtWidgets.QMessageBox.Cancel:
-            return
-        blofeldIndex = (self.editorWindow.currentBank << 7) + self.editorWindow.currentProg
-        if res == QtWidgets.QMessageBox.Save:
-            if not self.editorWindow.save():
-                return
-        if res == QtWidgets.QMessageBox.Discard:
-            collection = self.editorWindow.currentCollection
-            target = blofeldIndex
-        else:
-            collection = None
-            target = None
-        self.dumpFromRequested.emit(blofeldIndex, collection, target, False)
-
-    def dumpFromAsk(self):
-        if self.editorWindow._editStatus == self.editorWindow.Modified or self.editorWindow.setFromDump:
-            if self.editorWindow._editStatus == self.editorWindow.Modified:
-                title = 'Sound modified'
-                message = 'The current sound has been modified\nWhat do you want to do?'
-            else:
-                title = 'Sound dumped'
-                message = 'The current sound has been dumped from the Blofeld\nWhat do you want to do?'
-            res = QtWidgets.QMessageBox.question(self, title, message, 
-                buttons=QtWidgets.QMessageBox.Save|QtWidgets.QMessageBox.Ignore|QtWidgets.QMessageBox.Cancel)
-            if res == QtWidgets.QMessageBox.Cancel:
-                return
-            elif res == QtWidgets.QMessageBox.Save:
-                if not self.editorWindow.save():
-                    return
-        bank, prog = LocationRequestDialog(self.editorWindow, self.editorWindow.currentBank, self.editorWindow.currentProg).exec_()
-        if bank is None:
-            return
-        blofeldIndex = (bank << 7) + prog
-        self.dumpFromRequested.emit(blofeldIndex, None, None, False)
-
-    def dumpToAsk(self):
-        bank, prog = LocationRequestDialog(self.editorWindow, self.editorWindow.currentBank, self.editorWindow.currentProg).exec_()
-        if bank is None:
-            return
-        blofeldIndex = (bank << 7) + prog
-        self.dumpToRequested.emit(None, blofeldIndex, False)
+        self.addMenu(self.main.getAboutMenu(parent))
 
     def openSoundTriggered(self, action):
         if action.data():

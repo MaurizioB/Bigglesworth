@@ -215,6 +215,8 @@ class DevicePopupSpin(QtWidgets.QDoubleSpinBox):
 
 
 class LedWidget(QtWidgets.QWidget):
+    shown = False
+
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.active = False
@@ -233,6 +235,21 @@ class LedWidget(QtWidgets.QWidget):
         self.brush = self.inactiveBrush
         self.update()
 
+    def changeEvent(self, event):
+        if event.type() in (QtCore.QEvent.PaletteChange, QtCore.QEvent.EnabledChange):
+            self.updateColor()
+
+    def showEvent(self, event):
+        if not self.shown:
+            self.shown = True
+            self.updateColor()
+
+    def updateColor(self):
+        self.connColor = self.window().palette().color(QtGui.QPalette.Active, QtGui.QPalette.WindowText)
+        if not self.isEnabled():
+            self.connColor = self.connColor.adjusted(a=.5)
+        self.update()
+
     def paintEvent(self, event):
         qp = QtGui.QPainter(self)
         qp.setRenderHints(qp.Antialiasing)
@@ -241,7 +258,7 @@ class LedWidget(QtWidgets.QWidget):
         qp.setBrush(self.brush)
         qp.drawEllipse(0, 0, 8, 8)
         qp.translate(self.width() - 12, 0)
-        qp.setPen(self.window().palette().color(QtGui.QPalette.Active, QtGui.QPalette.WindowText))
+        qp.setPen(self.connColor)
         qp.setBrush(QtCore.Qt.NoBrush)
         qp.drawPath(self.connPath)
 
@@ -482,6 +499,7 @@ class MidiToolBox(QtWidgets.QWidget):
     offState = 180, 180, 180
     onState = 60, 255, 60
     pens = offState, onState
+    stateChanged = QtCore.pyqtSignal()
 
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
@@ -500,10 +518,12 @@ class MidiToolBox(QtWidgets.QWidget):
 
     def setProgState(self, state):
         self.progState = state
+        self.stateChanged.emit()
         self.update()
 
     def setCtrlState(self, state):
         self.ctrlState = state
+        self.stateChanged.emit()
         self.update()
 
     def changeEvent(self, event):
@@ -562,33 +582,55 @@ class MidiWidget(QtWidgets.QFrame):
         layout = QtWidgets.QHBoxLayout()
         self.setLayout(layout)
         layout.setSpacing(2)
-        layout.setContentsMargins(2, 1, 2, 1)
+        layout.setContentsMargins(1, 1, 1, 1)
 
         self.direction = direction
         if direction:
             self.ledWidget = LedOutWidget()
-            text = 'OUT'
+            self.baseText = u'''
+                {count} output connection{plur}{conns}
+                Program receive <b>{prog}</b><br/>
+                Control receive <b>{ctrl}</b>'''
         else:
             self.ledWidget = LedInWidget()
-            text = 'IN'
+            self.baseText = u'''
+                {count} input connection{plur}{conns}
+                Program send <b>{prog}</b><br/>
+                Control send <b>{ctrl}</b>'''
         layout.addWidget(self.ledWidget)
-        self.label = QtWidgets.QLabel(text + ' (0)')
-        self.label.setEnabled(False)
-        layout.addWidget(self.label)
+        self.conns = '<br/><br/>'
 
         self.toolBox = MidiToolBox()
         layout.addWidget(self.toolBox)
+        self.toolBox.stateChanged.connect(self.updateToolTip)
 
         self.setStyleSheet(self.baseStyleSheet)
         self.count = 0
         self.setProgState = self.toolBox.setProgState
         self.setCtrlState = self.toolBox.setCtrlState
 
-    def setConnections(self, count):
-        self.count = count
-        self.label.setText('{} ({})'.format('OUT' if self.direction else 'IN', int(count)))
-        self.label.setEnabled(False if count else True)
-        self.toolBox.setEnabled(True if count else False)
+    def setConnections(self, connections):
+        self.count = len(connections)
+        self.toolBox.setEnabled(self.count)
+        self.ledWidget.setEnabled(self.count)
+        if connections:
+            if self.direction:
+                connList = [conn.dest.toString() for conn in connections]
+            else:
+                connList = [conn.src.toString() for conn in connections]
+            self.conns = ':<ul style="margin-top: 4px; margin-left:5px; -qt-list-indent: 0;"><li>' + '</li><li>'.join(connList) + '</li></ul>'
+        else:
+            self.conns = '<br/><br/>'
+        self.updateToolTip()
+
+    def updateToolTip(self):
+        self.setToolTip(self.baseText.format(
+            count=self.count if self.count else 'No', 
+            conns=self.conns, 
+            plur='' if self.count == 1 else 's', 
+            prog=('OFF', 'ON')[self.toolBox.progState], 
+            ctrl=('OFF', 'ON')[self.toolBox.ctrlState]))
+
 
     def mousePressEvent(self, event):
         self.setStyleSheet(self.pressedStyleSheet)
@@ -608,7 +650,6 @@ class MidiWidget(QtWidgets.QFrame):
     def activate(self):
         if self.count:
             self.ledWidget.activate()
-
 
 class MidiInWidget(MidiWidget):
     def __init__(self, *args, **kwargs):

@@ -8,6 +8,20 @@ sys.path.append('./bigglesworth/editorWidgets')
 
 import argparse
 
+#import logging
+#import rollbar
+#from rollbar.logger import RollbarHandler
+#
+#rollbar.init('1c253504c48a4f3ca05321f19c3850a7', 'devel')
+
+#logger = logging.getLogger(__name__)
+#logger.setLevel(logging.DEBUG)
+## report ERROR and above to Rollbar
+#rollbar_handler = RollbarHandler()
+#rollbar_handler.setLevel(logging.INFO)
+## attach the handlers to the root logger
+#logger.addHandler(rollbar_handler)
+
 def process_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('-s', '--sysex', help='Print output SysEx messages to the terminal', action='store_true')
@@ -42,5 +56,9 @@ else:
 import bigglesworth
 
 if __name__ == '__main__':
-    app = bigglesworth.Bigglesworth(parser, sys.argv)
-    sys.exit(app.exec_())
+    try:
+        app = bigglesworth.Bigglesworth(parser, sys.argv)
+#    except:
+#        rollbar.report_exc_info()
+    finally:
+        sys.exit(app.exec_())

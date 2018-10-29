@@ -84,6 +84,7 @@ class _Button(QtWidgets.QPushButton):
 #                border-radius: 2px;
         self.setStyleSheet('''
             QPushButton {{
+                color: palette(button-text);
                 padding: 1px;
                 background: qradialgradient(cx:0.4, cy:0.4, radius: 1, fx:0.5, fy:0.5, 
                     stop:0 {backgroundNormalLight},
@@ -118,6 +119,16 @@ class _Button(QtWidgets.QPushButton):
                 )
             )
 
+    defaultPaintEvent = lambda *args: QtWidgets.QPushButton.paintEvent(*args)
+
+    def popupPaintEvent(self, event):
+        option = QtWidgets.QStyleOptionButton()
+        self.initStyleOption(option)
+        qp = QtWidgets.QStylePainter(self)
+        option.features |= option.HasMenu
+        qp.drawControl(QtWidgets.QStyle.CE_PushButton, option)
+
+
 class SquareButton(BaseWidget):
     switchableChanged = QtCore.pyqtSignal(bool)
     switchToggled = QtCore.pyqtSignal(bool)
@@ -138,6 +149,7 @@ class SquareButton(BaseWidget):
         self._pressing = False
         self._menu = None
         self._popup = False
+        self._hidePopupArrow = False
         self.popupTimer = QtCore.QTimer()
         self.popupTimer.setInterval(250)
         self.popupTimer.setSingleShot(True)
@@ -150,6 +162,10 @@ class SquareButton(BaseWidget):
 
     def setMenu(self, menu=None):
         self._menu = menu
+        if menu and not self._hidePopupArrow:
+            self.button.paintEvent = self.button.popupPaintEvent
+        else:
+            self.button.paintEvent = self.button.defaultPaintEvent
 
     def showPopup(self):
         if self._menu:
@@ -162,6 +178,8 @@ class SquareButton(BaseWidget):
             self.button.setDown(True)
             if self._popup:
                 self.popupTimer.start()
+            elif self._menu:
+                self.showPopup()
 
     def contextMenuEvent(self, event):
         if self._popup:
@@ -219,6 +237,36 @@ class SquareButton(BaseWidget):
     @popup.setter
     def popup(self, mode):
         self._popup = mode
+
+    @QtCore.pyqtProperty(QtGui.QIcon)
+    def icon(self):
+        return self.button.icon()
+
+    @icon.setter
+    def icon(self, icon):
+        self.button.setIcon(icon)
+
+    @QtCore.pyqtProperty(QtCore.QSize)
+    def iconSize(self):
+        return self.button.iconSize()
+
+    @iconSize.setter
+    def iconSize(self, iconSize):
+        self.button.setIconSize(iconSize)
+
+    @QtCore.pyqtProperty(bool)
+    def hidePopupArrow(self):
+        return self._hidePopupArrow
+
+    @hidePopupArrow.setter
+    def hidePopupArrow(self, hide):
+        self._hidePopupArrow = hide
+        if self._menu:
+            if not hide:
+                self.button.paintEvent = self.button.popupPaintEvent
+            else:
+                self.button.paintEvent = self.button.defaultPaintEvent
+
 
 def switched(state):
     print(state)

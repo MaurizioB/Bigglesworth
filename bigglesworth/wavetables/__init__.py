@@ -916,8 +916,23 @@ class WaveTableWindow(QtWidgets.QMainWindow):
     def __init__(self, waveTable=None):
         QtWidgets.QMainWindow.__init__(self)
         loadUi('ui/wavetables.ui', self)
-        self.showLibrarianAction.setIcon(QtGui.QIcon.fromTheme('bigglesworth'))
-        self.showEditorAction.setIcon(QtGui.QIcon.fromTheme('dial'))
+
+        if __name__ == '__main__':
+            self.windowsMenu = self.menubar.addMenu('&Windows')
+            self.audioSettingsAction = self.windowsMenu.addAction(QtGui.QIcon.fromTheme('audio-card'), 'Audio settings')
+        else:
+            main = QtWidgets.QApplication.instance()
+            self.windowsMenu = main.getWindowsMenu(self)
+            self.menubar.addMenu(self.windowsMenu)
+            self.windowsMenu.addSeparator()
+            self.audioSettingsAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('audio-card'), 'Audio settings', self)
+            for action in self.windowsMenu.actions():
+                print(action.text(), 'settings' in action.text().lower())
+                if 'settings' in action.text().lower():
+                    self.windowsMenu.insertAction(action, self.audioSettingsAction)
+
+            self.aboutMenu = main.getAboutMenu(self)
+            self.menubar.addMenu(self.aboutMenu)
 
         self.windowsActionGroup = QtWidgets.QActionGroup(self.windowsMenu)
         self.newWindowSeparator = self.windowsMenu.insertSeparator(self.newWindowAction)
@@ -989,11 +1004,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         if self.openedWindows[0] != self:
             self.pianoIcon.stateChanged.connect(self.openedWindows[0].pianoIcon.setState)
             self.openedWindows[0].pianoIcon.stateChanged.connect(self.pianoIcon.setState)
-            self.showLibrarianAction.triggered.connect(self.openedWindows[0].showLibrarianAction.trigger)
-            self.showEditorAction.triggered.connect(self.openedWindows[0].showEditorAction.trigger)
             self.closed.connect(self.openedWindows[0].closed)
-
-        self.showSettingsAction.triggered.connect(lambda: self.openedWindows[0].showSettings.emit(self))
 
         self.dumper = Dumper(self)
         self.dumper.stopRequested.connect(self.stopRequested)
@@ -1005,11 +1016,11 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 
         self.settings = QtCore.QSettings()
         self.dumpTimer.setInterval(self.settings.value('DumpInterval', 100))
-        print('settings request device: "{}"\nConversion: "{}"'.format(
-            self.settings.value('AudioDevice'), 
-            self.settings.value('SampleRateConversion', 2)))
+#        print('settings request device: "{}"\nConversion: "{}"'.format(
+#            self.settings.value('AudioDevice'), 
+#            self.settings.value('SampleRateConversion', 2)))
         self.player = Player(self, self.settings.value('AudioDevice'), self.settings.value('SampleRateConversion', 2))
-        print('output created, sampleSize: {}, sampleRate: {}'.format(self.player.sampleSize, self.player.sampleRate))
+#        print('output created, sampleSize: {}, sampleRate: {}'.format(self.player.sampleSize, self.player.sampleRate))
 
         self.settings.beginGroup('WaveTables')
         if self.openedWindows[0] == self:

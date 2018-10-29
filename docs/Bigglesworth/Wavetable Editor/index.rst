@@ -32,3 +32,4 @@ a powerful wavetable creation and editing tool.
 
 .. meta::
     :icon: wavetables
+    :keyword: WavetableWindow

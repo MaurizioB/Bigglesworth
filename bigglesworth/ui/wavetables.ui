@@ -2085,17 +2085,6 @@
     <addaction name="exportAction"/>
     <addaction name="devArchiveAction"/>
    </widget>
-   <widget class="QMenu" name="windowsMenu">
-    <property name="title">
-     <string>Windows</string>
-    </property>
-    <addaction name="showLibrarianAction"/>
-    <addaction name="showEditorAction"/>
-    <addaction name="separator"/>
-    <addaction name="audioSettingsAction"/>
-    <addaction name="showSettingsAction"/>
-    <addaction name="separator"/>
-   </widget>
    <widget class="QMenu" name="waveTableMenu">
     <property name="title">
      <string>Wavetable library</string>
@@ -2103,7 +2092,6 @@
     <addaction name="showDockAction"/>
    </widget>
    <addaction name="fileMenu"/>
-   <addaction name="windowsMenu"/>
    <addaction name="waveTableMenu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -2384,16 +2372,6 @@
     <string>Ctrl+Shift+E</string>
    </property>
   </action>
-  <action name="showLibrarianAction">
-   <property name="text">
-    <string>Librarian</string>
-   </property>
-  </action>
-  <action name="showEditorAction">
-   <property name="text">
-    <string>Sound editor</string>
-   </property>
-  </action>
   <action name="showDockAction">
    <property name="icon">
     <iconset theme="file-catalog-symbolic">
@@ -2406,32 +2384,9 @@
     <string>Alt+W</string>
    </property>
   </action>
-  <action name="audioSettingsAction">
-   <property name="icon">
-    <iconset theme="audio-card">
-     <normaloff/>
-    </iconset>
-   </property>
-   <property name="text">
-    <string>Audio settings</string>
-   </property>
-  </action>
   <action name="devArchiveAction">
    <property name="text">
     <string>Create archive</string>
-   </property>
-  </action>
-  <action name="showSettingsAction">
-   <property name="icon">
-    <iconset theme="settings">
-     <normaloff/>
-    </iconset>
-   </property>
-   <property name="text">
-    <string>Settings</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+P</string>
    </property>
   </action>
  </widget>

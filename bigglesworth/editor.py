@@ -3,6 +3,7 @@
 import sys
 from random import randrange
 from collections import namedtuple
+from string import uppercase
 
 from Qt import QtCore, QtGui, QtWidgets, QtSql
 
@@ -11,7 +12,8 @@ from bigglesworth.const import (chr2ord, UidColumn, LocationColumn,
     INIT, IDW, IDE, SNDP, END, templateGroupDict)
 from bigglesworth.parameters import Parameters, fullRangeCenterZero, driveCurves, arpLength, ctrl2sysex
 from bigglesworth.widgets import SoundsMenu, EditorMenu, EnvelopeView, MidiConnectionsDialog, ModMatrixView
-from bigglesworth.dialogs import RandomDialog, InputMessageBox, TemplateManager, SaveSoundAs, WarningMessageBox
+from bigglesworth.dialogs import (RandomDialog, InputMessageBox, TemplateManager, SaveSoundAs, 
+    WarningMessageBox, LocationRequestDialog)
 from bigglesworth.midiutils import NoteOffEvent, NoteOnEvent, CtrlEvent, ProgramEvent, SysExEvent, SYSEX, CTRL, NOTEON, NOTEOFF, PROGRAM
 
 from combo import Combo
@@ -591,6 +593,13 @@ class EditorWindow(QtWidgets.QMainWindow):
     midiConnect = QtCore.pyqtSignal(object, int, bool)
     soundNameChanged = QtCore.pyqtSignal(str)
 
+    #blofeld index/buffer, collection, index, multi
+    dumpFromRequested = QtCore.pyqtSignal(object, object, object, bool)
+    #uid, blofeld index/buffer, multi
+    dumpToRequested = QtCore.pyqtSignal(object, object, bool)
+#    randomAllRequest = QtCore.pyqtSignal()
+#    randomCustomRequest = QtCore.pyqtSignal()
+
     def __init__(self, parent):
         QtWidgets.QMainWindow.__init__(self)
         self.main = parent
@@ -617,22 +626,59 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.editorMenuBar = EditorMenu(self)
         self.editorMenuBar.openSoundRequested.connect(self.openSoundFromMenu)
         self.editorMenuBar.importRequested.connect(lambda: self.importRequested.emit(None, None))
-        self.editorMenuBar.randomAllRequest.connect(self.randomizeAll)
-        self.editorMenuBar.randomCustomRequest.connect(self.randomizeCustom)
-        self.editorMenuBar.dumpMenu.setEnabled(True if (any(inConn) or any(outConn)) else False)
+#        self.randomAllRequest.connect(self.randomizeAll)
+#        self.randomCustomRequest.connect(self.randomizeCustom)
         self.leftLayout.insertWidget(0, self.editorMenuBar)
 
-        self.saveBtn.button.setIcon(QtGui.QIcon.fromTheme('document-save'))
         self.autosaveBtn.switchToggled.connect(self.saveBtn.setDisabled)
         self.autosaveBtn.switchToggled.connect(lambda state: setattr(self, 'autosave', state))
         self._editStatus = self.Clean
         self._autosave = self.settings.value('autosave', False, bool)
-#        self.saveBtn.setDisabled(True)
         self.saveBtn.clicked.connect(self.save)
-#        self.saveFrame.setEnabled(False)
+        #designer automatically strips blank spaces, but we need this button 
+        #to have some text margin due to the menu arrow
+        self.saveBtn.insideText = ' '
+
+        self.dumpMenu = QtWidgets.QMenu(self)
+        self.dumpBtn.setMenu(self.dumpMenu)
+        self.dumpBtn.popupTimer.setInterval(0)
+        self.dumpMenu.aboutToShow.connect(self.updateDumpMenu)
+        self.dumpMenu.setSeparatorsCollapsible(False)
+        self.dumpMenu.addSection('Receive')
+        self.dumpFromSoundEditAction = self.dumpMenu.addAction('Request from Sound Edit buffer')
+        self.dumpFromSoundEditAction.triggered.connect(lambda: self.dumpFromRequested.emit(None, None, None, False))
+        self.dumpFromCurrentIndexAction = self.dumpMenu.addAction('')
+        self.dumpFromCurrentIndexAction.triggered.connect(self.dumpFromCurrentRequestCheck)
+        self.dumpFromAskIndexAction = self.dumpMenu.addAction('Request from location...')
+        self.dumpFromAskIndexAction.triggered.connect(self.dumpFromAsk)
+        self.dumpFromMultiMenu = self.dumpMenu.addMenu('Multi')
+        dumpFromMultiAction = self.dumpFromMultiMenu.addAction('Request all Multi parts')
+        dumpFromMultiAction.setEnabled(False)
+
+        self.dumpMenu.addSection('Send')
+        self.dumpToSoundEditAction = self.dumpMenu.addAction('Send to Blofeld Sound Edit Buffer')
+        self.dumpToSoundEditAction.triggered.connect(lambda: self.dumpToRequested.emit(None, None, False))
+        self.dumpToCurrentIndexAction = self.dumpMenu.addAction('')
+        self.dumpToAskIndexAction = self.dumpMenu.addAction('Send to Blofeld at location...')
+        self.dumpToAskIndexAction.triggered.connect(self.dumpToAsk)
+        self.dumpToMultiMenu = self.dumpMenu.addMenu('Multi')
+        dumpToMultiAction = self.dumpToMultiMenu.addAction('Send all Multi parts')
+        dumpToMultiAction.setEnabled(False)
+
+        for part in range(16):
+            dumpFromMultiPartAction = self.dumpFromMultiMenu.addAction('Part {}'.format(part + 1))
+            dumpFromMultiPartAction.triggered.connect(lambda part=part: self.dumpFromRequested.emit(part, None, None, True))
+            dumpToMultiPartAction = self.dumpToMultiMenu.addAction('Part {}'.format(part + 1))
+            dumpToMultiPartAction.triggered.connect(lambda part=part: self.dumpToRequested.emit(None, part, True))
+
+        self.randomMenu = QtWidgets.QMenu('&Randomize')
+        self.randomizeBtn.clicked.connect(lambda: self.randomMenu.exec_(self.randomizeBtn.mapToGlobal(self.randomizeBtn.rect().bottomLeft())))
+        randomAllAction = self.randomMenu.addAction('Randomize &all parameters')
+        randomAllAction.triggered.connect(self.randomizeAll)
+        randomCustomAction = self.randomMenu.addAction('Custom randomize...')
+        randomCustomAction.triggered.connect(self.randomizeCustom)
 
         self.display.customContextMenuRequested.connect(self.showDisplayMenu)
-#        self.display.openSoundRequested.connect(self.openSoundFromUid)
 
         self.parameters = Parameters(self)
         self.parameters.parameterChanged.connect(self.parameterChanged)
@@ -808,8 +854,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.midiInWidget.setCtrlState(self.main.ctrlReceiveState)
         self.main.progReceiveToggled.connect(self.midiInWidget.setProgState)
         self.main.ctrlReceiveToggled.connect(self.midiInWidget.setCtrlState)
-#        self.midiInWidget.setConnections(len([conn for conn in self.main.midiDevice.input.connections.input if not conn.hidden]))
-        self.midiInWidget.setConnections(any(inConn))
+        self.midiInWidget.setConnections(inConn)
 
         self.midiOutWidget.clicked.connect(self.showMidiMenu)
         self.midiOutWidget.setProgState(self.main.progSendState)
@@ -817,7 +862,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.main.progSendToggled.connect(self.midiOutWidget.setProgState)
         self.main.ctrlSendToggled.connect(self.midiOutWidget.setCtrlState)
 #        self.midiOutWidget.setConnections(len([conn for conn in self.main.midiDevice.output.connections.output if not conn.hidden]))
-        self.midiOutWidget.setConnections(any(outConn))
+        self.midiOutWidget.setConnections(outConn)
 
         self.main.midiConnChanged.connect(self.midiConnChanged)
 
@@ -895,6 +940,8 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.osc1ShapeWidget = OscShapeWidget(self, self.osc1Shape, self.osc1Pulsewidth)
         self.osc2ShapeWidget = OscShapeWidget(self, self.osc2Shape, self.osc2Pulsewidth)
         self.osc3ShapeWidget = OscShapeWidget(self, self.osc3Shape, self.osc3Pulsewidth)
+
+        self.midiEvent.connect(self.midiOutWidget.activate)
 
         self.modMatrixBtn.clicked.connect(self.showModMatrix)
         self.modMatrixView = None
@@ -1006,6 +1053,103 @@ class EditorWindow(QtWidgets.QMainWindow):
 
 #        self.ModMatrixView.show()
 
+    def updateDumpMenu(self):
+        inConn, outConn = map(any, self.main.connections)
+
+        self.dumpFromSoundEditAction.setEnabled(inConn)
+        self.dumpFromCurrentIndexAction.setEnabled(inConn)
+        self.dumpFromAskIndexAction.setEnabled(inConn)
+        self.dumpFromMultiMenu.setEnabled(inConn)
+
+        self.dumpToSoundEditAction.setEnabled(outConn)
+        self.dumpToCurrentIndexAction.setEnabled(outConn)
+        self.dumpToAskIndexAction.setEnabled(outConn)
+        self.dumpToMultiMenu.setEnabled(outConn)
+        try:
+            self.dumpToCurrentIndexAction.triggered.disconnect()
+        except:
+            pass
+        if self.currentBank is not None and self.currentProg is not None:
+            location = '{}{:03}'.format(
+                uppercase[self.currentBank], 
+                self.currentProg + 1)
+            self.dumpFromCurrentIndexAction.setText('Request from current location ({})'.format(location))
+            self.dumpFromCurrentIndexAction.setVisible(True)
+
+            self.dumpToCurrentIndexAction.setText('Send to Blofeld at current location({}'.format(location))
+            index = (self.currentBank << 7) + self.currentProg
+            self.dumpToCurrentIndexAction.triggered.connect(lambda: self.dumpToRequested.emit(None, index, False))
+            self.dumpToCurrentIndexAction.setVisible(True)
+        else:
+            self.dumpFromCurrentIndexAction.setVisible(False)
+            self.dumpToCurrentIndexAction.setVisible(False)
+
+    def dumpFromCurrentRequestCheck(self):
+        detailed = 'Bigglesworth uses a database that stores all sounds, some of which are shared amongst collections; ' \
+            'if a shared sound is changed, its changes will reflect on all collections containing it.<br/>' \
+            'If you want to keep the existing sound, press {}, otherwise by choosing "Overwrite" it will be lost. Forever.'
+
+        if self._editStatus == self.Modified or self.setFromDump:
+            if self._editStatus == self.Modified:
+                title = 'Sound modified'
+                message = 'The current sound has been modified\nWhat do you want to do?'
+            else:
+                title = 'Sound dumped'
+                message = 'The current sound has been dumped from the Blofeld\nWhat do you want to do?'
+                detailed = ''
+            buttons = {QtWidgets.QMessageBox.Save: 'Save and proceed', 
+                QtWidgets.QMessageBox.Discard: (QtGui.QIcon.fromTheme('document-save'), 'Overwrite'), 
+                QtWidgets.QMessageBox.Ignore: None, QtWidgets.QMessageBox.Cancel: None}
+            altText = '"Save and proceed" or "Ignore"'
+        else:
+            title = 'Sound stored in library'
+            message = 'The current sound is stored in the library\nWhat do you want to do?'
+            buttons = {QtWidgets.QMessageBox.Discard: (QtGui.QIcon.fromTheme('document-save'), 'Overwrite'), 
+                QtWidgets.QMessageBox.Ignore: None, QtWidgets.QMessageBox.Cancel: None}
+            altText = '"Ignore"'
+        res = WarningMessageBox(self, title, message, detailed.format(altText), buttons).exec_()
+        if not res or res == QtWidgets.QMessageBox.Cancel:
+            return
+        blofeldIndex = (self.currentBank << 7) + self.currentProg
+        if res == QtWidgets.QMessageBox.Save:
+            if not self.save():
+                return
+        if res == QtWidgets.QMessageBox.Discard:
+            collection = self.currentCollection
+            target = blofeldIndex
+        else:
+            collection = None
+            target = None
+        self.dumpFromRequested.emit(blofeldIndex, collection, target, False)
+
+    def dumpFromAsk(self):
+        if self._editStatus == self.Modified or self.setFromDump:
+            if self._editStatus == self.Modified:
+                title = 'Sound modified'
+                message = 'The current sound has been modified\nWhat do you want to do?'
+            else:
+                title = 'Sound dumped'
+                message = 'The current sound has been dumped from the Blofeld\nWhat do you want to do?'
+            res = QtWidgets.QMessageBox.question(self, title, message, 
+                buttons=QtWidgets.QMessageBox.Save|QtWidgets.QMessageBox.Ignore|QtWidgets.QMessageBox.Cancel)
+            if res == QtWidgets.QMessageBox.Cancel:
+                return
+            elif res == QtWidgets.QMessageBox.Save:
+                if not self.save():
+                    return
+        bank, prog = LocationRequestDialog(self, self.currentBank, self.currentProg).exec_()
+        if bank is None:
+            return
+        blofeldIndex = (bank << 7) + prog
+        self.dumpFromRequested.emit(blofeldIndex, None, None, False)
+
+    def dumpToAsk(self):
+        bank, prog = LocationRequestDialog(self, self.currentBank, self.currentProg).exec_()
+        if bank is None:
+            return
+        blofeldIndex = (bank << 7) + prog
+        self.dumpToRequested.emit(None, blofeldIndex, False)
+
 
     def keyPressEvent(self, event):
         if not QtWidgets.QApplication.activePopupWidget():
@@ -1060,29 +1204,30 @@ class EditorWindow(QtWidgets.QMainWindow):
             self.save()
 
     def showMidiMenu(self):
-        direction = MidiOut if self.sender() == self.midiOutWidget else MidiIn
+        widget = self.sender()
+        direction = MidiOut if widget == self.midiOutWidget else MidiIn
         menu = QtWidgets.QMenu()
         menu.setSeparatorsCollapsible(False)
         menu.addSection('MIDI out' if direction == MidiOut else 'MIDI in')
 
         if direction == MidiOut:
-            ctrlAction = menu.addAction('Send MIDI events')
-            ctrlAction.setCheckable(True)
-            ctrlAction.setChecked(True if self.main.ctrlSendState else False)
-            ctrlActionAttr = 'ctrlSendState'
             progAction = menu.addAction('Send Program changes')
             progAction.setCheckable(True)
             progAction.setChecked(True if self.main.progSendState else False)
             progActionAttr = 'progSendState'
-        else:
-            ctrlAction = menu.addAction('Receive MIDI events')
+            ctrlAction = menu.addAction('Send Control events')
             ctrlAction.setCheckable(True)
-            ctrlAction.setChecked(True if self.main.ctrlReceiveState else False)
-            ctrlActionAttr = 'ctrlReceiveState'
+            ctrlAction.setChecked(True if self.main.ctrlSendState else False)
+            ctrlActionAttr = 'ctrlSendState'
+        else:
             progAction = menu.addAction('Receive Program changes')
             progAction.setCheckable(True)
             progAction.setChecked(True if self.main.progReceiveState else False)
             progActionAttr = 'progReceiveState'
+            ctrlAction = menu.addAction('Receive Control events')
+            ctrlAction.setCheckable(True)
+            ctrlAction.setChecked(True if self.main.ctrlReceiveState else False)
+            ctrlActionAttr = 'ctrlReceiveState'
 
         clientListMenu = menu.addMenu('')
         connections = 0
@@ -1115,7 +1260,8 @@ class EditorWindow(QtWidgets.QMainWindow):
         menu.addSeparator()
         showConnectionsAction = menu.addAction('Show MIDI connection dialog')
 
-        res = menu.exec_(QtGui.QCursor.pos())
+        pos = widget.mapToGlobal(widget.rect().bottomLeft())
+        res = menu.exec_(pos)
         if not res:
             return
         if res == showConnectionsAction:
@@ -1356,16 +1502,15 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.undoStack.push(undo)
 
     def midiConnChanged(self, inConn, outConn):
-        self.midiInWidget.setConnections(len(inConn))
-        self.midiOutWidget.setConnections(len(outConn))
-        self.editorMenuBar.dumpMenu.setEnabled(True if any(inConn) or any(outConn) else False)
+        self.midiInWidget.setConnections(inConn)
+        self.midiOutWidget.setConnections(outConn)
+        self.dumpBtn.setEnabled(any(inConn) or any(outConn))
 
     def nameChangedFromDatabase(self, uid, name):
         if self.currentUid and self.currentUid == uid:
             #TODO: check the logic behind this change...
             self.display.nameEdit.setText(name)
 #            self.createNameUndo(name)
-
 
     def parameterChanged(self, id, childId, newValue, oldValue):
         location = 0
@@ -1374,7 +1519,6 @@ class EditorWindow(QtWidgets.QMainWindow):
 
         if self.main.ctrlSendState and self.canForward:
             self.midiEvent.emit(SysExEvent(1, [INIT, IDW, IDE, self.main.blofeldId, SNDP, location, parHigh, parLow, newValue, END]))
-            self.midiOutWidget.activate()
         if self.autosave and self.currentUid:
             self.database.updateSoundValue(self.currentUid, id, newValue)
 
@@ -1755,7 +1899,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.display.setStatusText('Sound randomized')
 
     def randomizeCustom(self):
-        randomDialog = RandomDialog()
+        randomDialog = RandomDialog(self)
         if not randomDialog.exec_():
             return
         paramList = randomDialog.getChecked()

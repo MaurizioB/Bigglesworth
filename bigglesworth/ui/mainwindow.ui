@@ -114,35 +114,8 @@
     <addaction name="separator"/>
     <addaction name="editTagsAction"/>
    </widget>
-   <widget class="QMenu" name="aboutMenu">
-    <property name="title">
-     <string>&amp;?</string>
-    </property>
-    <addaction name="helpAction"/>
-    <addaction name="showLogAction"/>
-    <addaction name="showMidiChartAction"/>
-    <addaction name="separator"/>
-    <addaction name="aboutAction"/>
-    <addaction name="aboutQtAction"/>
-    <addaction name="showDonationAction"/>
-    <addaction name="separator"/>
-    <addaction name="updatesAction"/>
-   </widget>
-   <widget class="QMenu" name="windowsMenu">
-    <property name="title">
-     <string>&amp;Windows</string>
-    </property>
-    <addaction name="showEditorAction"/>
-    <addaction name="showWavetableAction"/>
-    <addaction name="separator"/>
-    <addaction name="showSettingsAction"/>
-    <addaction name="showGlobalsAction"/>
-    <addaction name="showFirmwareUtilsAction"/>
-   </widget>
    <addaction name="fileMenu"/>
    <addaction name="libraryMenu"/>
-   <addaction name="windowsMenu"/>
-   <addaction name="aboutMenu"/>
   </widget>
   <widget class="StatusBar" name="statusbar"/>
   <widget class="QDockWidget" name="sidebar">
@@ -208,80 +181,6 @@
     <string>Ctrl+Q</string>
    </property>
   </action>
-  <action name="aboutAction">
-   <property name="icon">
-    <iconset theme="help-about">
-     <normaloff/>
-    </iconset>
-   </property>
-   <property name="text">
-    <string>About &amp;Bigglesworth...</string>
-   </property>
-  </action>
-  <action name="showEditorAction">
-   <property name="text">
-    <string>Sound &amp;editor</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+E</string>
-   </property>
-  </action>
-  <action name="showWavetableAction">
-   <property name="text">
-    <string>&amp;Wavetable editor</string>
-   </property>
-  </action>
-  <action name="showSettingsAction">
-   <property name="icon">
-    <iconset theme="settings">
-     <normaloff/>
-    </iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Settings</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+P</string>
-   </property>
-  </action>
-  <action name="showGlobalsAction">
-   <property name="icon">
-    <iconset theme="blofeld-b">
-     <normaloff/>
-    </iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Blofeld device query</string>
-   </property>
-  </action>
-  <action name="aboutQtAction">
-   <property name="icon">
-    <iconset theme="qtcreator">
-     <normaloff/>
-    </iconset>
-   </property>
-   <property name="text">
-    <string>About &amp;Qt...</string>
-   </property>
-  </action>
-  <action name="updatesAction">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Check for updates...</string>
-   </property>
-  </action>
-  <action name="showLogAction">
-   <property name="icon">
-    <iconset theme="text-x-log">
-     <normaloff/>
-    </iconset>
-   </property>
-   <property name="text">
-    <string>Show log</string>
-   </property>
-  </action>
   <action name="duplicatesAction">
    <property name="icon">
     <iconset theme="edit-find">
@@ -325,26 +224,6 @@
     <string>Save/print sound list...</string>
    </property>
   </action>
-  <action name="showMidiChartAction">
-   <property name="icon">
-    <iconset theme="midi">
-     <normaloff/>
-    </iconset>
-   </property>
-   <property name="text">
-    <string>MIDI implementation chart...</string>
-   </property>
-  </action>
-  <action name="helpAction">
-   <property name="icon">
-    <iconset theme="help-contents">
-     <normaloff/>
-    </iconset>
-   </property>
-   <property name="text">
-    <string>Bigglesworth Manual</string>
-   </property>
-  </action>
   <action name="toggleLibrarySidebarAction">
    <property name="icon">
     <iconset theme="file-catalog-symbolic">
@@ -364,24 +243,6 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+D</string>
-   </property>
-  </action>
-  <action name="showFirmwareUtilsAction">
-   <property name="icon">
-    <iconset theme="circuit">
-     <normaloff/>
-    </iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Firmware utilities</string>
-   </property>
-  </action>
-  <action name="showDonationAction">
-   <property name="icon">
-    <iconset theme="help-donate"/>
-   </property>
-   <property name="text">
-    <string>Donate...</string>
    </property>
   </action>
  </widget>

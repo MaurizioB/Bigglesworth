@@ -179,7 +179,7 @@ class MayTheForce(QtWidgets.QDialog):
 #        '''
 #
 #        self.text = [l.strip() for l in text.split('\n')]
-        self.fullText = 'It is a dark time for the Blofeld editors. ' \
+        self.fullText = u'It is a dark time for the Blofeld editors. ' \
             'A year has passed since the previous version of BIGGLESWORTH was released, ' \
             'and lots of users lost their hope.\n\n' \
             'Evading the dreaded competition, a group of freedom fighters has ' \

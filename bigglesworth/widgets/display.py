@@ -369,21 +369,44 @@ class ProgSendWidget(VDisplayGroup):
     def __init__(self):
         VDisplayGroup.__init__(self)
         self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred))
+
+        self.document = QtGui.QTextDocument()
+        self.document.setPlainText('S\nE\nN\nD')
+        option = QtGui.QTextOption(QtCore.Qt.AlignCenter)
+        self.document.setDefaultTextOption(option)
+        self.document.setDocumentMargin(0)
+        self.cursor = QtGui.QTextCursor(self.document)
+        self.cursor.select(self.cursor.Document)
+
         self.compute()
         self.setToolTip('Send Program change to Blofeld')
         self.setStatusTip('Send the current bank/program location to the Blofeld')
 
     def compute(self):
         font = self.font()
-        font.setPointSize(self.height() * .25)
-        fm = QtGui.QFontMetrics(font)
-        self.textPath = QtGui.QPainterPath()
-        self.textPath.addText(0, 0, font, 'D')
-        self.deltaY = self.textPath.boundingRect().height() + fm.descent()
-        self.textPath.addText(0, self.deltaY, font, 'E')
-        self.textPath.addText(0, self.deltaY * 2, font, 'N')
-        self.textPath.addText(0, self.deltaY * 3, font, 'D')
-        self.textPath.translate(0, self.deltaY)
+        font.setPointSize(self.height() * .26)
+        self.document.setDefaultFont(font)
+        self.document.setTextWidth(self.width())
+        fontMetrics = QtGui.QFontMetricsF(font)
+        format = self.document.firstBlock().blockFormat()
+        format.setLineHeight(fontMetrics.ascent() * 100 / fontMetrics.height(), format.ProportionalHeight)
+        self.cursor.setBlockFormat(format)
+        diff = self.height() - self.document.size().height()
+        if diff >= 2:
+            self.topMargin = -(self.height() - self.document.size().height()) * .5
+        else:
+            self.topMargin = 0
+        self.setColor()
+
+    def setColor(self):
+        palette = self.palette()
+        charFormat = self.document.firstBlock().charFormat()
+        charFormat.setForeground(palette.color(palette.WindowText))
+        self.cursor.setCharFormat(charFormat)
+
+    def changeEvent(self, event):
+        if event.type() == QtCore.QEvent.EnabledChange:
+            self.setColor()
 
     def minimumSizeHint(self):
         base = VDisplayGroup.sizeHint(self)
@@ -393,10 +416,10 @@ class ProgSendWidget(VDisplayGroup):
     def paintEvent(self, event):
         VDisplayGroup.paintEvent(self, event)
         qp = QtGui.QPainter(self)
-        qp.translate(1.5, -.5 + (self.height() - 2 - self.textPath.boundingRect().height()) * .5)
-        for letter in 'S', 'E', 'N', 'D':
-            qp.translate(0, self.deltaY)
-            qp.drawText(0, 0, letter)
+        qp.setRenderHints(qp.TextAntialiasing)
+        rect = QtCore.QRectF(self.rect())
+#        qp.translate(0, self.topMargin)
+        self.document.drawContents(qp, rect)
 
     def mousePressEvent(self, event):
         self.clicked.emit()

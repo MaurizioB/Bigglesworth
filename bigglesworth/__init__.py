@@ -6,6 +6,7 @@ import os, sys
 from time import sleep
 from Queue import Queue
 from string import uppercase
+from random import randrange
 sys.path.append(os.path.join(os.path.dirname(__file__), 'bigglesworth/editorWidgets'))
 os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
 
@@ -30,7 +31,7 @@ from bigglesworth.themes import ThemeCollection
 from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, GlobalsDialog, FirmwareDialog, 
     DumpReceiveDialog, DumpSendDialog, WarningMessageBox, SmallDumper, FirstRunWizard, LogWindow, 
     BlofeldDumper, FindDuplicates, SoundImport, SoundExport, SoundListExport, MidiDuplicateDialog, 
-    DonateDialog)
+    DonateDialog, MidiChartDialog, AboutDialog)
 from bigglesworth.help import HelpDialog
 
 from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR, LogInfo, LogWarning, factoryPresets, factoryPresetsNamesDict
@@ -325,16 +326,14 @@ class Bigglesworth(QtWidgets.QApplication):
 #        self.mainWindow.quitAction.setIcon(QtGui.QIcon(':/icons/Bigglesworth/16x16/dialog-information.svg'))
         self.mainWindow.closed.connect(self.checkClose)
         self.mainWindow.quitAction.triggered.connect(self.quit)
-        self.mainWindow.helpAction.triggered.connect(self.showHelp)
         self.mainWindow.midiConnect.connect(self.midiConnect)
-        self.mainWindow.showLogAction.triggered.connect(self.loggerWindow.show)
 
-        self.mainWindow.showSettingsAction.triggered.connect(self.showSettings)
-        self.mainWindow.showGlobalsAction.triggered.connect(self.showGlobals)
-        self.mainWindow.showGlobalsAction.setEnabled(True if all(self.connections) else False)
-        self.mainWindow.showFirmwareUtilsAction.triggered.connect(self.showFirmwareUtils)
-        self.mainWindow.showFirmwareUtilsAction.setEnabled(True if self.connections[1] else False)
-        self.mainWindow.showDonationAction.triggered.connect(self.showDonation)
+#        self.mainWindow.showSettingsAction.triggered.connect(self.showSettings)
+#        self.mainWindow.showGlobalsAction.triggered.connect(self.showGlobals)
+#        self.mainWindow.showGlobalsAction.setEnabled(True if all(self.connections) else False)
+#        self.mainWindow.showFirmwareUtilsAction.triggered.connect(self.showFirmwareUtils)
+#        self.mainWindow.showFirmwareUtilsAction.setEnabled(True if self.connections[1] else False)
+#        self.mainWindow.showDonationAction.triggered.connect(self.showDonation)
 
         self.mainWindow.leftTabWidget.fullDumpBlofeldToCollectionRequested.connect(self.fullDumpBlofeldToCollection)
         self.mainWindow.leftTabWidget.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeld)
@@ -365,10 +364,8 @@ class Bigglesworth(QtWidgets.QApplication):
         self.editorWindow.midiEvent.connect(self.sendMidiEvent)
         self.editorWindow.midiEvent[object, bool].connect(self.sendMidiEvent)
         self.editorWindow.midiConnect.connect(self.midiConnect)
-        self.editorWindow.editorMenuBar.dumpFromRequested.connect(self.dumpFrom)
-        self.editorWindow.editorMenuBar.dumpToRequested.connect(self.dumpTo)
-        self.mainWindow.showEditorAction.triggered.connect(self.editorWindow.show)
-        self.mainWindow.showWavetableAction.triggered.connect(self.showWavetables)
+        self.editorWindow.dumpFromRequested.connect(self.dumpFrom)
+        self.editorWindow.dumpToRequested.connect(self.dumpTo)
         self.mainWindow.soundEditRequested.connect(self.editorWindow.openSoundFromUid)
 #        self.editorWindow.midiInWidget.setConnections(len([conn for conn in self.midiDevice.input.connections.input if not conn.hidden]))
 #        self.editorWindow.midiOutWidget.setConnections(len([conn for conn in self.midiDevice.output.connections.output if not conn.hidden]))
@@ -399,6 +396,8 @@ class Bigglesworth(QtWidgets.QApplication):
         self.editorDumper = SmallDumper(self.editorWindow)
         self.editorDumper.accepted.connect(lambda: setattr(self, 'dumpBlock', False))
 #        self.mainDumper.rejected.connect(lambda: setattr(self, 'dumpBlock', False))
+
+        self.lastAboutEgg = randrange(2)
 
         self.welcome = Welcome(self)
         self.welcome.showLibrarian.connect(self.mainWindow.activate)
@@ -1068,13 +1067,77 @@ class Bigglesworth(QtWidgets.QApplication):
             startUp = 3
             if self.argparse.librarian:
                 self.mainWindow.show()
-#            self.showWavetable()
             QtCore.QTimer.singleShot(0, self.showWavetables)
         if self.argparse.librarian or startUp == 1:
             startUp = 1
             self.mainWindow.show()
         if not startUp:
             self.welcome.show()
+
+    def getActionParent(self, parent=None):
+        if not isinstance(parent, QtWidgets.QWidget):
+            parent = self.sender()
+            while isinstance(parent, (QtWidgets.QAction, QtWidgets.QMenu)):
+                parent = parent.parent()
+            while not isinstance(parent, QtWidgets.QWidget) or not parent.isWindow():
+                parent = parent.parent()
+        if parent is None:
+            parent = self.activeWindow()
+        return parent
+
+    def getWindowsMenu(self, parent):
+        menu = QtWidgets.QMenu('&Windows', parent)
+        if not isinstance(parent, MainWindow):
+            librarianAction = menu.addAction(QtGui.QIcon.fromTheme('tab-duplicate'), '&Librarian')
+            librarianAction.setShortcut(QtGui.QKeySequence('Alt+L'))
+            librarianAction.triggered.connect(lambda: self.mainWindow.activate())
+        if not isinstance(parent, EditorWindow):
+            soundEditorAction = menu.addAction(QtGui.QIcon.fromTheme('dial'), 'Sound &editor')
+            soundEditorAction.setShortcut(QtGui.QKeySequence('Alt+E'))
+            soundEditorAction.triggered.connect(lambda: self.editorWindow.activate())
+        if not isinstance(parent, WaveTableWindow):
+            waveTableAction = menu.addAction(QtGui.QIcon.fromTheme('wavetables'), '&Wavetable editor')
+            waveTableAction.setShortcut(QtGui.QKeySequence('Alt+W'))
+            waveTableAction.triggered.connect(self.showWavetables)
+        menu.addSeparator()
+        settingsAction = menu.addAction(QtGui.QIcon.fromTheme('settings'), '&Settings')
+        settingsAction.setShortcut(QtGui.QKeySequence('Ctrl+P'))
+        settingsAction.triggered.connect(self.showSettings)
+        globalsAction = menu.addAction(QtGui.QIcon.fromTheme('blofeld-b'), 'Blofeld device &query')
+        globalsAction.triggered.connect(self.showGlobals)
+        firmwareAction = menu.addAction(QtGui.QIcon.fromTheme('circuit'), 'Firmware utilities')
+        firmwareAction.triggered.connect(self.showFirmwareUtils)
+
+        inConn, outConn = self.connections
+        globalsAction.setEnabled(all((inConn, outConn)))
+        firmwareAction.setEnabled(bool(outConn))
+
+        def enableActions(inConn, outConn, globalsAction, firmwareAction):
+            globalsAction.setEnabled(all((inConn, outConn)))
+            firmwareAction.setEnabled(bool(outConn))
+        self.midiConnChanged.connect(lambda inConn, outConn, g=globalsAction, f=firmwareAction: enableActions(inConn, outConn, g, f))
+
+        return menu
+
+    def getAboutMenu(self, parent):
+        menu = QtWidgets.QMenu('&?', parent)
+        helpAction = menu.addAction(QtGui.QIcon.fromTheme('help-contents'), 'Bigglesworth Manual')
+        helpAction.triggered.connect(self.showHelp)
+        loggerAction = menu.addAction(QtGui.QIcon.fromTheme('text-x-log'), 'Show log')
+        loggerAction.triggered.connect(self.loggerWindow.show)
+        midiChartAction = menu.addAction(QtGui.QIcon.fromTheme('midi'), 'MIDI implementation chart...')
+        midiChartAction.triggered.connect(lambda _, parent=parent: MidiChartDialog(self.getActionParent(parent)).exec_())
+        menu.addSeparator()
+        aboutAction = menu.addAction(QtGui.QIcon.fromTheme('help-contents'), 'About &Bigglesworth...')
+        aboutAction.triggered.connect(self.showAbout)
+        aboutQtAction = menu.addAction(QtGui.QIcon.fromTheme('qtcreator'), 'About &Qt...')
+        aboutQtAction.triggered.connect(lambda _, parent=parent: QtWidgets.QMessageBox.aboutQt(self.getActionParent(parent), 'About Qt...'))
+        donateAction = menu.addAction(QtGui.QIcon.fromTheme('help-donate'), 'Donate...')
+        donateAction.triggered.connect(self.showDonation)
+        menu.addSeparator()
+        updatesAction = menu.addAction(QtGui.QIcon.fromTheme('system-software-update'), 'Check for updates...')
+        updatesAction.setEnabled(False)
+        return menu
 
     def showWavetables(self):
         if WaveTableWindow.openedWindows:
@@ -1087,8 +1150,6 @@ class Bigglesworth(QtWidgets.QApplication):
             wtWindow = WaveTableWindow()
             wtWindow.midiEvent.connect(self.sendMidiEvent)
             wtWindow.midiConnect.connect(self.midiConnect)
-            wtWindow.showLibrarianAction.triggered.connect(self.mainWindow.activate)
-            wtWindow.showEditorAction.triggered.connect(self.editorWindow.activate)
             if sys.platform == 'darwin':
                 wtWindow.closed.connect(self.checkCloseMacOS)
 
@@ -1097,11 +1158,7 @@ class Bigglesworth(QtWidgets.QApplication):
         wtWindow.activateWindow()
 
     def showSettings(self, parent=None):
-        if not isinstance(parent, QtWidgets.QWidget):
-            parent = self.sender()
-            while not isinstance(parent, QtWidgets.QWidget) or not parent.isWindow():
-                parent = parent.parent()
-        self.settingsDialog.setParent(parent, QtCore.Qt.Dialog)
+        self.settingsDialog.setParent(self.getActionParent(parent), QtCore.Qt.Dialog)
         self.globalsBlock = True
         self.midiDevice.midi_event.connect(self.settingsDialog.midiEventReceived)
         self.graph.conn_register.connect(self.settingsDialog.midiConnEvent)
@@ -1120,7 +1177,8 @@ class Bigglesworth(QtWidgets.QApplication):
             self.editorWindow.setTheme(self.themes.current)
 #            self.settings.setValue('theme', self.themes.current.name)
 
-    def showGlobals(self):
+    def showGlobals(self, parent=None):
+        self.globalsDialog.setParent(self.getActionParent(parent), QtCore.Qt.Dialog)
         self.globalsBlock = True
         self.midiDevice.midi_event.connect(self.globalsDialog.midiEventReceived)
         self.midiConnChanged.connect(self.globalsDialog.midiConnChanged)
@@ -1132,11 +1190,7 @@ class Bigglesworth(QtWidgets.QApplication):
             return
 
     def showFirmwareUtils(self, parent=None):
-        if not isinstance(parent, QtWidgets.QWidget):
-            parent = self.sender()
-            while not isinstance(parent, QtWidgets.QWidget) or not parent.isWindow():
-                parent = parent.parent()
-        self.firmwareDialog.setParent(parent, QtCore.Qt.Dialog)
+        self.firmwareDialog.setParent(self.getActionParent(parent), QtCore.Qt.Dialog)
         self.globalsBlock = True
         self.midiDevice.midi_event.connect(self.firmwareDialog.midiEventReceived)
         self.midiConnChanged.connect(self.firmwareDialog.midiConnChanged)
@@ -1146,11 +1200,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.globalsBlock = False
 
     def showDonation(self, parent=None):
-        if not isinstance(parent, QtWidgets.QWidget):
-            parent = self.sender()
-            while not isinstance(parent, QtWidgets.QWidget) or not parent.isWindow():
-                parent = parent.parent()
-        res = DonateDialog(parent).exec_()
+        res = DonateDialog(self.getActionParent(parent)).exec_()
         if res:
             amount, currency, anonymous = res
             url = 'http://bigglesworth.it/pp/donate.php?amount={}&currency={}'.format(
@@ -1162,19 +1212,30 @@ class Bigglesworth(QtWidgets.QApplication):
 
     @QtCore.pyqtSlot(str)
     def showHelp(self, keyword=''):
-        try:
-            parent = self.sender().window()
-        except:
-            parent = self.sender()
-            while parent:
-                parent = parent.parent()
-                if isinstance(parent, (QtWidgets.QMainWindow, QtWidgets.QDialog)):
-                    break
+        parent = self.getActionParent()
+#        try:
+#            parent = self.sender().window()
+#        except:
+#            parent = self.sender()
+#            while parent:
+#                parent = parent.parent()
+#                if isinstance(parent, (QtWidgets.QMainWindow, QtWidgets.QDialog)):
+#                    break
         if not keyword and parent:
             keyword = parent.objectName()
         elif isinstance(keyword, QtCore.QObject):
             keyword = keyword.objectName()
         self.helpDialog.openKeyword(keyword, parentWindow=parent)
+
+    def showAbout(self):
+        parent = self.getActionParent()
+        if randrange(100) / 33:
+            AboutDialog(parent).exec_()
+        else:
+            self.lastAboutEgg = not self.lastAboutEgg
+            from bigglesworth.forcebwu import MayTheForce
+            from bigglesworth.matrixhasu import MatrixHasU
+            (MayTheForce, MatrixHasU)[self.lastAboutEgg](parent).exec_()
 
     def eventFilter(self, source, event):
         if source in self.watchedDialogs and event.type() == QtCore.QEvent.QCloseEvent:
