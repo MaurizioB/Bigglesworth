@@ -63,7 +63,16 @@ class ThemeEditor(QtWidgets.QDialog):
         self.renameBtn.clicked.connect(self.rename)
         self.currentTheme = None
         self.changed = False
+
+        self.saveBtn = self.buttonBox.button(self.buttonBox.Save)
         self.saveBtn.clicked.connect(self.save)
+        self.saveCloseBtn = self.buttonBox.button(self.buttonBox.SaveAll)
+        self.saveCloseBtn.clicked.connect(lambda: [self.save(), self.close()])
+        self.saveCloseBtn.setText('Save and close')
+        self.saveCloseBtn.setIcon(QtGui.QIcon.fromTheme('document-save'))
+        
+        self.buttonBox.button(self.buttonBox.Close).clicked.connect(self.close)
+
         self.restoreBtn.clicked.connect(self.restore)
         self.deleteBtn.clicked.connect(self.delete)
 
@@ -178,6 +187,12 @@ class ThemeEditor(QtWidgets.QDialog):
         else:
             self.step8Timer.stop()
             self.stepFullTimer.stop()
+        self.previewWidget.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents, state)
+
+    def hideEvent(self, event):
+        self.step8Timer.stop()
+        self.stepFullTimer.stop()
+        QtWidgets.QDialog.hideEvent(self, event)
 
     def step8Dials(self):
         if self.dial1Normal.value >= self.dial1Normal.maximum:
@@ -352,6 +367,7 @@ class ThemeEditor(QtWidgets.QDialog):
         if mode and not self.themeCombo.itemData(themeId, Dirty):
             mode = False
         self.saveBtn.setEnabled(mode)
+        self.saveCloseBtn.setEnabled(mode)
         self.restoreBtn.setEnabled(mode)
 
         theme.changed.connect(self.setDirty)
@@ -443,6 +459,7 @@ class ThemeEditor(QtWidgets.QDialog):
     def setDirty(self, *args):
         self.themeCombo.setItemData(self.themeCombo.currentIndex(), True, Dirty)
         self.saveBtn.setEnabled(True)
+        self.saveCloseBtn.setEnabled(True)
         self.restoreBtn.setEnabled(True)
 
     def save(self):
@@ -454,6 +471,7 @@ class ThemeEditor(QtWidgets.QDialog):
         self.themeCombo.setItemData(currentIndex, storedTheme, Stored)
         self.themeCombo.setItemData(currentIndex, False, Dirty)
         self.saveBtn.setEnabled(False)
+        self.saveCloseBtn.setEnabled(False)
         self.restoreBtn.setEnabled(False)
         self.themes.saveTheme(self.currentTheme)
         self.changed = True
@@ -465,6 +483,7 @@ class ThemeEditor(QtWidgets.QDialog):
         self.currentTheme.changed.emit(self.currentTheme)
         self.themeCombo.setItemData(currentIndex, False, Dirty)
         self.saveBtn.setEnabled(False)
+        self.saveCloseBtn.setEnabled(False)
         self.restoreBtn.setEnabled(False)
 
     def delete(self):

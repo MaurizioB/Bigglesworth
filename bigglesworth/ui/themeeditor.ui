@@ -14,6 +14,263 @@
    <string>Theme editor</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <item row="3" column="2">
+    <widget class="QWidget" name="previewWidget" native="true">
+     <property name="autoFillBackground">
+      <bool>true</bool>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <property name="margin">
+       <number>6</number>
+      </property>
+      <item>
+       <widget class="Frame" name="frame">
+        <property name="label" stdset="0">
+         <string>Frame</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_3">
+         <item row="1" column="0" colspan="2">
+          <widget class="Dial" name="dial2Normal">
+           <property name="label" stdset="0">
+            <string>Full dial</string>
+           </property>
+           <property name="minimumWidgetSize" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="SquareButton" name="button_2">
+           <property name="label" stdset="0">
+            <string>Button</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0" colspan="2">
+          <widget class="Dial" name="dial1Normal">
+           <property name="label" stdset="0">
+            <string>Dial (step 8)</string>
+           </property>
+           <property name="minimumWidgetSize" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+           <property name="maximum" stdset="0">
+            <number>128</number>
+           </property>
+           <property name="step" stdset="0">
+            <number>8</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0" colspan="2">
+          <widget class="Dial" name="dial3Normal">
+           <property name="label" stdset="0">
+            <string>Center dial</string>
+           </property>
+           <property name="minimumWidgetSize" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+           <property name="rangeZeroAngle" stdset="0">
+            <number>150</number>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0">
+          <widget class="SquareButton" name="switchableBtnEnabled">
+           <property name="label" stdset="0">
+            <string>Switchable</string>
+           </property>
+           <property name="switchable" stdset="0">
+            <bool>true</bool>
+           </property>
+           <property name="switched" stdset="0">
+            <bool>true</bool>
+           </property>
+           <property name="insideText" stdset="0">
+            <string>On</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="SquareButton" name="pressedBtnEnabled">
+           <property name="label" stdset="0">
+            <string>Pressed button</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <widget class="Combo" name="combo">
+           <property name="label" stdset="0">
+            <string/>
+           </property>
+           <property name="valueList" stdset="0">
+            <stringlist>
+             <string>Combo box</string>
+             <string>Item 1</string>
+             <string>Item 2</string>
+             <string>Disabled item</string>
+            </stringlist>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1" rowspan="4">
+          <widget class="Slider" name="sliderEnabled">
+           <property name="minimumWidgetSize" stdset="0">
+            <size>
+             <width>16</width>
+             <height>96</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="Frame" name="frame_2">
+        <property name="label" stdset="0">
+         <string>Disabled frame</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_2">
+         <item row="5" column="0">
+          <widget class="SquareButton" name="switchableBtnDisabled">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="label" stdset="0">
+            <string>Switchable</string>
+           </property>
+           <property name="switchable" stdset="0">
+            <bool>true</bool>
+           </property>
+           <property name="switched" stdset="0">
+            <bool>true</bool>
+           </property>
+           <property name="insideText" stdset="0">
+            <string>On</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="SquareButton" name="button_4">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="label" stdset="0">
+            <string>Button</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0" colspan="2">
+          <widget class="Dial" name="dial3Disabled">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="label" stdset="0">
+            <string>Center dial</string>
+           </property>
+           <property name="minimumWidgetSize" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+           <property name="rangeZeroAngle" stdset="0">
+            <number>150</number>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0" colspan="2">
+          <widget class="Dial" name="dial2Disabled">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="label" stdset="0">
+            <string>Full dial</string>
+           </property>
+           <property name="minimumWidgetSize" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0" colspan="2">
+          <widget class="Dial" name="dial1Disabled">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="label" stdset="0">
+            <string>Dial (step 8)</string>
+           </property>
+           <property name="minimumWidgetSize" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+           <property name="maximum" stdset="0">
+            <number>128</number>
+           </property>
+           <property name="step" stdset="0">
+            <number>8</number>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="SquareButton" name="pressedBtnDisabled">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="label" stdset="0">
+            <string>Pressed button</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <widget class="Combo" name="combo_2">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="label" stdset="0">
+            <string/>
+           </property>
+           <property name="valueList" stdset="0">
+            <stringlist>
+             <string>Some item</string>
+            </stringlist>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1" rowspan="4">
+          <widget class="Slider" name="sliderDisabled">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="minimumWidgetSize" stdset="0">
+            <size>
+             <width>16</width>
+             <height>96</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
    <item row="0" column="0" colspan="3">
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
@@ -92,27 +349,6 @@
        </property>
        <property name="icon">
         <iconset theme="edit-undo">
-         <normaloff/>
-        </iconset>
-       </property>
-       <property name="toolButtonStyle">
-        <enum>Qt::ToolButtonTextBesideIcon</enum>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QToolButton" name="saveBtn">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="text">
-        <string>Save</string>
-       </property>
-       <property name="icon">
-        <iconset theme="document-save">
          <normaloff/>
         </iconset>
        </property>
@@ -778,261 +1014,11 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="2">
-    <widget class="QWidget" name="previewWidget" native="true">
-     <property name="autoFillBackground">
-      <bool>true</bool>
+   <item row="4" column="0" colspan="3">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Close|QDialogButtonBox::Save|QDialogButtonBox::SaveAll</set>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
-      <property name="margin">
-       <number>6</number>
-      </property>
-      <item>
-       <widget class="Frame" name="frame">
-        <property name="label" stdset="0">
-         <string>Frame</string>
-        </property>
-        <layout class="QGridLayout" name="gridLayout_3">
-         <item row="1" column="0" colspan="2">
-          <widget class="Dial" name="dial2Normal">
-           <property name="label" stdset="0">
-            <string>Full dial</string>
-           </property>
-           <property name="minimumWidgetSize" stdset="0">
-            <size>
-             <width>20</width>
-             <height>40</height>
-            </size>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <widget class="SquareButton" name="button_2">
-           <property name="label" stdset="0">
-            <string>Button</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0" colspan="2">
-          <widget class="Dial" name="dial1Normal">
-           <property name="label" stdset="0">
-            <string>Dial (step 8)</string>
-           </property>
-           <property name="minimumWidgetSize" stdset="0">
-            <size>
-             <width>20</width>
-             <height>40</height>
-            </size>
-           </property>
-           <property name="maximum" stdset="0">
-            <number>128</number>
-           </property>
-           <property name="step" stdset="0">
-            <number>8</number>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0" colspan="2">
-          <widget class="Dial" name="dial3Normal">
-           <property name="label" stdset="0">
-            <string>Center dial</string>
-           </property>
-           <property name="minimumWidgetSize" stdset="0">
-            <size>
-             <width>20</width>
-             <height>40</height>
-            </size>
-           </property>
-           <property name="rangeZeroAngle" stdset="0">
-            <number>150</number>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="0">
-          <widget class="SquareButton" name="switchableBtnEnabled">
-           <property name="label" stdset="0">
-            <string>Switchable</string>
-           </property>
-           <property name="switchable" stdset="0">
-            <bool>true</bool>
-           </property>
-           <property name="switched" stdset="0">
-            <bool>true</bool>
-           </property>
-           <property name="insideText" stdset="0">
-            <string>On</string>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="0">
-          <widget class="SquareButton" name="pressedBtnEnabled">
-           <property name="label" stdset="0">
-            <string>Pressed button</string>
-           </property>
-          </widget>
-         </item>
-         <item row="6" column="0">
-          <widget class="Combo" name="combo">
-           <property name="label" stdset="0">
-            <string/>
-           </property>
-           <property name="valueList" stdset="0">
-            <stringlist>
-             <string>Combo box</string>
-             <string>Item 1</string>
-             <string>Item 2</string>
-             <string>Disabled item</string>
-            </stringlist>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="1" rowspan="4">
-          <widget class="Slider" name="sliderEnabled">
-           <property name="minimumWidgetSize" stdset="0">
-            <size>
-             <width>16</width>
-             <height>96</height>
-            </size>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item>
-       <widget class="Frame" name="frame_2">
-        <property name="label" stdset="0">
-         <string>Disabled frame</string>
-        </property>
-        <layout class="QGridLayout" name="gridLayout_2">
-         <item row="5" column="0">
-          <widget class="SquareButton" name="switchableBtnDisabled">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="label" stdset="0">
-            <string>Switchable</string>
-           </property>
-           <property name="switchable" stdset="0">
-            <bool>true</bool>
-           </property>
-           <property name="switched" stdset="0">
-            <bool>true</bool>
-           </property>
-           <property name="insideText" stdset="0">
-            <string>On</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <widget class="SquareButton" name="button_4">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="label" stdset="0">
-            <string>Button</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0" colspan="2">
-          <widget class="Dial" name="dial3Disabled">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="label" stdset="0">
-            <string>Center dial</string>
-           </property>
-           <property name="minimumWidgetSize" stdset="0">
-            <size>
-             <width>20</width>
-             <height>40</height>
-            </size>
-           </property>
-           <property name="rangeZeroAngle" stdset="0">
-            <number>150</number>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0" colspan="2">
-          <widget class="Dial" name="dial2Disabled">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="label" stdset="0">
-            <string>Full dial</string>
-           </property>
-           <property name="minimumWidgetSize" stdset="0">
-            <size>
-             <width>20</width>
-             <height>40</height>
-            </size>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0" colspan="2">
-          <widget class="Dial" name="dial1Disabled">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="label" stdset="0">
-            <string>Dial (step 8)</string>
-           </property>
-           <property name="minimumWidgetSize" stdset="0">
-            <size>
-             <width>20</width>
-             <height>40</height>
-            </size>
-           </property>
-           <property name="maximum" stdset="0">
-            <number>128</number>
-           </property>
-           <property name="step" stdset="0">
-            <number>8</number>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="0">
-          <widget class="SquareButton" name="pressedBtnDisabled">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="label" stdset="0">
-            <string>Pressed button</string>
-           </property>
-          </widget>
-         </item>
-         <item row="6" column="0">
-          <widget class="Combo" name="combo_2">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="label" stdset="0">
-            <string/>
-           </property>
-           <property name="valueList" stdset="0">
-            <stringlist>
-             <string>Some item</string>
-            </stringlist>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="1" rowspan="4">
-          <widget class="Slider" name="sliderDisabled">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="minimumWidgetSize" stdset="0">
-            <size>
-             <width>16</width>
-             <height>96</height>
-            </size>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
-     </layout>
     </widget>
    </item>
   </layout>
