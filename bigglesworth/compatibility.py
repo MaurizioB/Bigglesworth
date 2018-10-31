@@ -107,6 +107,10 @@ else:
             self.setDefaultWidget(self.label)
             self.setText = self.label.setText
 
+        def setVisible(self, visible):
+            self.label.setVisible(visible)
+            QtWidgets.QWidgetAction.setVisible(self, visible)
+
         def setMenuFont(self):
             #menu item font sizes have to be forced to float (at least for osx 10.5)
             #also, they seem to be slightly bigger than they claim...
@@ -222,6 +226,9 @@ else:
                 self.setDefaultWidget(self.label)
                 self.setText = self.label.setText
 
+            def setVisible(self, visible):
+                self.label.setVisible(visible)
+                QtWidgets.QWidgetAction.setVisible(self, visible)
 
         #QWidgetAction in a QMenuBar don't draw the backgrounds, this hack
         #ensures that the QMacNativeWidget (which is created as a parent of the 
@@ -247,7 +254,7 @@ else:
                 action = MenuSection(self, text)
             self.insertAction(before, action)
             return action
-    
+
         #workaround for QIcon.fromTheme not properly working on OSX with cx_freeze
         QtGui.QIcon._fromTheme = QtGui.QIcon.fromTheme
         sizes = (128, 64, 32, 24, 22, 16, 8)
