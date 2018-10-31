@@ -59,7 +59,7 @@
    <item row="2" column="1">
     <widget class="QStackedWidget" name="stackedWidget">
      <property name="currentIndex">
-      <number>4</number>
+      <number>7</number>
      </property>
      <widget class="QWidget" name="startUpPage">
       <layout class="QGridLayout" name="gridLayout_2">
@@ -1140,9 +1140,6 @@ parameters</string>
        </item>
        <item>
         <widget class="QCheckBox" name="updateCheckChk">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
          <property name="text">
           <string>Check for updates on startup</string>
          </property>

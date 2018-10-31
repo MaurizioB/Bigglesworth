@@ -451,6 +451,8 @@ class SettingsDialog(QtWidgets.QDialog):
         self.applyTheme(currentTheme)
         self.themeCombo.blockSignals(False)
 
+        self.updateCheckChk.setChecked(self.settings.value('StartupUpdateCheck', True, bool))
+
         connections = self.main.connections
         self.midiConnectionsItem.setIcon(QtGui.QIcon.fromTheme('midi' if any(connections) else 'midi-warning'))
         self.detectBtn.setEnabled(all(connections))
@@ -484,6 +486,7 @@ class SettingsDialog(QtWidgets.QDialog):
             self.main.database.setBackupInterval(backupInterval)
             self.settings.setValue('FirstRunShown', False if self.showFirstRunChk.isChecked() else True)
             self.settings.setValue('FirstRunAutoDetect', False if self.firstRunSkipBlofeldDetectChk.isChecked() else True)
+            self.settings.setValue('StartupUpdateCheck', self.updateCheckChk.isChecked())
 
             self.settings.beginGroup('MIDI')
             self.settings.setValue('blofeldId', self.deviceIdSpin.value())
