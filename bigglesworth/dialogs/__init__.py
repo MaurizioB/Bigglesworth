@@ -23,3 +23,4 @@ from bigglesworth.dialogs.mididuplicate import MidiDuplicateDialog
 from bigglesworth.dialogs.initemptyslots import InitEmptySlotsDialog
 from bigglesworth.dialogs.firmware import FirmwareDialog
 from bigglesworth.dialogs.donate import DonateDialog
+from bigglesworth.dialogs.updates import UpdateDialog

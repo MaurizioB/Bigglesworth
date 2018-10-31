@@ -31,7 +31,7 @@ from bigglesworth.themes import ThemeCollection
 from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, GlobalsDialog, FirmwareDialog, 
     DumpReceiveDialog, DumpSendDialog, WarningMessageBox, SmallDumper, FirstRunWizard, LogWindow, 
     BlofeldDumper, FindDuplicates, SoundImport, SoundExport, SoundListExport, MidiDuplicateDialog, 
-    DonateDialog, MidiChartDialog, AboutDialog)
+    DonateDialog, MidiChartDialog, AboutDialog, UpdateDialog)
 from bigglesworth.help import HelpDialog
 
 from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR, LogInfo, LogWarning, factoryPresets, factoryPresetsNamesDict
@@ -42,6 +42,8 @@ from bigglesworth.mididevice import MidiDevice
 from bigglesworth.wavetables import WaveTableWindow, UidColumn, NameColumn, SlotColumn, DataColumn, EditedColumn
 
 from bigglesworth.welcome import Welcome
+from bigglesworth.version import isNewer
+from bigglesworth.dialogs.updates import UpdateChecker
 
 
 class SqlTableModelFix(QtSql.QSqlTableModel):
@@ -160,6 +162,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.dumpBuffer = []
         self.watchedDialogs = []
         self.bankBuffer = None
+        self.isCheckingUpdates = False
 
         self.logger = Logger(self)
 
@@ -1113,10 +1116,21 @@ class Bigglesworth(QtWidgets.QApplication):
             from bigglesworth.firstrun import FirstRunObject
             self.firstRunObject = FirstRunObject(self, editorOnly=True)
             
+        if self.settings.value('StartupUpdateCheck', True, bool):
+            self.updateChecker = UpdateChecker(30)
+            self.updateCheckerThread = QtCore.QThread()
+            self.updateChecker.moveToThread(self.updateCheckerThread)
+            self.updateChecker.error.connect(self.updateError)
+            self.updateChecker.result.connect(self.updateReceived)
+            self.isCheckingUpdates = True
+            self.updateChecker.finished.connect(self.updateCheckerThread.quit)
+            self.updateCheckerThread.started.connect(self.updateChecker.run)
+            QtCore.QTimer.singleShot(4000, self.updateCheckerThread.start)
+
         startUp = self.settings.value('StartUpWindow', 0, int)
         if self.argparse.editor is not None or startUp == 2:
             startUp = 2
-            if self.argparse.librarian:
+            if self.argparse.librarian is not None:
                 self.mainWindow.show()
 #            self.editorWindow.show()
             QtCore.QTimer.singleShot(0, self.editorWindow.activate)
@@ -1125,14 +1139,33 @@ class Bigglesworth(QtWidgets.QApplication):
                 self.editorWindow.openSoundFromBankProg(*index)
         if self.argparse.wavetables or startUp == 3:
             startUp = 3
-            if self.argparse.librarian:
+            if self.argparse.librarian is not None:
                 self.mainWindow.show()
             QtCore.QTimer.singleShot(0, self.showWavetables)
-        if self.argparse.librarian or startUp == 1:
+        if self.argparse.librarian is not None or startUp == 1:
             startUp = 1
             self.mainWindow.show()
         if not startUp:
             self.welcome.show()
+
+    def updateReceived(self, contents):
+        self.isCheckingUpdates = False
+        self.updateChecker.error.connect(self.updateError)
+        self.updateChecker.result.connect(self.updateReceived)
+        if isNewer(contents[0]['tag_name']):
+            UpdateDialog(self.activeWindow()).exec_(contents)
+
+    def updateError(self):
+        self.isCheckingUpdates = False
+        self.updateChecker.error.connect(self.updateError)
+        self.updateChecker.result.connect(self.updateReceived)
+
+    def checkUpdates(self, parent):
+        if self.isCheckingUpdates:
+            self.updateChecker.error.disconnect(self.updateError)
+            self.updateChecker.result.disconnect(self.updateReceived)
+            self.isCheckingUpdates = False
+        UpdateDialog(parent).exec_()
 
     def getActionParent(self, parent=None):
         if not isinstance(parent, QtWidgets.QWidget):
@@ -1196,7 +1229,8 @@ class Bigglesworth(QtWidgets.QApplication):
         donateAction.triggered.connect(self.showDonation)
         menu.addSeparator()
         updatesAction = menu.addAction(QtGui.QIcon.fromTheme('system-software-update'), 'Check for updates...')
-        updatesAction.setEnabled(False)
+#        updatesAction.setEnabled(False)
+        updatesAction.triggered.connect(lambda _, parent=parent: self.checkUpdates(parent))
         return menu
 
     def showWavetables(self):
@@ -1296,6 +1330,14 @@ class Bigglesworth(QtWidgets.QApplication):
             from bigglesworth.forcebwu import MayTheForce
             from bigglesworth.matrixhasu import MatrixHasU
             (MayTheForce, MatrixHasU)[self.lastAboutEgg](parent).exec_()
+
+    def isClean(self):
+        if self.editorWindow._editStatus == self.editorWindow.Modified:
+            return False
+        for wtWindow in WaveTableWindow.openedWindows:
+            if wtWindow.isVisible() and not wtWindow.isClean():
+                return False
+        return True
 
     def eventFilter(self, source, event):
         if source in self.watchedDialogs and event.type() == QtCore.QEvent.QCloseEvent:
