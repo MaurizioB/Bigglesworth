@@ -206,7 +206,7 @@ else:
                 self.parent().setMinimumHeight(minHeight)
 
             def eventFilter(self, source, event):
-                if event.type() == QtCore.QEvent.Paint:
+                if event.type() == QtCore.QEvent.Paint and self.isVisible():
                     self.parentPaintEvent(event)
                     return True
                 return QtWidgets.QLabel.eventFilter(self, source, event)
@@ -228,7 +228,13 @@ else:
 
             def setVisible(self, visible):
                 self.label.setVisible(visible)
+                self.label.parent().setVisible(visible)
                 QtWidgets.QWidgetAction.setVisible(self, visible)
+                maxHeight = 1 if not visible else 16777215
+                self.label.setMinimumHeight(0)
+                self.label.setMaximumHeight(maxHeight)
+                self.label.parent().setMinimumHeight(0)
+                self.label.parent().setMaximumHeight(maxHeight)
 
         #QWidgetAction in a QMenuBar don't draw the backgrounds, this hack
         #ensures that the QMacNativeWidget (which is created as a parent of the 
