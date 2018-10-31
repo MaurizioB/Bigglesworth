@@ -336,9 +336,9 @@ class EditorMenu(QtWidgets.QMenuBar):
         #Due to the menu section hack for osx, the dump menu has to be 
         #manually created, otherwise PyQt will complain about unaccessible 
         #objects when they're not created from python
-        self.addMenu(self.main.getWindowsMenu(parent))
+        self.addMenu(self.main.getWindowsMenu(parent, self))
 
-        self.addMenu(self.main.getAboutMenu(parent))
+        self.addMenu(self.main.getAboutMenu(parent, self))
 
     def openSoundTriggered(self, action):
         if action.data():

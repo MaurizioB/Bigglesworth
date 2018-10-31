@@ -234,8 +234,8 @@ class MainWindow(QtWidgets.QMainWindow):
         action = self.openCollectionMenu.addAction(QtGui.QIcon.fromTheme('go-home'), 'Main library')
         action.triggered.connect(lambda: self.openCollection(''))
 
-        self.menubar.addMenu(self.main.getWindowsMenu(self))
-        self.menubar.addMenu(self.main.getAboutMenu(self))
+        self.menubar.addMenu(self.main.getWindowsMenu(self, self.menubar))
+        self.menubar.addMenu(self.main.getAboutMenu(self, self.menubar))
 
 #        self.createMaskObject()
 

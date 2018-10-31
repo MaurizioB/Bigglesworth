@@ -1194,8 +1194,8 @@ class Bigglesworth(QtWidgets.QApplication):
                 menu.wavetableActions.append(action)
         menu.wavetableSection.setVisible(bool(menu.wavetableActions))
 
-    def getWindowsMenu(self, parent):
-        menu = QtWidgets.QMenu('&Windows', parent)
+    def getWindowsMenu(self, parent, parentMenu=None):
+        menu = QtWidgets.QMenu('&Windows', parentMenu if parentMenu else parent)
         if not isinstance(parent, MainWindow):
             librarianAction = menu.addAction(QtGui.QIcon.fromTheme('tab-duplicate'), '&Librarian')
             librarianAction.setShortcut(QtGui.QKeySequence('Alt+L'))
@@ -1231,8 +1231,8 @@ class Bigglesworth(QtWidgets.QApplication):
 
         return menu
 
-    def getAboutMenu(self, parent):
-        menu = QtWidgets.QMenu('&?', parent)
+    def getAboutMenu(self, parent, parentMenu=None):
+        menu = QtWidgets.QMenu('&?', parentMenu if parentMenu else parent)
         helpAction = menu.addAction(QtGui.QIcon.fromTheme('help-contents'), 'Bigglesworth Manual')
         helpAction.triggered.connect(self.showHelp)
         loggerAction = menu.addAction(QtGui.QIcon.fromTheme('text-x-log'), 'Show log')

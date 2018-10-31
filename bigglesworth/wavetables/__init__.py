@@ -923,14 +923,14 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             self.audioSettingsAction = self.windowsMenu.addAction(QtGui.QIcon.fromTheme('audio-card'), 'Audio settings')
         else:
             main = QtWidgets.QApplication.instance()
-            self.windowsMenu = main.getWindowsMenu(self)
+            self.windowsMenu = main.getWindowsMenu(self, self.menubar)
             self.menubar.addMenu(self.windowsMenu)
             self.audioSettingsAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('audio-card'), 'Audio settings', self)
             for action in self.windowsMenu.actions():
                 if 'settings' in action.text().lower():
                     self.windowsMenu.insertAction(action, self.audioSettingsAction)
 
-            self.aboutMenu = main.getAboutMenu(self)
+            self.aboutMenu = main.getAboutMenu(self, self.menubar)
             self.menubar.addMenu(self.aboutMenu)
 
         self.windowsActionGroup = QtWidgets.QActionGroup(self.windowsMenu)
