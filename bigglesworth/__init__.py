@@ -1178,6 +1178,22 @@ class Bigglesworth(QtWidgets.QApplication):
             parent = self.activeWindow()
         return parent
 
+    def checkWavetableMenu(self):
+        menu = self.sender()
+        for action in menu.wavetableActions:
+            menu.removeAction(action)
+        menu.wavetableActions[:] = []
+        if WaveTableWindow.openedWindows:
+            wtWindow = WaveTableWindow.openedWindows[0]
+            wtWindow.checkWindowsMenu()
+            for windowAction in wtWindow.windowsActionGroup.actions():
+                action = QtWidgets.QAction(windowAction.icon(), windowAction.text(), menu)
+                menu.insertAction(menu.windowsSeparator, action)
+                window = windowAction.data()
+                action.triggered.connect(window.activateWindow)
+                menu.wavetableActions.append(action)
+        menu.wavetableSection.setVisible(bool(menu.wavetableActions))
+
     def getWindowsMenu(self, parent):
         menu = QtWidgets.QMenu('&Windows', parent)
         if not isinstance(parent, MainWindow):
@@ -1192,7 +1208,10 @@ class Bigglesworth(QtWidgets.QApplication):
             waveTableAction = menu.addAction(QtGui.QIcon.fromTheme('wavetables'), '&Wavetable editor')
             waveTableAction.setShortcut(QtGui.QKeySequence('Alt+W'))
             waveTableAction.triggered.connect(self.showWavetables)
-        menu.addSeparator()
+            menu.wavetableActions = []
+            menu.aboutToShow.connect(self.checkWavetableMenu)
+        menu.wavetableSection = menu.addSection('Open wavetables')
+        menu.windowsSeparator = menu.addSeparator()
         settingsAction = menu.addAction(QtGui.QIcon.fromTheme('settings'), '&Settings')
         settingsAction.setShortcut(QtGui.QKeySequence('Ctrl+P'))
         settingsAction.triggered.connect(self.showSettings)

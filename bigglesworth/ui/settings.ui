@@ -59,7 +59,7 @@
    <item row="2" column="1">
     <widget class="QStackedWidget" name="stackedWidget">
      <property name="currentIndex">
-      <number>7</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="startUpPage">
       <layout class="QGridLayout" name="gridLayout_2">

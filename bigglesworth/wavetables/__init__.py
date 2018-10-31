@@ -919,15 +919,14 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 
         if __name__ == '__main__':
             self.windowsMenu = self.menubar.addMenu('&Windows')
+            self.windowsMenu.windowsSeparator = self.windowsMenu.addSeparator()
             self.audioSettingsAction = self.windowsMenu.addAction(QtGui.QIcon.fromTheme('audio-card'), 'Audio settings')
         else:
             main = QtWidgets.QApplication.instance()
             self.windowsMenu = main.getWindowsMenu(self)
             self.menubar.addMenu(self.windowsMenu)
-            self.windowsMenu.addSeparator()
             self.audioSettingsAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('audio-card'), 'Audio settings', self)
             for action in self.windowsMenu.actions():
-                print(action.text(), 'settings' in action.text().lower())
                 if 'settings' in action.text().lower():
                     self.windowsMenu.insertAction(action, self.audioSettingsAction)
 
@@ -935,7 +934,6 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             self.menubar.addMenu(self.aboutMenu)
 
         self.windowsActionGroup = QtWidgets.QActionGroup(self.windowsMenu)
-        self.newWindowSeparator = self.windowsMenu.insertSeparator(self.newWindowAction)
         self.windowsMenu.aboutToShow.connect(self.checkWindowsMenu)
 
         self.pianoIcon = PianoStatusWidget()
@@ -1461,6 +1459,8 @@ class WaveTableWindow(QtWidgets.QMainWindow):
             self.waveTableMenu.removeAction(action)
         self.settings.beginGroup('WaveTables')
         recentLoaded = self.settings.value('Recent', [])
+        if recentLoaded is None:
+            recentLoaded = []
         existing = []
         count = 0
         for uid in recentLoaded:
@@ -1519,7 +1519,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
                 italic = True
                 text = '(*) ' + text
             action = QtWidgets.QAction(icon, text, self.windowsMenu)
-            self.windowsMenu.insertAction(self.newWindowSeparator, action)
+            self.windowsMenu.insertAction(self.windowsMenu.windowsSeparator, action)
             self.windowsActionGroup.addAction(action)
             action.setData(window)
             action.setCheckable(True)
@@ -3214,6 +3214,8 @@ class WaveTableWindow(QtWidgets.QMainWindow):
 
         self.settings.beginGroup('WaveTables')
         recent = self.settings.value('Recent', [])
+        if recent is None:
+            recent = []
         if uid in recent:
             recent.remove(uid)
         recent.insert(0, uid)
