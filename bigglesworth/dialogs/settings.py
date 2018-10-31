@@ -437,9 +437,32 @@ class SettingsDialog(QtWidgets.QDialog):
         self.autoconnectRememberChk.setChecked(self.settings.value('tryAutoConnect', True, bool))
         self.autoconnectClearChk.setEnabled(bool(
             self.settings.value('autoConnectOutput') or self.settings.value('autoConnectInput')))
-        self.settings.endGroup()
         self.inputChannelWidget.setChannels(self.main.chanReceive)
         self.outputChannelWidget.setChannels(self.main.chanSend)
+
+        if self.settings.value('RememberMidiReceive', True, bool):
+            self.midiReceiveCombo.setCurrentIndex(4)
+        else:
+            state = 0
+            if self.main._ctrlReceiveState:
+                state += 1
+            if self.main._progReceiveState:
+                state += 2
+            self.midiReceiveCombo.setCurrentIndex(state)
+
+        if self.settings.value('RememberMidiSend', True, bool):
+            self.midiSendCombo.setCurrentIndex(4)
+        else:
+            state = 0
+            if self.main._ctrlSendState:
+                state += 1
+            if self.main._progSendState:
+                state += 2
+            self.midiSendCombo.setCurrentIndex(state)
+
+        self.settings.endGroup()
+
+        self.autosaveCombo.setCurrentIndex(min(2, self.settings.value('AutoSave', 2, int)))
 
         self.themeCombo.blockSignals(True)
         self.themeCombo.clear()
@@ -464,31 +487,58 @@ class SettingsDialog(QtWidgets.QDialog):
         if res:
             restart = False
 
-            if self.restoreMsgBoxBtn.isChecked():
-                self.settings.remove('MessageBoxes')
-
             self.settings.setValue('StartUpWindow', self.startUpWindowCombo.currentIndex())
             self.settings.setValue('WelcomeOnClose', self.welcomeOnCloseChk.isChecked())
 
             self.settings.setValue('saveLibrarianGeometry', self.restoreLibrarianGeometryChk.isChecked())
             if not self.restoreLibrarianGeometryChk.isChecked():
                 self.settings.remove('librarianGeometry')
-            self.settings.setValue('saveEditorGeometry', self.restoreEditorGeometryChk.isChecked())
-            if not self.restoreEditorGeometryChk.isChecked():
-                self.settings.remove('editorGeometry')
             self.settings.setValue('startupDualMode', self.dualModeCombo.currentIndex())
             self.settings.setValue('startupSessionMode', self.startupSessionCombo.currentIndex())
             self.settings.setValue('startupSidebarMode', self.sidebarCombo.currentIndex())
-#            self.settings.setValue('theme', self.themes.current.name)
+
+            self.settings.setValue('saveEditorGeometry', self.restoreEditorGeometryChk.isChecked())
+            if not self.restoreEditorGeometryChk.isChecked():
+                self.settings.remove('editorGeometry')
+
             self.settings.setValue('theme', self.themeCombo.currentText())
             backupInterval = self.backupIntervalSpin.value() if self.backupChk.isChecked() else 0
+            if self.autosaveCombo.currentIndex() == 2:
+                self.settings.setValue('AutoSave', 2 + int(self.main.editorWindow.autosaveBtn.switched))
+            else:
+                self.settings.setValue('AutoSave', self.autosaveCombo.currentIndex())
+
             self.settings.setValue('backupInterval', backupInterval)
             self.main.database.setBackupInterval(backupInterval)
+
             self.settings.setValue('FirstRunShown', False if self.showFirstRunChk.isChecked() else True)
             self.settings.setValue('FirstRunAutoDetect', False if self.firstRunSkipBlofeldDetectChk.isChecked() else True)
             self.settings.setValue('StartupUpdateCheck', self.updateCheckChk.isChecked())
+            if self.restoreMsgBoxBtn.isChecked():
+                self.settings.remove('MessageBoxes')
 
             self.settings.beginGroup('MIDI')
+
+            midiReceive = self.midiReceiveCombo.currentIndex()
+            if midiReceive == 4:
+                self.settings.setValue('RememberMidiReceive', True)
+                self.settings.setValue('ctrlReceive', self.main._ctrlReceiveState)
+                self.settings.setValue('progReceive', self.main._progReceiveState)
+            else:
+                self.settings.setValue('RememberMidiReceive', False)
+                self.settings.setValue('ctrlReceive', bool(midiReceive & 1))
+                self.settings.setValue('progReceive', bool(midiReceive & 2))
+
+            midiSend = self.midiSendCombo.currentIndex()
+            if midiSend == 4:
+                self.settings.setValue('RememberMidiSend', True)
+                self.settings.setValue('ctrlSend', self.main._ctrlSendState)
+                self.settings.setValue('progSend', self.main._progSendState)
+            else:
+                self.settings.setValue('RememberMidiSend', False)
+                self.settings.setValue('ctrlSend', bool(midiSend & 1))
+                self.settings.setValue('progSend', bool(midiSend & 2))
+
             self.settings.setValue('blofeldId', self.deviceIdSpin.value())
             self.settings.setValue('blofeldDetect', self.autoconnectUsbChk.isChecked())
             self.settings.setValue('tryAutoConnect', self.autoconnectRememberChk.isChecked())

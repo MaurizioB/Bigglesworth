@@ -634,7 +634,10 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.autosaveBtn.switchToggled.connect(self.saveBtn.setDisabled)
         self.autosaveBtn.switchToggled.connect(lambda state: setattr(self, 'autosave', state))
         self._editStatus = self.Clean
-        self._autosave = self.settings.value('autosave', False, bool)
+
+        #autosave is 0/1, the settings also has the second bit set 
+        #if the state has to be remembered.
+        self._autosave = self.settings.value('AutoSave', 2, int) & 1
         self.saveBtn.clicked.connect(self.save)
         #designer automatically strips blank spaces, but we need this button 
         #to have some text margin due to the menu arrow
@@ -1217,11 +1220,8 @@ class EditorWindow(QtWidgets.QMainWindow):
     @autosave.setter
     def autosave(self, state):
         self._autosave = state
-        self.settings.beginGroup('remember')
-        remember = self.settings.value('autosave', True, bool)
-        self.settings.endGroup()
-        if remember:
-            self.settings.setValue('autosave', state)
+        if self.settings.value('AutoSave', 2, int) >= 2:
+            self.settings.setValue('AutoSave', 3 if state else 2)
         if state and (self.editStatus == self.Modified or self.setFromDump):
             self.save()
 

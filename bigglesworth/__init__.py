@@ -498,7 +498,8 @@ class Bigglesworth(QtWidgets.QApplication):
         self.progReceiveToggled.emit(state)
         self._progReceiveState = state
         self.settings.beginGroup('MIDI')
-        self.settings.setValue('progReceive', state)
+        if self.settings.value('RememberMidiReceive', True, bool):
+            self.settings.setValue('progReceive', state)
         self.settings.endGroup()
 
     @property
@@ -510,7 +511,8 @@ class Bigglesworth(QtWidgets.QApplication):
         self.progSendToggled.emit(state)
         self._progSendState = state
         self.settings.beginGroup('MIDI')
-        self.settings.setValue('progSend', state)
+        if self.settings.value('RememberMidiSend', True, bool):
+            self.settings.setValue('progSend', state)
         self.settings.endGroup()
 
     @property
@@ -522,7 +524,8 @@ class Bigglesworth(QtWidgets.QApplication):
         self.ctrlReceiveToggled.emit(state)
         self._ctrlReceiveState = state
         self.settings.beginGroup('MIDI')
-        self.settings.setValue('ctrlReceive', state)
+        if self.settings.value('RememberMidiReceive', True, bool):
+            self.settings.setValue('ctrlReceive', state)
         self.settings.endGroup()
 
     @property
@@ -534,7 +537,8 @@ class Bigglesworth(QtWidgets.QApplication):
         self.ctrlSendToggled.emit(state)
         self._ctrlSendState = state
         self.settings.beginGroup('MIDI')
-        self.settings.setValue('ctrlSend', state)
+        if self.settings.value('RememberMidiSend', True, bool):
+            self.settings.setValue('ctrlSend', state)
         self.settings.endGroup()
 
     @property
