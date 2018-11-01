@@ -214,6 +214,9 @@ class UnknownFileImport(BaseFileDialog):
     def checkGenericSysEx(self, path):
         try:
             with open(path, 'rb') as syx:
+                syx.seek(-1, 2)
+                assert ord(syx.read(1)) == 0xf7, 'Not a valid SysEx file'
+                syx.seek(0)
                 bytes = map(ord, syx.read(10))
             content = self.getContentType(bytes[1:])
             if content:
