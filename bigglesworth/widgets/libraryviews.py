@@ -243,7 +243,8 @@ class BaseLibraryView(QtWidgets.QTableView):
 
     def __init__(self, *args, **kwargs):
         QtWidgets.QTableView.__init__(self, *args, **kwargs)
-        self.database = QtWidgets.QApplication.instance().database
+        self.main = QtWidgets.QApplication.instance()
+        self.database = self.main.database
         self.horizontalHeader().setStretchLastSection(True)
         self.horizontalHeader().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.horizontalHeader().customContextMenuRequested.connect(self.sortMenu)
@@ -795,7 +796,7 @@ class BaseLibraryView(QtWidgets.QTableView):
         name = nameIndex.data().rstrip() if valid else None
         uid = index.sibling(index.row(), UidColumn).data()
 
-        inConn, outConn = QtWidgets.QApplication.instance().connections
+        inConn, outConn = self.main.connections
 
         if (not selRows or not valid) and isinstance(self, CollectionTableView):
             pos = '{}{:03}'.format(uppercase[index.row() >> 7], (index.row() & 127) + 1)
@@ -1061,6 +1062,8 @@ class CollectionTableView(BaseLibraryView):
         self.emptyInfoBoxHCenter = self.emptyInfoBoxVCenter = 0
         self.preferredInfoBoxWidth = self.fontMetrics().width(self.emptyInfoBox.toPlainText().splitlines()[0]) * 2.5
 
+    def currentChanged(self, current, previous):
+        self.main.progChangeRequest(self.model().mapToRootSource(current).row(), self.collection)
 
     @property
     def cachedSize(self):

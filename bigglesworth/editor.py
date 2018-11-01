@@ -1723,7 +1723,7 @@ class EditorWindow(QtWidgets.QMainWindow):
     def updateParameter(self, value):
         setattr(self.parameters, self.sender().objectName(), value)
 
-    def openSoundFromBankProg(self, bank=None, prog=None, collection=None):
+    def openSoundFromBankProg(self, bank=None, prog=None, collection=None, show=True):
         if not collection:
             if not self.currentCollection:
                 return
@@ -1737,7 +1737,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         if (bank, prog) == (self.currentBank, self.currentProg):
             return
 #        print('cambio a', bank, prog, collection)
-        self.openSoundFromUid(self.database.getUidFromCollection(bank, prog, collection), collection)
+        self.openSoundFromUid(self.database.getUidFromCollection(bank, prog, collection), collection, show)
 #        if self.main.connections[1] and self.main.progSendState:
 #            self.sendProgramChange()
 #        self.currentBank = bank
@@ -1752,9 +1752,8 @@ class EditorWindow(QtWidgets.QMainWindow):
     def openSoundFromMenu(self, action):
         self.openSoundFromUid(action.data(), action.parentWidget().menuAction().data())
 
-    def openSoundFromUid(self, uid, fromCollection=None):
+    def openSoundFromUid(self, uid, fromCollection=None, show=True):
 #        self.saveFrame.setEnabled(True)
-        self.show()
         if self._editStatus == self.Modified or self.setFromDump:
             if self._editStatus == self.Modified:
                 title = 'Sound modified'
@@ -1776,7 +1775,7 @@ class EditorWindow(QtWidgets.QMainWindow):
                     QtWidgets.QMessageBox.Ok)
         self.saveBtn.setSwitchable(False)
         self.saveBtn.setSwitched(False)
-        if self.sender() != self.main.midiDevice:
+        if self.sender() != self.main.midiDevice and show:
             self.activate()
         data = self.database.getSoundDataFromUid(uid)
         if not data:

@@ -239,6 +239,7 @@ class Bigglesworth(QtWidgets.QApplication):
             self._chanSend = set((0, ))
             self.settings.setValue('chanSend', self._chanSend)
         self.settings.endGroup()
+        self._sendLibraryProgChange = self.settings.value('SendLibraryProgChange', False, bool)
 
         self.lastWindowClosed.connect(self.checkWelcomeOnClose)
         self.aboutToQuit.connect(self.closeSession)
@@ -550,6 +551,14 @@ class Bigglesworth(QtWidgets.QApplication):
         self.settings.beginGroup('MIDI')
         self.settings.setValue('chanSend', channels)
         self.settings.endGroup()
+
+    @property
+    def sendLibraryProgChange(self):
+        return self._sendLibraryProgChange
+
+    @sendLibraryProgChange.setter
+    def sendLibraryProgChange(self, state):
+        self._sendLibraryProgChange = state
 
     def updateForwardRules(self):
         self.settings.beginGroup('MIDI')
@@ -1341,6 +1350,16 @@ class Bigglesworth(QtWidgets.QApplication):
             from bigglesworth.forcebwu import MayTheForce
             from bigglesworth.matrixhasu import MatrixHasU
             (MayTheForce, MatrixHasU)[self.lastAboutEgg](parent).exec_()
+
+    def progChangeRequest(self, index, collection):
+        if not self.sendLibraryProgChange:
+            return
+        if self.editorWindow._editStatus == self.editorWindow.Modified:
+            self.mainWindow.statusbar.showMessage('Failsafe active, program change ignored: current sound in Editor is unsaved!')
+        else:
+            bank = index >> 7
+            prog = index & 127
+            self.editorWindow.openSoundFromBankProg(bank, prog, collection, show=False)
 
     def isClean(self):
         if self.editorWindow._editStatus == self.editorWindow.Modified:

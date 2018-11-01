@@ -409,6 +409,7 @@ class SettingsDialog(QtWidgets.QDialog):
         self.backupChk.setChecked(backupInterval)
         self.backupIntervalSpin.setValue(backupInterval if backupInterval else 5)
 
+        self.sendLibraryProgChangeChk.setChecked(self.settings.value('SendLibraryProgChange', False, bool))
         self.showFirstRunChk.setChecked(not self.settings.value('FirstRunShown', False, bool))
         if self.showFirstRunChk.isChecked():
             self.firstRunSkipBlofeldDetectChk.setChecked(not self.settings.value('FirstRunAutoDetect', True, bool))
@@ -511,6 +512,9 @@ class SettingsDialog(QtWidgets.QDialog):
             self.settings.setValue('backupInterval', backupInterval)
             self.main.database.setBackupInterval(backupInterval)
 
+            sendLibraryProgChange = self.sendLibraryProgChangeChk.isChecked()
+            self.settings.setValue('SendLibraryProgChange', sendLibraryProgChange)
+            self.main.sendLibraryProgChange = sendLibraryProgChange
             self.settings.setValue('FirstRunShown', False if self.showFirstRunChk.isChecked() else True)
             self.settings.setValue('FirstRunAutoDetect', False if self.firstRunSkipBlofeldDetectChk.isChecked() else True)
             self.settings.setValue('StartupUpdateCheck', self.updateCheckChk.isChecked())
