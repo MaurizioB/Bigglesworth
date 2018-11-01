@@ -436,6 +436,7 @@ class MainWindow(QtWidgets.QMainWindow):
         ManageCollectionsDialog(self, self.leftTabWidget.collections + self.rightTabWidget.collections).exec_()
         self.leftTabWidget.checkIcons()
         self.rightTabWidget.checkIcons()
+        self.dockLibrary.rebuild()
 
     def closeCollection(self, index):
         source = self.sender()

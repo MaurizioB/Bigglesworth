@@ -2,7 +2,7 @@ from Qt import QtCore, QtGui, QtWidgets, QtSql
 
 from bigglesworth.utils import loadUi
 from bigglesworth.const import factoryPresets, factoryPresetsNamesDict
-from bigglesworth.widgets import CheckBoxDelegate
+#from bigglesworth.widgets import CheckBoxDelegate
 
 
 class NewCollectionDialog(QtWidgets.QDialog):

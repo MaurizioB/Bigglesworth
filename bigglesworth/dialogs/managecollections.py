@@ -12,6 +12,7 @@ Delete, Keep, Rename, Copy, New = -1, 0, 1, 2, 4
 
 class NameValidator(QtGui.QValidator):
     def validate(self, text, pos):
+        text = unidecode(text)
         if not text or len(text) > 32 or text in ['uid', 'tags'] + factoryPresets:
             return self.Intermediate, text, pos
         return self.Acceptable, text, pos

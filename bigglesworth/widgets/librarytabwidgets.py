@@ -329,9 +329,9 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         if widget.collection is None:
             icon = QtGui.QIcon.fromTheme('go-home')
         elif widget.collection == 'Blofeld':
-            icon = QtGui.QIcon(':/images/bigglesworth_logo.svg')
+            icon = QtGui.QIcon.fromTheme('bigglesworth')
         elif widget.collection in factoryPresetsNamesDict:
-            icon = QtGui.QIcon(':/images/factory.svg')
+            icon = QtGui.QIcon.fromTheme('factory')
         else:
             self.settings.beginGroup('CollectionIcons')
             icon = QtGui.QIcon.fromTheme(self.settings.value(name, ''))
@@ -422,7 +422,7 @@ class BaseTabWidget(QtWidgets.QTabWidget):
 
         self.menu.addSeparator()
         if collection:
-            dumpMenu = self.menu.addMenu(QtGui.QIcon(':/images/dump.svg'), 'Dump "{}"'.format(collection))
+            dumpMenu = self.menu.addMenu(QtGui.QIcon.fromTheme('dump'), 'Dump "{}"'.format(collection))
             dumpMenu.setSeparatorsCollapsible(False)
             if collection not in factoryPresetsNamesDict:
                 dumpMenu.addSection('Receive')
@@ -475,13 +475,13 @@ class BaseTabWidget(QtWidgets.QTabWidget):
                 action.setEnabled(False)
             if collection == 'Blofeld':
                 setBold(action)
-                action.setIcon(QtGui.QIcon(':/images/bigglesworth_logo.svg'))
+                action.setIcon(QtGui.QIcon.fromTheme('bigglesworth'))
             elif self.settings.contains(collection):
                 action.setIcon(QtGui.QIcon.fromTheme(self.settings.value(collection)))
         self.settings.endGroup()
         menu.addSection('Factory presets')
         for factory in self.referenceModel.factoryPresets:
-            action = menu.addAction(QtGui.QIcon(':/images/factory.svg'), factoryPresetsNamesDict[factory])
+            action = menu.addAction(QtGui.QIcon.fromTheme('factory'), factoryPresetsNamesDict[factory])
             action.triggered.connect(lambda state, collection=factory: self.openCollection.emit(collection))
             if factory in opened:
                 action.setEnabled(False)

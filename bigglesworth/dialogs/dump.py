@@ -76,10 +76,10 @@ class CollectionValidator(QtGui.QRegExpValidator):
         QtGui.QRegExpValidator.__init__(self, QtCore.QRegExp(r'^(?!.* {2})(?=\S)[a-zA-Z0-9\ \-\_]+$'))
         self.referenceModel = QtWidgets.QApplication.instance().database.referenceModel
         self.allCollections = [c.lower() for c in self.referenceModel.allCollections + factoryPresetsNamesDict.values()]
-        self.allCollections.append('main library')
+        self.allCollections.extend(('main library', 'uid', 'tags'))
 
     def validate(self, input, pos):
-        valid, input, pos = QtGui.QRegExpValidator.validate(self, input, pos)
+        valid, input, pos = QtGui.QRegExpValidator.validate(self, unidecode(input), pos)
         if valid == self.Acceptable:
             if input.lower() in self.allCollections:
                 valid = self.Intermediate
@@ -188,6 +188,7 @@ class BaseImportDialog(QtWidgets.QDialog):
         self.waiter = ImportWaiter(self)
         self._isDumpDialog = True
         self.main = QtWidgets.QApplication.instance()
+        self.settings = self.main.settings
         self.database = self.main.database
         self.query = QtSql.QSqlQuery()
         self.query.prepare(prepareStr)
@@ -211,8 +212,16 @@ class BaseImportDialog(QtWidgets.QDialog):
         l.addWidget(indexLbl)
         self.valueTable.verticalHeader().setMinimumWidth(self.fontMetrics().width('Idx') * 2)
 
-        self.collectionCombo.addItems(self.referenceModel.collections)
-        self.collectionCombo.setItemData(1, QtGui.QIcon(':/images/bigglesworth_logo.svg'), QtCore.Qt.DecorationRole)
+        self.settings.beginGroup('CollectionIcons')
+        for collection in self.referenceModel.collections:
+            if collection == 'Blofeld':
+                iconName = 'bigglesworth'
+            else:
+                iconName = self.settings.value(collection, '')
+            self.collectionCombo.addItem(QtGui.QIcon.fromTheme(iconName), collection)
+        self.settings.endGroup()
+#        self.collectionCombo.addItems(self.referenceModel.collections)
+#        self.collectionCombo.setItemIcon(1, QtGui.QIcon.fromTheme('bigglesworth'), QtCore.Qt.DecorationRole)
         self.collectionCombo.currentIndexChanged.connect(self.collectionChanged)
 
         self.importCombo.currentIndexChanged.connect(self.checkImport)
@@ -492,12 +501,16 @@ class BaseImportDialog(QtWidgets.QDialog):
             self.newIcon.setToolTip('')
             self.newEdit.setToolTip('')
         else:
-            option = QtWidgets.QStyleOptionFrame()
-            option.initFrom(self.newEdit)
-            height = self.style().subElementRect(
-                QtWidgets.QStyle.SE_LineEditContents, option, self.newEdit).height() - \
-                self.newIcon.lineWidth() * 8
-            self.newIcon.setPixmap(QtGui.QIcon.fromTheme('emblem-warning').pixmap(height))
+#            option = QtWidgets.QStyleOptionFrame()
+#            option.initFrom(self.newEdit)
+#            height = self.style().subElementRect(
+#                QtWidgets.QStyle.SE_LineEditContents, option, self.newEdit).height() - \
+#                self.newIcon.lineWidth() * 8
+            height = int(self.fontMetrics().height() * .8)
+            pixmap = QtGui.QIcon.fromTheme('emblem-warning').pixmap(height)
+            if pixmap.height() > height:
+                pixmap = pixmap.scaledToHeight(height, QtCore.Qt.SmoothTransformation)
+            self.newIcon.setPixmap(pixmap)
             self.newIcon.setToolTip('The selected name is invalid')
             self.newEdit.setToolTip('The selected name is invalid')
 
@@ -1121,6 +1134,7 @@ class DumpDialog(QtWidgets.QDialog):
         loadUi(localPath(uiPath), self)
         self._isDumpDialog = True
         self.main = main
+        self.settings = main.settings
         self.database = main.database
         self.cancelBtn = self.buttonBox.button(self.buttonBox.Cancel)
         self.ignoreDuplexConnectionLost = False
@@ -1405,17 +1419,21 @@ class DumpDialog(QtWidgets.QDialog):
             collections = self.database.referenceModel.collections
 
         collectionIndex = collections.index(collection)
+        self.settings.beginGroup('CollectionIcons')
         for i, coll in enumerate(collections):
             self.collectionCombo.addItem(factoryPresetsNamesDict.get(coll, coll))
             self.collectionCombo.setItemData(i, coll, CollectionRole)
             if coll in factoryPresetsNamesDict:
-                self.collectionCombo.setItemData(i, QtGui.QIcon(':/images/factory.svg'), QtCore.Qt.DecorationRole)
+                self.collectionCombo.setItemIcon(i, QtGui.QIcon.fromTheme('factory'))
             elif coll == 'Blofeld':
-                self.collectionCombo.setItemData(i, QtGui.QIcon(':/images/bigglesworth_logo.svg'), QtCore.Qt.DecorationRole)
+                self.collectionCombo.setItemIcon(i, QtGui.QIcon.fromTheme('bigglesworth'))
+            else:
+                self.collectionCombo.setItemIcon(i, QtGui.QIcon.fromTheme((self.settings.value(coll, ''))))
             if i == collectionIndex:
                 font = QtWidgets.QApplication.font()
                 font.setBold(True)
                 self.collectionCombo.setItemData(i, font, QtCore.Qt.FontRole)
+        self.settings.endGroup()
 #        collections = self.database.referenceModel.collections
 #        self.collectionCombo.addItems(collections)
 #        self.collectionCombo.setItemData(0, QtGui.QIcon.fromTheme('go-home'), QtCore.Qt.DecorationRole)

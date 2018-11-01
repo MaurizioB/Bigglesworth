@@ -843,7 +843,7 @@ class Bigglesworth(QtWidgets.QApplication):
             if dialog.mode & dialog.LibraryImport:
                 if dialog.mode & dialog.NewImport:
                     collection = dialog.newEdit.text()
-                    self.database.createCollection(collection)
+                    self.database.createCollection(collection, iconName=dialog.collectionIconBtn.iconName())
                 else:
                     if dialog.collectionCombo.currentIndex():
                         collection = dialog.collectionCombo.currentText()
@@ -857,7 +857,7 @@ class Bigglesworth(QtWidgets.QApplication):
         elif dialog.mode & dialog.LibraryImport:
             if dialog.mode & dialog.NewImport:
                 collection = dialog.newEdit.text()
-                self.database.createCollection(collection)
+                self.database.createCollection(collection, iconName=dialog.collectionIconBtn.iconName())
             else:
                 if dialog.collectionCombo.currentIndex():
                     collection = dialog.collectionCombo.currentText()

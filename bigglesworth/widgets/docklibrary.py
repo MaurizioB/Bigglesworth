@@ -601,11 +601,11 @@ class DockLibrary(QtWidgets.QWidget):
                 if self.treeModel.rowCount(self.factoryIndex) == len(factoryPresets):
                     continue
                 parent = self.factoryItem
-                icon = QtGui.QIcon(':/images/factory.svg')
+                icon = QtGui.QIcon.fromTheme('factory')
             else:
                 parent = self.userItem
                 if collection == 'Blofeld':
-                    icon = QtGui.QIcon(':/images/bigglesworth_logo.svg')
+                    icon = QtGui.QIcon.fromTheme('bigglesworth')
                 else:
                     icon = QtGui.QIcon.fromTheme(self.settings.value(collection, ''))
                 totUser += count
