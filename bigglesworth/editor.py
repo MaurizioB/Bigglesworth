@@ -13,7 +13,7 @@ from bigglesworth.const import (chr2ord, UidColumn, LocationColumn,
 from bigglesworth.parameters import Parameters, fullRangeCenterZero, driveCurves, arpLength, ctrl2sysex
 from bigglesworth.widgets import SoundsMenu, EditorMenu, EnvelopeView, MidiConnectionsDialog, ModMatrixView
 from bigglesworth.dialogs import (RandomDialog, InputMessageBox, TemplateManager, SaveSoundAs, 
-    WarningMessageBox, LocationRequestDialog)
+    WarningMessageBox, LocationRequestDialog, SoundExportSingle)
 from bigglesworth.midiutils import (SYSEX, CTRL, NOTEON, NOTEOFF, PROGRAM, 
     NoteOffEvent, NoteOnEvent, CtrlEvent, ProgramEvent, SysExEvent)
 
@@ -627,6 +627,8 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.editorMenuBar = EditorMenu(self)
         self.editorMenuBar.openSoundRequested.connect(self.openSoundFromMenu)
         self.editorMenuBar.importRequested.connect(lambda: self.importRequested.emit(None, None))
+        self.editorMenuBar.exportRequested.connect(self.exportCurrent)
+        self.editorMenuBar.quitAction.triggered.connect(self.main.quit)
 #        self.randomAllRequest.connect(self.randomizeAll)
 #        self.randomCustomRequest.connect(self.randomizeCustom)
         self.leftLayout.insertWidget(0, self.editorMenuBar)
@@ -1195,7 +1197,7 @@ class EditorWindow(QtWidgets.QMainWindow):
 
     def keyboardFocusOutEvent(self, event):
         if True:
-            print('me ne fotto')
+            print('key ignored')
 
     @property
     def editStatus(self):
@@ -1589,7 +1591,9 @@ class EditorWindow(QtWidgets.QMainWindow):
             self.undoStack.setClean()
 #        self.display.editStatusWidget.setStatus(2)
 
-    
+    def exportCurrent(self):
+        SoundExportSingle(self, self.parameters, self.nameEdit.text(), self.currentBank, self.currentProg).exec_()
+
     def save(self):
         if self.currentUid:
             oldName = self.database.getNameFromUid(self.currentUid)
@@ -1948,7 +1952,7 @@ class EditorWindow(QtWidgets.QMainWindow):
             res = QtWidgets.QMessageBox.question(self, title, message, 
                 QtWidgets.QMessageBox.Save|QtWidgets.QMessageBox.Ignore|QtWidgets.QMessageBox.Cancel)
             if not res or res == QtWidgets.QMessageBox.Cancel:
-                return
+                return event.ignore()
             elif res == QtWidgets.QMessageBox.Save:
                 self.save()
         if self.main.settings.value('saveEditorGeometry', True, bool):

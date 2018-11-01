@@ -1,7 +1,6 @@
 # *-* encoding: utf-8 *-*
 
 from string import uppercase
-from unidecode import unidecode
 
 from Qt import QtCore, QtGui, QtWidgets
 
@@ -9,19 +8,7 @@ from bigglesworth.const import UidColumn, NameColumn, factoryPresets
 from bigglesworth.library import BankProxy
 from bigglesworth.utils import loadUi, localPath
 
-
-def getASCII(char):
-    if 32 <= ord(char) <= 126 or char == u'°':
-        return char
-#    print('wtf? "{}"'.format(unidecode(char)))
-    return unidecode(char)
-
-class NameValidator(QtGui.QValidator):
-    def validate(self, input, pos):
-        output = ''
-        for l in input:
-            output += getASCII(l)
-        return self.Acceptable, output, pos
+from bigglesworth.dialogs.utils import NameValidator
 
 
 class CollectionProxy(BankProxy):

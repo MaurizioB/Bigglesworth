@@ -64,6 +64,7 @@ class SoundsMenu(FactoryMenu):
         self.referenceModel = self.database.referenceModel
         self.tagsModel = self.database.tagsModel
         self.tagsModel.dataChanged.connect(lambda: setattr(self, 'done', False))
+
         self.locationsMenu = self.addMenu('By collection')
         self.locationsMenu.menuAction().setIcon(QtGui.QIcon.fromTheme('document-open'))
         self.locationsMenu.aboutToShow.connect(self.loadLocations)
@@ -90,17 +91,17 @@ class SoundsMenu(FactoryMenu):
         self.done = False
 
     def checkAge(self):
-        if isinstance(self.parent(), QtWidgets.QMenuBar) and not self.openLibrarianAction:
-            first = self.actions()[0]
-            #old icon: view-list-details
-            self.openLibrarianAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('tab-duplicate'), 'Open &librarian', self)
-#            self.openLibrarianAction.setShortcut(QtGui.QKeySequence('Ctrl+Alt+L'))
-            self.openLibrarianAction.triggered.connect(self.parent().window().openLibrarianRequested)
-            self.insertAction(first, self.openLibrarianAction)
-            self.importAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('document-open'), '&Import sound', self)
-            self.importAction.triggered.connect(lambda: self.parent().importRequested.emit())
-            self.insertAction(first, self.importAction)
-            self.insertSeparator(first).setText('Open sound')
+#        if isinstance(self.parent(), QtWidgets.QMenuBar) and not self.openLibrarianAction:
+#            first = self.actions()[0]
+#            #old icon: view-list-details
+#            self.openLibrarianAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('tab-duplicate'), 'Open &librarian', self)
+##            self.openLibrarianAction.setShortcut(QtGui.QKeySequence('Ctrl+Alt+L'))
+#            self.openLibrarianAction.triggered.connect(self.parent().window().openLibrarianRequested)
+#            self.insertAction(first, self.openLibrarianAction)
+#            self.importAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('document-open'), '&Import sound', self)
+#            self.importAction.triggered.connect(lambda: self.parent().importRequested.emit())
+#            self.insertAction(first, self.importAction)
+#            self.insertSeparator(first).setText('Open sound')
         if not self.done or self.lastShownTimer.hasExpired(10000):
             self.populate()
         self.tagsMenu.setEnabled(True if self.tags else False)
@@ -317,6 +318,7 @@ class SoundsMenu(FactoryMenu):
 class EditorMenu(QtWidgets.QMenuBar):
     openSoundRequested = QtCore.pyqtSignal(object)
     importRequested = QtCore.pyqtSignal()
+    exportRequested = QtCore.pyqtSignal()
 
     def __init__(self, parent):
         QtWidgets.QMenuBar.__init__(self, parent)
@@ -329,13 +331,26 @@ class EditorMenu(QtWidgets.QMenuBar):
 #        importAction = fileMenu.addAction('Import sound...')
 #        importAction.triggered.connect(self.importRequested)
 
+        #Due to the menu section hack for MacOS, menus have to be 
+        #manually created, otherwise PyQt will complain about unaccessible 
+        #objects when they're not created from python
+
+        self.fileMenu = QtWidgets.QMenu('&File', self)
+        self.addMenu(self.fileMenu)
+        self.importAction = self.fileMenu.addAction(QtGui.QIcon.fromTheme('document-open'), 'Import sound...')
+        self.importAction.setShortcut(QtGui.QKeySequence('Ctrl+O'))
+        self.importAction.triggered.connect(self.importRequested.emit)
+        self.exportAction = self.fileMenu.addAction(QtGui.QIcon.fromTheme('document-save'), 'Export current sound...')
+        self.exportAction.setShortcut(QtGui.QKeySequence('Ctrl+E'))
+        self.exportAction.triggered.connect(self.exportRequested.emit)
+        self.fileMenu.addSeparator()
+        self.quitAction = self.fileMenu.addAction(QtGui.QIcon.fromTheme('application-exit'), '&Quit Bigglesworth :-(')
+        self.quitAction.setShortcut(QtGui.QKeySequence('Ctrl+Q'))
+
         self.libraryMenu = SoundsMenu(self)
         self.libraryMenu.triggered.connect(self.openSoundTriggered)
         self.addMenu(self.libraryMenu)
 
-        #Due to the menu section hack for osx, the dump menu has to be 
-        #manually created, otherwise PyQt will complain about unaccessible 
-        #objects when they're not created from python
         self.addMenu(self.main.getWindowsMenu(parent, self))
 
         self.addMenu(self.main.getAboutMenu(parent, self))

@@ -776,7 +776,9 @@ class SoundImport(BaseImportDialog):
     def processSysEx(self):
         try:
             with open(self.filePath, 'rb') as syx:
-                full = iter(map(ord, syx.read()))
+                data = map(ord, syx.read())
+                print(data)
+                full = iter(data)
             self.waiter.show()
             while True:
                 init = full.next()

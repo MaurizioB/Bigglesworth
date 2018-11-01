@@ -16,7 +16,7 @@ from bigglesworth.dialogs.settings import SettingsDialog
 from bigglesworth.dialogs.dump import DumpReceiveDialog, DumpSendDialog, SmallDumper, BlofeldDumper, SoundImport
 from bigglesworth.dialogs.savesoundas import SaveSoundAs
 from bigglesworth.dialogs.duplicates import FindDuplicates
-from bigglesworth.dialogs.soundexport import SoundExport
+from bigglesworth.dialogs.soundexport import SoundExportSingle, SoundExportMulti
 from bigglesworth.dialogs.soundlistexport import SoundListExport
 from bigglesworth.dialogs.midichart import MidiChartDialog
 from bigglesworth.dialogs.mididuplicate import MidiDuplicateDialog

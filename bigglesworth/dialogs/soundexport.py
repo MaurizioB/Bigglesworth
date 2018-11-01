@@ -9,6 +9,7 @@ from bigglesworth.const import (factoryPresetsNamesDict, INIT, IDW, IDE, CHK, EN
     NameColumn, UidColumn, LocationColumn, CatColumn, TagsColumn, FactoryColumn)
 from bigglesworth.widgets import CategoryDelegate, TagsDelegate, CheckBoxDelegate
 from bigglesworth.dialogs import SoundFileExport
+from bigglesworth.dialogs.utils import NameValidator
 from bigglesworth.parameters import categories
 from bigglesworth.libs import midifile
 
@@ -41,7 +42,7 @@ class ExportModel(QtGui.QStandardItemModel):
                 return ''
         return QtGui.QStandardItemModel.headerData(self, section, orientation, role)
 
-class SoundExport(QtWidgets.QDialog):
+class SoundExportMulti(QtWidgets.QDialog):
     readOnlyFlags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsDropEnabled
     SortSourceIndex, SortInserted, SortAlpha, SortCategory, SortTags = Enum(5)
     DuplicatesMaximum, UnknownMaximum = Enum(1, 2)
@@ -53,7 +54,7 @@ class SoundExport(QtWidgets.QDialog):
 
     def __init__(self, parent, uidList, collection=None):
         QtWidgets.QDialog.__init__(self, parent)
-        loadUi(localPath('ui/soundexport.ui'), self)
+        loadUi(localPath('ui/soundexportmulti.ui'), self)
         self.main = QtWidgets.QApplication.instance()
         self.database = self.main.database
         self.allCollections = self.database.referenceModel.allCollections
@@ -581,5 +582,115 @@ class SoundExport(QtWidgets.QDialog):
         except Exception as e:
             print(e)
             return e
+
+
+class SoundExportSingle(QtWidgets.QDialog):
+    def __init__(self, parent, parameters, name='  INIT        ', bank=None, prog=None):
+        QtWidgets.QDialog.__init__(self, parent)
+        loadUi('ui/soundexportsingle.ui', self)
+        self.main = QtWidgets.QApplication.instance()
+        self.parameters = parameters
+
+        self.setWindowTitle('Export "{}"'.format(name.strip()))
+        self.baseName = name.ljust(16)
+        self.nameEdit.setValidator(NameValidator())
+        self.nameEdit.setText(self.baseName.rstrip())
+        self.restoreNameBtn.clicked.connect(lambda: self.nameEdit.setText(self.baseName))
+
+        for cat in categories:
+            self.catCombo.addItem(QtGui.QIcon.fromTheme(cat.strip().lower()), cat)
+        self.restoreCatBtn.clicked.connect(lambda: self.catCombo.setCurrentIndex(self.parameters.category))
+        self.catCombo.setCurrentIndex(self.parameters.category)
+
+        self.multiCombo.addItems(['Multi {}'.format(m) for m in range(1, 17)])
+        self.indexModeGroup.setId(self.indexRadio, 0)
+        self.indexModeGroup.setId(self.multiRadio, 1)
+        self.indexModeGroup.buttonClicked[int].connect(self.setIndexMode)
+
+        if bank is not None:
+            self.bankCombo.setCurrentIndex(bank)
+        self.baseBank = self.bankCombo.currentIndex()
+        if prog is not None:
+            self.progSpin.setValue(prog + 1)
+        self.baseProg = self.progSpin.value() - 1
+        self.restoreIndexBtn.clicked.connect(self.restoreIndex)
+
+        self.deviceIdCombo.currentIndexChanged.connect(self.checkDeviceId)
+        self.deviceIdGroup.toggled.connect(lambda s: self.deviceIdCombo.setCurrentIndex(0) if not s else None)
+
+        self.buttonBox.accepted.connect(self.export)
+
+    def restoreIndex(self):
+        self.bankCombo.setCurrentIndex(self.baseBank)
+        self.progSpin.setValue(self.baseProg + 1)
+        self.indexRadio.setChecked(True)
+        self.setIndexMode(0)
+
+    def setIndexMode(self, mode):
+        self.multiCombo.setEnabled(mode)
+        self.bankCombo.setDisabled(mode)
+        self.progSpin.setDisabled(mode)
+
+    def checkDeviceId(self, index):
+        self.deviceIdSpin.setEnabled(index == 2)
+        if not index:
+            self.deviceIdSpin.setValue(0)
+        elif index == 1:
+            self.deviceIdSpin.setValue(self.main.blofeldId)
+        elif index == 3:
+            self.deviceIdSpin.setValue(127)
+
+    def getIndex(self):
+        if self.indexRadio.isEnabled():
+            return [self.bankCombo.currentIndex(), self.progSpin.value() - 1]
+        return [0x7f, self.multiCombo.currentIndex()]
+
+    def exportMid(self, path):
+        try:
+            pattern = midifile.Pattern()
+            track = midifile.Track()
+            pattern.append(track)
+            data = self.parameters.getValues(name=self.nameEdit.text().ljust(16), category=self.catCombo.currentIndex())
+            sysex = [131, 7, IDW, IDE, self.deviceIdSpin.value(), SNDD] + \
+                self.getIndex() + data + [CHK]
+
+            event = midifile.SysexEvent(tick=100, data=sysex)
+            track.append(event)
+            track.append(midifile.EndOfTrackEvent(tick=1))
+            midifile.write_midifile(path, pattern)
+            return True
+        except Exception as e:
+            print(type(e), e)
+            return e
+
+    def exportSysEx(self, path):
+        try:
+            data = self.parameters.getValues(name=self.nameEdit.text().ljust(16), category=self.catCombo.currentIndex())
+            sysex = [INIT, IDW, IDE, self.deviceIdSpin.value(), SNDD] + \
+                self.getIndex() + data + [CHK, END]
+
+            with open(path, 'wb') as outFile:
+                outFile.write(''.join(map(chr, sysex)))
+            return True
+        except Exception as e:
+            print(e)
+            return e
+
+    def export(self):
+        res = SoundFileExport(self, self.nameEdit.text().strip()).exec_()
+        if res:
+            self.tempName = res
+            if res.endswith('syx'):
+                exportFunc = self.exportSysEx
+            else:
+                exportFunc = self.exportMid
+            export = exportFunc(res)
+            if export == True:
+                self.accept()
+            else:
+                QtWidgets.QMessageBox.critical(self, 
+                    'Export error', 
+                    'An error occurred while exporting.\n{}'.format(export)
+                    )
 
 

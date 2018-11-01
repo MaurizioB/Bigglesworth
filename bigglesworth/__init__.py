@@ -30,7 +30,7 @@ from bigglesworth.mainwindow import MainWindow
 from bigglesworth.themes import ThemeCollection
 from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, GlobalsDialog, FirmwareDialog, 
     DumpReceiveDialog, DumpSendDialog, WarningMessageBox, SmallDumper, FirstRunWizard, LogWindow, 
-    BlofeldDumper, FindDuplicates, SoundImport, SoundExport, SoundListExport, MidiDuplicateDialog, 
+    BlofeldDumper, FindDuplicates, SoundImport, SoundExportMulti, SoundListExport, MidiDuplicateDialog, 
     DonateDialog, MidiChartDialog, AboutDialog, UpdateDialog)
 from bigglesworth.help import HelpDialog
 
@@ -380,34 +380,22 @@ class Bigglesworth(QtWidgets.QApplication):
         self.splash.showMessage('Preparing interface', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .7)
 
         self.themes = ThemeCollection(self)
-#        print(QtGui.QIcon.themeSearchPaths(), os.path.abspath(__file__))
-#        QtGui.QIcon.setThemeSearchPaths([QtCore.QDir('C:/Python27/icons').absolutePath()])
-#        print(QtGui.QIcon.themeSearchPaths())
-#        print(QtGui.QIcon.hasThemeIcon('application-exit'))
 
         self.mainWindow = MainWindow(self)
-#        self.mainWindow.quitAction.setIcon(QtGui.QIcon(':/icons/Bigglesworth/16x16/dialog-information.svg'))
         self.mainWindow.closed.connect(self.checkClose)
         self.mainWindow.quitAction.triggered.connect(self.quit)
         self.mainWindow.midiConnect.connect(self.midiConnect)
-
-#        self.mainWindow.showSettingsAction.triggered.connect(self.showSettings)
-#        self.mainWindow.showGlobalsAction.triggered.connect(self.showGlobals)
-#        self.mainWindow.showGlobalsAction.setEnabled(True if all(self.connections) else False)
-#        self.mainWindow.showFirmwareUtilsAction.triggered.connect(self.showFirmwareUtils)
-#        self.mainWindow.showFirmwareUtilsAction.setEnabled(True if self.connections[1] else False)
-#        self.mainWindow.showDonationAction.triggered.connect(self.showDonation)
 
         self.mainWindow.leftTabWidget.fullDumpBlofeldToCollectionRequested.connect(self.fullDumpBlofeldToCollection)
         self.mainWindow.leftTabWidget.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeld)
         self.mainWindow.rightTabWidget.fullDumpBlofeldToCollectionRequested.connect(self.fullDumpBlofeldToCollection)
         self.mainWindow.rightTabWidget.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeld)
-        self.mainWindow.leftTabWidget.exportRequested.connect(lambda uidList, collection: SoundExport(self.mainWindow, uidList, collection).exec_())
+        self.mainWindow.leftTabWidget.exportRequested.connect(lambda uidList, collection: SoundExportMulti(self.mainWindow, uidList, collection).exec_())
         self.mainWindow.leftTabWidget.exportListRequested.connect(lambda collection: SoundListExport(self.mainWindow, collection).exec_())
-        self.mainWindow.rightTabWidget.exportRequested.connect(lambda uidList, collection: SoundExport(self.mainWindow, uidList, collection).exec_())
+        self.mainWindow.rightTabWidget.exportRequested.connect(lambda uidList, collection: SoundExportMulti(self.mainWindow, uidList, collection).exec_())
         self.mainWindow.rightTabWidget.exportListRequested.connect(lambda collection: SoundListExport(self.mainWindow, collection).exec_())
         self.mainWindow.importRequested.connect(self.importRequested)
-        self.mainWindow.exportRequested.connect(lambda uidList, collection: SoundExport(self.mainWindow, uidList, collection).exec_())
+        self.mainWindow.exportRequested.connect(lambda uidList, collection: SoundExportMulti(self.mainWindow, uidList, collection).exec_())
         self.mainWindow.dumpToRequested.connect(self.dumpTo)
         self.mainWindow.dumpFromRequested.connect(self.dumpFrom)
 
@@ -1400,6 +1388,18 @@ class Bigglesworth(QtWidgets.QApplication):
         QtCore.QProcess.startDetached(self._arguments[0], self._arguments)
 
     def quit(self):
+        def canCloseWavetables():
+            for wtWindow in WaveTableWindow.openedWindows:
+                if wtWindow.isVisible() and not wtWindow.close():
+                    return False
+            return True
+
+        if isinstance(self.activeWindow(), WaveTableWindow):
+            if not all((canCloseWavetables(), self.editorWindow.close())):
+                return
+        elif not all((self.editorWindow.close(), canCloseWavetables())):
+            return
+
         QtWidgets.QApplication.quit()
 
     def checkClose(self):

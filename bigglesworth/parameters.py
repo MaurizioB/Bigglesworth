@@ -798,8 +798,8 @@ class Parameters(QtCore.QObject):
         for i in range(383):
             yield self[i]
 
-    def getValues(self):
-        return [getattr()]
+#    def getValues(self):
+#        return [getattr()]
 
     def addWidget(self, parameter, widget):
         self.widgets[parameter] = self.widgets.get(parameter, []) + [widget]
@@ -850,6 +850,18 @@ class Parameters(QtCore.QObject):
         except:
             pass
 
+    def getValues(self, name=None, category=None):
+        from bigglesworth.const import chr2ord
+        data = self[:]
+        if name is not None:
+            for i, l in zip(range(363, 379), name.ljust(16)):
+                o = chr2ord.get(l, '?')
+                data[i] = o
+        if category is not None:
+            data[379] = category
+        return data
+
 # a fake Parameters object to let it initialize the class
+#TODO: maybe you should use a smarter way to do this...
 _ = Parameters()
 del _
