@@ -61,6 +61,23 @@ feature.
 Other options
 ^^^^^^^^^^^^^
 
+Send Program Change
+....................
+
+**NOTE**: This is an advanced and, sometimes, dangerous setting.
+
+By activating this option, whenever you select a sound in any collection (besides 
+the "Main library", and the Sound Editor window has not unsaved parameter values, 
+a `Program change`_ event is send.
+
+If Bigglesworth is connected to both input and output MIDI ports of your Blofeld, 
+it should be smart enough to not send that change to your Blofeld, but if that 
+is not the case and you changed some sound parameter *on* your Blofeld without 
+having Bigglesworth to be acknowledged about that, the Blofeld will just change 
+the sound (according to its sound bank) and those changes will be lost. Forever.
+
+Activate this option only if you are really sure about how it works.
+
 First-run wizard
 .................
 
@@ -74,6 +91,7 @@ this feature blocks the MIDI device detection process.
 
 .. _Bigglesworth website: http://bigglesworth.it/support
 .. _Facebook page: https://fb.me/bigglesworthapp
+.. _`Program change`: ../terminology.html#progchange
 
 .. meta::
     :icon: window
