@@ -18,7 +18,7 @@ Wavetable Editor
     in either direction can be controlled in a number of ways, for example, by use of an 
     LFO, envelope, pressure or velocity. 
 
-    From `"Wavetable synthesis" <https://en.wikipedia.org/wiki/Wavetable_synthesis>`_ on Wikipedia
+    From `"Wavetable synthesis" <https://en.wikipedia.org/wiki/Wavetable_synthesis#Principle>`_ on Wikipedia
 
 Wavetables are a powerful feature of the Blofeld synthesizer. There are 39 slots available,
 each one can contain 64 wave forms, and each form is a 128-sample wave.
