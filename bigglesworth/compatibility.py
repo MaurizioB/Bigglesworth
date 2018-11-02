@@ -23,6 +23,22 @@ QtWidgets.QStyleOptionTabWidgetFrameV2 = QStyleOptionTabWidgetFrameV2
 QtWidgets.QStyleOptionViewItemV4 = QStyleOptionViewItemV4
 
 class CustomStyle(QtWidgets.QCommonStyle):
+    iconSizeSmall = (
+        QtWidgets.QStyle.PM_ToolBarIconSize, 
+        QtWidgets.QStyle.PM_SmallIconSize, 
+        QtWidgets.QStyle.PM_IconViewIconSize, 
+        QtWidgets.QStyle.PM_ListViewIconSize, 
+        QtWidgets.QStyle.PM_TabBarIconSize, 
+        QtWidgets.QStyle.PM_ButtonIconSize, 
+        )
+    iconSizeNormal = (
+        QtWidgets.QStyle.PM_LargeIconSize, 
+        )
+    iconSizeBig = (
+        QtWidgets.QStyle.PM_MessageBoxIconSize, 
+        )
+    iconSizeDefs = iconSizeSmall, iconSizeNormal, iconSizeBig
+
     def __init__(self, main):
         QtWidgets.QCommonStyle.__init__(self)
         self.main = main
@@ -34,12 +50,21 @@ class CustomStyle(QtWidgets.QCommonStyle):
             'styleHint', 'sizeFromContents', 
             'polish', 'unpolish'):
                 setattr(self, method, functools.partial(getattr(self.baseStyle, method)))
-        self.iconSize = int(self.main.fontMetrics().height() * 1.333)
+
+        smallSize = int(self.main.fontMetrics().height() * 1.333)
+        normalSize = smallSize * 2
+        bigSize = smallSize * 3
+        sizes = smallSize, normalSize, bigSize
+        self.iconSizes = {}
+        for types, size in zip(self.iconSizeDefs, sizes):
+            for sizeType in types:
+                self.iconSizes[sizeType] = smallSize
 
     def pixelMetric(self, metric, option, widget=None):
-        if metric == QtWidgets.QStyle.PM_ButtonIconSize:
-            return self.iconSize
-        return self.baseStyle.pixelMetric(metric, option, widget)
+        try:
+            return self.iconSizes[metric]
+        except:
+            return self.baseStyle.pixelMetric(metric, option, widget)
 
 
 #custom virtual utilities

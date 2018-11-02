@@ -146,9 +146,9 @@ class Bigglesworth(QtWidgets.QApplication):
 #        self.setEffectEnabled(QtCore.Qt.UI_AnimateCombo, False)
         self.setOrganizationName('jidesk')
         self.setApplicationName('Bigglesworth')
-#        if sys.platform == 'darwin':
-        style = compatibility.CustomStyle(self)
-        self.setStyle(style)
+        if sys.platform == 'darwin':
+            style = compatibility.CustomStyle(self)
+            self.setStyle(style)
 
         self.startTimer = QtCore.QElapsedTimer()
         self.startTimer.start()
