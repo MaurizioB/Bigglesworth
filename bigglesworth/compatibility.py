@@ -1,4 +1,6 @@
 import sys
+import functools
+
 from Qt import QtCore, QtGui, QtWidgets
 
 #things that Qt.py doesn't import as we need
@@ -19,6 +21,26 @@ QtWidgets.QStyleOptionFrameV3 = QStyleOptionFrameV3
 QtWidgets.QStyleOptionTabV3 = QStyleOptionTabV3
 QtWidgets.QStyleOptionTabWidgetFrameV2 = QStyleOptionTabWidgetFrameV2
 QtWidgets.QStyleOptionViewItemV4 = QStyleOptionViewItemV4
+
+class CustomStyle(QtWidgets.QCommonStyle):
+    def __init__(self, main):
+        QtWidgets.QCommonStyle.__init__(self)
+        self.main = main
+        self.baseStyle = QtWidgets.QStyleFactory.create(self.main.style().objectName())
+        for method in ('drawControl', 'drawComplexControl', 'drawPrimitive', 
+            'drawItemPixmap', 'itemPixmapRect', 'generatedIconPixmap', 
+            'hitTestComplexControl', 'subElementRect', 'subControlRect', 
+            'drawItemText', 'itemTextRect', 
+            'styleHint', 'sizeFromContents', 
+            'polish', 'unpolish'):
+                setattr(self, method, functools.partial(getattr(self.baseStyle, method)))
+        self.iconSize = int(self.main.fontMetrics().height() * 1.333)
+
+    def pixelMetric(self, metric, option, widget=None):
+        if metric == QtWidgets.QStyle.PM_ButtonIconSize:
+            return self.iconSize
+        return self.baseStyle.pixelMetric(metric, option, widget)
+
 
 #custom virtual utilities
 def colorAdjusted(color, **kwargs):
