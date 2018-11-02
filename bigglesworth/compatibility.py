@@ -192,6 +192,7 @@ else:
                 QtWidgets.QLabel.__init__(self, text)
                 self.parentMenu = parentMenu
                 self.setAlignment(QtCore.Qt.AlignCenter)
+                self.vMargin = self.fontMetrics().descent()
 
             def setText(self, text):
                 QtWidgets.QLabel.setText(self, text)
@@ -221,8 +222,10 @@ else:
                         margin: 2px;
                         padding-left: {l}px;
                         padding-right: {r}px;
+                        padding-top: {v}px;
+                        padding-bottom: {v}px;
                     }}
-                    '''.format(l=left - 1, r=right - 1))
+                    '''.format(l=left - 1, r=right - 1, v=self.vMargin))
 
             def compute(self):
                 option = QtWidgets.QStyleOptionMenuItem()
@@ -235,12 +238,18 @@ else:
                         if widget != self and isinstance(widget, MacMenuSectionLabel):
                             maxWidth = max(maxWidth, widget.fontMetrics().width(widget.text()))
                         continue
+                    if action.isSeparator():
+                        continue
                     self.parentMenu.initStyleOption(option, action)
                     #font has to be "reset" using pointsize, for unknown reasons
                     option.font.setPointSizeF(option.font.pointSizeF())
                     contents = self.parentMenu.style().sizeFromContents(QtWidgets.QStyle.CT_MenuItem, option, baseSize)
                     maxWidth = max(maxWidth, contents.width(), QtGui.QFontMetrics(option.font).width(option.text) + self.margins)
-                    minHeight = min(minHeight, contents.height())
+                    if minHeight:
+                        minHeight = min(minHeight, contents.height())
+                    else:
+                        minHeight = contents.height()
+                minHeight += self.vMargin * 2
 
                 self.setFont(option.font)
                 fontMetrics = self.fontMetrics()
