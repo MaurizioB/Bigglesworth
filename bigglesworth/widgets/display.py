@@ -363,6 +363,81 @@ class HDisplayGroup(DisplayGroup):
         self.setLayout(layout)
 
 
+class Switch(QtWidgets.QWidget):
+    disabledColor = QtGui.QColor(220, 220, 200, 128)
+    bgColor = enabledColor = QtGui.QColor(QtCore.Qt.black)
+    bgColors = disabledColor, enabledColor
+    fgColors = QtGui.QColor(QtCore.Qt.darkGray), QtCore.Qt.NoPen
+    fgColor = QtCore.Qt.NoPen
+
+    def __init__(self, text):
+        QtWidgets.QWidget.__init__(self)
+        self.text = text
+        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum))
+
+    def sizeHint(self):
+        size = self.fontMetrics().boundingRect('  {}  '.format(self.text)).size()
+        size.setHeight(size.height() + 4)
+        return size
+
+    def setEnabled(self, state):
+        self.bgColor = self.bgColors[state]
+        self.fgColor = self.fgColors[state]
+        QtWidgets.QWidget.setEnabled(self, state)
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter(self)
+        qp.setPen(self.fgColor)
+        qp.setBrush(self.bgColor)
+        qp.setRenderHints(qp.Antialiasing)
+        qp.translate(.5, .5)
+
+        font = self.font()
+        font.setBold(True)
+        path = QtGui.QPainterPath()
+        path.addRoundedRect(QtCore.QRectF(self.rect().adjusted(0, 0, -1, -1)), 2, 2)
+        if self.isEnabled():
+            left = (self.width() - self.fontMetrics().width(self.text)) / 2 - 2
+            top = self.height() - self.fontMetrics().descent() - 2
+            path.addText(left, top, font, self.text)
+            qp.drawPath(path)
+        else:
+            qp.drawPath(path)
+#            qp.translate(-.5, -.5)
+            qp.setFont(font)
+            qp.drawText(self.rect(), QtCore.Qt.AlignCenter, self.text)
+
+class ModeSwitcher(HDisplayGroup):
+    modeChanged = QtCore.pyqtSignal(bool)
+    modeClicked = QtCore.pyqtSignal(bool)
+
+    def __init__(self):
+        HDisplayGroup.__init__(self)
+        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum))
+        self.mode = None
+        self.singleLbl = Switch('Single')
+        self.layout().addWidget(self.singleLbl)
+        self.multiLbl = Switch('Multi')
+        self.layout().addWidget(self.multiLbl)
+        self.layout().setSpacing(6)
+
+        self.setMode(0)
+
+    def setMode(self, mode):
+        if mode == self.mode:
+            return
+        self.mode = mode
+        self.singleLbl.setEnabled(not mode)
+        self.multiLbl.setEnabled(mode)
+        self.modeChanged.emit(mode)
+
+    def mousePressEvent(self, event):
+        if event.pos() in self.singleLbl.geometry():
+            self.modeClicked.emit(False)
+        elif event.pos() in self.multiLbl.geometry():
+            self.modeClicked.emit(1)
+
+
 class ProgSendWidget(VDisplayGroup):
     clicked = QtCore.pyqtSignal()
 
@@ -687,6 +762,9 @@ class EditStatusWidget(QtWidgets.QWidget):
 
 
 class DisplayWidget(QtWidgets.QWidget):
+    modeLabels = 'Sound mode Edit buffer', 'Multi mode Edit buffer'
+    modeChanged = QtCore.pyqtSignal(bool)
+
     def __init__(self, parent):
         QtWidgets.QWidget.__init__(self)
         self.setStyleSheet('''
@@ -753,9 +831,15 @@ class DisplayWidget(QtWidgets.QWidget):
         layout.addLayout(editLayout, 0, 3)
         self.editStatusWidget = EditStatusWidget()
         editLayout.addWidget(self.editStatusWidget)
-        self.editModeLabel = QtWidgets.QLabel('Sound mode Edit buffer')
+        self.editModeLabel = QtWidgets.QLabel(self.modeLabels[0])
         self.editModeLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Maximum))
         editLayout.addWidget(self.editModeLabel)
+
+        self.modeSwitch = ModeSwitcher()
+        self.mode = self.modeSwitch.mode
+        editLayout.addWidget(self.modeSwitch)
+        self.modeSwitch.modeClicked.connect(self.setMode)
+
         self.nameEdit = DisplayNameEdit()
         #see note on GraphicsSpin
         if sys.platform == 'darwin':
@@ -779,6 +863,10 @@ class DisplayWidget(QtWidgets.QWidget):
         self.redoBtn = UndoDisplayBtn(QtGui.QIcon.fromTheme('edit-redo'))
         self.redoBtn.setEnabled(False)
         statusLayout.addWidget(self.redoBtn)
+
+    def setMode(self, mode):
+        self.editModeLabel.setText(self.modeLabels[mode])
+        self.modeChanged.emit(mode)
 
     def mousePressEvent(self, event):
         if not event.pos() in self.nameEdit.geometry() and self.nameEdit.hasFocus():
