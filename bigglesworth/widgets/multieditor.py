@@ -7,13 +7,52 @@ os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
 from Qt import QtCore, QtGui, QtWidgets
 QtCore.pyqtSignal = QtCore.Signal
 
+from frame import Frame
+
 from pianokeyboard import PianoKeyboard, _isWhiteKey, _noteNumberToName
+
+sys.path.append('../..')
+from bigglesworth.utils import loadUi
 
 def _getCssQColorStr(color):
     return 'rgba({},{},{},{:.0f}%)'.format(color.red(), color.green(), color.blue(), color.alphaF() * 100)
 
 def avg(v0, v1):
     return (v0 + v1) / 2
+
+leftArrowPath = QtGui.QPainterPath()
+leftArrowPath.moveTo(0, 14)
+leftArrowPath.lineTo(11, 14)
+leftArrowPath.lineTo(11, 10)
+leftArrowPath.lineTo(15, 15)
+leftArrowPath.lineTo(11, 20)
+leftArrowPath.lineTo(11, 16)
+leftArrowPath.lineTo(0, 16)
+leftArrowPath.closeSubpath()
+
+rightArrowPath = QtGui.QPainterPath()
+rightArrowPath.moveTo(0, 15)
+rightArrowPath.lineTo(4, 10)
+rightArrowPath.lineTo(4, 14)
+rightArrowPath.lineTo(15, 14)
+rightArrowPath.lineTo(15, 16)
+rightArrowPath.lineTo(4, 16)
+rightArrowPath.lineTo(4, 20)
+rightArrowPath.closeSubpath()
+
+
+class PathCursor(QtGui.QCursor):
+    def __init__(self, path):
+        pixmap = QtGui.QPixmap(32, 32)
+        pixmap.fill(QtCore.Qt.transparent)
+        qp = QtGui.QPainter(pixmap)
+        qp.setRenderHints(qp.Antialiasing)
+        qp.setPen(QtCore.Qt.white)
+        qp.setBrush(QtCore.Qt.black)
+        qp.drawPath(path)
+        qp.end()
+        QtGui.QCursor.__init__(self, pixmap)
+
 
 class RangeSliderHandle(QtWidgets.QSlider):
     valueRequested = QtCore.pyqtSignal(int)
@@ -52,6 +91,7 @@ class RangeSliderHandle(QtWidgets.QSlider):
             handleDark=_getCssQColorStr(handleDark), 
             handleColor=_getCssQColorStr(QtGui.QColor.fromRgb(*map(lambda c: avg(*c), zip(handleLight.getRgb(), handleDark.getRgb()))))
             ))
+        self.checkFontColor()
 
     @property
     def values(self):
@@ -74,6 +114,19 @@ class RangeSliderHandle(QtWidgets.QSlider):
         self.valueDoc.setDefaultFont(font)
         self.valueDoc.setPlainText(self._values[self.value()])
 
+    def checkFontColor(self):
+        color = self.window().palette().color(QtGui.QPalette.WindowText)
+        if color.lightness() >= 127:
+            self.fontColor = color.lighter()
+        else:
+            self.fontColor = color.darker()
+
+    def changeEvent(self, event):
+        if event.type() == QtCore.QEvent.FontChange:
+            self.computeHandleText()
+        elif event.type() == QtCore.QEvent.PaletteChange:
+            self.checkFontColor()
+
     def showEvent(self, event):
         if not event.spontaneous():
             self.computeHandleSizes()
@@ -84,7 +137,9 @@ class RangeSliderHandle(QtWidgets.QSlider):
         qp.translate(.5, 1.5)
         font = self.font()
         font.setPointSizeF(self.height() * .8)
+        font.setBold(True)
         qp.setFont(font)
+        qp.setPen(self.fontColor)
         if self.handleRect.right() + self.handleRect.width() * .5 + self.valueDoc.idealWidth() > self.width():
             rect = QtCore.QRect(0, 0, self.handleRect.left() - self.handleRect.width() * .5, self.height())
             qp.drawText(rect, QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter, self.values[self.value()])
@@ -149,6 +204,8 @@ class RangeSlider(QtWidgets.QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         self.setContentsMargins(self.hMargin, self.vMargin, self.hMargin, self.vMargin)
         self.setMaximumHeight(self.fontMetrics().height() * 2)
+        self.leftArrowCursor = PathCursor(leftArrowPath)
+        self.rightArrowCursor = PathCursor(rightArrowPath)
 
         self.minimum = minimum
         self.maximum = maximum
@@ -183,6 +240,10 @@ class RangeSlider(QtWidgets.QWidget):
 
     def currentRange(self):
         return self.startHandle.value(),  self.endHandle.value()
+
+    def setCurrentRange(self, start, end):
+        self.startHandle.setValue(start)
+        self.endHandle.setValue(end)
 
     def virtualRange(self):
         values = (self.currentRange())
@@ -223,6 +284,7 @@ class RangeSlider(QtWidgets.QWidget):
 
     def leaveEvent(self, event):
         self.hoverLeave.emit()
+        self.unsetCursor()
 
     def resizeEvent(self, event):
         QtWidgets.QWidget.resizeEvent(self, event)
@@ -233,8 +295,8 @@ class RangeSlider(QtWidgets.QWidget):
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
             pos = event.pos()
-            x = pos.x()
-            y = pos.y()
+            x = event.x()
+            y = event.y()
             #y detection is splitted to avoid startHandle stealing focus
             if self.startHandle.handleRect.left() <= x <= self.startHandle.handleRect.right():
                 self.currentHandle = self.startHandle
@@ -257,6 +319,7 @@ class RangeSlider(QtWidgets.QWidget):
                     self.endHandle.setValue(end)
                     self.endHandle.blockSignals(False)
                 self.refValue = self.startHandle.value()
+                self.setCursor(QtCore.Qt.ClosedHandCursor)
 
     def mouseDoubleClickEvent(self, event):
         if self.virtualRange() != self.range:
@@ -282,9 +345,31 @@ class RangeSlider(QtWidgets.QWidget):
             tooltip = '{} - {}'.format(self.values[self.startHandle.value()], self.values[self.endHandle.value()])
             self.setToolTip(tooltip)
             QtWidgets.QToolTip.showText(pos, tooltip)
+        else:
+            pos = event.pos()
+            x = event.x()
+            y = event.y()
+            handleTolerance = self.startHandle.height()
+            if self.startHandle.handleRect.left() <= x <= self.startHandle.handleRect.right():
+                self.setCursor(self.leftArrowCursor)
+            elif self.endHandle.handleRect.left() <= x <= self.endHandle.handleRect.right() or \
+                y > self.endHandle.geometry().top() + handleTolerance:
+                    self.setCursor(self.rightArrowCursor)
+            elif y < self.startHandle.geometry().bottom() * .8:
+                    self.setCursor(self.leftArrowCursor)
+            elif self.currentRange() != self.range and pos in self.handle.geometry().adjusted(0, -handleTolerance, 0, handleTolerance):
+                self.setCursor(QtCore.Qt.OpenHandCursor)
+            else:
+                self.unsetCursor()
 
     def mouseReleaseEvent(self, event):
         self.currentHandle = self.deltaPos = None
+        self.unsetCursor()
+
+    def changeEvent(self, event):
+        if event.type() == QtCore.QEvent.PaletteChange:
+            self.startHandle.checkFontColor()
+            self.endHandle.checkFontColor()
 
     def showEvent(self, event):
         if not event.spontaneous():
@@ -337,6 +422,9 @@ class VelocityScene(QtWidgets.QGraphicsScene):
         self.invalidStart.setPen(invalidPen)
         self.invalidStart.setBrush(noBrush)
         self.invalidStart.setVisible(False)
+
+        self.startValueText = QtWidgets.QGraphicsSimpleTextItem(self.startArrow)
+        self.startValueText.setPos(-10, 8)
         
         self.endLine = self.addLine(QtCore.QLineF(0, -10, 0, 150), linePen)
         self.endLine.setX(128)
@@ -355,6 +443,9 @@ class VelocityScene(QtWidgets.QGraphicsScene):
         self.invalidEnd.setBrush(noBrush)
         self.invalidEnd.setVisible(False)
 
+        self.endValueText = QtWidgets.QGraphicsSimpleTextItem(self.endArrow)
+        self.endValueText.setPos(self.view.fontMetrics().width(' '), 8)
+
         self.hideRange()
 
     def hideRange(self):
@@ -362,12 +453,18 @@ class VelocityScene(QtWidgets.QGraphicsScene):
         self.endLine.setVisible(False)
         self.selection.setVisible(False)
 
-    def setRange(self, minimum, maximum):
-        self.startLine.setX(minimum)
+    def setRange(self, start, end):
+        self.startLine.setX(start)
         self.startLine.setVisible(True)
-        self.endLine.setX(maximum + 1)
+        self.endLine.setX(end + 1)
         self.endLine.setVisible(True)
-        if minimum > maximum:
+
+        startText = str(start)
+        self.startValueText.setText(startText)
+        self.startValueText.setX(-self.view.fontMetrics().width(startText + ' '))
+        self.endValueText.setText(str(end))
+
+        if start > end:
             self.invalidStart.setVisible(True)
             self.invalidEnd.setVisible(True)
             self.startArrow.setVisible(False)
@@ -376,13 +473,13 @@ class VelocityScene(QtWidgets.QGraphicsScene):
             self.invalidStart.setVisible(False)
             self.invalidEnd.setVisible(False)
             self.startArrow.setVisible(True)
-            minTop = 127 - minimum
-            maxTop = 127 - maximum
+            minTop = 127 - start
+            maxTop = 127 - end
             poly = QtGui.QPolygonF([
-                QtCore.QPoint(minimum, 127), 
-                QtCore.QPoint(minimum, minTop), 
-                QtCore.QPoint(maximum + 1, maxTop), 
-                QtCore.QPoint(maximum + 1, 127)
+                QtCore.QPoint(start, 127), 
+                QtCore.QPoint(start, minTop), 
+                QtCore.QPoint(end + 1, maxTop), 
+                QtCore.QPoint(end + 1, 127)
                 ])
             self.selection.setPolygon(poly)
             self.selection.setVisible(True)
@@ -406,6 +503,8 @@ class VelocityView(QtWidgets.QGraphicsView):
 
 
 class Mixer(QtWidgets.QWidget):
+    velocityChanged = QtCore.pyqtSignal(int, int, int)
+    keyChanged = QtCore.pyqtSignal(int, int, int)
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
         self.setMouseTracking(True)
@@ -418,20 +517,27 @@ class Mixer(QtWidgets.QWidget):
         self.tabBar.addTab('Velocity range')
 
         self.sliders = []
-        noteNames = ['{} ({})'.format(_noteNumberToName[v].upper(), v) for v in range(128)]
+        self.sliderKeys = []
+        self.sliderVelocities = []
+        self.noteNames = ['{} ({})'.format(_noteNumberToName[v].upper(), v) for v in range(128)]
+        self.velNames = [str(v) for v in range(128)]
         for s in range(16):
             slider = RangeSlider()
+            slider.index = s
             self.sliders.append(slider)
             layout.addWidget(slider)
             slider.hoverEnter.connect(self.sliderEnter)
             slider.rangeChanged.connect(self.checkSelection)
-            slider.values = noteNames
+            slider.rangeChanged.connect(self.emitRangeChanged)
+            slider.values = self.noteNames
+            self.sliderKeys.append([0, 127])
+            self.sliderVelocities.append([0, 127])
 
         self.currentSlider = None
 
         self.stacked = QtWidgets.QStackedWidget()
         layout.addWidget(self.stacked)
-        self.tabBar.currentChanged.connect(self.stacked.setCurrentIndex)
+        self.tabBar.currentChanged.connect(self.setMode)
         self.stacked.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum)
 
         self.piano = PianoKeyboard()
@@ -443,15 +549,38 @@ class Mixer(QtWidgets.QWidget):
         self.piano.noteOffset = 8
         self.piano.showShortcuts = False
         self.selectionColors = QtGui.QColor(255, 0, 0, 128), QtGui.QColor(0, 255, 0, 128)
-        self.selection = self.piano.scene().addPath(QtGui.QPainterPath(), pen=QtGui.QPen(QtCore.Qt.NoPen), brush=self.selectionColors[1])
-        self.selection.setZValue(100)
-        self.background = self.piano.scene().addRect(self.piano.sceneRect(), pen=QtGui.QPen(QtCore.Qt.NoPen), brush=QtGui.QColor(128, 128, 128, 128))
-        self.background.setZValue(99)
-        self.background.setVisible(False)
+        self.pianoSelection = self.piano.scene().addPath(QtGui.QPainterPath(), pen=QtGui.QPen(QtCore.Qt.NoPen), brush=self.selectionColors[1])
+        self.pianoSelection.setZValue(100)
+        self.pianoBackground = self.piano.scene().addRect(self.piano.sceneRect(), pen=QtGui.QPen(QtCore.Qt.NoPen), brush=QtGui.QColor(128, 128, 128, 128))
+        self.pianoBackground.setZValue(99)
+        self.pianoBackground.setVisible(False)
 
         self.velocity = VelocityView()
         self.stacked.addWidget(self.velocity)
 #        self.stacked.setCurrentIndex(1)
+
+    def setMode(self, mode, save=True):
+        self.tabBar.setCurrentIndex(mode)
+        self.stacked.setCurrentIndex(mode)
+        if mode:
+            values = self.velNames
+            toSave = self.sliderKeys
+            toRestore = self.sliderVelocities
+        else:
+            values = self.noteNames
+            toSave = self.sliderVelocities
+            toRestore = self.sliderKeys
+        for s, slider in enumerate(self.sliders):
+            slider.values = values
+            if save:
+                toSave[s] = list(slider.currentRange())
+            if slider != self.currentSlider:
+                slider.blockSignals(True)
+                slider.setCurrentRange(*toRestore[s])
+                slider.blockSignals(False)
+            else:
+                slider.setCurrentRange(*toRestore[s])
+            slider.update()
 
     def sliderEnter(self, slider=None):
         if slider is None:
@@ -459,71 +588,80 @@ class Mixer(QtWidgets.QWidget):
         self.currentSlider = slider
         self.checkSelection(*slider.currentRange())
 
-    def checkSelection(self, start, end):
-        self.velocity.setRange(start, end)
-        path = QtGui.QPainterPath()
-        if self.currentSlider:
-            first = min(start, end)
-            last = max(start, end)
-            self.selection.setBrush(self.selectionColors[first == start])
-            path.setFillRule(QtCore.Qt.WindingFill)
-
-            firstKey = self.piano.keys[first]
-            whiteRect = blackRect = preClear = postClear = False
-            if first == last and not _isWhiteKey(first):
-                blackRect = firstKey.sceneBoundingRect()
-            else:
-                absFirst = first % 12
-                if absFirst in (0, 5):
-                    whiteRect = firstKey.sceneBoundingRect()
-                elif absFirst in (2, 4, 7, 9, 11):
-                    whiteRect = firstKey.sceneBoundingRect()
-                    preClear = self.piano.keys[first - 1].sceneBoundingRect()
-                else:
-                    whiteRect = self.piano.keys[first + 1].sceneBoundingRect()
-                    blackRect = firstKey.sceneBoundingRect()
-                lastKey = self.piano.keys[last]
-                absLast = last % 12
-                if absLast in (4, 11):
-                    if whiteRect:
-                        whiteRect.setRight(lastKey.sceneBoundingRect().right())
-                    else:
-                        whiteRect = lastKey.sceneBoundingRect().right()
-                elif absLast in (0, 2, 5, 7, 9):
-                    if whiteRect:
-                        whiteRect.setRight(lastKey.sceneBoundingRect().right())
-                    else:
-                        whiteRect = lastKey.sceneBoundingRect().right()
-                    if last < 127:
-                        postClear = self.piano.keys[last + 1].sceneBoundingRect()
-                else:
-                    if whiteRect:
-                        whiteRect.setRight(self.piano.keys[last - 1].sceneBoundingRect().right())
-                    else:
-                        whiteRect = self.piano.keys[last - 1].sceneBoundingRect()
-                    if blackRect:
-                        blackRect.setRight(lastKey.sceneBoundingRect().right())
-                    else:
-                        blackRect = lastKey.sceneBoundingRect()
-            region = QtGui.QRegion()
-            if whiteRect:
-                region += QtGui.QRegion(whiteRect.toRect().adjusted(-1, 0, 1, 0))
-            if blackRect:
-                region += QtGui.QRegion(blackRect.toRect().adjusted(-2, 0, 1, 0))
-            if preClear:
-                region -= QtGui.QRegion(preClear.toRect())
-            if postClear:
-                region -= QtGui.QRegion(postClear.toRect())
-            path.addRegion(region)
-            self.background.setVisible(True)
+    def emitRangeChanged(self, start, end):
+        if self.stacked.currentIndex():
+            self.velocityChanged.emit(self.sender().index, start, end)
         else:
-            self.background.setVisible(False)
-        self.selection.setPath(path)
+            self.keyChanged.emit(self.sender().index, start, end)
+
+    def checkSelection(self, start, end):
+        if self.stacked.currentIndex():
+            self.velocity.setRange(start, end)
+        else:
+            path = QtGui.QPainterPath()
+            if self.currentSlider:
+                first = min(start, end)
+                last = max(start, end)
+                self.pianoSelection.setBrush(self.selectionColors[first == start])
+                path.setFillRule(QtCore.Qt.WindingFill)
+
+                firstKey = self.piano.keys[first]
+                whiteRect = blackRect = preClear = postClear = False
+                if first == last and not _isWhiteKey(first):
+                    blackRect = firstKey.sceneBoundingRect()
+                else:
+                    absFirst = first % 12
+                    if absFirst in (0, 5):
+                        whiteRect = firstKey.sceneBoundingRect()
+                    elif absFirst in (2, 4, 7, 9, 11):
+                        whiteRect = firstKey.sceneBoundingRect()
+                        preClear = self.piano.keys[first - 1].sceneBoundingRect()
+                    else:
+                        whiteRect = self.piano.keys[first + 1].sceneBoundingRect()
+                        blackRect = firstKey.sceneBoundingRect()
+                    lastKey = self.piano.keys[last]
+                    absLast = last % 12
+                    if absLast in (4, 11):
+                        if whiteRect:
+                            whiteRect.setRight(lastKey.sceneBoundingRect().right())
+                        else:
+                            whiteRect = lastKey.sceneBoundingRect().right()
+                    elif absLast in (0, 2, 5, 7, 9):
+                        if whiteRect:
+                            whiteRect.setRight(lastKey.sceneBoundingRect().right())
+                        else:
+                            whiteRect = lastKey.sceneBoundingRect().right()
+                        if last < 127:
+                            postClear = self.piano.keys[last + 1].sceneBoundingRect()
+                    else:
+                        if whiteRect:
+                            whiteRect.setRight(self.piano.keys[last - 1].sceneBoundingRect().right())
+                        else:
+                            whiteRect = self.piano.keys[last - 1].sceneBoundingRect()
+                        if blackRect:
+                            blackRect.setRight(lastKey.sceneBoundingRect().right())
+                        else:
+                            blackRect = lastKey.sceneBoundingRect()
+                region = QtGui.QRegion()
+                if whiteRect:
+                    region += QtGui.QRegion(whiteRect.toRect().adjusted(-1, 0, 1, 0))
+                if blackRect:
+                    region += QtGui.QRegion(blackRect.toRect().adjusted(-2, 0, 1, 0))
+                if preClear:
+                    region -= QtGui.QRegion(preClear.toRect())
+                if postClear:
+                    region -= QtGui.QRegion(postClear.toRect())
+                path.addRegion(region)
+                self.pianoBackground.setVisible(True)
+            else:
+                self.pianoBackground.setVisible(False)
+            self.pianoSelection.setPath(path)
 
     def deselect(self):
         self.currentSlider = None
-        self.selection.setPath(QtGui.QPainterPath())
-        self.background.setVisible(False)
+        self.pianoSelection.setPath(QtGui.QPainterPath())
+        self.pianoBackground.setVisible(False)
+        self.velocity.hideRange()
 
     def mouseMoveEvent(self, event):
         if event.pos() not in self.sliders[0].geometry() | self.sliders[-1].geometry():
@@ -534,8 +672,124 @@ class Mixer(QtWidgets.QWidget):
         self.velocity.hideRange()
 
 
+class MultiStrip(Frame):
+    def __init__(self, *args, **kwargs):
+        Frame.__init__(self, *args, **kwargs)
+        loadUi('ui/multistrip.ui', self)
+
+        self.volumeChanged = self.volumeSlider.valueChanged
+        self.setVolume = self.volumeSlider.setValue
+        self.panChanged = self.panSlider.valueChanged
+        self.setPan = self.panSlider.setValue
+
+        self.transposeChanged = self.transDial.valueChanged
+        self.setTranspose = self.transDial.setValue
+        self.detuneChanged = self.detuneDial.valueChanged
+        self.setDetune = self.detuneDial.setValue
+
+        self.lowVelChanged = self.lowVelDial.valueChanged
+        self.setLowVel = self.lowVelDial.setValue
+        self.highVelChanged = self.highVelDial.valueChanged
+        self.setHighVel = self.highVelDial.setValue
+        self.lowKeyChanged = self.lowKeyDial.valueChanged
+        self.setLowKey = self.lowKeyDial.setValue
+        self.highKeyChanged = self.highKeyDial.valueChanged
+        self.setHighKey = self.highKeyDial.setValue
+
+        self.midiToggled = self.midiBtn.switchToggled
+        self.setMidi = self.midiBtn.setSwitched
+
+        self.bottomButtons = self.modBtn, self.pitchBtn, self.susBtn, self.pressBtn, self.editsBtn, self.progBtn
+        self.checkSizes()
+
+    def checkSizes(self):
+        fm = self.fontMetrics()
+        width = max(fm.width('Low'), fm.width('High'))
+        for dial in (self.lowVelDial, self.highVelDial, self.lowKeyDial, self.highKeyDial):
+            dial.setMinimumWidth(width)
+        font = self.font()
+        font.setPointSizeF(font.pointSize() * .8)
+        width = max(fm.width(b.insideText) for b in self.bottomButtons)
+        for btn in self.bottomButtons:
+            btn.setFont(font)
+            btn.setMinimumWidth(width)
+
+    def changeEvent(self, event):
+        if event.type() in (QtCore.QEvent.PaletteChange, QtCore.QEvent.FontChange):
+            self.checkSizes()
+
+
+class MultiEditor(QtWidgets.QWidget):
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QWidget.__init__(self, *args, **kwargs)
+        loadUi('ui/multieditor.ui', self)
+        self.setAutoFillBackground(True)
+
+        self.strips = []
+        for p in range(16):
+            strip = MultiStrip()
+            self.strips.append(strip)
+            strip.part = p
+            strip.label = 'Part {}'.format(p + 1)
+            strip.lowKeyChanged.connect(lambda key, part=p: self.setLowKey(part, key))
+            strip.highKeyChanged.connect(lambda key, part=p: self.setHighKey(part, key))
+            strip.lowVelChanged.connect(lambda vel, part=p: self.setLowVel(part, vel))
+            strip.highVelChanged.connect(lambda vel, part=p: self.setHighVel(part, vel))
+            strip.velocityBtn.clicked.connect(self.showVelocities)
+            strip.keyBtn.clicked.connect(self.showKeys)
+            self.stripLayout.addWidget(strip)
+
+        self.mixer = Mixer()
+        self.mainWidget.addWidget(self.mixer)
+        self.mixer.velocityChanged.connect(self.setVelocities)
+        self.mixer.keyChanged.connect(self.setKeys)
+
+        self.velocityBtn.clicked.connect(self.showVelocities)
+        self.keyBtn.clicked.connect(self.showKeys)
+        self.mainBtn.clicked.connect(self.showMain)
+
+    def setKeys(self, part, low, high):
+        self.strips[part].setLowKey(low)
+        self.strips[part].setHighKey(high)
+
+    def setLowKey(self, part, key):
+        self.mixer.sliderKeys[part][0] = key
+
+    def setHighKey(self, part, key):
+        self.mixer.sliderKeys[part][1] = key
+
+    def setVelocities(self, part, low, high):
+        self.strips[part].setLowVel(low)
+        self.strips[part].setHighVel(high)
+
+    def setLowVel(self, part, vel):
+        self.mixer.sliderVelocities[part][0] = vel
+
+    def setHighVel(self, part, vel):
+        self.mixer.sliderVelocities[part][1] = vel
+
+    def showMain(self):
+        self.stripSwitcher.setCurrentIndex(0)
+        self.mainWidget.setCurrentIndex(0)
+
+    def showMixer(self):
+        self.stripSwitcher.setCurrentIndex(1)
+        self.mainWidget.setCurrentIndex(1)
+        self.mixer.setMode(self.mixer.stacked.currentIndex(), save=False)
+
+    def showVelocities(self):
+        self.stripSwitcher.setCurrentIndex(1)
+        self.mainWidget.setCurrentIndex(1)
+        self.mixer.setMode(1, save=False)
+
+    def showKeys(self):
+        self.stripSwitcher.setCurrentIndex(1)
+        self.mainWidget.setCurrentIndex(1)
+        self.mixer.setMode(0, save=False)
+
+
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
-    mixer = Mixer()
-    mixer.show()
+    multi = MultiEditor()
+    multi.show()
     sys.exit(app.exec_())

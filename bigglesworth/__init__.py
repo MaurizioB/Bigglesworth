@@ -155,6 +155,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.argparse = argparse
         self._arguments = args
 
+        self.initialized = False
         self.lastActiveWindows = []
         self.lastMidiEvent = None
         self.disconnectionQueue = set()
@@ -468,6 +469,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.splash.showMessage('Prepare for some coolness! ;-)', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom)
 
         self.midiDevice.midi_event.connect(self.midiEventReceived)
+        self.initialized = True
         QtCore.QTimer.singleShot(200, self.loadingComplete)
 
     @property
@@ -1416,11 +1418,12 @@ class Bigglesworth(QtWidgets.QApplication):
                     return False
             return True
 
-        if isinstance(self.activeWindow(), WaveTableWindow):
-            if not all((canCloseWavetables(), self.editorWindow.close())):
+        if self.initialized:
+            if isinstance(self.activeWindow(), WaveTableWindow):
+                if not all((canCloseWavetables(), self.editorWindow.close())):
+                    return
+            elif not all((self.editorWindow.close(), canCloseWavetables())):
                 return
-        elif not all((self.editorWindow.close(), canCloseWavetables())):
-            return
 
         QtWidgets.QApplication.quit()
 

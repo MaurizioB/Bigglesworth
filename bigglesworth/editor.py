@@ -11,7 +11,7 @@ from bigglesworth.utils import loadUi, getName, getChar, Enum, setBold, sanitize
 from bigglesworth.const import (chr2ord, UidColumn, LocationColumn, 
     INIT, IDW, IDE, SNDP, END, templateGroupDict)
 from bigglesworth.parameters import Parameters, fullRangeCenterZero, driveCurves, arpLength, ctrl2sysex
-from bigglesworth.widgets import SoundsMenu, EditorMenu, EnvelopeView, MidiConnectionsDialog, ModMatrixView
+from bigglesworth.widgets import SoundsMenu, EditorMenu, EnvelopeView, MidiConnectionsDialog, ModMatrixView, MultiEditor
 from bigglesworth.dialogs import (RandomDialog, InputMessageBox, TemplateManager, SaveSoundAs, 
     WarningMessageBox, LocationRequestDialog, SoundExportSingle)
 from bigglesworth.midiutils import (SYSEX, CTRL, NOTEON, NOTEOFF, PROGRAM, 
@@ -98,6 +98,14 @@ _effects = [
 
 
 MidiIn, MidiOut = range(2)
+
+
+class MultiEditorCover(QtWidgets.QWidget):
+    brush = QtGui.QColor(128, 128, 128, 128)
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter(self)
+        qp.fillRect(self.rect(), self.brush)
 
 
 class Osc3Proxy(QtCore.QSortFilterProxyModel):
@@ -641,9 +649,9 @@ class EditorWindow(QtWidgets.QMainWindow):
         #if the state has to be remembered.
         self._autosave = self.settings.value('AutoSave', 2, int) & 1
         self.saveBtn.clicked.connect(self.save)
-        #designer automatically strips blank spaces, but we need this button 
+        #designer automatically strips blank spaces sometimes, but we need this button 
         #to have some text margin due to the menu arrow
-        self.saveBtn.insideText = ' '
+        self.saveBtn.insideText = '   '
 
         self.dumpMenu = QtWidgets.QMenu(self)
         self.dumpBtn.setMenu(self.dumpMenu)
@@ -685,6 +693,8 @@ class EditorWindow(QtWidgets.QMainWindow):
         randomCustomAction.triggered.connect(self.randomizeCustom)
 
         self.display.customContextMenuRequested.connect(self.showDisplayMenu)
+        self.display.modeClicked.connect(self.setMode)
+        self.display.multiEditClicked.connect(self.showMultiEditor)
 
         self.parameters = Parameters(self)
         self.parameters.parameterChanged.connect(self.parameterChanged)
@@ -853,7 +863,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.keyOctaveCombo.currentIndexChanged.connect(self.setOctave)
 #        logo = QtGui.QIcon(':/images/bigglesworth_textonly_gray.svg').pixmap(QtCore.QSize(140, 140))
         self.bigglesworthLogoPixmap = QtGui.QPixmap(':/images/bigglesworth_textonly_gray.svg')
-        self.bigglesworthLogo.setPixmap(self.bigglesworthLogoPixmap.scaledToWidth(140, QtCore.Qt.SmoothTransformation))
+#        self.bigglesworthLogo.setPixmap(self.bigglesworthLogoPixmap.scaledToWidth(140, QtCore.Qt.SmoothTransformation))
 
         self.midiInWidget.clicked.connect(self.showMidiMenu)
         self.midiInWidget.setProgState(self.main.progReceiveState)
@@ -964,6 +974,33 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.clockBtn.clicked.connect(self.toggleMidiClock)
         self.main.midiClock.beat.connect(self.midiClockLed.activate)
         self.main.midiClock.stateChanged.connect(self.setMidiClockButton)
+
+        self.multiEditorCover = MultiEditorCover(self)
+        self.multiEditorCover.hide()
+        self.multiEditor = MultiEditor(self)
+        self.multiEditor.hide()
+
+    def setMode(self, mode):
+        self.display.setMode(mode)
+
+    def showMultiEditor(self):
+        self.resizeMultiEditor()
+        self.multiEditorCover.show()
+        self.multiEditor.show()
+
+    def resizeMultiEditor(self):
+        self.multiEditorCover.resize(self.centralWidget().size())
+        hint = self.multiEditor.minimumSizeHint()
+        mainWidth = self.width()
+        hintWidth = min(mainWidth, hint.width())
+        mainHeight = self.height()
+        hintHeight = min(mainHeight, hint.height())
+        width = (mainWidth + hintWidth) / 2
+        height = (mainHeight + hintHeight) / 2
+        self.multiEditor.resize(width, height)
+        x = (mainWidth - width) / 2
+        y = (mainHeight - height) / 2
+        self.multiEditor.move(x, y)
 
     def toggleMidiClock(self):
         if self.main.midiClock.isActive():
@@ -1940,6 +1977,10 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.undoStack.endMacro()
         self.display.setStatusText('{} parameters randomized'.format(len(paramList)))
 
+    def resizeLogo(self):
+        width = self.midiSection.width() + self.buttonsLayout.contentsRect().width() + self.displayLayout.horizontalSpacing()
+        self.bigglesworthLogo.setPixmap(self.bigglesworthLogoPixmap.scaledToWidth(width, QtCore.Qt.SmoothTransformation))
+
     def closeEvent(self, event):
         if self._editStatus == self.Modified or self.setFromDump:
             if self._editStatus == self.Modified:
@@ -1972,16 +2013,25 @@ class EditorWindow(QtWidgets.QMainWindow):
         if self.maskObject:
             self.maskObject.resize(self.size())
         self.nameEditMask.setGeometry(self.geometry().adjusted(-10, -10, 20, 20))
-        width = self.midiSection.width() + self.saveFrame.width() + self.displayLayout.horizontalSpacing()
-        self.bigglesworthLogo.setPixmap(self.bigglesworthLogoPixmap.scaledToWidth(width, QtCore.Qt.SmoothTransformation))
+
         if self.modMatrixView and self.modMatrixView.isVisible():
             self.modMatrixCover.resize(self.centralWidget().size())
             self.repaintModMatrixCover()
             self.modMatrixView.resize(self.centralWidget().size())
+        elif self.multiEditorCover.isVisible():
+            self.resizeMultiEditor()
+
         expand = self.height() < 760
         if not expand:
             self.expandMixerBtn.setExpanded(False)
             self.ampFrame.setVisible(True)
         self.expandMixerBtn.setVisible(expand)
+        if self.isVisible():
+            self.resizeLogo()
+
+    def showEvent(self, event):
+        QtWidgets.QMainWindow.showEvent(self, event)
+        if not event.spontaneous():
+            self.resizeLogo()
 
 

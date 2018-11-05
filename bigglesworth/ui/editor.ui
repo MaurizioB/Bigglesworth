@@ -446,7 +446,7 @@
        </widget>
       </item>
       <item row="0" column="2">
-       <layout class="QGridLayout" name="gridLayout_8">
+       <layout class="QGridLayout" name="buttonsLayout">
         <property name="horizontalSpacing">
          <number>4</number>
         </property>
@@ -458,12 +458,6 @@
         </property>
         <item row="1" column="1">
          <widget class="SquareButton" name="modMatrixBtn">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
           <property name="label" stdset="0">
            <string/>
           </property>
@@ -486,6 +480,12 @@
         </item>
         <item row="1" column="0">
          <widget class="SquareButton" name="randomizeBtn">
+          <property name="minimumWidgetSize" stdset="0">
+           <size>
+            <width>64</width>
+            <height>8</height>
+           </size>
+          </property>
           <property name="insideText" stdset="0">
            <string>Randomize</string>
           </property>
@@ -529,11 +529,14 @@
              </property>
              <item>
               <widget class="SquareButton" name="saveBtn">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
+               <property name="hWidgetSizePolicy" stdset="0">
+                <number>7</number>
+               </property>
+               <property name="minimumWidgetSize" stdset="0">
+                <size>
+                 <width>32</width>
+                 <height>8</height>
+                </size>
                </property>
                <property name="popup" stdset="0">
                 <bool>true</bool>
@@ -546,14 +549,14 @@
              </item>
              <item>
               <widget class="SquareButton" name="autosaveBtn">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
                <property name="label" stdset="0">
                 <string/>
+               </property>
+               <property name="minimumWidgetSize" stdset="0">
+                <size>
+                 <width>32</width>
+                 <height>8</height>
+                </size>
                </property>
                <property name="switchable" stdset="0">
                 <bool>true</bool>
@@ -583,7 +586,7 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="1" colspan="2" alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+      <item row="1" column="1" colspan="2">
        <widget class="QLabel" name="bigglesworthLogo">
         <property name="minimumSize">
          <size>
@@ -3587,14 +3590,14 @@
    <header>dial</header>
   </customwidget>
   <customwidget>
-   <class>Section</class>
-   <extends>QWidget</extends>
+   <class>Frame</class>
+   <extends>QFrame</extends>
    <header>frame</header>
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>Frame</class>
-   <extends>QFrame</extends>
+   <class>Section</class>
+   <extends>QWidget</extends>
    <header>frame</header>
    <container>1</container>
   </customwidget>

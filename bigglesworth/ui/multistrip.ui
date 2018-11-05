@@ -1,0 +1,715 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MultiStrip</class>
+ <widget class="Frame" name="MultiStrip">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>107</width>
+    <height>493</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <property name="label" stdset="0">
+   <string/>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,20,0,0,0,0,0,0">
+   <property name="spacing">
+    <number>2</number>
+   </property>
+   <property name="margin">
+    <number>1</number>
+   </property>
+   <item>
+    <widget class="SquareButton" name="playBtn">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="label" stdset="0">
+      <string/>
+     </property>
+     <property name="vWidgetSizePolicy" stdset="0">
+      <number>4</number>
+     </property>
+     <property name="maximumWidgetSize" stdset="0">
+      <size>
+       <width>16777215</width>
+       <height>16</height>
+      </size>
+     </property>
+     <property name="switchable" stdset="0">
+      <bool>true</bool>
+     </property>
+     <property name="insideText" stdset="0">
+      <string>PLAY</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="Combo" name="chanCombo">
+     <property name="label" stdset="0">
+      <string/>
+     </property>
+     <property name="labelPos" stdset="0">
+      <enum>Qt::TopDockWidgetArea</enum>
+     </property>
+     <property name="valueList" stdset="0">
+      <stringlist>
+       <string>Global</string>
+       <string>Omni</string>
+       <string>Ch 1</string>
+       <string>Ch 2</string>
+       <string>Ch 3</string>
+       <string>Ch 4</string>
+       <string>Ch 5</string>
+       <string>Ch 6</string>
+       <string>Ch 7</string>
+       <string>Ch 8</string>
+       <string>Ch 9</string>
+       <string>Ch 10</string>
+       <string>Ch 11</string>
+       <string>Ch 12</string>
+       <string>Ch 13</string>
+       <string>Ch 14</string>
+       <string>Ch 15</string>
+       <string>Ch 16</string>
+      </stringlist>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="Slider" name="volumeSlider">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="label" stdset="0">
+      <string>Volume</string>
+     </property>
+     <property name="hWidgetSizePolicy" stdset="0">
+      <number>7</number>
+     </property>
+     <property name="vWidgetSizePolicy" stdset="0">
+      <number>7</number>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="Slider" name="panSlider">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="label" stdset="0">
+      <string>Panning</string>
+     </property>
+     <property name="defaultValue" stdset="0">
+      <number>64</number>
+     </property>
+     <property name="orientation" stdset="0">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="value" stdset="0">
+      <number>64</number>
+     </property>
+     <property name="centerGradient" stdset="0">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="Section" name="section_2">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Ignored" vsizetype="Maximum">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <property name="spacing">
+       <number>4</number>
+      </property>
+      <property name="leftMargin">
+       <number>1</number>
+      </property>
+      <property name="topMargin">
+       <number>4</number>
+      </property>
+      <property name="rightMargin">
+       <number>1</number>
+      </property>
+      <property name="bottomMargin">
+       <number>1</number>
+      </property>
+      <item>
+       <widget class="Dial" name="transDial">
+        <property name="label" stdset="0">
+         <string>Transp</string>
+        </property>
+        <property name="value" stdset="0">
+         <number>64</number>
+        </property>
+        <property name="defaultValue" stdset="0">
+         <number>64</number>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="Dial" name="detuneDial">
+        <property name="label" stdset="0">
+         <string>Detune</string>
+        </property>
+        <property name="value" stdset="0">
+         <number>64</number>
+        </property>
+        <property name="defaultValue" stdset="0">
+         <number>64</number>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::Preferred</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>8</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item>
+    <widget class="Section" name="section_7">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <layout class="QGridLayout" name="gridLayout">
+      <property name="horizontalSpacing">
+       <number>4</number>
+      </property>
+      <property name="verticalSpacing">
+       <number>2</number>
+      </property>
+      <property name="margin">
+       <number>1</number>
+      </property>
+      <item row="4" column="0">
+       <widget class="Dial" name="lowKeyDial">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="label" stdset="0">
+         <string>Low</string>
+        </property>
+        <property name="hWidgetSizePolicy" stdset="0">
+         <number>5</number>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="Dial" name="highVelDial">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="label" stdset="0">
+         <string>High</string>
+        </property>
+        <property name="hWidgetSizePolicy" stdset="0">
+         <number>5</number>
+        </property>
+        <property name="value" stdset="0">
+         <number>127</number>
+        </property>
+        <property name="defaultValue" stdset="0">
+         <number>127</number>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="Dial" name="lowVelDial">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="label" stdset="0">
+         <string>Low</string>
+        </property>
+        <property name="hWidgetSizePolicy" stdset="0">
+         <number>5</number>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="Dial" name="highKeyDial">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="label" stdset="0">
+         <string>High</string>
+        </property>
+        <property name="hWidgetSizePolicy" stdset="0">
+         <number>5</number>
+        </property>
+        <property name="value" stdset="0">
+         <number>127</number>
+        </property>
+        <property name="defaultValue" stdset="0">
+         <number>127</number>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="2">
+       <widget class="SquareButton" name="velocityBtn">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="labelPos" stdset="0">
+         <enum>Qt::RightDockWidgetArea</enum>
+        </property>
+        <property name="hWidgetSizePolicy" stdset="0">
+         <number>7</number>
+        </property>
+        <property name="vWidgetSizePolicy" stdset="0">
+         <number>5</number>
+        </property>
+        <property name="maximumWidgetSize" stdset="0">
+         <size>
+          <width>16777215</width>
+          <height>24</height>
+         </size>
+        </property>
+        <property name="insideText" stdset="0">
+         <string>Veloc.</string>
+        </property>
+        <property name="icon" stdset="0">
+         <iconset theme="document-edit">
+          <normaloff/>
+         </iconset>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="2">
+       <widget class="SquareButton" name="keyBtn">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="labelPos" stdset="0">
+         <enum>Qt::RightDockWidgetArea</enum>
+        </property>
+        <property name="hWidgetSizePolicy" stdset="0">
+         <number>7</number>
+        </property>
+        <property name="vWidgetSizePolicy" stdset="0">
+         <number>5</number>
+        </property>
+        <property name="maximumWidgetSize" stdset="0">
+         <size>
+          <width>16777215</width>
+          <height>24</height>
+         </size>
+        </property>
+        <property name="insideText" stdset="0">
+         <string>Keys</string>
+        </property>
+        <property name="icon" stdset="0">
+         <iconset theme="document-edit">
+          <normaloff/>
+         </iconset>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="Section" name="section_3">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Ignored" vsizetype="Maximum">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <property name="spacing">
+       <number>4</number>
+      </property>
+      <property name="margin">
+       <number>2</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="receiveLbl">
+        <property name="text">
+         <string>Receive</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="SquareButton" name="midiBtn">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="label" stdset="0">
+         <string/>
+        </property>
+        <property name="hWidgetSizePolicy" stdset="0">
+         <number>7</number>
+        </property>
+        <property name="vWidgetSizePolicy" stdset="0">
+         <number>4</number>
+        </property>
+        <property name="maximumWidgetSize" stdset="0">
+         <size>
+          <width>16777215</width>
+          <height>16</height>
+         </size>
+        </property>
+        <property name="switchable" stdset="0">
+         <bool>true</bool>
+        </property>
+        <property name="insideText" stdset="0">
+         <string>MIDI</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="SquareButton" name="usbBtn">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="label" stdset="0">
+         <string/>
+        </property>
+        <property name="hWidgetSizePolicy" stdset="0">
+         <number>7</number>
+        </property>
+        <property name="vWidgetSizePolicy" stdset="0">
+         <number>4</number>
+        </property>
+        <property name="maximumWidgetSize" stdset="0">
+         <size>
+          <width>16777215</width>
+          <height>16</height>
+         </size>
+        </property>
+        <property name="switchable" stdset="0">
+         <bool>true</bool>
+        </property>
+        <property name="insideText" stdset="0">
+         <string>USB</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="SquareButton" name="localBtn">
+        <property name="label" stdset="0">
+         <string/>
+        </property>
+        <property name="hWidgetSizePolicy" stdset="0">
+         <number>7</number>
+        </property>
+        <property name="vWidgetSizePolicy" stdset="0">
+         <number>4</number>
+        </property>
+        <property name="maximumWidgetSize" stdset="0">
+         <size>
+          <width>16777215</width>
+          <height>16</height>
+         </size>
+        </property>
+        <property name="switchable" stdset="0">
+         <bool>true</bool>
+        </property>
+        <property name="insideText" stdset="0">
+         <string>Local</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <layout class="QGridLayout" name="gridLayout_3">
+     <property name="horizontalSpacing">
+      <number>1</number>
+     </property>
+     <property name="verticalSpacing">
+      <number>4</number>
+     </property>
+     <property name="margin">
+      <number>0</number>
+     </property>
+     <item row="1" column="0">
+      <widget class="SquareButton" name="susBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="label" stdset="0">
+        <string/>
+       </property>
+       <property name="hWidgetSizePolicy" stdset="0">
+        <number>5</number>
+       </property>
+       <property name="vWidgetSizePolicy" stdset="0">
+        <number>4</number>
+       </property>
+       <property name="maximumWidgetSize" stdset="0">
+        <size>
+         <width>80</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="switchable" stdset="0">
+        <bool>true</bool>
+       </property>
+       <property name="insideText" stdset="0">
+        <string>Sus</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="SquareButton" name="modBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="label" stdset="0">
+        <string/>
+       </property>
+       <property name="hWidgetSizePolicy" stdset="0">
+        <number>5</number>
+       </property>
+       <property name="vWidgetSizePolicy" stdset="0">
+        <number>4</number>
+       </property>
+       <property name="maximumWidgetSize" stdset="0">
+        <size>
+         <width>80</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="switchable" stdset="0">
+        <bool>true</bool>
+       </property>
+       <property name="insideText" stdset="0">
+        <string>Mod</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="SquareButton" name="pitchBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="label" stdset="0">
+        <string/>
+       </property>
+       <property name="hWidgetSizePolicy" stdset="0">
+        <number>5</number>
+       </property>
+       <property name="vWidgetSizePolicy" stdset="0">
+        <number>4</number>
+       </property>
+       <property name="maximumWidgetSize" stdset="0">
+        <size>
+         <width>80</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="switchable" stdset="0">
+        <bool>true</bool>
+       </property>
+       <property name="insideText" stdset="0">
+        <string>Pitch</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="SquareButton" name="pressBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="label" stdset="0">
+        <string/>
+       </property>
+       <property name="hWidgetSizePolicy" stdset="0">
+        <number>5</number>
+       </property>
+       <property name="vWidgetSizePolicy" stdset="0">
+        <number>4</number>
+       </property>
+       <property name="maximumWidgetSize" stdset="0">
+        <size>
+         <width>80</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="switchable" stdset="0">
+        <bool>true</bool>
+       </property>
+       <property name="insideText" stdset="0">
+        <string>Press</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="SquareButton" name="editsBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="label" stdset="0">
+        <string/>
+       </property>
+       <property name="hWidgetSizePolicy" stdset="0">
+        <number>5</number>
+       </property>
+       <property name="vWidgetSizePolicy" stdset="0">
+        <number>4</number>
+       </property>
+       <property name="maximumWidgetSize" stdset="0">
+        <size>
+         <width>80</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="switchable" stdset="0">
+        <bool>true</bool>
+       </property>
+       <property name="insideText" stdset="0">
+        <string>Edits</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="SquareButton" name="progBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="label" stdset="0">
+        <string/>
+       </property>
+       <property name="hWidgetSizePolicy" stdset="0">
+        <number>5</number>
+       </property>
+       <property name="vWidgetSizePolicy" stdset="0">
+        <number>4</number>
+       </property>
+       <property name="maximumWidgetSize" stdset="0">
+        <size>
+         <width>80</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="switchable" stdset="0">
+        <bool>true</bool>
+       </property>
+       <property name="insideText" stdset="0">
+        <string>Prog</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>Combo</class>
+   <extends>QWidget</extends>
+   <header>combo</header>
+  </customwidget>
+  <customwidget>
+   <class>Dial</class>
+   <extends>QWidget</extends>
+   <header>dial</header>
+  </customwidget>
+  <customwidget>
+   <class>Frame</class>
+   <extends>QFrame</extends>
+   <header>frame</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>Section</class>
+   <extends>QWidget</extends>
+   <header>frame</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>Slider</class>
+   <extends>QWidget</extends>
+   <header>slider</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>SquareButton</class>
+   <extends>QWidget</extends>
+   <header>squarebutton</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

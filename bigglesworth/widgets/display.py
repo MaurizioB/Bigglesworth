@@ -403,9 +403,21 @@ class Switch(QtWidgets.QWidget):
             qp.drawPath(path)
         else:
             qp.drawPath(path)
-#            qp.translate(-.5, -.5)
             qp.setFont(font)
             qp.drawText(self.rect(), QtCore.Qt.AlignCenter, self.text)
+
+
+class MixerButton(HDisplayGroup):
+    clicked = QtCore.pyqtSignal()
+
+    def __init__(self):
+        HDisplayGroup.__init__(self)
+        self.layout().addWidget(QtWidgets.QLabel('Mixer'))
+
+    def mousePressEvent(self, event):
+        if event.button() == QtCore.Qt.LeftButton:
+            self.clicked.emit()
+
 
 class ModeSwitcher(HDisplayGroup):
     modeChanged = QtCore.pyqtSignal(bool)
@@ -415,11 +427,17 @@ class ModeSwitcher(HDisplayGroup):
         HDisplayGroup.__init__(self)
         self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum))
         self.mode = None
+        self.layout().setSpacing(3)
+
         self.singleLbl = Switch('Single')
         self.layout().addWidget(self.singleLbl)
+        self.layout().addSpacing(6)
         self.multiLbl = Switch('Multi')
         self.layout().addWidget(self.multiLbl)
-        self.layout().setSpacing(6)
+        self.mixerBtn = MixerButton()
+        self.layout().addWidget(self.mixerBtn)
+        self.mixerBtn.setEnabled(False)
+        self.multiEditClicked = self.mixerBtn.clicked
 
         self.setMode(0)
 
@@ -429,13 +447,14 @@ class ModeSwitcher(HDisplayGroup):
         self.mode = mode
         self.singleLbl.setEnabled(not mode)
         self.multiLbl.setEnabled(mode)
+        self.mixerBtn.setEnabled(mode)
         self.modeChanged.emit(mode)
 
     def mousePressEvent(self, event):
         if event.pos() in self.singleLbl.geometry():
             self.modeClicked.emit(False)
         elif event.pos() in self.multiLbl.geometry():
-            self.modeClicked.emit(1)
+            self.modeClicked.emit(True)
 
 
 class ProgSendWidget(VDisplayGroup):
@@ -579,12 +598,12 @@ class UndoView(QtWidgets.QListView):
         self.selectionModel().select(selection, QtCore.QItemSelectionModel.ClearAndSelect)
 
 
-class DisplayBtn(QtWidgets.QPushButton):
+class AbstractUndoButton(QtWidgets.QPushButton):
     def __init__(self, icon):
         QtWidgets.QPushButton.__init__(self)
         self.setIcon(icon)
         self.setStyleSheet('''
-            DisplayBtn {
+            AbstractUndoButton {
                 border-radius: 1px;
                 border-left: 1px solid palette(midlight);
                 border-right: 1px solid palette(mid);
@@ -593,21 +612,21 @@ class DisplayBtn(QtWidgets.QPushButton):
                 background: rgba(220, 220, 180, 65);
                 min-width: 30px;
             }
-            DisplayBtn::menu-indicator {
+            AbstractUndoButton::menu-indicator {
                 subcontrol-origin: margin;
                 subcontrol-position: right;
                 width: 12px;
             }
-            DisplayBtn:disabled {
+            AbstractUndoButton:disabled {
                 color: darkGray;
             }
-            DisplayBtn:hover {
+            AbstractUndoButton:hover {
                 border-left: 1px solid palette(light);
                 border-right: 1px solid palette(dark);
                 border-top: 1px solid palette(light);
                 border-bottom: 1px solid palette(dark);
             }
-            DisplayBtn:pressed {
+            AbstractUndoButton:pressed {
                 color: green;
                 padding-top: 1px;
                 padding-left: 1px;
@@ -619,12 +638,12 @@ class DisplayBtn(QtWidgets.QPushButton):
             ''')
         self.setMaximumWidth(30)
 
-class UndoDisplayBtn(DisplayBtn):
+class UndoDisplayBtn(AbstractUndoButton):
     showUndo = QtCore.pyqtSignal()
     undoRequest = QtCore.pyqtSignal(object)
 
     def __init__(self, icon):
-        DisplayBtn.__init__(self, icon)
+        AbstractUndoButton.__init__(self, icon)
         self.popupTimer = QtCore.QBasicTimer()
         self.undoActions = []
         self._menu = QtWidgets.QMenu()
@@ -686,7 +705,7 @@ class UndoDisplayBtn(DisplayBtn):
             self.popupTimer.start(600, self)
             self.setDown(True)
         else:
-            DisplayBtn.mousePressEvent(self, event)
+            AbstractUndoButton.mousePressEvent(self, event)
 
     def mouseReleaseEvent(self, event):
         self.popupTimer.stop()
@@ -838,7 +857,9 @@ class DisplayWidget(QtWidgets.QWidget):
         self.modeSwitch = ModeSwitcher()
         self.mode = self.modeSwitch.mode
         editLayout.addWidget(self.modeSwitch)
-        self.modeSwitch.modeClicked.connect(self.setMode)
+#        self.modeSwitch.modeClicked.connect(self.setMode)
+        self.modeClicked = self.modeSwitch.modeClicked
+        self.multiEditClicked = self.modeSwitch.multiEditClicked
 
         self.nameEdit = DisplayNameEdit()
         #see note on GraphicsSpin
@@ -866,6 +887,7 @@ class DisplayWidget(QtWidgets.QWidget):
 
     def setMode(self, mode):
         self.editModeLabel.setText(self.modeLabels[mode])
+        self.modeSwitch.setMode(mode)
         self.modeChanged.emit(mode)
 
     def mousePressEvent(self, event):
@@ -928,6 +950,10 @@ class BlofeldDisplay(QtWidgets.QGraphicsView):
         self.progWidget = self.mainWidget.progWidget
         self.progSpin = self.mainWidget.progSpin
         self.progSendWidget = self.mainWidget.progSendWidget
+        self.modeClicked = self.mainWidget.modeClicked
+        self.multiEditClicked = self.mainWidget.multiEditClicked
+        self.modeChanged = self.mainWidget.modeChanged
+        self.setMode = self.mainWidget.setMode
 
     def setLocation(self, uid, collection=None):
         self.bankSpin.blockSignals(True)
