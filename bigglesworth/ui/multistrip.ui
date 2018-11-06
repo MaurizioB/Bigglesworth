@@ -6,17 +6,17 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>107</width>
-    <height>493</height>
+    <width>102</width>
+    <height>529</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <property name="label" stdset="0">
-   <string/>
+   <string>1</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,20,0,0,0,0,0,0">
+  <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,8,0,0,0,4,0,0">
    <property name="spacing">
     <number>2</number>
    </property>
@@ -44,6 +44,9 @@
       </size>
      </property>
      <property name="switchable" stdset="0">
+      <bool>true</bool>
+     </property>
+     <property name="switched" stdset="0">
       <bool>true</bool>
      </property>
      <property name="insideText" stdset="0">
@@ -99,6 +102,9 @@
      </property>
      <property name="vWidgetSizePolicy" stdset="0">
       <number>7</number>
+     </property>
+     <property name="value" stdset="0">
+      <number>100</number>
      </property>
     </widget>
    </item>
@@ -197,7 +203,7 @@
     </spacer>
    </item>
    <item>
-    <widget class="Section" name="section_7">
+    <widget class="Section" name="rangeSection">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
        <horstretch>0</horstretch>
@@ -217,7 +223,7 @@
       <item row="4" column="0">
        <widget class="Dial" name="lowKeyDial">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+         <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
@@ -226,14 +232,14 @@
          <string>Low</string>
         </property>
         <property name="hWidgetSizePolicy" stdset="0">
-         <number>5</number>
+         <number>7</number>
         </property>
        </widget>
       </item>
       <item row="2" column="1">
        <widget class="Dial" name="highVelDial">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+         <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
@@ -242,7 +248,7 @@
          <string>High</string>
         </property>
         <property name="hWidgetSizePolicy" stdset="0">
-         <number>5</number>
+         <number>7</number>
         </property>
         <property name="value" stdset="0">
          <number>127</number>
@@ -255,7 +261,7 @@
       <item row="2" column="0">
        <widget class="Dial" name="lowVelDial">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+         <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
@@ -264,14 +270,14 @@
          <string>Low</string>
         </property>
         <property name="hWidgetSizePolicy" stdset="0">
-         <number>5</number>
+         <number>7</number>
         </property>
        </widget>
       </item>
       <item row="4" column="1">
        <widget class="Dial" name="highKeyDial">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+         <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
@@ -280,7 +286,7 @@
          <string>High</string>
         </property>
         <property name="hWidgetSizePolicy" stdset="0">
-         <number>5</number>
+         <number>7</number>
         </property>
         <property name="value" stdset="0">
          <number>127</number>
@@ -307,6 +313,12 @@
         <property name="vWidgetSizePolicy" stdset="0">
          <number>5</number>
         </property>
+        <property name="minimumWidgetSize" stdset="0">
+         <size>
+          <width>28</width>
+          <height>12</height>
+         </size>
+        </property>
         <property name="maximumWidgetSize" stdset="0">
          <size>
           <width>16777215</width>
@@ -314,7 +326,7 @@
          </size>
         </property>
         <property name="insideText" stdset="0">
-         <string>Veloc.</string>
+         <string>Velo.</string>
         </property>
         <property name="icon" stdset="0">
          <iconset theme="document-edit">
@@ -339,6 +351,12 @@
         </property>
         <property name="vWidgetSizePolicy" stdset="0">
          <number>5</number>
+        </property>
+        <property name="minimumWidgetSize" stdset="0">
+         <size>
+          <width>28</width>
+          <height>12</height>
+         </size>
         </property>
         <property name="maximumWidgetSize" stdset="0">
          <size>
@@ -410,6 +428,9 @@
         <property name="switchable" stdset="0">
          <bool>true</bool>
         </property>
+        <property name="switched" stdset="0">
+         <bool>true</bool>
+        </property>
         <property name="insideText" stdset="0">
          <string>MIDI</string>
         </property>
@@ -441,6 +462,9 @@
         <property name="switchable" stdset="0">
          <bool>true</bool>
         </property>
+        <property name="switched" stdset="0">
+         <bool>true</bool>
+        </property>
         <property name="insideText" stdset="0">
          <string>USB</string>
         </property>
@@ -464,6 +488,9 @@
          </size>
         </property>
         <property name="switchable" stdset="0">
+         <bool>true</bool>
+        </property>
+        <property name="switched" stdset="0">
          <bool>true</bool>
         </property>
         <property name="insideText" stdset="0">
@@ -511,6 +538,9 @@
        <property name="switchable" stdset="0">
         <bool>true</bool>
        </property>
+       <property name="switched" stdset="0">
+        <bool>true</bool>
+       </property>
        <property name="insideText" stdset="0">
         <string>Sus</string>
        </property>
@@ -540,6 +570,9 @@
         </size>
        </property>
        <property name="switchable" stdset="0">
+        <bool>true</bool>
+       </property>
+       <property name="switched" stdset="0">
         <bool>true</bool>
        </property>
        <property name="insideText" stdset="0">
@@ -573,6 +606,9 @@
        <property name="switchable" stdset="0">
         <bool>true</bool>
        </property>
+       <property name="switched" stdset="0">
+        <bool>true</bool>
+       </property>
        <property name="insideText" stdset="0">
         <string>Pitch</string>
        </property>
@@ -602,6 +638,9 @@
         </size>
        </property>
        <property name="switchable" stdset="0">
+        <bool>true</bool>
+       </property>
+       <property name="switched" stdset="0">
         <bool>true</bool>
        </property>
        <property name="insideText" stdset="0">
@@ -635,6 +674,9 @@
        <property name="switchable" stdset="0">
         <bool>true</bool>
        </property>
+       <property name="switched" stdset="0">
+        <bool>true</bool>
+       </property>
        <property name="insideText" stdset="0">
         <string>Edits</string>
        </property>
@@ -664,6 +706,9 @@
         </size>
        </property>
        <property name="switchable" stdset="0">
+        <bool>true</bool>
+       </property>
+       <property name="switched" stdset="0">
         <bool>true</bool>
        </property>
        <property name="insideText" stdset="0">

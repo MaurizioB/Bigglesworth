@@ -995,8 +995,8 @@ class EditorWindow(QtWidgets.QMainWindow):
         hintWidth = min(mainWidth, hint.width())
         mainHeight = self.height()
         hintHeight = min(mainHeight, hint.height())
-        width = (mainWidth + hintWidth) / 2
-        height = (mainHeight + hintHeight) / 2
+        width = (mainWidth + hintWidth * 2) / 3
+        height = (mainHeight + hintHeight * 2) / 3
         self.multiEditor.resize(width, height)
         x = (mainWidth - width) / 2
         y = (mainHeight - height) / 2

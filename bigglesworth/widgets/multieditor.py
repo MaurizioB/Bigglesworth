@@ -20,6 +20,8 @@ def _getCssQColorStr(color):
 def avg(v0, v1):
     return (v0 + v1) / 2
 
+displayBackground = QtGui.QBrush(QtGui.QColor(230, 240, 230))
+
 leftArrowPath = QtGui.QPainterPath()
 leftArrowPath.moveTo(0, 14)
 leftArrowPath.lineTo(11, 14)
@@ -378,6 +380,19 @@ class RangeSlider(QtWidgets.QWidget):
                 self.setToolTip('{} - {}'.format(self.values[self.startHandle.value()], self.values[self.endHandle.value()]))
 
 
+class DisplayScene(QtWidgets.QGraphicsScene):
+    def __init__(self, view):
+        QtWidgets.QGraphicsScene.__init__(self)
+
+
+class MultiDisplayView(QtWidgets.QGraphicsView):
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QGraphicsView.__init__(self, *args, **kwargs)
+        scene = DisplayScene(self)
+        self.setScene(scene)
+        self.setBackgroundBrush(displayBackground)
+
+
 class VelocityScene(QtWidgets.QGraphicsScene):
     def __init__(self, view):
         QtWidgets.QGraphicsScene.__init__(self)
@@ -489,7 +504,7 @@ class VelocityView(QtWidgets.QGraphicsView):
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setRenderHints(QtGui.QPainter.Antialiasing)
-        self.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(230, 240, 230)))
+        self.setBackgroundBrush(displayBackground)
         scene = VelocityScene(self)
         self.setScene(scene)
         self.setRange = scene.setRange
@@ -502,46 +517,97 @@ class VelocityView(QtWidgets.QGraphicsView):
         self.fitInView(self.sceneRect())
 
 
-class Mixer(QtWidgets.QWidget):
-    velocityChanged = QtCore.pyqtSignal(int, int, int)
-    keyChanged = QtCore.pyqtSignal(int, int, int)
+class PartLabel(QtWidgets.QWidget):
+    def __init__(self, part):
+        QtWidgets.QWidget.__init__(self)
+        self.part = str(part + 1)
+
+    def sizeHint(self):
+        font = self.font()
+        size = font.pointSize() * 2
+        return QtCore.QSize(size * 2, size)
+
+    def paintEvent(self, event):
+        font = self.font()
+        font.setPointSizeF(font.pointSize() * 2)
+        font.setBold(True)
+        qp = QtGui.QPainter(self)
+        qp.setFont(font)
+        qp.drawText(self.rect(), QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter, self.part)
+
+
+class RangeEditor(QtWidgets.QWidget):
+    rangeChanged = QtCore.pyqtSignal(int, int, int)
+
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
         self.setMouseTracking(True)
-        layout = QtWidgets.QVBoxLayout()
+        layout = QtWidgets.QGridLayout()
         self.setLayout(layout)
 
-        self.tabBar = QtWidgets.QTabBar()
-        layout.addWidget(self.tabBar)
-        self.tabBar.addTab('Key range')
-        self.tabBar.addTab('Velocity range')
-
         self.sliders = []
-        self.sliderKeys = []
-        self.sliderVelocities = []
-        self.noteNames = ['{} ({})'.format(_noteNumberToName[v].upper(), v) for v in range(128)]
-        self.velNames = [str(v) for v in range(128)]
         for s in range(16):
+            layout.addWidget(PartLabel(s), s, 0)
             slider = RangeSlider()
             slider.index = s
             self.sliders.append(slider)
-            layout.addWidget(slider)
+            layout.addWidget(slider, s, 1)
             slider.hoverEnter.connect(self.sliderEnter)
             slider.rangeChanged.connect(self.checkSelection)
             slider.rangeChanged.connect(self.emitRangeChanged)
-            slider.values = self.noteNames
-            self.sliderKeys.append([0, 127])
-            self.sliderVelocities.append([0, 127])
 
         self.currentSlider = None
 
-        self.stacked = QtWidgets.QStackedWidget()
-        layout.addWidget(self.stacked)
-        self.tabBar.currentChanged.connect(self.setMode)
-        self.stacked.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum)
+    def setLowValue(self, part, value):
+        self.sliders[part].startHandle.setValue(value)
+
+    def setHighValue(self, part, value):
+        self.sliders[part].endHandle.setValue(value)
+
+    def sliderEnter(self, slider=None):
+        if slider is None:
+            slider = self.sender()
+        self.currentSlider = slider
+        self.checkSelection(*slider.currentRange())
+
+    def emitRangeChanged(self, start, end):
+        self.rangeChanged.emit(self.sender().index, start, end)
+
+    def mouseMoveEvent(self, event):
+        if event.pos() not in self.sliders[0].geometry() | self.sliders[-1].geometry():
+            self.deselect()
+
+    def leaveEvent(self, event):
+        self.deselect()
+
+
+class VelocityRangeEditor(RangeEditor):
+    velocityChanged = RangeEditor.rangeChanged
+
+    def __init__(self, *args, **kwargs):
+        RangeEditor.__init__(self, *args, **kwargs)
+        self.velocity = VelocityView()
+        self.layout().addWidget(self.velocity, self.layout().rowCount(), 1, 1, 1)
+
+    def checkSelection(self, start, end):
+        self.velocity.setRange(start, end)
+
+    def deselect(self):
+        self.currentSlider = None
+        self.velocity.hideRange()
+
+
+class KeyRangeEditor(RangeEditor):
+    keyChanged = RangeEditor.rangeChanged
+
+    def __init__(self, *args, **kwargs):
+        RangeEditor.__init__(self, *args, **kwargs)
+        noteNames = ['{} ({})'.format(_noteNumberToName[v].upper(), v) for v in range(128)]
+        for slider in self.sliders:
+            slider.values = noteNames
 
         self.piano = PianoKeyboard()
-        self.stacked.addWidget(self.piano)
+        self.layout().addWidget(self.piano, self.layout().rowCount(), 1, 1, 1)
         self.piano.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Maximum)
         self.piano.setInteractive(False)
         self.piano.firstNote = 0
@@ -555,124 +621,75 @@ class Mixer(QtWidgets.QWidget):
         self.pianoBackground.setZValue(99)
         self.pianoBackground.setVisible(False)
 
-        self.velocity = VelocityView()
-        self.stacked.addWidget(self.velocity)
-#        self.stacked.setCurrentIndex(1)
-
-    def setMode(self, mode, save=True):
-        self.tabBar.setCurrentIndex(mode)
-        self.stacked.setCurrentIndex(mode)
-        if mode:
-            values = self.velNames
-            toSave = self.sliderKeys
-            toRestore = self.sliderVelocities
-        else:
-            values = self.noteNames
-            toSave = self.sliderVelocities
-            toRestore = self.sliderKeys
-        for s, slider in enumerate(self.sliders):
-            slider.values = values
-            if save:
-                toSave[s] = list(slider.currentRange())
-            if slider != self.currentSlider:
-                slider.blockSignals(True)
-                slider.setCurrentRange(*toRestore[s])
-                slider.blockSignals(False)
-            else:
-                slider.setCurrentRange(*toRestore[s])
-            slider.update()
-
-    def sliderEnter(self, slider=None):
-        if slider is None:
-            slider = self.sender()
-        self.currentSlider = slider
-        self.checkSelection(*slider.currentRange())
-
-    def emitRangeChanged(self, start, end):
-        if self.stacked.currentIndex():
-            self.velocityChanged.emit(self.sender().index, start, end)
-        else:
-            self.keyChanged.emit(self.sender().index, start, end)
-
     def checkSelection(self, start, end):
-        if self.stacked.currentIndex():
-            self.velocity.setRange(start, end)
-        else:
-            path = QtGui.QPainterPath()
-            if self.currentSlider:
-                first = min(start, end)
-                last = max(start, end)
-                self.pianoSelection.setBrush(self.selectionColors[first == start])
-                path.setFillRule(QtCore.Qt.WindingFill)
+        path = QtGui.QPainterPath()
+        if self.currentSlider:
+            first = min(start, end)
+            last = max(start, end)
+            self.pianoSelection.setBrush(self.selectionColors[first == start])
+            path.setFillRule(QtCore.Qt.WindingFill)
 
-                firstKey = self.piano.keys[first]
-                whiteRect = blackRect = preClear = postClear = False
-                if first == last and not _isWhiteKey(first):
-                    blackRect = firstKey.sceneBoundingRect()
-                else:
-                    absFirst = first % 12
-                    if absFirst in (0, 5):
-                        whiteRect = firstKey.sceneBoundingRect()
-                    elif absFirst in (2, 4, 7, 9, 11):
-                        whiteRect = firstKey.sceneBoundingRect()
-                        preClear = self.piano.keys[first - 1].sceneBoundingRect()
-                    else:
-                        whiteRect = self.piano.keys[first + 1].sceneBoundingRect()
-                        blackRect = firstKey.sceneBoundingRect()
-                    lastKey = self.piano.keys[last]
-                    absLast = last % 12
-                    if absLast in (4, 11):
-                        if whiteRect:
-                            whiteRect.setRight(lastKey.sceneBoundingRect().right())
-                        else:
-                            whiteRect = lastKey.sceneBoundingRect().right()
-                    elif absLast in (0, 2, 5, 7, 9):
-                        if whiteRect:
-                            whiteRect.setRight(lastKey.sceneBoundingRect().right())
-                        else:
-                            whiteRect = lastKey.sceneBoundingRect().right()
-                        if last < 127:
-                            postClear = self.piano.keys[last + 1].sceneBoundingRect()
-                    else:
-                        if whiteRect:
-                            whiteRect.setRight(self.piano.keys[last - 1].sceneBoundingRect().right())
-                        else:
-                            whiteRect = self.piano.keys[last - 1].sceneBoundingRect()
-                        if blackRect:
-                            blackRect.setRight(lastKey.sceneBoundingRect().right())
-                        else:
-                            blackRect = lastKey.sceneBoundingRect()
-                region = QtGui.QRegion()
-                if whiteRect:
-                    region += QtGui.QRegion(whiteRect.toRect().adjusted(-1, 0, 1, 0))
-                if blackRect:
-                    region += QtGui.QRegion(blackRect.toRect().adjusted(-2, 0, 1, 0))
-                if preClear:
-                    region -= QtGui.QRegion(preClear.toRect())
-                if postClear:
-                    region -= QtGui.QRegion(postClear.toRect())
-                path.addRegion(region)
-                self.pianoBackground.setVisible(True)
+            firstKey = self.piano.keys[first]
+            whiteRect = blackRect = preClear = postClear = False
+            if first == last and not _isWhiteKey(first):
+                blackRect = firstKey.sceneBoundingRect()
             else:
-                self.pianoBackground.setVisible(False)
-            self.pianoSelection.setPath(path)
+                absFirst = first % 12
+                if absFirst in (0, 5):
+                    whiteRect = firstKey.sceneBoundingRect()
+                elif absFirst in (2, 4, 7, 9, 11):
+                    whiteRect = firstKey.sceneBoundingRect()
+                    preClear = self.piano.keys[first - 1].sceneBoundingRect()
+                else:
+                    whiteRect = self.piano.keys[first + 1].sceneBoundingRect()
+                    blackRect = firstKey.sceneBoundingRect()
+                lastKey = self.piano.keys[last]
+                absLast = last % 12
+                if absLast in (4, 11):
+                    if whiteRect:
+                        whiteRect.setRight(lastKey.sceneBoundingRect().right())
+                    else:
+                        whiteRect = lastKey.sceneBoundingRect().right()
+                elif absLast in (0, 2, 5, 7, 9):
+                    if whiteRect:
+                        whiteRect.setRight(lastKey.sceneBoundingRect().right())
+                    else:
+                        whiteRect = lastKey.sceneBoundingRect().right()
+                    if last < 127:
+                        postClear = self.piano.keys[last + 1].sceneBoundingRect()
+                else:
+                    if whiteRect:
+                        whiteRect.setRight(self.piano.keys[last - 1].sceneBoundingRect().right())
+                    else:
+                        whiteRect = self.piano.keys[last - 1].sceneBoundingRect()
+                    if blackRect:
+                        blackRect.setRight(lastKey.sceneBoundingRect().right())
+                    else:
+                        blackRect = lastKey.sceneBoundingRect()
+            region = QtGui.QRegion()
+            if whiteRect:
+                region += QtGui.QRegion(whiteRect.toRect().adjusted(-1, 0, 1, 0))
+            if blackRect:
+                region += QtGui.QRegion(blackRect.toRect().adjusted(-2, 0, 1, 0))
+            if preClear:
+                region -= QtGui.QRegion(preClear.toRect())
+            if postClear:
+                region -= QtGui.QRegion(postClear.toRect())
+            path.addRegion(region)
+            self.pianoBackground.setVisible(True)
+        else:
+            self.pianoBackground.setVisible(False)
+        self.pianoSelection.setPath(path)
 
     def deselect(self):
         self.currentSlider = None
         self.pianoSelection.setPath(QtGui.QPainterPath())
         self.pianoBackground.setVisible(False)
-        self.velocity.hideRange()
-
-    def mouseMoveEvent(self, event):
-        if event.pos() not in self.sliders[0].geometry() | self.sliders[-1].geometry():
-            self.deselect()
-
-    def leaveEvent(self, event):
-        self.deselect()
-        self.velocity.hideRange()
 
 
 class MultiStrip(Frame):
+    invalidBrush = QtGui.QColor('red')
+
     def __init__(self, *args, **kwargs):
         Frame.__init__(self, *args, **kwargs)
         loadUi('ui/multistrip.ui', self)
@@ -696,11 +713,37 @@ class MultiStrip(Frame):
         self.highKeyChanged = self.highKeyDial.valueChanged
         self.setHighKey = self.highKeyDial.setValue
 
+        self.lowVelChanged.connect(self.checkVelocity)
+        self.highVelChanged.connect(self.checkVelocity)
+        self.lowKeyChanged.connect(self.checkKeys)
+        self.highKeyChanged.connect(self.checkKeys)
+        self.velocityValid = True
+        self.keyValid = True
+
         self.midiToggled = self.midiBtn.switchToggled
         self.setMidi = self.midiBtn.setSwitched
 
         self.bottomButtons = self.modBtn, self.pitchBtn, self.susBtn, self.pressBtn, self.editsBtn, self.progBtn
         self.checkSizes()
+
+    def setChannel(self, channel):
+        self.chanCombo.setValue(channel)
+
+    def checkVelocity(self):
+        self.setVelocityValid(self.lowVelDial.value <= self.highVelDial.value)
+
+    def checkKeys(self):
+        self.setKeyValid(self.lowKeyDial.value <= self.highKeyDial.value)
+
+    def setVelocityValid(self, valid):
+        if self.velocityValid != valid:
+            self.update()
+        self.velocityValid = valid
+
+    def setKeyValid(self, valid):
+        if self.keyValid != valid:
+            self.update()
+        self.keyValid = valid
 
     def checkSizes(self):
         fm = self.fontMetrics()
@@ -718,6 +761,20 @@ class MultiStrip(Frame):
         if event.type() in (QtCore.QEvent.PaletteChange, QtCore.QEvent.FontChange):
             self.checkSizes()
 
+    def paintEvent(self, event):
+        Frame.paintEvent(self, event)
+        if self.keyValid and self.velocityValid:
+            return
+        qp = QtGui.QPainter(self)
+        qp.setRenderHints(qp.Antialiasing)
+        qp.setPen(QtCore.Qt.NoPen)
+        qp.setBrush(self.invalidBrush)
+        qp.translate(self.rangeSection.pos())
+        if not self.velocityValid:
+            qp.drawRoundedRect(self.lowVelDial.geometry() | self.highVelDial.geometry(), 2, 2)
+        if not self.keyValid:
+            qp.drawRoundedRect(self.lowKeyDial.geometry() | self.highKeyDial.geometry(), 2, 2)
+
 
 class MultiEditor(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
@@ -731,61 +788,60 @@ class MultiEditor(QtWidgets.QWidget):
             self.strips.append(strip)
             strip.part = p
             strip.label = 'Part {}'.format(p + 1)
-            strip.lowKeyChanged.connect(lambda key, part=p: self.setLowKey(part, key))
-            strip.highKeyChanged.connect(lambda key, part=p: self.setHighKey(part, key))
-            strip.lowVelChanged.connect(lambda vel, part=p: self.setLowVel(part, vel))
-            strip.highVelChanged.connect(lambda vel, part=p: self.setHighVel(part, vel))
-            strip.velocityBtn.clicked.connect(self.showVelocities)
-            strip.keyBtn.clicked.connect(self.showKeys)
+            strip.lowKeyChanged.connect(lambda key, part=p: self.keyRangeEditor.setLowValue(part, key))
+            strip.highKeyChanged.connect(lambda key, part=p: self.keyRangeEditor.setHighValue(part, key))
+            strip.lowVelChanged.connect(lambda vel, part=p: self.velocityRangeEditor.setLowValue(part, vel))
+            strip.highVelChanged.connect(lambda vel, part=p: self.velocityRangeEditor.setHighValue(part, vel))
+            strip.velocityBtn.clicked.connect(self.velocityBtn.clicked)
+            strip.keyBtn.clicked.connect(self.keyBtn.clicked)
+            strip.setChannel(p + 2)
             self.stripLayout.addWidget(strip)
 
-        self.mixer = Mixer()
-        self.mainWidget.addWidget(self.mixer)
-        self.mixer.velocityChanged.connect(self.setVelocities)
-        self.mixer.keyChanged.connect(self.setKeys)
+        self.velocityRangeEditor = VelocityRangeEditor()
+        self.stackedWidget.addWidget(self.velocityRangeEditor)
+        self.velocityRangeEditor.velocityChanged.connect(self.setVelocities)
+
+        self.keyRangeEditor = KeyRangeEditor()
+        self.stackedWidget.addWidget(self.keyRangeEditor)
+        self.keyRangeEditor.keyChanged.connect(self.setKeys)
 
         self.velocityBtn.clicked.connect(self.showVelocities)
         self.keyBtn.clicked.connect(self.showKeys)
-        self.mainBtn.clicked.connect(self.showMain)
+        self.mainBtn.clicked.connect(self.showMixer)
 
     def setKeys(self, part, low, high):
         self.strips[part].setLowKey(low)
         self.strips[part].setHighKey(high)
 
-    def setLowKey(self, part, key):
-        self.mixer.sliderKeys[part][0] = key
-
-    def setHighKey(self, part, key):
-        self.mixer.sliderKeys[part][1] = key
-
     def setVelocities(self, part, low, high):
         self.strips[part].setLowVel(low)
         self.strips[part].setHighVel(high)
 
-    def setLowVel(self, part, vel):
-        self.mixer.sliderVelocities[part][0] = vel
-
-    def setHighVel(self, part, vel):
-        self.mixer.sliderVelocities[part][1] = vel
-
-    def showMain(self):
-        self.stripSwitcher.setCurrentIndex(0)
-        self.mainWidget.setCurrentIndex(0)
-
     def showMixer(self):
-        self.stripSwitcher.setCurrentIndex(1)
-        self.mainWidget.setCurrentIndex(1)
-        self.mixer.setMode(self.mixer.stacked.currentIndex(), save=False)
+        self.stackedWidget.setCurrentWidget(self.channelPage)
+        self.mainBtn.setSwitched(True)
+        self.velocityBtn.setSwitched(False)
+        self.keyBtn.setSwitched(False)
 
     def showVelocities(self):
-        self.stripSwitcher.setCurrentIndex(1)
-        self.mainWidget.setCurrentIndex(1)
-        self.mixer.setMode(1, save=False)
+        self.stackedWidget.setCurrentWidget(self.velocityRangeEditor)
+        self.mainBtn.setSwitched(False)
+        self.velocityBtn.setSwitched(True)
+        self.keyBtn.setSwitched(False)
 
     def showKeys(self):
-        self.stripSwitcher.setCurrentIndex(1)
-        self.mainWidget.setCurrentIndex(1)
-        self.mixer.setMode(0, save=False)
+        self.stackedWidget.setCurrentWidget(self.keyRangeEditor)
+        self.mainBtn.setSwitched(False)
+        self.velocityBtn.setSwitched(False)
+        self.keyBtn.setSwitched(True)
+
+#    def changeEvent(self, event):
+#        if event.type() == QtCore.QEvent.PaletteChange:
+#            self.display.setPalette(self.palette())
+
+    def resizeEvent(self, event):
+        QtWidgets.QWidget.resizeEvent(self, event)
+        self.velocityRangeEditor.velocity.setMaximumHeight(self.keyRangeEditor.piano.sizeHint().height())
 
 
 if __name__ == '__main__':
