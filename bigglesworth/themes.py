@@ -343,7 +343,7 @@ class ThemeCollection(QtCore.QObject):
             return theme
 
         palette = self.main.palette()
-        palette.setColor(palette.Active, palette.Button, QtGui.QColor(34, 160, 20))
+        palette.setColor(palette.Active, palette.Button, QtGui.QColor(124, 240, 110))
         font = self.main.font()
         theme = Theme(themeName, palette, font)
         self.themeDict[themeName] = theme

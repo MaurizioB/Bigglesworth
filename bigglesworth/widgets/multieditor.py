@@ -487,6 +487,22 @@ class MultiEdit(NameEdit):
         self.focusChanged.emit(False)
 
 
+class DisplaySpinBox(QtWidgets.QSpinBox):
+    focusChanged = QtCore.pyqtSignal(bool)
+
+    def focusInEvent(self, event):
+        self.focusChanged.emit(True)
+        QtWidgets.QSpinBox.focusInEvent(self, event)
+
+    def focusOutEvent(self, event):
+        self.focusChanged.emit(False)
+        QtWidgets.QSpinBox.focusOutEvent(self, event)
+
+    def clearFocus(self):
+        QtWidgets.QSpinBox.clearFocus(self)
+        self.focusChanged.emit(False)
+
+
 class DisplayWidget(QtWidgets.QWidget):
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
@@ -497,7 +513,7 @@ class DisplayWidget(QtWidgets.QWidget):
         layout.setContentsMargins(4, 0, 4, 0)
         layout.setSpacing(4)
 
-        self.slotSpin = QtWidgets.QSpinBox()
+        self.slotSpin = DisplaySpinBox()
         self.slotSpin.setRange(1, 128)
         layout.addWidget(self.slotSpin)
         self.slotSpin.setObjectName('slotSpin')
@@ -572,6 +588,9 @@ class MultiDisplayView(QtWidgets.QGraphicsView):
         self.nameEdit = scene.nameEdit
         self.nameEdit.focusChanged.connect(self.updateFocus)
         self.nameEdit.returnPressed.connect(self.nameEdit.clearFocus)
+        self.slotSpin = scene.slotSpin
+        self.slotSpin.focusChanged.connect(self.updateFocus)
+        self.slotSpin.lineEdit().returnPressed.connect(self.slotSpin.clearFocus)
         self.slotSpin = scene.slotSpin
 
         self.setMaximumHeight((self.font().pointSize() * 2 + self.frameWidth()) * 2)
@@ -1187,7 +1206,7 @@ class MultiEditor(QtWidgets.QWidget):
             self.midiThread.start()
             self.midiDevice.midiEvent.connect(self.midiEventReceived)
             palette = self.palette()
-            palette.setColor(palette.Active, palette.Button, QtGui.QColor(34, 160, 20))
+            palette.setColor(palette.Active, palette.Button, QtGui.QColor(124, 240, 110))
             self.setPalette(palette)
 
         self.tempoDial.setValueList(arpTempo)
