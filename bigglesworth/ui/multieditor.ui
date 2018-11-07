@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>769</width>
-    <height>577</height>
+    <width>855</width>
+    <height>579</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -33,7 +33,7 @@
        <property name="minimumSize">
         <size>
          <width>100</width>
-         <height>48</height>
+         <height>0</height>
         </size>
        </property>
        <property name="focusPolicy">
@@ -64,7 +64,7 @@
       </spacer>
      </item>
      <item>
-      <widget class="Dial" name="volueDial">
+      <widget class="Dial" name="volumeDial">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
          <horstretch>0</horstretch>
@@ -120,6 +120,103 @@
          <width>24</width>
          <height>24</height>
         </size>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="bankSpin">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="maximum">
+        <number>127</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="progSpin">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="maximum">
+        <number>127</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="SquareButton" name="requestBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="labelPos" stdset="0">
+        <enum>Qt::RightDockWidgetArea</enum>
+       </property>
+       <property name="hWidgetSizePolicy" stdset="0">
+        <number>7</number>
+       </property>
+       <property name="vWidgetSizePolicy" stdset="0">
+        <number>7</number>
+       </property>
+       <property name="minimumWidgetSize" stdset="0">
+        <size>
+         <width>44</width>
+         <height>12</height>
+        </size>
+       </property>
+       <property name="maximumWidgetSize" stdset="0">
+        <size>
+         <width>16777215</width>
+         <height>80</height>
+        </size>
+       </property>
+       <property name="insideText" stdset="0">
+        <string>Request</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="SquareButton" name="groupEditBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="labelPos" stdset="0">
+        <enum>Qt::RightDockWidgetArea</enum>
+       </property>
+       <property name="hWidgetSizePolicy" stdset="0">
+        <number>7</number>
+       </property>
+       <property name="vWidgetSizePolicy" stdset="0">
+        <number>7</number>
+       </property>
+       <property name="minimumWidgetSize" stdset="0">
+        <size>
+         <width>56</width>
+         <height>12</height>
+        </size>
+       </property>
+       <property name="maximumWidgetSize" stdset="0">
+        <size>
+         <width>16777215</width>
+         <height>80</height>
+        </size>
+       </property>
+       <property name="switchable" stdset="0">
+        <bool>true</bool>
+       </property>
+       <property name="insideText" stdset="0">
+        <string>Group edit</string>
        </property>
       </widget>
      </item>
