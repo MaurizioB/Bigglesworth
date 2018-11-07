@@ -497,37 +497,53 @@ class DisplayWidget(QtWidgets.QWidget):
         layout.setContentsMargins(4, 0, 4, 0)
         layout.setSpacing(4)
 
-        self.slotLbl = QtWidgets.QLabel('M001')
-        layout.addWidget(self.slotLbl)
-        self.slotLbl.setObjectName('slotLbl')
-        self.slotLbl.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum)
+        self.slotSpin = QtWidgets.QSpinBox()
+        self.slotSpin.setRange(1, 128)
+        layout.addWidget(self.slotSpin)
+        self.slotSpin.setObjectName('slotSpin')
+        self.slotSpin.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum)
 
         self.nameEdit = MultiEdit()
         layout.addWidget(self.nameEdit)
         self.nameEdit.setWindowFlags(QtCore.Qt.BypassGraphicsProxyWidget)
-        self.nameEdit.setText('Init')
+        self.nameEdit.setText('Init Multi')
         self.nameEdit.setFrame(False)
         self.nameEdit.setObjectName('nameEdit')
         self.nameEdit.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum)
+
+        self.setPalette(self.palette())
+
+    def setPalette(self, palette):
         self.setStyleSheet('''
-            DisplayWidget, NameEdit {
+            QWidget {{
+                border-top: 1px solid {dark};
+                border-right: 1px solid {light};
+                border-bottom: 1px solid {light};
+                border-left: 1px solid {dark};
+                border-radius: 4px;
+                background: rgb(230, 240, 230);
+            }}
+            DisplayWidget, NameEdit {{
                 background: transparent;
                 font-family: "Fira Sans";
-            }
-            QLabel#nameEdit, NameEdit {
+            }}
+            QLabel#nameEdit, NameEdit {{
                 font-size: 24px;
-                padding-left: 10px;
+                padding-left: 5px;
                 margin-right: 4px;
                 border-top: .5px solid rgba(240, 240, 220, 128);
                 border-left: .5px solid rgba(240, 240, 220, 128);
                 border-bottom: .5px solid rgba(220, 220, 200, 64);
                 border-right: .5px solid rgba(220, 220, 200, 64);
                 border-radius: 4px;
-            }
-            #slotLbl {
+            }}
+            #slotSpin {{
                 font-size: 12px;
-            }
-            ''')
+            }}
+            '''.format(
+                dark=_getCssQColorStr(palette.color(palette.Dark)), 
+                light=_getCssQColorStr(palette.color(palette.Midlight)), 
+                ))
 
 
 class DisplayScene(QtWidgets.QGraphicsScene):
@@ -538,7 +554,7 @@ class DisplayScene(QtWidgets.QGraphicsScene):
         self.displayProxy.setWidget(self.displayWidget)
 
         self.nameEdit = self.displayWidget.nameEdit
-        self.slotLbl = self.displayWidget.slotLbl
+        self.slotSpin = self.displayWidget.slotSpin
 
         self.addItem(self.displayProxy)
 
@@ -556,13 +572,13 @@ class MultiDisplayView(QtWidgets.QGraphicsView):
         self.nameEdit = scene.nameEdit
         self.nameEdit.focusChanged.connect(self.updateFocus)
         self.nameEdit.returnPressed.connect(self.nameEdit.clearFocus)
-        self.slotLbl = scene.slotLbl
+        self.slotSpin = scene.slotSpin
 
         self.setMaximumHeight((self.font().pointSize() * 2 + self.frameWidth()) * 2)
 
     def setCurrent(self, index, name):
         self.nameEdit.setText(name)
-        self.slotLbl.setText('M{:03}'.format(index[1] + 1))
+        self.slotSpin.setValue(index[1] + 1)
 
     def updateFocus(self, focus=False):
         if focus:
@@ -1118,12 +1134,12 @@ class MultiStrip(Frame):
             selectAction.triggered.connect(self.selectChk.setChecked)
             menu.addSeparator()
 
-        setDefaultsAction = menu.addAction('Reset all')
+        setDefaultsAction = menu.addAction(QtGui.QIcon.fromTheme('edit-undo'), 'Restore all to default')
         setDefaultsAction.triggered.connect(self.resetAll)
         menu.addSeparator()
-        setDefaultValuesAction = menu.addAction('Restore default values')
+        setDefaultValuesAction = menu.addAction(QtGui.QIcon.fromTheme('dial'), 'Restore default values')
         setDefaultValuesAction.triggered.connect(self.resetValues)
-        setDefaultMidiAction = menu.addAction('Restore MIDI parameters')
+        setDefaultMidiAction = menu.addAction(QtGui.QIcon.fromTheme('midi'), 'Restore MIDI parameters')
         setDefaultMidiAction.triggered.connect(self.resetMidi)
         if self.selectable and not self.selectChk.isChecked():
             setDefaultsAction.setEnabled(False)
@@ -1330,9 +1346,9 @@ class MultiEditor(QtWidgets.QWidget):
                 print('final part {} is different! {}'.format(part, data[14:]))
 
 
-#    def changeEvent(self, event):
-#        if event.type() == QtCore.QEvent.PaletteChange:
-#            self.display.setPalette(self.palette())
+    def changeEvent(self, event):
+        if event.type() == QtCore.QEvent.PaletteChange:
+            self.display.displayWidget.setPalette(self.palette())
 
     def resizeEvent(self, event):
         QtWidgets.QWidget.resizeEvent(self, event)

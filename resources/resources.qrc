@@ -369,6 +369,9 @@
         <file alias="22x22/format-text-underline.svg">icons/Bigglesworth/22x22/format-text-underline.svg</file>
         <file alias="24x24/format-text-underline.svg">icons/Bigglesworth/24x24/format-text-underline.svg</file>
         <file alias="16x16/edit-undo-history.svg">icons/Bigglesworth/16x16/edit-undo-history.svg</file>
+        <file alias="16x16/audio-volume-muted.svg">icons/Bigglesworth/16x16/audio-volume-muted.svg</file>
+        <file alias="22x22/audio-volume-muted.svg">icons/Bigglesworth/22x22/audio-volume-muted.svg</file>
+        <file alias="24x24/audio-volume-muted.svg">icons/Bigglesworth/24x24/audio-volume-muted.svg</file>
         <file alias="32x32/text-x-generic.svg">icons/Bigglesworth/32x32/text-x-generic.svg</file>
         <file alias="16x16/text-x-generic.svg">icons/Bigglesworth/16x16/text-x-generic.svg</file>
         <file alias="22x22/text-x-generic.svg">icons/Bigglesworth/22x22/text-x-generic.svg</file>
