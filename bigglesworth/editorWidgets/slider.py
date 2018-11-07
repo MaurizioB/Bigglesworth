@@ -92,8 +92,12 @@ class _Slider(QtWidgets.QSlider):
             self._minHeight = self._grooveExtent
         self.defaultValue = self.minimum()
         self.setRange(0, 127)
+
         self._minimumColor = self._defaultRangeStart
         self._maximumColor = self._defaultRangeEnd
+        self.centerGradient = False
+        self.colorCurve = QtCore.QEasingCurve(0)
+
         self._background = QtGui.QColor(QtCore.Qt.black)
         self._clipPath = QtGui.QPainterPath()
         if orientation == QtCore.Qt.Horizontal:
@@ -171,10 +175,21 @@ class _Slider(QtWidgets.QSlider):
             startColor = self._minimumColor
             endColor = self._maximumColor
         if self.orientation() == QtCore.Qt.Horizontal:
-            self._valueColor.setFocalPoint(-.5 + ratio, .5)
+            if self.centerGradient:
+                self._valueColor.setFocalPoint(-.5 + ratio * 2, .5)
+                self._valueColor.setCenter(ratio, .5)
+            else:
+                self._valueColor.setFocalPoint(-.5 + ratio, .5)
         else:
-            self._valueColor.setFocalPoint(.5, 1.5 - ratio)
-        self._valueColor.setStops([(ratio * .5, self._getColor(startColor, endColor, ratio)), (1, self._background)])
+            if self.centerGradient:
+                self._valueColor.setFocalPoint(.5, 1.5 - ratio * 2)
+                self._valueColor.setCenter(.5, ratio)
+            else:
+                self._valueColor.setFocalPoint(.5, 1.5 - ratio)
+        if self.centerGradient:
+            ratio = abs(.5 - ratio) * 2
+        colorRatio = self.colorCurve.valueForProgress(ratio)
+        self._valueColor.setStops([(ratio * .5, self._getColor(startColor, endColor, colorRatio)), (1, self._background)])
 #        self.setStyleSheet('''
 #            QSlider::groove:horizontal {{
 #                background-color: qradialgradient(cx: 0, cy: .5, radius: 1, fx: {fx}, fy: .5, stop: {ratio} {valueColor}, stop: 1 black);
@@ -311,10 +326,11 @@ class Slider(ColorValueWidget):
         self.slider = _Slider(self, orientation)
         self.slider.valueChanged.connect(self.valueChanged)
         self._orientation = orientation
-        self.orientation = orientation
+#        self.orientation = orientation
         self.setWidget(self.slider)
 #        self.setFont(QtGui.QFont('Droid Sans', 9, QtGui.QFont.Bold))
         self._paletteChanged(self.palette())
+        self._colorCurve = 0
         self.showValue = self.slider.showValue
 
 #    rangeColorStart = QtCore.pyqtProperty(QtGui.QColor, lambda *args: None, lambda *args: None)
@@ -365,6 +381,7 @@ class Slider(ColorValueWidget):
     @QtCore.pyqtSlot(int)
     def setDefaultValue(self, value):
         self.defaultValue = value
+
     @QtCore.pyqtProperty(QtCore.Qt.Orientation)
     def orientation(self):
         return self._orientation
@@ -372,6 +389,7 @@ class Slider(ColorValueWidget):
     #TODO: che cazzo succede?
     @orientation.setter
     def orientation(self, orientation):
+        self._orientation = orientation
         if orientation == QtCore.Qt.Horizontal:
             self.slider.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Maximum))
         else:
@@ -441,6 +459,15 @@ class Slider(ColorValueWidget):
     def value(self, value):
         self.widget.setValue(value)
 
+    @QtCore.pyqtProperty(bool)
+    def centerGradient(self):
+        return self.slider.centerGradient
+
+    @centerGradient.setter
+    def centerGradient(self, center):
+        self.slider.centerGradient = center
+        self.slider.setValueColor()
+
     @QtCore.pyqtSlot(int)
     def setValue(self, value):
         self.widget.setValue(value)
@@ -450,6 +477,16 @@ class Slider(ColorValueWidget):
         self.widget.setRange(minimum, maximum, step)
 
     keepValueVisible = makeQtChildProperty(bool, 'keepValueVisible', 'setKeepValueVisible')
+
+    @QtCore.pyqtProperty(int)
+    def colorCurve(self):
+        return self._colorCurve
+
+    @colorCurve.setter
+    def colorCurve(self, curve):
+        self._colorCurve = max(0, min(28, curve))
+        self.slider.colorCurve.setType(self._colorCurve)
+        self.slider.setValueColor()
 
 if __name__ == '__main__':
     import sys

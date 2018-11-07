@@ -46,6 +46,17 @@ class _Button(QtWidgets.QPushButton):
             self.parent().popupTimer.stop()
         QtWidgets.QPushButton.mouseReleaseEvent(self, event)
 
+    def setText(self, text):
+        QtWidgets.QPushButton.setText(self, text)
+        if text:
+            l, t, r, b = self.getContentsMargins()
+            hMargin = self.fontMetrics().width(' ') * .5
+            l += hMargin
+            r += hMargin
+            self.setMinimumSize(self.fontMetrics().boundingRect(self.rect(), QtCore.Qt.AlignCenter, text).adjusted(-l, -t, r, b).size())
+        else:
+            self.setMinimumSize(self._minimumSizeHint)
+
     def switch(self):
         if self.parent().switchable:
             self.parent().switched = not self.parent()._switched
@@ -228,6 +239,8 @@ class SquareButton(BaseWidget):
 
     @QtCore.pyqtSlot(bool)
     def setSwitched(self, switched):
+        if switched == self.switched:
+            return
         self.switched = switched
 
     @QtCore.pyqtProperty(bool)

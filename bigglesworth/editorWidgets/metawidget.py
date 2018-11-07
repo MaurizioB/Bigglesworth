@@ -173,14 +173,17 @@ class BaseWidget(QtWidgets.QWidget):
         layout.setRowStretch(0, 1)
         layout.setRowStretch(4, 1)
         self.setLayout(layout)
+        self.spacers = []
         for gridPos in ((0, 2), (2, 0), (2, 4), (4, 2)):
 #            continue
 #            i = QtWidgets.QWidget()
 #            i.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
 #            i.setStyleSheet('QWidget {background: green;}')
 #            layout.addWidget(i, *gridPos)
-            i = QtWidgets.QSpacerItem(10, 10, QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
-            layout.addItem(i, *gridPos)
+            spacer = QtWidgets.QSpacerItem(10, 10, QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+            layout.addItem(spacer, *gridPos)
+            self.spacers.append(spacer)
+        self._spacerSizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         self._labelWidget = QtWidgets.QLabel(label)
         self._labelWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum))
         if label:
@@ -212,6 +215,13 @@ class BaseWidget(QtWidgets.QWidget):
 
     def sizeHint(self):
         widgetSize = self.widget.sizeHint()
+
+        maxSize = self.widget.maximumSize()
+        if maxSize.width() < widgetSize.width():
+            widgetSize.setWidth(maxSize.width())
+        if maxSize.height() < widgetSize.height():
+            widgetSize.setHeight(maxSize.height())
+
         l, t, r, b = self.layout().getContentsMargins()
 
         if not self._label:
