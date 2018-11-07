@@ -2,9 +2,14 @@
 # *-* encoding: utf-8 *-*
 
 from __future__ import division
+import sys
 from Qt import QtCore, QtGui, QtWidgets
 from metawidget import ColorValueWidget, makeQtChildProperty, _getCssQColorStr
 from colorvaluewidgethelpers import ValueEditor
+
+def avg(v0, v1):
+    return (v0 + v1) / 2
+
 
 class ValueWidget(QtWidgets.QWidget):
     def __init__(self, parent):
@@ -71,6 +76,30 @@ class FakeValueList(list):
         return str(self.valueList[item])
 
 
+class MacOSHandle(QtWidgets.QFrame):
+    def __init__(self, parent):
+        QtWidgets.QFrame.__init__(self, parent)
+        palette = self.palette()
+        handleLight = palette.color(palette.Midlight)
+        handleDark = palette.color(palette.Dark)
+        self.setStyleSheet('''
+            MacOSHandle {{
+                border: 1px solid darkGray;
+                border-style: outset;
+                border-radius: 2px;
+            }}
+        '''.format(
+                handleColor=_getCssQColorStr(QtGui.QColor.fromRgb(*map(lambda c: avg(*c), zip(handleLight.getRgb(), handleDark.getRgb()))))
+            ))
+        self.setOrientation(parent.orientation())
+
+    def setOrientation(self, orientation):
+        if orientation == QtCore.Qt.Horizontal:
+            self.setFixedSize(8, 18)
+        else:
+            self.setFixedSize(18, 8)
+
+
 class _Slider(QtWidgets.QSlider):
     _grooveExtent = 96
     _grooveSize = 16
@@ -81,6 +110,11 @@ class _Slider(QtWidgets.QSlider):
 
     def __init__(self, parent, orientation):
         QtWidgets.QSlider.__init__(self, orientation, parent)
+
+        if sys.platform == 'darwin':
+            self.handle = MacOSHandle(self)
+            self.handleOption = QtWidgets.QStyleOptionSlider()
+            self.valueChanged.connect(self.moveMacOSHandle)
         self.valueWidget = ValueWidget(self)
         self.valueChanged.connect(lambda value: self.valueChangedStr.emit(self.valueList[value]))
         #TODO: fix orientation change
@@ -237,6 +271,8 @@ class _Slider(QtWidgets.QSlider):
         else:
             self.createClipPath = self._createClipPathVertical
             self._valueColor.setCenter(.5, 1)
+        if sys.platform == 'darwin':
+            self.handle.setOrientation(orientation)
         QtWidgets.QSlider.setOrientation(self, orientation)
 
     def setValueVisible(self, visible):
@@ -284,6 +320,22 @@ class _Slider(QtWidgets.QSlider):
         menu.setDefaultAction(setValueAction)
         menu.exec_(self.mapToGlobal(pos))
 
+    def moveMacOSHandle(self):
+        self.initStyleOption(self.handleOption)
+        if self.orientation() == QtCore.Qt.Horizontal:
+            handleSize = self.handle.width()
+            maxWidth = self.rect().width() - handleSize
+            upsideDown = False
+            x = self.style().sliderPositionFromValue(self.minimum(), self.maximum(), self.sliderPosition(), maxWidth, upsideDown)
+            y = (self.height() - self.handle.height()) / 2 - 1
+        else:
+            handleSize = self.handle.height()
+            maxWidth = self.rect().height() - handleSize
+            upsideDown = True
+            x = (self.width() - self.handle.width()) / 2 - 1
+            y = self.style().sliderPositionFromValue(self.minimum(), self.maximum(), self.sliderPosition(), maxWidth, upsideDown)
+        self.handle.move(x, y)
+
     def mouseDoubleClickEvent(self, event=None):
         if event and event.button() != QtCore.Qt.LeftButton:
             return
@@ -313,8 +365,11 @@ class _Slider(QtWidgets.QSlider):
             self.showValueTimer.start()
 
     def resizeEvent(self, event):
+        QtWidgets.QSlider.resizeEvent(self, event)
         self.createClipPath()
         self.showValue(self.keepValueVisible)
+        if sys.platform == 'darwin':
+            self.moveMacOSHandle()
 
 
 class Slider(ColorValueWidget):
@@ -399,8 +454,6 @@ class Slider(ColorValueWidget):
     #TODO: trova un'alternativa per il problema di inheritance degli stylesheet
     #perché al cambio di palette successivo questo potrebbe essere ignorato
     def _paletteChanged(self, palette):
-        def avg(v0, v1):
-            return (v0 + v1) / 2
         handleLight = palette.color(palette.Midlight)
         handleDark = palette.color(palette.Dark)
         self.slider.setStyleSheet('''
@@ -428,6 +481,9 @@ class Slider(ColorValueWidget):
                 border-bottom: 1px solid {handleDark};
                 border-left: 1px solid {handleLight};
                 border-radius: 2px;
+            }}
+            QSlider MacOSHandle {{
+                background: {handleColor};
             }}
             QSlider::handle:pressed {{
                 border-top: 1px solid {handleDark};
