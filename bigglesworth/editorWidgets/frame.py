@@ -42,7 +42,7 @@ class Section(QtWidgets.QWidget):
         #the section itself
         if not self.shown:
             self.shown = True
-            if not isinstance(self.parent(), Frame):
+            if not isinstance(self.parent(), Frame) or not isinstance(self.parent().layout(), QtWidgets.QGridLayout):
                 return
             layout = self.parent().layout()
             rowStart, colStart, rowSpan, colSpan = layout.getItemPosition(layout.indexOf(self))
