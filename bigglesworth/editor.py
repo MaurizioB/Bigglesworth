@@ -21,7 +21,7 @@ from combo import Combo
 from squarebutton import SquareButton
 from dial import Dial, _Dial
 from slider import Slider
-from frame import Frame
+from frame import Frame, Section
 from stackedwidget import StackedWidget
 
 Combo.setRange = lambda *args: None
@@ -643,7 +643,7 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.saveBtn.clicked.connect(self.save)
         #designer automatically strips blank spaces, but we need this button 
         #to have some text margin due to the menu arrow
-        self.saveBtn.insideText = ' '
+        self.saveBtn.insideText = '    '
 
         self.dumpMenu = QtWidgets.QMenu(self)
         self.dumpBtn.setMenu(self.dumpMenu)
@@ -844,8 +844,8 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.arpeggiatorPattern.blockSignals(False)
 #        self.arpeggiatorPattern.currentIndexChanged.connect(lambda index: self.arpPatternEditBtn.setEnabled(True if index == 1 else False))
         self.parameters.parameters('arpeggiatorPattern').valueChanged.connect(lambda index: self.arpPatternEditBtn.setEnabled(True if index == 1 else False))
-        self.arpPatternEditBtn.clicked.connect(lambda: self.arpEfxStackedWidget.setCurrentIndex(0))
-        self.arpeggiatorDisplay.closeRequest.connect(lambda: self.arpEfxStackedWidget.setCurrentIndex(1))
+        self.arpPatternEditBtn.clicked.connect(lambda: self.arpEfxStackedWidget.setCurrentWidget(self.arpEditorPage))
+        self.arpeggiatorDisplay.closeRequest.connect(lambda: self.arpEfxStackedWidget.setCurrentWidget(self.efxArpPage))
 
         self.parameters.parameters('effect1Type').valueChanged.connect(self.efx1Widget.setCurrentIndex)
         self.parameters.parameters('effect2Type').valueChanged.connect(self.efx2Widget.setCurrentIndex)
@@ -894,6 +894,17 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.efx1Frame.customContextMenuRequested.connect(self.templateMenu)
         self.efx2Frame.customContextMenuRequested.connect(self.templateMenu)
         self.arpeggiatorFrame.customContextMenuRequested.connect(self.templateMenu)
+
+        for filterFrame in (self.filter1Frame, self.filter2Frame):
+            filterModSection = Section()
+            filterFrame.layout().addWidget(filterModSection, 4, 0, 1, 2)
+            filterModSection.lower()
+            filterFMSection = Section()
+            filterFrame.layout().addWidget(filterFMSection, 5, 0, 1, 2)
+            filterFMSection.lower()
+            filterPanSection = Section()
+            filterFrame.layout().addWidget(filterPanSection, 6, 0, 1, 2)
+            filterPanSection.lower()
 
         self.display.bankSpin.valueChanged.connect(self.bankChanged)
         self.display.progSpin.valueChanged.connect(self.progChanged)

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1025</width>
-    <height>698</height>
+    <height>700</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -458,27 +458,6 @@
         </property>
         <item row="1" column="1">
          <widget class="SquareButton" name="modMatrixBtn">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="label" stdset="0">
-           <string/>
-          </property>
-          <property name="minimumWidgetSize" stdset="0">
-           <size>
-            <width>64</width>
-            <height>8</height>
-           </size>
-          </property>
-          <property name="maximumWidgetSize" stdset="0">
-           <size>
-            <width>16777215</width>
-            <height>80</height>
-           </size>
-          </property>
           <property name="insideText" stdset="0">
            <string>Mod Matrix</string>
           </property>
@@ -524,16 +503,34 @@
              <property name="spacing">
               <number>2</number>
              </property>
-             <property name="margin">
+             <property name="leftMargin">
               <number>2</number>
+             </property>
+             <property name="topMargin">
+              <number>1</number>
+             </property>
+             <property name="rightMargin">
+              <number>2</number>
+             </property>
+             <property name="bottomMargin">
+              <number>1</number>
              </property>
              <item>
               <widget class="SquareButton" name="saveBtn">
                <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
+               </property>
+               <property name="vWidgetSizePolicy" stdset="0">
+                <number>7</number>
+               </property>
+               <property name="minimumWidgetSize" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>18</height>
+                </size>
                </property>
                <property name="popup" stdset="0">
                 <bool>true</bool>
@@ -547,7 +544,7 @@
              <item>
               <widget class="SquareButton" name="autosaveBtn">
                <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
@@ -843,6 +840,9 @@
          <property name="contextMenuPolicy">
           <enum>Qt::CustomContextMenu</enum>
          </property>
+         <property name="sections" stdset="0">
+          <stringlist/>
+         </property>
          <property name="label" stdset="0">
           <string>1</string>
          </property>
@@ -856,35 +856,42 @@
           <property name="spacing">
            <number>4</number>
           </property>
-          <item row="6" column="1">
-           <widget class="Dial" name="filter1FMAmount">
+          <item row="4" column="1">
+           <widget class="Dial" name="filter1ModAmount">
             <property name="label" stdset="0">
              <string>Amount</string>
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
+          <item row="1" column="1">
            <widget class="Dial" name="filter1Resonance">
             <property name="label" stdset="0">
              <string>Res.</string>
             </property>
            </widget>
           </item>
-          <item row="8" column="0">
+          <item row="5" column="1">
+           <widget class="Dial" name="filter1FMAmount">
+            <property name="label" stdset="0">
+             <string>Amount</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="0">
            <widget class="Dial" name="filter1Keytrack">
             <property name="label" stdset="0">
              <string>Keytrack</string>
             </property>
            </widget>
           </item>
-          <item row="7" column="1">
+          <item row="6" column="1">
            <widget class="Dial" name="filter1PanAmount">
             <property name="label" stdset="0">
              <string>Amount</string>
             </property>
            </widget>
           </item>
-          <item row="6" column="0">
+          <item row="5" column="0">
            <widget class="Combo" name="filter1FMSource">
             <property name="label" stdset="0">
              <string>FM</string>
@@ -894,7 +901,7 @@
             </property>
            </widget>
           </item>
-          <item row="5" column="0">
+          <item row="4" column="0">
            <widget class="Combo" name="filter1ModSource">
             <property name="label" stdset="0">
              <string>MOD</string>
@@ -904,14 +911,14 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="0">
+          <item row="1" column="0">
            <widget class="Dial" name="filter1Cutoff">
             <property name="label" stdset="0">
              <string>Cutoff</string>
             </property>
            </widget>
           </item>
-          <item row="3" column="0">
+          <item row="2" column="0">
            <widget class="Dial" name="filter1EnvAmount">
             <property name="label" stdset="0">
              <string>Env\nAmount</string>
@@ -921,35 +928,28 @@
             </property>
            </widget>
           </item>
-          <item row="5" column="1">
-           <widget class="Dial" name="filter1ModAmount">
-            <property name="label" stdset="0">
-             <string>Amount</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
+          <item row="3" column="1">
            <widget class="Combo" name="filter1DriveCurve">
             <property name="label" stdset="0">
              <string>Drive Curve</string>
             </property>
            </widget>
           </item>
-          <item row="4" column="0">
+          <item row="3" column="0">
            <widget class="Dial" name="filter1Drive">
             <property name="label" stdset="0">
              <string>Drive</string>
             </property>
            </widget>
           </item>
-          <item row="8" column="1">
+          <item row="7" column="1">
            <widget class="Dial" name="filter1Pan">
             <property name="label" stdset="0">
              <string>Pan</string>
             </property>
            </widget>
           </item>
-          <item row="7" column="0">
+          <item row="6" column="0">
            <widget class="Combo" name="filter1PanSource">
             <property name="label" stdset="0">
              <string>PAN</string>
@@ -959,7 +959,7 @@
             </property>
            </widget>
           </item>
-          <item row="3" column="1">
+          <item row="2" column="1">
            <widget class="Dial" name="filter1EnvVelocity">
             <property name="label" stdset="0">
              <string>Env\nVelocity</string>
@@ -1017,6 +1017,9 @@
        <widget class="Frame" name="lfo1Frame">
         <property name="contextMenuPolicy">
          <enum>Qt::CustomContextMenu</enum>
+        </property>
+        <property name="sections" stdset="0">
+         <stringlist/>
         </property>
         <property name="label" stdset="0">
          <string>LFO 1</string>
@@ -2253,7 +2256,7 @@
         <item row="0" column="0" colspan="2">
          <widget class="StackedWidget" name="arpEfxStackedWidget">
           <property name="currentIndex" stdset="0">
-           <number>1</number>
+           <number>2</number>
           </property>
           <widget class="QWidget" name="arpEditorPage">
            <layout class="QHBoxLayout" name="horizontalLayout">
@@ -2378,7 +2381,7 @@
                   <bool>false</bool>
                  </property>
                  <property name="currentIndex" stdset="0">
-                  <number>5</number>
+                  <number>0</number>
                  </property>
                  <widget class="QWidget" name="efx1Page0">
                   <layout class="QHBoxLayout" name="horizontalLayout_7">
@@ -2735,7 +2738,7 @@
                   <bool>false</bool>
                  </property>
                  <property name="currentIndex" stdset="0">
-                  <number>8</number>
+                  <number>0</number>
                  </property>
                  <widget class="QWidget" name="efx2Page0">
                   <layout class="QHBoxLayout" name="horizontalLayout_8">
@@ -3351,6 +3354,30 @@
             </item>
            </layout>
           </widget>
+          <widget class="QWidget" name="filtersPage">
+           <layout class="QHBoxLayout" name="horizontalLayout_22">
+            <property name="spacing">
+             <number>2</number>
+            </property>
+            <property name="margin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="Frame" name="filterPreview1">
+              <property name="label" stdset="0">
+               <string>Filter 1</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="Frame" name="filterPreview2">
+              <property name="label" stdset="0">
+               <string>Filter 2</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
          </widget>
         </item>
         <item row="1" column="1">
@@ -3587,14 +3614,14 @@
    <header>dial</header>
   </customwidget>
   <customwidget>
-   <class>Section</class>
-   <extends>QWidget</extends>
+   <class>Frame</class>
+   <extends>QFrame</extends>
    <header>frame</header>
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>Frame</class>
-   <extends>QFrame</extends>
+   <class>Section</class>
+   <extends>QWidget</extends>
    <header>frame</header>
    <container>1</container>
   </customwidget>
