@@ -48,12 +48,17 @@ class _Button(QtWidgets.QPushButton):
 
     def setText(self, text):
         QtWidgets.QPushButton.setText(self, text)
-        if text:
+        self.checkSize()
+
+    def checkSize(self):
+        if self.text():
             l, t, r, b = self.getContentsMargins()
             hMargin = self.fontMetrics().width(' ') * .5
             l += hMargin
             r += hMargin
-            self.setMinimumSize(self.fontMetrics().boundingRect(self.rect(), QtCore.Qt.AlignCenter, text).adjusted(-l, -t, r, b).size())
+            if self.parent()._menu and not self.parent()._hidePopupArrow:
+                r += self.iconSize().width()
+            self.setMinimumSize(self.fontMetrics().boundingRect(self.rect(), QtCore.Qt.AlignCenter, self.text()).adjusted(-l, -t, r, b).size())
         else:
             self.setMinimumSize(self._minimumSizeHint)
 
@@ -177,6 +182,7 @@ class SquareButton(BaseWidget):
             self.button.paintEvent = self.button.popupPaintEvent
         else:
             self.button.paintEvent = self.button.defaultPaintEvent
+        self.button.checkSize()
 
     def showPopup(self):
         if self._menu:

@@ -818,6 +818,37 @@
           </widget>
          </item>
          <item>
+          <widget class="SquareButton" name="editFiltersBtn">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="label" stdset="0">
+            <string>Edit</string>
+           </property>
+           <property name="labelPos" stdset="0">
+            <enum>Qt::RightDockWidgetArea</enum>
+           </property>
+           <property name="hWidgetSizePolicy" stdset="0">
+            <number>5</number>
+           </property>
+           <property name="vWidgetSizePolicy" stdset="0">
+            <number>4</number>
+           </property>
+           <property name="minimumWidgetSize" stdset="0">
+            <size>
+             <width>24</width>
+             <height>8</height>
+            </size>
+           </property>
+           <property name="fullMode" stdset="0">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
           <spacer name="horizontalSpacer_19">
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
@@ -3363,17 +3394,192 @@
              <number>0</number>
             </property>
             <item>
-             <widget class="Frame" name="filterPreview1">
+             <widget class="Frame" name="filterPreviewFrame1">
               <property name="label" stdset="0">
                <string>Filter 1</string>
               </property>
+              <property name="marginOverride" stdset="0">
+               <bool>true</bool>
+              </property>
+              <layout class="QGridLayout" name="gridLayout_11">
+               <property name="leftMargin">
+                <number>2</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>2</number>
+               </property>
+               <property name="bottomMargin">
+                <number>2</number>
+               </property>
+               <property name="spacing">
+                <number>4</number>
+               </property>
+               <item row="0" column="0">
+                <spacer name="horizontalSpacer_21">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeType">
+                  <enum>QSizePolicy::Fixed</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item row="0" column="1">
+                <widget class="Combo" name="filter1Type_2">
+                 <property name="label" stdset="0">
+                  <string>Type</string>
+                 </property>
+                 <property name="labelPos" stdset="0">
+                  <enum>Qt::LeftDockWidgetArea</enum>
+                 </property>
+                 <property name="valueList" stdset="0">
+                  <stringlist/>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0" colspan="4">
+                <widget class="FilterView" name="filterPreview1">
+                 <property name="minimumSize">
+                  <size>
+                   <width>80</width>
+                   <height>60</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="2">
+                <spacer name="horizontalSpacer_22">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeType">
+                  <enum>QSizePolicy::Expanding</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
              </widget>
             </item>
             <item>
-             <widget class="Frame" name="filterPreview2">
+             <widget class="Frame" name="filterPreviewFrame2">
               <property name="label" stdset="0">
                <string>Filter 2</string>
               </property>
+              <property name="marginOverride" stdset="0">
+               <bool>true</bool>
+              </property>
+              <layout class="QGridLayout" name="gridLayout_9">
+               <property name="leftMargin">
+                <number>2</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>2</number>
+               </property>
+               <property name="bottomMargin">
+                <number>2</number>
+               </property>
+               <property name="spacing">
+                <number>4</number>
+               </property>
+               <item row="0" column="0">
+                <spacer name="horizontalSpacer_20">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeType">
+                  <enum>QSizePolicy::Fixed</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item row="0" column="3">
+                <widget class="SquareButton" name="filterCloseBtn">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="label" stdset="0">
+                  <string>Close</string>
+                 </property>
+                 <property name="labelPos" stdset="0">
+                  <enum>Qt::RightDockWidgetArea</enum>
+                 </property>
+                 <property name="hWidgetSizePolicy" stdset="0">
+                  <number>4</number>
+                 </property>
+                 <property name="vWidgetSizePolicy" stdset="0">
+                  <number>4</number>
+                 </property>
+                 <property name="fullMode" stdset="0">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0" colspan="4">
+                <widget class="FilterView" name="filterPreview2">
+                 <property name="minimumSize">
+                  <size>
+                   <width>80</width>
+                   <height>60</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="Combo" name="filter2Type_2">
+                 <property name="label" stdset="0">
+                  <string>Type</string>
+                 </property>
+                 <property name="labelPos" stdset="0">
+                  <enum>Qt::LeftDockWidgetArea</enum>
+                 </property>
+                 <property name="valueList" stdset="0">
+                  <stringlist/>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="2">
+                <spacer name="horizontalSpacer_23">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeType">
+                  <enum>QSizePolicy::Expanding</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
              </widget>
             </item>
            </layout>
@@ -3614,14 +3820,14 @@
    <header>dial</header>
   </customwidget>
   <customwidget>
-   <class>Frame</class>
-   <extends>QFrame</extends>
+   <class>Section</class>
+   <extends>QWidget</extends>
    <header>frame</header>
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>Section</class>
-   <extends>QWidget</extends>
+   <class>Frame</class>
+   <extends>QFrame</extends>
    <header>frame</header>
    <container>1</container>
   </customwidget>
@@ -3691,6 +3897,11 @@
    <extends>QWidget</extends>
    <header>bigglesworth.widgets</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>FilterView</class>
+   <extends>QGraphicsView</extends>
+   <header>bigglesworth.widgets</header>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -976,6 +976,27 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.main.midiClock.beat.connect(self.midiClockLed.activate)
         self.main.midiClock.stateChanged.connect(self.setMidiClockButton)
 
+        self.editFiltersBtn.clicked.connect(lambda: self.arpEfxStackedWidget.setCurrentWidget(self.filtersPage))
+        self.filterCloseBtn.clicked.connect(lambda: self.arpEfxStackedWidget.setCurrentWidget(self.efxArpPage))
+
+        self.filter1Type_2.setValueList(self.parameters.parameterData.filter1Type.values)
+        self.parameters.parameters('filter1Type').valueChanged.connect(self.filter1Type_2.setValue)
+        self.filter1Type_2.valueChanged.connect(lambda value: setattr(self.parameters, 'filter1Type', value))
+        self.parameters.parameters('filter1Type').valueChanged.connect(self.filterPreview1.setFilter)
+        self.parameters.parameters('filter1Cutoff').valueChanged.connect(self.filterPreview1.setCutoff)
+        self.parameters.parameters('filter1Resonance').valueChanged.connect(self.filterPreview1.setResonance)
+        self.filterPreview1.cutoffChanged.connect(lambda value: setattr(self.parameters, 'filter1Cutoff', value))
+        self.filterPreview1.resonanceChanged.connect(lambda value: setattr(self.parameters, 'filter1Resonance', value))
+
+        self.filter2Type_2.setValueList(self.parameters.parameterData.filter2Type.values)
+        self.parameters.parameters('filter2Type').valueChanged.connect(self.filter2Type_2.setValue)
+        self.filter2Type_2.valueChanged.connect(lambda value: setattr(self.parameters, 'filter2Type', value))
+        self.parameters.parameters('filter2Type').valueChanged.connect(self.filterPreview2.setFilter)
+        self.parameters.parameters('filter2Cutoff').valueChanged.connect(self.filterPreview2.setCutoff)
+        self.parameters.parameters('filter2Resonance').valueChanged.connect(self.filterPreview2.setResonance)
+        self.filterPreview2.cutoffChanged.connect(lambda value: setattr(self.parameters, 'filter2Cutoff', value))
+        self.filterPreview2.resonanceChanged.connect(lambda value: setattr(self.parameters, 'filter2Resonance', value))
+
     def toggleMidiClock(self):
         if self.main.midiClock.isActive():
             self.main.midiClock.stop()

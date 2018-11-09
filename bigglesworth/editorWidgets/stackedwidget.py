@@ -122,6 +122,12 @@ class StackedWidget(QtWidgets.QWidget):
         return self.layout().currentWidget()
 
     @QtCore.pyqtSlot(QtWidgets.QWidget)
+    def setCurrentWidget(self, widget):
+        for index in range(self.layout().count()):
+            if self.widget(index) == widget:
+                return self.setCurrentIndex(index)
+
+    @QtCore.pyqtSlot(QtWidgets.QWidget)
     def addWidget(self, widget):
         index = self.layout().addWidget(widget)
         if self._fadeEffect:

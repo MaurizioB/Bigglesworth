@@ -20,3 +20,4 @@ from bigglesworth.widgets.graphicsbuttons import GraphicsButton, CloseBtn
 from bigglesworth.widgets.arpeggiator import ArpeggiatorDisplay
 from bigglesworth.widgets.envelopes import EnvelopeView, EnvelopePreviewWidget
 from bigglesworth.widgets.docklibrary import DockLibrary, DockTreeView, LibraryFilterList
+from bigglesworth.widgets.editorfilters import FilterView
