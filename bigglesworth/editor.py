@@ -1480,6 +1480,10 @@ class EditorWindow(QtWidgets.QMainWindow):
             dialWidth = max(dialWidth, metrics.width(envDial.label) + 2)
         for envDial in filterDials + self.amplifierEnvelopeFrame.findChildren(Dial):
             envDial.setFixedWidth(dialWidth)
+
+        filterWidth = self.filter1Type_2.combo.sizeHint().width() * 2
+        self.filter1Type_2.combo.setFixedWidth(filterWidth)
+        self.filter2Type_2.combo.setFixedWidth(filterWidth)
 #        self.repaint()
 
     def setOctave(self, offset):

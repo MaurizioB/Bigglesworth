@@ -213,14 +213,14 @@
         <property name="orientation" stdset="0">
          <enum>Qt::Vertical</enum>
         </property>
-        <layout class="QGridLayout" name="gridLayout_23">
-         <property name="margin">
-          <number>4</number>
-         </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_24" stretch="2,4">
          <property name="spacing">
           <number>4</number>
          </property>
-         <item row="1" column="0">
+         <property name="margin">
+          <number>4</number>
+         </property>
+         <item>
           <widget class="Dial" name="amplifierVolume">
            <property name="label" stdset="0">
             <string>Volume</string>
@@ -233,35 +233,38 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="1">
-          <widget class="Dial" name="amplifierVelocity">
-           <property name="label" stdset="0">
-            <string>Velocity</string>
-           </property>
-           <property name="maximumWidgetSize" stdset="0">
-            <size>
-             <width>57</width>
-             <height>57</height>
-            </size>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="2">
-          <layout class="QVBoxLayout" name="verticalLayout_7">
-           <item>
+         <item>
+          <layout class="QGridLayout" name="gridLayout_12">
+           <item row="1" column="1">
+            <widget class="Dial" name="amplifierModAmount">
+             <property name="label" stdset="0">
+              <string>Amount</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="Dial" name="amplifierVelocity">
+             <property name="label" stdset="0">
+              <string>Velocity</string>
+             </property>
+             <property name="maximumWidgetSize" stdset="0">
+              <size>
+               <width>57</width>
+               <height>57</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0" colspan="2">
             <widget class="Combo" name="amplifierModSource">
              <property name="label" stdset="0">
               <string>Source</string>
              </property>
+             <property name="labelPos" stdset="0">
+              <enum>Qt::LeftDockWidgetArea</enum>
+             </property>
              <property name="valueList" stdset="0">
               <stringlist/>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="Dial" name="amplifierModAmount">
-             <property name="label" stdset="0">
-              <string>Amount</string>
              </property>
             </widget>
            </item>
@@ -326,6 +329,12 @@
       </item>
       <item>
        <widget class="Frame" name="commonFrame">
+        <property name="minimumSize">
+         <size>
+          <width>200</width>
+          <height>90</height>
+         </size>
+        </property>
         <property name="sections" stdset="0">
          <stringlist/>
         </property>
@@ -335,62 +344,106 @@
         <property name="orientation" stdset="0">
          <enum>Qt::Vertical</enum>
         </property>
-        <layout class="QGridLayout" name="gridLayout_25">
-         <property name="margin">
-          <number>4</number>
-         </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_25">
          <property name="spacing">
           <number>4</number>
          </property>
-         <item row="1" column="2">
-          <widget class="Dial" name="unisonoUniDetune">
-           <property name="label" stdset="0">
-            <string>Detune</string>
-           </property>
+         <property name="margin">
+          <number>4</number>
+         </property>
+         <item>
+          <widget class="Section" name="section_2">
+           <layout class="QVBoxLayout" name="verticalLayout">
+            <property name="spacing">
+             <number>2</number>
+            </property>
+            <property name="margin">
+             <number>2</number>
+            </property>
+            <item>
+             <widget class="QLabel" name="label_5">
+              <property name="font">
+               <font>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="text">
+               <string>Pitch</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="Combo" name="oscPitchSource">
+              <property name="label" stdset="0">
+               <string>Source</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="Dial" name="oscPitchAmount">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="label" stdset="0">
+               <string>Amount</string>
+              </property>
+              <property name="labelTextAlign" stdset="0">
+               <set>Qt::AlignCenter</set>
+              </property>
+              <property name="labelPos" stdset="0">
+               <enum>Qt::LeftDockWidgetArea</enum>
+              </property>
+              <property name="labelAlign" stdset="0">
+               <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </widget>
          </item>
-         <item row="0" column="0">
-          <widget class="Combo" name="oscPitchSource">
-           <property name="label" stdset="0">
-            <string>Pitch\nSource</string>
+         <item>
+          <layout class="QGridLayout" name="gridLayout_13">
+           <property name="horizontalSpacing">
+            <number>2</number>
            </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="Dial" name="oscPitchAmount">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
+           <property name="verticalSpacing">
+            <number>4</number>
            </property>
-           <property name="label" stdset="0">
-            <string>Pitch\nAmount</string>
+           <property name="margin">
+            <number>0</number>
            </property>
-           <property name="labelTextAlign" stdset="0">
-            <set>Qt::AlignCenter</set>
-           </property>
-           <property name="labelPos" stdset="0">
-            <enum>Qt::LeftDockWidgetArea</enum>
-           </property>
-           <property name="labelAlign" stdset="0">
-            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="Combo" name="unisono">
-           <property name="label" stdset="0">
-            <string>Unisono</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1" colspan="2">
-          <widget class="Combo" name="allocationMode">
-           <property name="label" stdset="0">
-            <string>Allocation</string>
-           </property>
-          </widget>
+           <item row="0" column="0" colspan="2">
+            <widget class="Combo" name="allocationMode">
+             <property name="label" stdset="0">
+              <string>Allocation</string>
+             </property>
+             <property name="labelPos" stdset="0">
+              <enum>Qt::LeftDockWidgetArea</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="Combo" name="unisono">
+             <property name="label" stdset="0">
+              <string>Unisono</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="Dial" name="unisonoUniDetune">
+             <property name="label" stdset="0">
+              <string>Detune</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
         </layout>
        </widget>
@@ -485,6 +538,9 @@
             </property>
             <property name="popup" stdset="0">
              <bool>true</bool>
+            </property>
+            <property name="icon" stdset="0">
+             <iconset theme="dump"/>
             </property>
             <property name="hidePopupArrow" stdset="0">
              <bool>true</bool>
@@ -816,6 +872,22 @@
             <enum>Qt::LeftDockWidgetArea</enum>
            </property>
           </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_24">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::Fixed</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>8</height>
+            </size>
+           </property>
+          </spacer>
          </item>
          <item>
           <widget class="SquareButton" name="editFiltersBtn">
@@ -2287,7 +2359,7 @@
         <item row="0" column="0" colspan="2">
          <widget class="StackedWidget" name="arpEfxStackedWidget">
           <property name="currentIndex" stdset="0">
-           <number>2</number>
+           <number>1</number>
           </property>
           <widget class="QWidget" name="arpEditorPage">
            <layout class="QHBoxLayout" name="horizontalLayout">
@@ -3441,6 +3513,9 @@
                  <property name="labelPos" stdset="0">
                   <enum>Qt::LeftDockWidgetArea</enum>
                  </property>
+                 <property name="hWidgetSizePolicy" stdset="0">
+                  <number>0</number>
+                 </property>
                  <property name="valueList" stdset="0">
                   <stringlist/>
                  </property>
@@ -3557,6 +3632,9 @@
                  </property>
                  <property name="labelPos" stdset="0">
                   <enum>Qt::LeftDockWidgetArea</enum>
+                 </property>
+                 <property name="hWidgetSizePolicy" stdset="0">
+                  <number>0</number>
                  </property>
                  <property name="valueList" stdset="0">
                   <stringlist/>
