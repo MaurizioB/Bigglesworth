@@ -330,7 +330,7 @@ class Frame(QtWidgets.QFrame):
     def borderColor(self, color):
         self._setBorderColor = color
         #this is a workaround that might not work around...
-        self._borderColorChanged = True if color != self.palette().color(self.palette().Midlight) else False
+        self._borderColorChanged = color != self.palette().color(self.palette().Midlight)
         self.borderAnimation.setEndValue(color)
         self.setPalette(self.palette())
 
@@ -346,7 +346,7 @@ class Frame(QtWidgets.QFrame):
     def _setLabelRect(self):
 #        self._labelRect = rect = QtCore.QRectF(0, 0, self.fontMetrics().width(self._label) + 4, self.fontMetrics().height() + 2)
         fontMetrics = self.fontMetrics()
-        hMargin = fontMetrics.height() / 4
+        hMargin = fontMetrics.height() / 2
         vMargin = hMargin / 2
         if sys.platform == 'darwin':
             hMargin = max(8, hMargin * 2)
