@@ -24,7 +24,7 @@ if os.path.exists('versionInfo'):
         versionDotFile = vi.readline().strip('\r\n')
         build = int(vi.readline().strip('\r\n'))
 else:
-    versionDotFile = versionDot
+    versionDotFile = False
     build = 0
 if versionDot != versionDotFile:
     build = '0'

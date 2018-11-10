@@ -3681,7 +3681,7 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         if not self.currentWaveTable:
             self.setLastActive(False)
         if isLast:
-            self.closed.emit()
+            QtCore.QTimer.singleShot(0, self.closed.emit)
 
     def showEvent(self, event):
         if not self.shown:
