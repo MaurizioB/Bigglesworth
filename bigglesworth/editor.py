@@ -1473,12 +1473,15 @@ class EditorWindow(QtWidgets.QMainWindow):
         for child in self.findChildren(Frame):
             child.borderColor = theme.frameBorderColor
             child.labelColor = theme.frameLabelColor
+
         metrics = QtGui.QFontMetricsF(theme.font)
         dialWidth = 0
         filterDials = self.filterEnvelopeFrame.findChildren(Dial)
         for envDial in filterDials:
             dialWidth = max(dialWidth, metrics.width(envDial.label) + 2)
-        for envDial in filterDials + self.amplifierEnvelopeFrame.findChildren(Dial):
+        dials = filterDials + self.amplifierEnvelopeFrame.findChildren(Dial) + \
+            self.envelope3Frame.findChildren(Dial) + self.envelope4Frame.findChildren(Dial)
+        for envDial in dials:
             envDial.setFixedWidth(dialWidth)
 
         filterWidth = self.filter1Type_2.combo.sizeHint().width() * 2

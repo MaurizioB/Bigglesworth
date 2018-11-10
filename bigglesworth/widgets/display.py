@@ -34,7 +34,7 @@ class StatusLabel(QtWidgets.QLabel):
         QtWidgets.QLabel.setText(self, self.fontMetrics().elidedText(self._text, QtCore.Qt.ElideRight, self.width()))
 
     def resizeEvent(self, event):
-        QtWidgets.QLabel.setText(self, self.fontMetrics().elidedText(self._text, QtCore.Qt.ElideRight, self.width() - 120))
+        QtWidgets.QLabel.setText(self, self.fontMetrics().elidedText(self._text, QtCore.Qt.ElideRight, self.width()))
 
 
 class DisplayNameEdit(NameEdit):
@@ -550,6 +550,7 @@ class UndoDisplayBtn(DisplayBtn):
 
     def __init__(self, icon):
         DisplayBtn.__init__(self, icon)
+        self.setAttribute(QtCore.Qt.WA_LayoutUsesWidgetRect, True)
         self.popupTimer = QtCore.QBasicTimer()
         self.undoActions = []
         self._menu = QtWidgets.QMenu()
