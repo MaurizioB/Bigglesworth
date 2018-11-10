@@ -917,22 +917,26 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         QtWidgets.QMainWindow.__init__(self)
         loadUi('ui/wavetables.ui', self)
 
+        self.main = QtWidgets.QApplication.instance()
+
         if __name__ == '__main__':
             self.windowsMenu = self.menubar.addMenu('&Windows')
             self.windowsMenu.windowsSeparator = self.windowsMenu.addSeparator()
             self.audioSettingsAction = self.windowsMenu.addAction(QtGui.QIcon.fromTheme('audio-card'), 'Audio settings')
         else:
-            main = QtWidgets.QApplication.instance()
-            self.windowsMenu = main.getWindowsMenu(self, self.menubar)
+#            main = QtWidgets.QApplication.instance()
+            self.windowsMenu = self.main.getWindowsMenu(self, self.menubar)
             self.menubar.addMenu(self.windowsMenu)
             self.audioSettingsAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('audio-card'), 'Audio settings', self)
             for action in self.windowsMenu.actions():
                 if 'settings' in action.text().lower():
                     self.windowsMenu.insertAction(action, self.audioSettingsAction)
 
-            self.aboutMenu = main.getAboutMenu(self, self.menubar)
+
+            self.aboutMenu = self.main.getAboutMenu(self, self.menubar)
             self.menubar.addMenu(self.aboutMenu)
 
+        self.quitAction.triggered.connect(self.main.quit)
         self.windowsActionGroup = QtWidgets.QActionGroup(self.windowsMenu)
         self.windowsMenu.aboutToShow.connect(self.checkWindowsMenu)
 
@@ -985,7 +989,6 @@ class WaveTableWindow(QtWidgets.QMainWindow):
         else:
             self.devMode = False
             self.devArchiveAction.setVisible(False)
-            self.main = QtWidgets.QApplication.instance()
             self.main.midiConnChanged.connect(self.midiConnChanged)
             self.midiDevice = self.main.midiDevice
             self.graph = self.midiDevice.graph
