@@ -64,6 +64,10 @@
         <file>curves/InOutSine.png</file>
         <file>curves/OutQuart.png</file>
         <file>curves/InQuad.png</file>
+        <file>wtsp00.png</file>
+        <file>wtsp01.png</file>
+        <file>wtsp02.png</file>
+        <file>wtsp03.png</file>
     </qresource>
     <qresource prefix="icons/Bigglesworth">
         <file alias="index.theme">icons/Bigglesworth/index.theme</file>
@@ -227,6 +231,10 @@
         <file alias="16x16/node-type-auto-smooth.svg">icons/Bigglesworth/16x16/node-type-auto-smooth.svg</file>
         <file alias="22x22/node-type-auto-smooth.svg">icons/Bigglesworth/22x22/node-type-auto-smooth.svg</file>
         <file alias="24x24/node-type-auto-smooth.svg">icons/Bigglesworth/24x24/node-type-auto-smooth.svg</file>
+        <file alias="16x16/dialog-information.svg">icons/Bigglesworth/16x16/dialog-information.svg</file>
+        <file alias="22x22/dialog-information.svg">icons/Bigglesworth/22x22/dialog-information.svg</file>
+        <file alias="64x64/dialog-information.svg">icons/Bigglesworth/64x64/dialog-information.svg</file>
+        <file alias="24x24/dialog-information.svg">icons/Bigglesworth/24x24/dialog-information.svg</file>
         <file alias="16x16/node-segment-curve.svg">icons/Bigglesworth/16x16/node-segment-curve.svg</file>
         <file alias="22x22/node-segment-curve.svg">icons/Bigglesworth/22x22/node-segment-curve.svg</file>
         <file alias="24x24/node-segment-curve.svg">icons/Bigglesworth/24x24/node-segment-curve.svg</file>
@@ -234,10 +242,11 @@
         <file alias="16x16/view-sort-descending.svg">icons/Bigglesworth/16x16/view-sort-descending.svg</file>
         <file alias="22x22/view-sort-descending.svg">icons/Bigglesworth/22x22/view-sort-descending.svg</file>
         <file alias="24x24/view-sort-descending.svg">icons/Bigglesworth/24x24/view-sort-descending.svg</file>
-        <file alias="16x16/dialog-information.svg">icons/Bigglesworth/16x16/dialog-information.svg</file>
-        <file alias="22x22/dialog-information.svg">icons/Bigglesworth/22x22/dialog-information.svg</file>
-        <file alias="64x64/dialog-information.svg">icons/Bigglesworth/64x64/dialog-information.svg</file>
-        <file alias="24x24/dialog-information.svg">icons/Bigglesworth/24x24/dialog-information.svg</file>
+        <file alias="32x32/help-about.svg">icons/Bigglesworth/32x32/help-about.svg</file>
+        <file alias="32x32/help-about.svg">icons/Bigglesworth/32x32/help-about.svg</file>
+        <file alias="16x16/help-about.svg">icons/Bigglesworth/16x16/help-about.svg</file>
+        <file alias="22x22/help-about.svg">icons/Bigglesworth/22x22/help-about.svg</file>
+        <file alias="24x24/help-about.svg">icons/Bigglesworth/24x24/help-about.svg</file>
         <file alias="16x16/format-align-vertical-top.svg">icons/Bigglesworth/16x16/format-align-vertical-top.svg</file>
         <file alias="22x22/format-align-vertical-top.svg">icons/Bigglesworth/22x22/format-align-vertical-top.svg</file>
         <file alias="24x24/format-align-vertical-top.svg">icons/Bigglesworth/24x24/format-align-vertical-top.svg</file>

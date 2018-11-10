@@ -94,4 +94,4 @@ from the Blofeld's Global menu or Bigglesworth's "`Blofeld Device`_" utility.
 .. meta::
     :icon: help-about
 
-.. _`Blofeld Device`: "Settings and utilities/globals.html"
+.. _`Blofeld Device`: Settings%20and%20utilities/globals.html

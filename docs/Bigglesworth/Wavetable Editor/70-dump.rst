@@ -11,5 +11,9 @@ it is not possible to know actual names and contents of the 39 slots the Blofeld
 Keep this in mind, as once you dump a wavetable there is no way to restore it if you did not
 save it locally in Blofeld's database.
 
+Since you might have previously dumped wavetables on your Blofeld, you probably don't want 
+to overwrite them. To ensure that, open the "Blofeld" panel in Wavetable library, right click 
+on the wavetable slot you don't want to overwrite and check "Set as read only".
+
 .. meta::
     :icon: dump
