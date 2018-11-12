@@ -380,9 +380,18 @@ class BlofeldDB(QtCore.QObject):
                             break
                     else:
                         self.logger.append(LogDebug, 'Collection "{}" successfully fixed'.format(collection))
-                else:
-                    self.logger.append(LogDebug, 'Collection "{}" checked with {}errors'.format(collection, ('', 'no ')[valid]), 
-                        extMessage='{} sound{}'.format(count, '' if count == 1 else 's'))
+                elif collection in factoryPresets and count < 1024:
+                    self.logger.append(LogWarning, 'Factory "{}" is missing sounds, fixing.'.format(collection), 
+                        extMessage='{} missing'.format(1024 - count))
+                    if self.restoreFactory(collection):
+                        self.logger.append(LogDebug, 'Factory successfully fixed')
+                        count = 1024
+                    else:
+                        self.logger.append(LogCritical, 'Factory could not be fixed!')
+                        valid = False
+
+                self.logger.append(LogDebug, 'Collection "{}" checked with {}errors'.format(collection, ('', 'no ')[valid]), 
+                    extMessage='{} sound{}'.format(count, '' if count == 1 else 's'))
 
         self.logger.append(LogDebug, 'Checking templates table')
 #        self.query.exec_('PRAGMA table_info(templates)')
@@ -497,6 +506,48 @@ class BlofeldDB(QtCore.QObject):
         self.logger.append(LogInfo, 'Reference/sounds completed successfully!')
         return True
 
+    def restoreFactory(self, preset):
+        self.query.exec_('SELECT "{0}" FROM reference WHERE "{0}" IS NOT NULL'.format(preset))
+        existing = []
+        while self.query.next():
+            existing.append(int(self.query.value(0)))
+        self.query.exec_('PRAGMA journal_mode=OFF')
+        soundsPre = 'INSERT INTO sounds('
+        soundsPost = 'VALUES('
+        for p in soundsColumns[:-1]:
+            soundsPre += p + ', '
+            soundsPost += ':{}, '.format(p)
+        soundsPrepare = soundsPre + 'uid) ' + soundsPost + ':uid)'
+#        self.logger.append(LogDebug, 'Preparing preset {}'.format(preset))
+        _pattern = midifile.read_midifile(localPath('presets/{}.mid'.format(preset)))
+        _track = _pattern[0]
+        success = True
+        for i, event in enumerate(_track):
+            if isinstance(event, midifile.SysexEvent):
+                self.query.prepare(soundsPrepare)
+                data = event.data[6:391]
+                index = (data[0] << 7) + data[1]
+                if index in existing:
+                    continue
+                for p, d in zip(Parameters.parameterData, data[2:]):
+                    self.query.bindValue(':' + p.attr, p.range.sanitize(d))
+                uid = str(uuid.uuid4())
+                self.query.bindValue(':uid', uid)
+                if not self.query.exec_():
+                    self.dbErrorLog('Sound cannot be added.', extMessage='break at {}'.format(i))
+                    success = False
+                    break
+                self.query.prepare('INSERT INTO reference(uid, tags, {}) VALUES(:uid, :tags, :location)'.format(preset))
+                self.query.bindValue(':uid', uid)
+                self.query.bindValue(':tags', json.dumps([]))
+                self.query.bindValue(':location', index)
+                if not self.query.exec_():
+                    self.dbErrorLog('Sound cannot be referenced', extMessage='break at {}'.format(i))
+                    success = False
+                    break
+
+        self.query.exec_('PRAGMA journal_mode=DELETE')
+        return success
 
     def initializeFactory(self, createBit):
         self.logger.append(LogInfo, 'Filling factory presets')
