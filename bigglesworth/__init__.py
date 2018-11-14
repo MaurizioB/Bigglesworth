@@ -34,7 +34,7 @@ from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, 
     DonateDialog, MidiChartDialog, AboutDialog, UpdateDialog)
 from bigglesworth.help import HelpDialog
 
-from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR, LogInfo, LogWarning, factoryPresets, factoryPresetsNamesDict
+from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, MULD, SNDR, LogInfo, LogWarning, factoryPresets, factoryPresetsNamesDict
 from bigglesworth.midiutils import SYSEX, CTRL, NOTEOFF, NOTEON, PROGRAM, SysExEvent, ClockEvent, Port
 
 from bigglesworth.mididevice import MidiDevice
@@ -786,7 +786,7 @@ class Bigglesworth(QtWidgets.QApplication):
                 self.dumpBuffer.append(event.sysex[5:390])
                 self.processDumpBuffer()
 #                self.sound_dump_received(Sound(event.sysex[5:390], SRC_BLOFELD))
-            elif sysexType == SNDP:
+            elif sysexType in (SNDP, MULD):
                 self.editorWindow.midiEventReceived(event)
 #            elif sysexType == GLBD:
 #                self.globals_event.emit(event.sysex)

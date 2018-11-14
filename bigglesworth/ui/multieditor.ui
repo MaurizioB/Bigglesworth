@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>Multi mode edit</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_3" stretch="1,20">
    <property name="spacing">
@@ -33,7 +33,7 @@
        <property name="minimumSize">
         <size>
          <width>100</width>
-         <height>0</height>
+         <height>24</height>
         </size>
        </property>
        <property name="focusPolicy">
@@ -46,22 +46,6 @@
         <enum>Qt::ScrollBarAlwaysOff</enum>
        </property>
       </widget>
-     </item>
-     <item>
-      <spacer name="horizontalSpacer_3">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeType">
-        <enum>QSizePolicy::Preferred</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>10</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
      </item>
      <item>
       <widget class="Dial" name="volumeDial">
@@ -84,22 +68,6 @@
         </size>
        </property>
       </widget>
-     </item>
-     <item>
-      <spacer name="horizontalSpacer_2">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeType">
-        <enum>QSizePolicy::Preferred</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>10</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
      </item>
      <item>
       <widget class="Dial" name="tempoDial">
@@ -148,6 +116,22 @@
         <number>127</number>
        </property>
       </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Preferred</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>10</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
      </item>
      <item>
       <widget class="SquareButton" name="requestBtn">
@@ -347,11 +331,28 @@
        </property>
       </widget>
      </item>
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <property name="leftMargin">
+        <number>20</number>
+       </property>
+       <item>
+        <widget class="SquareButton" name="button">
+         <property name="label" stdset="0">
+          <string>button</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
     </layout>
    </item>
    <item>
     <widget class="QStackedWidget" name="stackedWidget">
-     <widget class="QWidget" name="channelPage">
+     <widget class="ChannelPageWidget" name="channelPage">
+      <property name="acceptDrops">
+       <bool>true</bool>
+      </property>
       <layout class="QHBoxLayout" name="stripLayout">
        <property name="spacing">
         <number>2</number>
@@ -380,6 +381,12 @@
    <class>MultiDisplayView</class>
    <extends>QGraphicsView</extends>
    <header>bigglesworth.widgets.multieditor</header>
+  </customwidget>
+  <customwidget>
+   <class>ChannelPageWidget</class>
+   <extends>QWidget</extends>
+   <header>bigglesworth.widgets.multieditor</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

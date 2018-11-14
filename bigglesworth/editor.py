@@ -9,7 +9,7 @@ from Qt import QtCore, QtGui, QtWidgets, QtSql
 
 from bigglesworth.utils import loadUi, getName, getChar, Enum, setBold, sanitize
 from bigglesworth.const import (chr2ord, UidColumn, LocationColumn, 
-    INIT, IDW, IDE, SNDP, END, templateGroupDict)
+    INIT, IDW, IDE, SNDP, MULD, END, templateGroupDict)
 from bigglesworth.parameters import Parameters, fullRangeCenterZero, driveCurves, arpLength, ctrl2sysex
 from bigglesworth.widgets import SoundsMenu, EditorMenu, EnvelopeView, MidiConnectionsDialog, ModMatrixView, MultiEditor
 from bigglesworth.dialogs import (RandomDialog, InputMessageBox, TemplateManager, SaveSoundAs, 
@@ -25,7 +25,7 @@ from frame import Frame
 from stackedwidget import StackedWidget
 
 Combo.setRange = lambda *args: None
-Combo.setValueList = lambda self, valueList: self.combo.addItems(valueList)
+Combo.setValueList = lambda self, valueList: [self.combo.clear(), self.combo.addItems(valueList)]
 Combo.setValue = lambda self, value: self.combo.setCurrentIndex(value)
 Combo.valueChanged = Combo.currentIndexChanged
 SquareButton.setRange = lambda *args: None
@@ -978,10 +978,13 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.multiEditorCover = MultiEditorCover(self)
         self.multiEditorCover.hide()
         self.multiEditor = MultiEditor(self)
+        self.multiEditor.midiEvent.connect(self.midiEvent)
         self.multiEditor.hide()
 
     def setMode(self, mode):
         self.display.setMode(mode)
+        if mode:
+            self.multiEditor.setCollection(self.currentCollection)
 
     def showMultiEditor(self):
         self.resizeMultiEditor()
@@ -1718,12 +1721,16 @@ class EditorWindow(QtWidgets.QMainWindow):
             elif self.main.ctrlSendState and event.param != 0:
                 self.midiEvent.emit(event)
         elif event.type == SYSEX:
-            if event.sysex[:3] == [INIT, IDW, IDE] and event.sysex[4] == SNDP and \
+            eventType = event.sysex[4]
+            if event.sysex[:3] == [INIT, IDW, IDE] and eventType in (SNDP, MULD) and \
                 self.acceptBlofeldId(event.sysex[3]):
                     if event.source in self.main.blockForwardPorts:
                         self.canForward = False
-                    id = (event.sysex[6] << 7) + event.sysex[7]
-                    setattr(self.parameters, Parameters.parameterData[id].attr, event.sysex[8])
+                    if eventType == SNDP:
+                        id = (event.sysex[6] << 7) + event.sysex[7]
+                        setattr(self.parameters, Parameters.parameterData[id].attr, event.sysex[8])
+                    elif eventType == MULD:
+                        self.multiEditor.midiEventReceived(event)
             else:
                 print('unknown SysExEvent received:\n{}', ', '.join('0x{:x}'.format(e) for e in event.sysex))
         self.canForward = True

@@ -10,11 +10,17 @@
     <height>535</height>
    </rect>
   </property>
+  <property name="acceptDrops">
+   <bool>true</bool>
+  </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <property name="label" stdset="0">
    <string>1</string>
+  </property>
+  <property name="labelPos" stdset="0">
+   <enum>Qt::TopRightCorner</enum>
   </property>
   <property name="marginOverride" stdset="0">
    <bool>true</bool>
@@ -30,9 +36,6 @@
     <widget class="PartCheckBox" name="selectChk">
      <property name="focusPolicy">
       <enum>Qt::NoFocus</enum>
-     </property>
-     <property name="layoutDirection">
-      <enum>Qt::RightToLeft</enum>
      </property>
     </widget>
    </item>
@@ -84,7 +87,9 @@
       <bool>true</bool>
      </property>
      <property name="icon" stdset="0">
-      <iconset theme="media-playback-start"/>
+      <iconset theme="media-playback-start">
+       <normaloff/>
+      </iconset>
      </property>
     </widget>
    </item>
@@ -808,14 +813,14 @@
    <header>dial</header>
   </customwidget>
   <customwidget>
-   <class>Frame</class>
-   <extends>QFrame</extends>
+   <class>Section</class>
+   <extends>QWidget</extends>
    <header>frame</header>
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>Section</class>
-   <extends>QWidget</extends>
+   <class>Frame</class>
+   <extends>QFrame</extends>
    <header>frame</header>
    <container>1</container>
   </customwidget>
