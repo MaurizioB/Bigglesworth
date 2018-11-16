@@ -639,7 +639,12 @@ class EditorWindow(QtWidgets.QMainWindow):
 
         #autosave is 0/1, the settings also has the second bit set 
         #if the state has to be remembered.
-        self._autosave = self.settings.value('AutoSave', 2, int) & 1
+        try:
+            self._autosave = self.settings.value('AutoSave', 2, int) & 1
+        except:
+            #failsafe from previous version that used bool values
+            self._autosave = self.settings.value('AutoSave', True, bool) & 1
+            self.settings.setValue('AutoSave', 2 if self._autosave else 0)
         self.saveBtn.clicked.connect(self.save)
         #designer automatically strips blank spaces, but we need this button 
         #to have some text margin due to the menu arrow
@@ -943,6 +948,7 @@ class EditorWindow(QtWidgets.QMainWindow):
             self.osc1Shape.setModel(self.oscShapeModel)
             self.osc1Shape.setModelColumn(1)
             self.osc1Shape.setExpanding(True)
+            self.osc1Shape.setValue(2)
             self.osc2Shape.setModel(self.oscShapeModel)
             self.osc2Shape.setModelColumn(1)
             self.osc2Shape.setExpanding(True)
