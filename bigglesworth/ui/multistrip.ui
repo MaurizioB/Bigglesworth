@@ -80,7 +80,7 @@
      <property name="switchable" stdset="0">
       <bool>true</bool>
      </property>
-     <property name="inverted" stdset="0">
+     <property name="switched" stdset="0">
       <bool>true</bool>
      </property>
      <property name="fullMode" stdset="0">
@@ -107,7 +107,7 @@
     </widget>
    </item>
    <item>
-    <widget class="Combo" name="chanCombo">
+    <widget class="Combo" name="channelCombo">
      <property name="label" stdset="0">
       <string/>
      </property>
@@ -242,7 +242,7 @@
        <number>1</number>
       </property>
       <item>
-       <widget class="Dial" name="transDial">
+       <widget class="Dial" name="transposeDial">
         <property name="label" stdset="0">
          <string>Transp</string>
         </property>
@@ -594,7 +594,7 @@
       <number>0</number>
      </property>
      <item row="1" column="0">
-      <widget class="SquareButton" name="susBtn">
+      <widget class="SquareButton" name="sustainBtn">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
          <horstretch>0</horstretch>
@@ -696,7 +696,7 @@
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="SquareButton" name="pressBtn">
+      <widget class="SquareButton" name="pressureBtn">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
          <horstretch>0</horstretch>
@@ -764,7 +764,7 @@
       </widget>
      </item>
      <item row="2" column="1">
-      <widget class="SquareButton" name="progBtn">
+      <widget class="SquareButton" name="progChangeBtn">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
          <horstretch>0</horstretch>
@@ -813,14 +813,14 @@
    <header>dial</header>
   </customwidget>
   <customwidget>
-   <class>Section</class>
-   <extends>QWidget</extends>
+   <class>Frame</class>
+   <extends>QFrame</extends>
    <header>frame</header>
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>Frame</class>
-   <extends>QFrame</extends>
+   <class>Section</class>
+   <extends>QWidget</extends>
    <header>frame</header>
    <container>1</container>
   </customwidget>

@@ -21,7 +21,7 @@ sys.path.append('../..')
 from bigglesworth.widgets import NameEdit
 from bigglesworth.dialogs import QuestionMessageBox
 from bigglesworth.utils import loadUi, getName
-from bigglesworth.parameters import panRange, arpTempo
+from bigglesworth.parameters import panRange, arpTempo, fullRangeCenterZero
 from bigglesworth.midiutils import SysExEvent, SYSEX
 from bigglesworth.const import INIT, END, IDW, IDE, MULR, MULD, NameColumn
 
@@ -54,6 +54,157 @@ rightArrowPath.lineTo(15, 16)
 rightArrowPath.lineTo(4, 16)
 rightArrowPath.lineTo(4, 20)
 rightArrowPath.closeSubpath()
+
+
+class PartObject(QtCore.QObject):
+    def __init__(self, part=0):
+        QtCore.QObject.__init__(self)
+        self.part = part
+        self.label = 'Part {}'.format(part)
+        self.labelColor = self.borderColor = None
+        self.bank = self.prog = 0
+        self.volume = 100
+        self.pan = self.transpose = self.detune = 64
+        self.channel = part + 2
+        self.lowVel = self.lowKey = 0
+        self.highVel = self.highKey = 127
+        self.midi = self.usb = self.local = self.play = True
+        self.pitch = self.mod = self.pressure = self.sustain = self.edits = self.progChange = True
+        self.ctrlBit = 63
+        self.unknonwnParameter = 0
+        self.tailData = [1, 63, 0, 0, 0, 0, 0, 0, 0, 0]
+
+    @property
+    def index(self):
+        return (self.bank << 7) + self.prog
+
+    @index.setter
+    def index(self, index):
+        self.bank = index >> 7
+        self.prog = index & 127
+
+    @property
+    def velocityRange(self):
+        return self.lowVel, self.highVel
+
+    @velocityRange.setter
+    def velocityRange(self, velRange):
+        self.lowVel, self.highVel = velRange
+
+    @property
+    def keyRange(self):
+        return self.lowKey, self.highKey
+
+    @keyRange.setter
+    def keyRange(self, keyRange):
+        self.lowKey, self.highKey = keyRange
+
+    @property
+    def mute(self):
+        return not self.play
+
+    @mute.setter
+    def mute(self, mute):
+        self.play = not mute
+
+    @property
+    def receive(self):
+        return (self.mute << 6) + (self.local << 2) + (self.usb << 1) + self.midi
+
+    @receive.setter
+    def receive(self, bitMask):
+        self.mute = bool(bitMask & 64)
+        self.local = bool(bitMask & 4)
+        self.usb = bool(bitMask & 2)
+        self.midi = bool(bitMask & 1)
+
+    @property
+    def ctrl(self):
+        return (self.progChange << 5) + (self.edits << 4) + (self.sustain << 3) + (self.pressure << 2) + (self.mod << 1) + int(bool(self.pitch))
+
+    @ctrl.setter
+    def ctrl(self, bitMask):
+        self.progChange = bool(bitMask & 32)
+        self.edits = bool(bitMask & 16)
+        self.sustain = bool(bitMask & 8)
+        self.pressure = bool(bitMask & 4)
+        self.mod = bool(bitMask & 2)
+        self.pitch = bool(bitMask & 1)
+
+    def getSerializedData(self):
+        pass
+
+    def setSerializedData(self, data):
+        pass
+
+    def getMidiData(self):
+        return [self.bank, self.prog, self.volume, self.pan, self.unknonwnParameter, self.transpose, self.detune, self.channel, 
+            self.lowKey, self.highKey, self.lowVel, self.highVel, self.receive, self.ctrl] + self.tailData
+
+    def setMidiData(self, data):
+        self.bank, self.prog, self.volume, self.pan, self.unknonwnParameter, self.transpose, self.detune, self.channel, \
+            self.lowKey, self.highKey, self.lowVel, self.highVel, self.receive, self.ctrl = data[:14]
+        self.tailData = data[14:]
+
+    def getData(self):
+        return [self.bank, self.prog, self.volume, self.pan, self.transpose, self.detune, self.channel, 
+            self.lowKey, self.highKey, self.lowVel, self.highVel, 
+            self.midi, self.usb, self.local, self.mute, 
+            self.pitch, self.mod, self.pressure, self.sustain, self.edits, self.progChange]
+
+    def getInfo(self):
+        return self.label, self.labelColor, self.borderColor
+
+    def setLabelData(self, *data):
+        self.label, self.labelColor, self.borderColor = data
+
+    @classmethod
+    def fromMidi(cls, part, data):
+        obj = cls(part)
+        obj.setMidiData(data)
+        return obj
+
+
+class MultiObject(QtCore.QObject):
+    def __init__(self, data=None):
+        QtCore.QObject.__init__(self)
+        self.unknonwnParameter = 0
+        self.unknonwnData = [1, 0, 2, 4, 11, 12, 0, 0, 0, 0, 0, 0, 0]
+        self.buffer = False
+        if data is None:
+            self.index = 0
+            self._nameChars = [73, 110, 105, 116, 32, 77, 117, 108, 116, 105, 32, 32, 32, 32, 32, 32]
+            self.volume = 127
+            self.tempo = 55
+            self.parts = [PartObject(part) for part in range(16)]
+        else:
+            self.parts = []
+            if isinstance(data, (list, tuple)) and len(data) == 418 and isinstance(data[0], int):
+                self.parseMidiData(data)
+            else:
+                self.parseSerializedData(data)
+
+    @property
+    def name(self):
+        return ''.join(map(chr, self._nameChars))
+
+    @name.setter
+    def name(self, name=''):
+        self._nameChars = map(ord, name.ljust(16))
+
+    def parseMidiData(self, data):
+        self.buffer = bool(data[0])
+        self.index = data[1]
+        self._nameChars = data[2:18]
+        self.unknonwnParameter, self.volume, self.tempo = data[18:21]
+        self.unknonwnData = data[21:34]
+        partData = data[34:]
+        if not self.parts:
+            for part in range(16):
+                self.parts.append(PartObject.fromMidi(part, partData[part * 24: (part + 1) * 24]))
+        else:
+            for part in self.parts:
+                part.setMidiData(partData[part * 24: (part + 1) * 24])
 
 
 class TestMidiDevice(QtCore.QObject):
@@ -517,6 +668,8 @@ class RangeSlider(QtWidgets.QWidget):
         self.currentHandle = None
         self.deltaPos = None
         self.cachedValid = True
+        self.shadow = Shadow(self)
+        self.shadow.setVisible(False)
 
     @property
     def values(self):
@@ -527,6 +680,12 @@ class RangeSlider(QtWidgets.QWidget):
         self._values = values
         self.startHandle.values = values
         self.endHandle.values = values
+
+    def setEnabled(self, enabled):
+        QtWidgets.QWidget.setEnabled(self, enabled)
+        if not enabled:
+            self.shadow.setGeometry(self.rect())
+        self.shadow.setVisible(not enabled)
 
     def currentRange(self):
         return self.startHandle.value(),  self.endHandle.value()
@@ -581,6 +740,8 @@ class RangeSlider(QtWidgets.QWidget):
         self.startHandle.computeHandleSizes()
         self.endHandle.computeHandleSizes()
         self.computeHandleRect()
+        if not self.isEnabled():
+            self.shadow.setGeometry(self.rect())
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
@@ -668,7 +829,7 @@ class RangeSlider(QtWidgets.QWidget):
                 self.setToolTip('{} - {}'.format(self.values[self.startHandle.value()], self.values[self.endHandle.value()]))
 
 
-class MultiEdit(NameEdit):
+class MultiNameEdit(NameEdit):
     focusChanged = QtCore.pyqtSignal(bool)
 
     def focusInEvent(self, event):
@@ -716,7 +877,7 @@ class DisplayWidget(QtWidgets.QWidget):
         self.slotSpin.setObjectName('slotSpin')
         self.slotSpin.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum)
 
-        self.nameEdit = MultiEdit()
+        self.nameEdit = MultiNameEdit()
         layout.addWidget(self.nameEdit)
         self.nameEdit.setWindowFlags(QtCore.Qt.BypassGraphicsProxyWidget)
         self.nameEdit.setText('Init Multi')
@@ -790,11 +951,14 @@ class MultiDisplayView(QtWidgets.QGraphicsView):
         self.slotSpin.lineEdit().returnPressed.connect(self.slotSpin.clearFocus)
         self.slotSpin = scene.slotSpin
 
-        self.setMaximumHeight((self.font().pointSize() * 2 + self.frameWidth()) * 2)
+#        self.setMaximumHeight((self.font().pointSize() * 2 + self.frameWidth()) * 2)
+        hint = self.displayWidget.sizeHint()
+        hint += QtCore.QSize(self.frameWidth() * 2, self.frameWidth() * 2)
+        self.setMinimumSize(hint)
 
     def setCurrent(self, index, name):
+        self.slotSpin.setValue(index)
         self.nameEdit.setText(name)
-        self.slotSpin.setValue(index[1] + 1)
 
     def updateFocus(self, focus=False):
         if focus:
@@ -942,11 +1106,13 @@ class VelocityView(QtWidgets.QGraphicsView):
 class PartLabel(QtWidgets.QWidget):
     labelEditRequested = QtCore.pyqtSignal(int)
     dragRequested = QtCore.pyqtSignal()
+    clicked = QtCore.pyqtSignal()
 
     def __init__(self, part):
         QtWidgets.QWidget.__init__(self)
         self.part = part
-        self._label = ' {} '.format(part + 1)
+        self.realLabel = str(part + 1)
+        self._label = ' {} '.format(self.realLabel)
         palette = self.palette()
         self.brush = palette.color(palette.Midlight)
         self.pen = palette.color(palette.Text)
@@ -958,6 +1124,7 @@ class PartLabel(QtWidgets.QWidget):
 
     @label.setter
     def label(self, label):
+        self.realLabel = label
         label = ' '.join(label.split())
         if label == self._label:
             return
@@ -983,6 +1150,7 @@ class PartLabel(QtWidgets.QWidget):
         if not self.parent().selectable:
             self.startPos = event.pos()
         else:
+            self.clicked.emit()
             self.startPos = None
 
     def mouseMoveEvent(self, event):
@@ -1017,6 +1185,7 @@ class RangeEditor(QtWidgets.QWidget):
         self.setMouseTracking(True)
         self.setAcceptDrops(True)
         self.dropTargetWidget = DropTargetWidget(self)
+        self.highlightWidget = HighlightWidget(self)
 
         layout = QtWidgets.QGridLayout()
         layout.setHorizontalSpacing(2)
@@ -1038,6 +1207,7 @@ class RangeEditor(QtWidgets.QWidget):
             label = PartLabel(part)
             label.labelEditRequested.connect(self.labelEditRequested)
             label.dragRequested.connect(lambda part=part: self.dragRequested.emit(part))
+            label.clicked.connect(lambda selector=selector, part=part: self.setSelected(part, not selector.isChecked()))
             layout.addWidget(label, part, 1)
             self.labels.append(label)
             slider = RangeSlider()
@@ -1062,19 +1232,24 @@ class RangeEditor(QtWidgets.QWidget):
                 selector.blockSignals(True)
                 selector.setChecked(False)
                 selector.blockSignals(False)
-        for widget in self.sliders + self.labels:
+        for widget in self.sliders:
             widget.setEnabled(not selectable)
 
     def setSelected(self, part, selected):
+        if not self.selectable:
+            return
         self.sliders[part].setEnabled(selected)
-        self.labels[part].setEnabled(selected)
-        if isinstance(self.sender(), PartCheckBox):
+#        self.labels[part].setEnabled(selected)
+        if isinstance(self.sender(), (PartCheckBox, PartLabel)):
             self.selected.emit(part, selected)
         else:
             selector = self.selectors[part]
             selector.blockSignals(True)
             selector.setChecked(selected)
             selector.blockSignals(False)
+
+    def highlight(self, part):
+        self.highlightWidget.activate(self.labels[part].geometry() | self.sliders[part].geometry())
 
     def setLowValue(self, part, value):
         self.sliders[part].startHandle.setValue(value)
@@ -1101,6 +1276,7 @@ class RangeEditor(QtWidgets.QWidget):
     def showEvent(self, event):
         if not event.spontaneous():
             self.dropTargetWidget.raise_()
+            self.highlightWidget.raise_()
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasFormat('bigglesworth/MultiStrip'):
@@ -1150,7 +1326,6 @@ class RangeEditor(QtWidgets.QWidget):
                     dropTarget = QtCore.QRect(0, max(0, label.y() - spacing / 2), stripWidth, spacing)
 
             self.dropTargetWidget.setGeometry(dropTarget)
-            print(dropTarget)
             self.dropTargetWidget.setVisible(True)
 
             self.dropTarget = index, isOver
@@ -1173,6 +1348,7 @@ class RangeEditor(QtWidgets.QWidget):
         self.dropTargetWidget.setVisible(False)
         QtCore.QTimer.singleShot(0, lambda: self.dropRequested.emit(source, *self.dropTarget))
 
+
 class VelocityRangeEditor(RangeEditor):
     velocityChanged = RangeEditor.rangeChanged
 
@@ -1180,13 +1356,27 @@ class VelocityRangeEditor(RangeEditor):
         RangeEditor.__init__(self, *args, **kwargs)
         self.velocity = VelocityView()
         self.layout().addWidget(self.velocity, self.layout().rowCount(), 2, 1, 1)
+        self.currentPartLbl = QtWidgets.QLabel('')
+        self.currentPartLbl.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum)
+        self.layout().addWidget(self.currentPartLbl, self.layout().rowCount(), 2, 1, 1)
 
     def checkSelection(self, start, end):
         self.velocity.setRange(start, end)
+        label = self.labels[self.currentSlider.index].realLabel
+        velRange = end - start + 1
+        if velRange == 128:
+            velRange = 'full range'
+        elif velRange > 0:
+            velRange = '{} level{}'.format(velRange, 's' if velRange > 1 else '')
+        else:
+            velRange = 'invalid range'
+        text = '{}: {}, from {} to {}'.format(label, velRange, start, end)
+        self.currentPartLbl.setText(text)
 
     def deselect(self):
         self.currentSlider = None
         self.velocity.hideRange()
+        self.currentPartLbl.setText('')
 
 
 class KeyRangeEditor(RangeEditor):
@@ -1211,6 +1401,10 @@ class KeyRangeEditor(RangeEditor):
         self.pianoBackground = self.piano.scene().addRect(self.piano.sceneRect(), pen=QtGui.QPen(QtCore.Qt.NoPen), brush=shadowBrush)
         self.pianoBackground.setZValue(99)
         self.pianoBackground.setVisible(False)
+
+        self.currentPartLbl = QtWidgets.QLabel('')
+        self.currentPartLbl.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum)
+        self.layout().addWidget(self.currentPartLbl, self.layout().rowCount(), 2, 1, 1)
 
     def checkSelection(self, start, end):
         path = QtGui.QPainterPath()
@@ -1268,20 +1462,36 @@ class KeyRangeEditor(RangeEditor):
                 region -= QtGui.QRegion(postClear.toRect())
             path.addRegion(region)
             self.pianoBackground.setVisible(True)
+            label = self.labels[self.currentSlider.index].realLabel
+            keyRange = end - start + 1
+            if keyRange == 128:
+                keyRange = 'full keyboard'
+            elif keyRange > 0:
+                keyRange = '{} key{}'.format(keyRange, 's' if keyRange > 1 else '')
+            else:
+                keyRange = 'invalid range'
+            text = '{}: {}, from {} to {}'.format(label, keyRange, noteNames[start], noteNames[end])
+            self.currentPartLbl.setText(text)
         else:
             self.pianoBackground.setVisible(False)
+            self.currentPartLbl.setText('')
         self.pianoSelection.setPath(path)
 
     def deselect(self):
         self.currentSlider = None
         self.pianoSelection.setPath(QtGui.QPainterPath())
         self.pianoBackground.setVisible(False)
+        self.currentPartLbl.setText('')
 
 
 class Shadow(QtWidgets.QWidget):
     def paintEvent(self, event):
         qp = QtGui.QPainter(self)
-        qp.fillRect(self.rect(), shadowBrush)
+#        qp.fillRect(self.rect(), shadowBrush)
+        qp.setRenderHints(qp.Antialiasing)
+        qp.setPen(QtCore.Qt.NoPen)
+        qp.setBrush(shadowBrush)
+        qp.drawRoundedRect(self.rect().adjusted(0, 0, -1, -1), 2, 2)
 
 
 #class LabelEdit(QtWidgets.QLineEdit):
@@ -1319,17 +1529,17 @@ class MultiStrip(Frame):
     highVelChanged = QtCore.pyqtSignal(int, int)
     lowKeyChanged = QtCore.pyqtSignal(int, int)
     highKeyChanged = QtCore.pyqtSignal(int, int)
-    valueSignals = {
-        'channelChanged': ('chanCombo', 'setChannel'), 
-        'volumeChanged': ('volumeSlider', 'setVolume'), 
-        'panChanged': ('panSlider', 'setPan'), 
-        'transposeChanged': ('transDial', 'setTranspose'), 
-        'detuneChanged': ('detuneDial', 'setDetune'), 
-        'lowVelChanged': ('lowVelDial', 'setLowVel'), 
-        'highVelChanged': ('highVelDial', 'setHighVel'), 
-        'lowKeyChanged': ('lowKeyDial', 'setLowKey'), 
-        'highKeyChanged': ('highKeyDial', 'setHighKey'), 
-        }
+#    valueSignals = [
+#        ('volumeChanged', 'volumeSlider', 'setVolume'), 
+#        ('panChanged', 'panSlider', 'setPan'), 
+#        ('transposeChanged', 'transposeDial', 'setTranspose'), 
+#        ('detuneChanged', 'detuneDial', 'setDetune'), 
+#        ('channelChanged', 'channelCombo', 'setChannel'), 
+#        ('lowKeyChanged', 'lowKeyDial', 'setLowKey'), 
+#        ('highKeyChanged', 'highKeyDial', 'setHighKey'), 
+#        ('lowVelChanged', 'lowVelDial', 'setLowVel'), 
+#        ('highVelChanged', 'highVelDial', 'setHighVel'), 
+#        ]
 
     playToggled = QtCore.pyqtSignal(int, bool)
     midiToggled = QtCore.pyqtSignal(int, bool)
@@ -1341,18 +1551,13 @@ class MultiStrip(Frame):
     pressureToggled = QtCore.pyqtSignal(int, bool)
     editsToggled = QtCore.pyqtSignal(int, bool)
     progChangeToggled = QtCore.pyqtSignal(int, bool)
-    toggleSignals = {
-        'playToggled': ('playBtn', 'setPlay'), 
-        'midiToggled': ('midiBtn', 'setMidi'), 
-        'usbToggled': ('usbBtn', 'setUsb'), 
-        'localToggled': ('localBtn', 'setLocal'), 
-        'modToggled': ('modBtn', 'setMod'), 
-        'pitchToggled': ('pitchBtn', 'setPitch'), 
-        'sustainToggled': ('susBtn', 'setSustain'), 
-        'pressureToggled': ('pressBtn', 'setPressure'), 
-        'editsToggled': ('editsBtn', 'setEdits'), 
-        'progChangeToggled': ('progBtn', 'setProgChange'), 
-        }
+
+#    dials = 'transpose', 'detune', 'lowKey', 'highKey', 'highVel', 'lowVel'
+#    sliders = 'volume', 'pan'
+    valueProps = ['volume', 'pan', 'transpose', 'detune', 'channel', 'lowKey', 'highKey', 'lowVel', 'highVel']
+    bottomProps = ['pitch', 'mod', 'pressure', 'sustain', 'edits', 'progChange']
+    toggleProps = ['midi', 'usb', 'local', 'play'] + bottomProps
+    allProps = valueProps + toggleProps
 
     PasteMidi, PasteValues, PasteParams, PasteAll = 1, 2, 3, 7
 
@@ -1361,6 +1566,8 @@ class MultiStrip(Frame):
     labelEditRequested = QtCore.pyqtSignal(int)
     pasteRequested = QtCore.pyqtSignal(int)
     labelReset = QtCore.pyqtSignal()
+    beginChanReset = QtCore.pyqtSignal()
+    endChanReset = QtCore.pyqtSignal()
 
     def __init__(self, part):
         Frame.__init__(self)
@@ -1389,34 +1596,90 @@ class MultiStrip(Frame):
 
         self.playBtn.switchToggled.connect(self.playSwitched)
         self.midiButtons = self.midiBtn, self.usbBtn, self.localBtn
-        self.bottomButtons = self.modBtn, self.pitchBtn, self.susBtn, self.pressBtn, self.editsBtn, self.progBtn
+        self.bottomButtons = self.modBtn, self.pitchBtn, self.sustainBtn, self.pressureBtn, self.editsBtn, self.progChangeBtn
 
         self.allWidgets = []
         self.valueWidgets = []
+        self.signalSlotNames = []
+        self.slots = []
 
-        for signalName, (widgetName, slot) in self.valueSignals.items():
-            signal = getattr(self, signalName)
-            widget = getattr(self, widgetName)
+        self.transposeDial.setValueList(fullRangeCenterZero)
+        self.detuneDial.setValueList(fullRangeCenterZero)
+
+        for attr in self.valueProps:
+            signal = getattr(self, '{}Changed'.format(attr))
+            if attr == 'channel':
+                widget = self.channelCombo
+            elif attr in ('volume', 'pan'):
+                widget = getattr(self, '{}Slider'.format(attr))
+            else:
+                widget = getattr(self, '{}Dial'.format(attr))
+            slotName = 'set{}{}'.format(attr[0].upper(), attr[1:])
+            setattr(self, slotName, widget.setValue)
+            self.signalSlotNames.append((signal, slotName))
+            self.slots.append(getattr(self, slotName))
             self.allWidgets.append(widget)
             self.valueWidgets.append(widget)
-            slot = setattr(self, slot, widget.setValue)
             widget.valueChanged.connect(lambda value, signal=signal, part=part: signal.emit(part, value))
-        for signalName, (widgetName, slot) in self.toggleSignals.items():
-            signal = getattr(self, signalName)
-            widget = getattr(self, widgetName)
+            widget.valueChanged.connect(lambda value, attr=attr: self.updateProperty(attr, value))
+        for attr in self.toggleProps:
+            signal = getattr(self, '{}Toggled'.format(attr))
+            widget = getattr(self, '{}Btn'.format(attr))
+            slotName = 'set{}{}'.format(attr[0].upper(), attr[1:])
+            setattr(self, slotName, widget.setSwitched)
+            self.signalSlotNames.append((signal, slotName))
+            self.slots.append(getattr(self, slotName))
             self.allWidgets.append(widget)
-            slot = setattr(self, slot, widget.setSwitched)
             widget.switchToggled.connect(lambda state, signal=signal,part=part: signal.emit(part, state))
+            widget.switchToggled.connect(lambda value, attr=attr: self.updateProperty(attr, value))
 
+        self.bankCombo.valueChanged.connect(lambda value: self.updateProperty('bank', value))
         self.setBank = self.bankCombo.setValue
+        self.progCombo.valueChanged.connect(lambda value: self.updateProperty('prog', value))
         self.setProg = self.progCombo.setValue
 
         self.checkSizes()
         self.isSelected = self.selectChk.isChecked
         self.shadow = Shadow(self)
         self.shadow.setVisible(False)
+        self.partObject = None
         self.startPos = None
         self.model = None
+
+    def setPartObject(self, partObject):
+        self.partObject = partObject
+        self.bankCombo.blockSignals(True)
+        self.bankCombo.setValue(partObject.bank)
+        self.bankCombo.blockSignals(False)
+        self.progCombo.blockSignals(True)
+        self.progCombo.setValue(partObject.prog)
+        self.progCombo.blockSignals(False)
+        for widget, slot, attr in zip(self.allWidgets, self.slots, self.allProps):
+            widget.blockSignals(True)
+            slot(getattr(partObject, attr))
+            widget.blockSignals(False)
+
+    def setLabelData(self, *data, **kwargs):
+        self.label, labelColor, borderColor = data
+        #questo è sbagliato.
+        if kwargs.get('override', False):
+            palette = self.palette()
+            self.labelColor = labelColor if labelColor else palette.color(palette.Text)
+            self.borderColor = borderColor if borderColor else palette.color(palette.Base)
+            if self.labelColor == palette.color(palette.Text):
+                labelColor = None
+            else:
+                labelColor = self.labelColor
+            if self.borderColor == palette.color(palette.Base):
+                borderColor = None
+            else:
+                borderColor = self.borderColor
+        self.partObject.setLabelData(self.label, labelColor, borderColor)
+
+    def updateProperty(self, attr, value):
+        if not self.partObject:
+            return
+        setattr(self.partObject, attr, value)
 
     def setModel(self, model):
         self.model = model
@@ -1432,7 +1695,7 @@ class MultiStrip(Frame):
         self.model.setBank(bank)
 
     def playSwitched(self, state):
-        if state:
+        if not state:
             self.playBtn.icon = QtGui.QIcon.fromTheme('audio-volume-muted')
             self.playBtn.label = 'MUTE'
         else:
@@ -1475,7 +1738,7 @@ class MultiStrip(Frame):
                             item.widget().setEnabled(selected)
 
     def setChannel(self, channel):
-        self.chanCombo.setValue(channel)
+        self.channelCombo.setValue(channel)
 
     def checkVelocity(self):
         self.setVelocityValid(self.lowVelDial.value <= self.highVelDial.value)
@@ -1506,14 +1769,10 @@ class MultiStrip(Frame):
             btn.setMinimumWidth(width)
 
     def resetValues(self):
-#        self.label = 'Part {}'.format(self.part + 1)
-#        palette = self.palette()
-#        self.labelColor = QtGui.QColor(palette.color(palette.Text))
-#        self.borderColor = palette.color(palette.Midlight)
         self.labelReset.emit()
         self.volumeSlider.setValue(self.volumeSlider.defaultValue)
         self.panSlider.setValue(self.panSlider.defaultValue)
-        self.transDial.setValue(self.transDial.defaultValue)
+        self.transposeDial.setValue(self.transposeDial.defaultValue)
         self.detuneDial.setValue(self.detuneDial.defaultValue)
         self.lowKeyDial.setValue(0)
         self.highKeyDial.setValue(127)
@@ -1521,12 +1780,14 @@ class MultiStrip(Frame):
         self.highKeyDial.setValue(127)
 
     def resetMidi(self):
-        self.chanCombo.setValue(self.part + 2)
-        self.playBtn.setSwitched(False)
+        self.beginChanReset.emit()
+        self.channelCombo.setValue(self.part + 2)
+        self.playBtn.setSwitched(True)
         for btn in self.midiButtons + self.bottomButtons:
             btn.setSwitched(True)
             #force emit to restore defaults value even if the current state is already True
             btn.switchToggled.emit(True)
+        QtCore.QTimer.singleShot(0, self.endChanReset.emit)
 
     def resetAll(self):
         self.resetValues()
@@ -1546,13 +1807,6 @@ class MultiStrip(Frame):
     def setData(self, data, mode=None):
         if mode is None:
             mode = self.PasteParams
-#        label, self.labelColor, self.borderColor = data[:3]
-#        #change label only if any of the labels are not "Part X"
-#        if label.lower().startswith('part ') and len(label.split()) == 2 and label.split()[1].isdigit():
-#            self.label = 'Part {}'.format(self.part + 1)
-#        else:
-#            self.label = label
-#        data = data[3]
         if mode == self.PasteAll:
             self.bankCombo.setValue(data[0])
             self.progCombo.setValue(data[1])
@@ -1660,6 +1914,7 @@ class MultiStrip(Frame):
 class DropTargetWidget(QtWidgets.QWidget):
     def __init__(self, parent):
         QtWidgets.QWidget.__init__(self, parent)
+        self.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents, True)
         self.setVisible(False)
         self.setAutoFillBackground(True)
         self.setStyleSheet('''
@@ -1674,6 +1929,47 @@ class DropTargetWidget(QtWidgets.QWidget):
         option.init(self)
         qp = QtWidgets.QStylePainter(self)
         qp.drawPrimitive(QtWidgets.QStyle.PE_Widget, option)
+
+
+
+class HighlightWidget(QtWidgets.QWidget):
+    def __init__(self, parent):
+        QtWidgets.QWidget.__init__(self, parent)
+        self.setVisible(False)
+        self.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents, True)
+        self.pen = QtGui.QColor(QtCore.Qt.black)
+        self.brush = QtGui.QColor(QtCore.Qt.white)
+        self.fadeAnimation = QtCore.QPropertyAnimation(self, b'alpha')
+        self.fadeAnimation.setDuration(1500)
+        self.fadeAnimation.setStartValue(1)
+        self.fadeAnimation.setEndValue(0)
+        self.fadeAnimation.setEasingCurve(QtCore.QEasingCurve(QtCore.QEasingCurve.InSine))
+        self.fadeAnimation.finished.connect(lambda: self.setVisible(False))
+
+    @QtCore.pyqtProperty(float)
+    def alpha(self):
+        return self.pen.alphaF()
+
+    @alpha.setter
+    def alpha(self, alpha):
+        self.pen.setAlphaF(alpha)
+        self.brush.setAlphaF(alpha * .6)
+        self.update()
+
+    def activate(self, geometry):
+        self.setGeometry(geometry)
+        palette = self.palette()
+        self.pen = palette.color(palette.Text).adjusted(a=255)
+        self.brush = palette.color(palette.Base).adjusted(a=170)
+        self.setVisible(True)
+        self.fadeAnimation.start()
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter(self)
+        qp.setRenderHints(qp.Antialiasing)
+        qp.setPen(self.pen)
+        qp.setBrush(self.brush)
+        qp.drawRoundedRect(self.rect().adjusted(0, 0, -1, -1), 2, 2)
 
 
 class ChannelPageWidget(QtWidgets.QWidget):
@@ -1757,6 +2053,8 @@ class ChannelPageWidget(QtWidgets.QWidget):
 
 class MultiEditor(QtWidgets.QWidget):
     midiEvent = QtCore.pyqtSignal(object)
+    closeRequested = QtCore.pyqtSignal()
+    detachRequested = QtCore.pyqtSignal()
 
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
@@ -1783,6 +2081,12 @@ class MultiEditor(QtWidgets.QWidget):
         self.requestBtn.clicked.connect(self.sendRequest)
         self.groupEditBtn.switchToggled.connect(self.setGroupEdit)
 
+        self.closeBtn.clicked.connect(self.closeRequested)
+        self.detachBtn.clicked.connect(self.detachRequested)
+        cornerBtnSize = min(self.closeBtn.button.width(), self.detachBtn.button.width())
+        self.closeBtn.button.setMaximumWidth(cornerBtnSize)
+        self.detachBtn.button.setMaximumWidth(cornerBtnSize)
+
         self.velocityRangeEditor = VelocityRangeEditor()
         self.stackedWidget.addWidget(self.velocityRangeEditor)
         self.velocityRangeEditor.velocityChanged.connect(self.setVelocities)
@@ -1803,37 +2107,47 @@ class MultiEditor(QtWidgets.QWidget):
         self.velocityRangeEditor.velocity.sizeHint = lambda: self.keyRangeEditor.piano.sizeHint()
 
         self.strips = self.channelPage.strips = []
-        for p in range(16):
-            strip = MultiStrip(p)
+        for part in range(16):
+            strip = MultiStrip(part)
             self.strips.append(strip)
-            strip.label = 'Part {}'.format(p + 1)
+#            strip.label = 'Part {}'.format(part + 1)
             strip.dragRequested.connect(self.dragStrip)
             strip.pasteRequested.connect(lambda data, strip=strip: self.pasteData(strip, data))
-            strip.labelReset.connect(self.setPartLabel)
+            strip.labelReset.connect(self.setPartLabels)
             if self.database:
                 strip.setModel(ProgProxyModel())
 
+            strip.beginChanReset.connect(self.beginChanReset)
+            strip.endChanReset.connect(self.endChanReset)
             strip.labelEditRequested.connect(self.showEditDialog)
             strip.lowKeyChanged.connect(self.keyRangeEditor.setLowValue)
             strip.highKeyChanged.connect(self.keyRangeEditor.setHighValue)
             strip.lowVelChanged.connect(self.velocityRangeEditor.setLowValue)
             strip.highVelChanged.connect(self.velocityRangeEditor.setHighValue)
-            strip.velocityBtn.clicked.connect(self.velocityBtn.clicked)
-            strip.keyBtn.clicked.connect(self.keyBtn.clicked)
-            strip.setChannel(p + 2)
+            strip.velocityBtn.clicked.connect(lambda part=part: self.showVelocities(part))
+            strip.keyBtn.clicked.connect(lambda part=part: self.showKeys(part))
+            strip.setChannel(part + 2)
             self.stripLayout.addWidget(strip)
 
-            for signalName, (widgetName, slot) in strip.valueSignals.items() + strip.toggleSignals.items():
-                signal = getattr(strip, signalName)
-                signal.connect(lambda part, value, slot=slot: self.updateGroup(part, slot, value))
+            for signal, slotName in strip.signalSlotNames:
+                signal.connect(lambda part, value, slotName=slotName: self.updateGroup(part, slotName, value))
 
         self.velocityBtn.clicked.connect(self.showVelocities)
         self.keyBtn.clicked.connect(self.showKeys)
         self.mainBtn.clicked.connect(self.showMixer)
         self.channelPage.dropRequested.connect(self.dropRequested)
         self.groupEdit = False
+        self.currentMulti = None
         self.currentCollection = None
         self.currentCollectionModel = None
+        self.isResettingChannels = False
+        self.setCurrentMulti(MultiObject())
+
+    def beginChanReset(self):
+        self.isResettingChannels = True
+
+    def endChanReset(self):
+        self.isResettingChannels = False
 
     def setCollection(self, collection=None):
         if self.currentCollection == collection:
@@ -1845,19 +2159,23 @@ class MultiEditor(QtWidgets.QWidget):
                 strip.setCollectionModel(model)
 
     def showEditDialog(self, part):
+        if self.groupEdit:
+            return
         strip = self.strips[part]
         dialog = PartLabelEditDialog(self, strip.label, strip.labelColor, strip.borderColor)
         if dialog.exec_():
-            label = dialog.labelEdit.text()
-            velocityLabel = self.velocityRangeEditor.labels[part]
-            keyLabel = self.keyRangeEditor.labels[part]
-
-            strip.label = velocityLabel.label = keyLabel.label = label
-            strip.labelColor = velocityLabel.pen = keyLabel.pen = dialog.foregroundColor
-            strip.borderColor = velocityLabel.brush = keyLabel.brush = dialog.backgroundColor
-
-            velocityLabel.update()
-            keyLabel.update()
+            self.setPartLabels(part, (dialog.labelEdit.text(), dialog.foregroundColor, dialog.backgroundColor), override=True)
+#            label = dialog.labelEdit.text()
+#            velocityLabel = self.velocityRangeEditor.labels[part]
+#            keyLabel = self.keyRangeEditor.labels[part]
+#
+#            strip.setLabelData(label, dialog.foregroundColor, dialog.backgroundColor)
+#            velocityLabel.label = keyLabel.label = label
+#            velocityLabel.pen = keyLabel.pen = dialog.foregroundColor
+#            velocityLabel.brush = keyLabel.brush = dialog.backgroundColor
+#
+#            velocityLabel.update()
+#            keyLabel.update()
 
     def setGroupEdit(self, active):
         self.groupEdit = active
@@ -1883,12 +2201,14 @@ class MultiEditor(QtWidgets.QWidget):
         self.velocityRangeEditor.setSelected(part, selected)
         self.strips[part].selectChk.setChecked(selected)
 
-    def updateGroup(self, part, slot, value):
+    def updateGroup(self, part, slotName, value):
         if self.groupEditBtn.switched:
             for strip in self.strips:
                 if strip.part == part or not strip.isSelected():
                     continue
-                getattr(strip, slot)(value)
+                if self.isResettingChannels and slotName == 'setChannel':
+                    value = strip.part + 2
+                getattr(strip, slotName)(value)
 
     def setKeys(self, part, low, high):
         self.strips[part].setLowKey(low)
@@ -1904,42 +2224,52 @@ class MultiEditor(QtWidgets.QWidget):
         self.velocityBtn.setSwitched(False)
         self.keyBtn.setSwitched(False)
 
-    def showVelocities(self):
+    @QtCore.pyqtSlot(int)
+    def showVelocities(self, part=None):
         self.stackedWidget.setCurrentWidget(self.velocityRangeEditor)
         self.mainBtn.setSwitched(False)
         self.velocityBtn.setSwitched(True)
         self.keyBtn.setSwitched(False)
+        if part is not None:
+            self.velocityRangeEditor.highlight(part)
 
-    def showKeys(self):
+    @QtCore.pyqtSlot(int)
+    def showKeys(self, part=None):
         self.stackedWidget.setCurrentWidget(self.keyRangeEditor)
         self.mainBtn.setSwitched(False)
         self.velocityBtn.setSwitched(False)
         self.keyBtn.setSwitched(True)
+        if part is not None:
+            self.keyRangeEditor.highlight(part)
 
-    def setPartLabel(self, part=None, data=None):
+    def setPartLabels(self, part=None, data=None, override=True):
+        palette = self.palette()
         if part is None:
             strip = self.sender()
             part = strip.part
             label = 'Part {}'.format(part + 1)
-            palette = self.palette()
             foregroundColor = QtGui.QColor(palette.color(palette.Text))
             backgroundColor = QtGui.QColor(palette.color(palette.Midlight))
         else:
             strip = self.strips[part]
             label, foregroundColor, backgroundColor = data
+#            if not override or foregroundColor is None:
+#                foregroundColor = QtGui.QColor(palette.color(palette.Text))
+#            if not override or backgroundColor is None:
+#                backgroundColor = QtGui.QColor(palette.color(palette.Midlight))
             #change label only if any of the labels are not "Part X"
             if label.lower().startswith('part ') and len(label.split()) == 2 and label.split()[1].isdigit():
                 label = 'Part {}'.format(part + 1)
-        strip.label = label
-        strip.foregroundColor = foregroundColor
-        strip.backgroundColor = backgroundColor
+        strip.setLabelData(label, foregroundColor, backgroundColor, override=override)
+#        strip.foregroundColor = foregroundColor
+#        strip.backgroundColor = backgroundColor
 
         velocityLabel = self.velocityRangeEditor.labels[part]
         keyLabel = self.keyRangeEditor.labels[part]
 
-        strip.label = velocityLabel.label = keyLabel.label = label
-        strip.labelColor = velocityLabel.pen = keyLabel.pen = foregroundColor
-        strip.borderColor = velocityLabel.brush = keyLabel.brush = backgroundColor
+        velocityLabel.label = keyLabel.label = label
+        velocityLabel.pen = keyLabel.pen = foregroundColor
+        velocityLabel.brush = keyLabel.brush = backgroundColor
 
         velocityLabel.update()
         keyLabel.update()
@@ -1959,9 +2289,24 @@ class MultiEditor(QtWidgets.QWidget):
                 if strip.isSelected():
                     self.setPartData(strip.part, data, pasteMask)
 
+    def setCurrentMulti(self, multi):
+        self.groupEditBtn.setSwitched(False)
+        if not self.currentMulti:
+            override = True
+        else:
+            override = self.currentMulti.index != multi.index
+        self.currentMulti = multi
+        self.volumeDial.setValue(multi.volume)
+        self.tempoDial.setValue(multi.tempo)
+        self.display.setCurrent(multi.index, multi.name)
+
+        for part in multi.parts:
+            self.strips[part.part].setPartObject(part)
+            self.setPartLabels(part.part, part.getInfo(), override)
+
     def setPartData(self, part, data, pasteMask=MultiStrip.PasteAll):
         self.strips[part].setData(data[3], pasteMask)
-        self.setPartLabel(part, data[:3])
+        self.setPartLabels(part, data[:3])
 
     def dragStrip(self, part=None):
         if part is None:
@@ -2017,15 +2362,15 @@ class MultiEditor(QtWidgets.QWidget):
         self.setPartData(source, targetData)
         self.setPartData(target, sourceData)
 #        self.strips[source].setData(targetData, mode=MultiStrip.PasteAll)
-#        self.setPartLabel(source, targetData[:3])
+#        self.setPartLabels(source, targetData[:3])
 #        self.strips[target].setData(sourceData)
-#        self.setPartLabel(target, sourceData[:3])
+#        self.setPartLabels(target, sourceData[:3])
 
     def copyPartTo(self, source, target):
         targetData = self.strips[source].getData()
         self.setPartData(target, targetData)
 #        self.strips[target].setData(targetData, mode=MultiStrip.PasteAll)
-#        self.setPartLabel(target, targetData[:3])
+#        self.setPartLabels(target, targetData[:3])
 
     def movePart(self, source, target):
         if source == target + 1 or source == target:
@@ -2061,55 +2406,59 @@ class MultiEditor(QtWidgets.QWidget):
 
     def multiReceived(self, sysex):
         #ignore checksum (last value)
-        multiData = sysex[5:-1]
-        index = multiData[:2]
-        name = multiData[2:18]
-        volume = multiData[19]
-        tempo = multiData[20]
-        boh = multiData[21:34]
-        self.volumeDial.setValue(volume)
-        self.tempoDial.setValue(tempo)
-#        print('{1}:{2} {0}'.format(getName(name), *index))
-        self.display.setCurrent(index, getName(name))
-        if boh != [1, 0, 2, 4, 11, 12, 0, 0, 0, 0, 0, 0, 0]:
-            print('other data differs: {}'.format(boh))
-        for part in range(16):
-            data = multiData[34 + part * 24: 34 + (part + 1) * 24]
-            strip = self.strips[part]
-
-            strip.setChannel(data[7])
-            strip.setBank(data[0])
-            strip.setProg(data[1])
-
-            strip.setVolume(data[2])
-            strip.setPan(data[3])
-            #field 4 is probably ignored?
-            if data[4] != 0:
-                print('field 4 is not 0: {}'.format(data[0]))
-            strip.setTranspose(data[5])
-            strip.setDetune(data[6])
-
-            strip.setLowKey(data[8])
-            strip.setHighKey(data[9])
-            strip.setLowVel(data[10])
-            strip.setHighVel(data[11])
-
-            midiByte = data[12]
-            strip.setMidi(midiByte & 1)
-            strip.setUsb(midiByte & 2)
-            strip.setLocal(midiByte & 4)
-            strip.setPlay(midiByte & 64)
-
-            ctrlByte = data[13]
-            strip.setPitch(ctrlByte & 1)
-            strip.setMod(ctrlByte & 2)
-            strip.setPressure(ctrlByte & 4)
-            strip.setSustain(ctrlByte & 8)
-            strip.setEdits(ctrlByte & 16)
-            strip.setProgChange(ctrlByte & 32)
-
-            if data[14:] != [1, 63, 0, 0, 0, 0, 0, 0, 0, 0]:
-                print('final part {} is different! {}'.format(part, data[14:]))
+        if sysex[-1] == 0xf7:
+            multiData = sysex[5:-2]
+        else:
+            multiData = sysex[5:-1]
+        self.setCurrentMulti(MultiObject(multiData))
+#        index = multiData[:2]
+#        name = multiData[2:18]
+#        volume = multiData[19]
+#        tempo = multiData[20]
+#        boh = multiData[21:34]
+#        self.volumeDial.setValue(volume)
+#        self.tempoDial.setValue(tempo)
+##        print('{1}:{2} {0}'.format(getName(name), *index))
+#        self.display.setCurrent(index, getName(name))
+#        if boh != [1, 0, 2, 4, 11, 12, 0, 0, 0, 0, 0, 0, 0]:
+#            print('other data differs: {}'.format(boh))
+#        for part in range(16):
+#            data = multiData[34 + part * 24: 34 + (part + 1) * 24]
+#            strip = self.strips[part]
+#
+#            strip.setChannel(data[7])
+#            strip.setBank(data[0])
+#            strip.setProg(data[1])
+#
+#            strip.setVolume(data[2])
+#            strip.setPan(data[3])
+#            #field 4 is probably ignored?
+#            if data[4] != 0:
+#                print('field 4 is not 0: {}'.format(data[0]))
+#            strip.setTranspose(data[5])
+#            strip.setDetune(data[6])
+#
+#            strip.setLowKey(data[8])
+#            strip.setHighKey(data[9])
+#            strip.setLowVel(data[10])
+#            strip.setHighVel(data[11])
+#
+#            midiByte = data[12]
+#            strip.setMidi(midiByte & 1)
+#            strip.setUsb(midiByte & 2)
+#            strip.setLocal(midiByte & 4)
+#            strip.setPlay(midiByte & 64)
+#
+#            ctrlByte = data[13]
+#            strip.setPitch(ctrlByte & 1)
+#            strip.setMod(ctrlByte & 2)
+#            strip.setPressure(ctrlByte & 4)
+#            strip.setSustain(ctrlByte & 8)
+#            strip.setEdits(ctrlByte & 16)
+#            strip.setProgChange(ctrlByte & 32)
+#
+#            if data[14:] != [1, 63, 0, 0, 0, 0, 0, 0, 0, 0]:
+#                print('final part {} is different! {}'.format(part, data[14:]))
 
 #    def dragEnterEvent(self, event):
 #        if event.mimeData().hasFormat('bigglesworth/MultiStrip'):
