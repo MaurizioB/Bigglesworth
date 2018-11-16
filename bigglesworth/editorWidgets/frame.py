@@ -273,6 +273,9 @@ class Frame(QtWidgets.QFrame):
             self._setLabelRect()
         self._computeMargins()
 
+    def setLabel(self, label):
+        self.label = label
+
     @QtCore.pyqtProperty(QtCore.Qt.Corner)
     def labelPos(self):
         return self._labelPos
@@ -409,7 +412,8 @@ class Frame(QtWidgets.QFrame):
             qp.restore()
             qp.translate(*textTranslate)
             qp.setPen(self._labelColor)
-            qp.drawText(self._labelRect, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter, self._label)
+            label = self.fontMetrics().elidedText(self._label, QtCore.Qt.ElideRight, self.height() - 2)
+            qp.drawText(self._labelRect, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter, label)
             qp.restore()
             qp.restore()
         except:
@@ -417,7 +421,8 @@ class Frame(QtWidgets.QFrame):
             qp.setBrush(self.borderColor)
             qp.drawPath(self._labelBackgroundPath)
             qp.setPen(self._labelColor)
-            qp.drawText(self._labelRect, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter, self._label)
+            label = self.fontMetrics().elidedText(self._label, QtCore.Qt.ElideRight, self.width() - 2)
+            qp.drawText(self._labelRect, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter, label)
 
     def paintEvent(self, event):
         QtWidgets.QFrame.paintEvent(self, event)

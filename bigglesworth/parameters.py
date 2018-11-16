@@ -255,14 +255,14 @@ categories = ('Init', 'Arp ', 'Atmo', 'Bass', 'Drum', 'FX  ', 'Keys', 'Lead', 'M
 #some of these values are out of range, init original value is referenced as a comment
 parameterData = _ParameterData([
     _(0, 'reserved0'), 
-    _(1, 'osc1Octave', (16, 112, 12), octave, 16, 'Osc 1 Octave', 'Octave', 'Osc 1'), #init: 0
+    _(1, 'osc1Octave', (16, 112, 12), octave, 64, 'Osc 1 Octave', 'Octave', 'Osc 1'), #init: 0
     _(2, 'osc1Semitone', (52, 76, 1), semitoneRange, 64, 'Osc 1 Semitone', 'Semitone', 'Osc 1'), #init: 1, (52?!)
     _(3, 'osc1Detune', (0, 127, 1), fullRangeCenterZero, 64, 'Osc 1 Detune', 'Detune', 'Osc 1'), 
     _(4, 'osc1BendRange', (40, 88, 1), bendRange, 64, 'Osc 1 Bend Range', 'Bend Range', 'Osc 1'), 
     _(5, 'osc1Keytrack', (0, 127, 1), keytrackRange, 64, 'Osc 1 Keytrack', 'Keytrack', 'Osc 1'), 
     _(6, 'osc1FMSource', (0, 11, 1), fmSource, 0, 'Osc 1 FM Source', 'FM Source', 'Osc 1'), #init: 66
     _(7, 'osc1FMAmount', (0, 127, 1), fullRange, 96, 'Osc 1 FM Amount', 'FM Amount', 'Osc 1'), 
-    _(8, 'osc1Shape', (0, 124, 1), oscShapes, 0, 'Osc 1 Shape', 'Shape', 'Osc 1'), 
+    _(8, 'osc1Shape', (0, 124, 1), oscShapes, 2, 'Osc 1 Shape', 'Shape', 'Osc 1'), 
     _(9, 'osc1Pulsewidth', (0, 127, 1), fullRange, 0, 'Osc 1 Pulsewidth', 'Pulsewidth', 'Osc 1'), 
     _(10, 'osc1PWMSource', (0, 30, 1), modSource, 2, 'Osc 1 PWM Source', 'PWM Source', 'Osc 1'), 
     _(11, 'osc1PWMAmount', (0, 127, 1), fullRangeCenterZero, 127, 'Osc 1 PWM Amount', 'PWM Amount', 'Osc 1'), 
@@ -271,7 +271,7 @@ parameterData = _ParameterData([
     _(14, 'osc1LimitWT', (0, 1, 1), onOff, 0, 'Osc 1 Limit WT', 'Limit WT', 'Osc 1'), 
     _(15, 'reserved15'), 
     _(16, 'osc1Brilliance', (0, 127, 1), fullRange, 0, 'Osc 1 Brilliance', 'Brilliance', 'Osc 1'), 
-    _(17, 'osc2Octave', (16, 112, 12), octave, 16, 'Osc 2 Octave', 'Octave', 'Osc 2'), #init: 0
+    _(17, 'osc2Octave', (16, 112, 12), octave, 64, 'Osc 2 Octave', 'Octave', 'Osc 2'), #init: 0
     _(18, 'osc2Semitone', (52, 76, 1), semitoneRange, 64, 'Osc 2 Semitone', 'Semitone', 'Osc 2'), #init: 0, (52?!)
     _(19, 'osc2Detune', (0, 127, 1), fullRangeCenterZero, 64, 'Osc 2 Detune', 'Detune', 'Osc 2'), 
     _(20, 'osc2BendRange', (40, 88, 1), bendRange, 64, 'Osc 2 Bend Range', 'Bend Range', 'Osc 2'), 
@@ -287,7 +287,7 @@ parameterData = _ParameterData([
     _(30, 'osc2LimitWT', (0, 1, 1), onOff, 0, 'Osc 2 Limit WT', 'Limit WT', 'Osc 2'), 
     _(31, 'reserved31'), 
     _(32, 'osc2Brilliance', (0, 127, 1), fullRange, 0, 'Osc 2 Brilliance', 'Brilliance', 'Osc 2'), 
-    _(33, 'osc3Octave', (16, 112, 12), octave, 16, 'Osc 3 Octave', 'Octave', 'Osc 3'), #init: 0
+    _(33, 'osc3Octave', (16, 112, 12), octave, 52, 'Osc 3 Octave', 'Octave', 'Osc 3'), #init: 0
     _(34, 'osc3Semitone', (52, 76, 1), semitoneRange, 64, 'Osc 3 Semitone', 'Semitone', 'Osc 3'), #init: 0, (52!?)
     _(35, 'osc3Detune', (0, 127, 1), fullRangeCenterZero, 52, 'Osc 3 Detune', 'Detune', 'Osc 3'), 
     _(36, 'osc3BendRange', (40, 88, 1), bendRange, 64, 'Osc 3 Bend Range', 'Bend Range', 'Osc 3'), 

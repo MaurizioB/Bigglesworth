@@ -293,6 +293,8 @@ class _Slider(QtWidgets.QSlider):
 
     def paintEvent(self, event):
         qp = QtGui.QPainter(self)
+        qp.setRenderHints(qp.Antialiasing)
+        qp.translate(.5, .5)
         qp.setPen(QtCore.Qt.NoPen)
         qp.setBrush(self._valueColor)
         qp.drawPath(self._clipPath)
@@ -305,7 +307,7 @@ class _Slider(QtWidgets.QSlider):
 
     def _createClipPathVertical(self):
         self._clipPath = QtGui.QPainterPath()
-        self._clipPath.addRoundedRect(self.width() / 2. - 4, 0, 7, self.height(), 2, 2)
+        self._clipPath.addRoundedRect(self.width() / 2. - 4, 0, 6, self.height(), 2, 2)
 #        self._scale = 1, self.height() / self._clipPath.boundingRect().height()
 
     def contextMenu(self, pos):

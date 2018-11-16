@@ -345,11 +345,16 @@ class _Dial(QtWidgets.QWidget):
         if not valueList:
             self._valueList = list(str(value) for value in range(self.minimum, self.maximum + 1, self.step))
         else:
+            oldValue = self.value
             rangeLen = (self.maximum - self.minimum) // self.step + 1
             self._valueList = list(valueList[:rangeLen])
             while len(self._valueList) < rangeLen:
                 self._valueList.append(str(len(self._valueList * self.step)))
-        self.setToolTip(self._valueList[self.value])
+            #invalidate the current value to ensure that the new value is update
+            #obviously this is NOT the right way to do this...
+            self.value = None
+            self.setValue(oldValue)
+        self.setToolTip(self.valueList[self._currentIndex])
 
     @property
     def valueList(self):
