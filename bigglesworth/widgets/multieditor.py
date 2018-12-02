@@ -2,28 +2,28 @@
 # *-* encoding: utf-8 *-*
 
 import sys, os
+import json
 
 os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
 
-from Qt import QtCore, QtGui, QtWidgets
+from Qt import QtCore, QtGui, QtWidgets, QtSql
 QtCore.pyqtSignal = QtCore.Signal
 
-from frame import Frame
-from combo import Combo
-#Combo.value = lambda: Combo.combo.currentIndex()
-from squarebutton import SquareButton
-#SquareButton.value = lambda: SquareButton.switched
-
-from pianokeyboard import PianoKeyboard, _isWhiteKey, _noteNumberToName
+from frame import Frame, Section
+from listview import ListView
+from pianokeyboard import PianoKeyboard, _isWhiteKey, _noteNumberToName, MetaKey
 
 sys.path.append('../..')
 
-from bigglesworth.widgets import NameEdit
+from bigglesworth.widgets import NameEdit, Waiter
 from bigglesworth.dialogs import QuestionMessageBox
-from bigglesworth.utils import loadUi, getName
+from bigglesworth.utils import loadUi, sanitize, setBold, setItalic
 from bigglesworth.parameters import panRange, arpTempo, fullRangeCenterZero
 from bigglesworth.midiutils import SysExEvent, SYSEX
-from bigglesworth.const import INIT, END, IDW, IDE, MULR, MULD, NameColumn
+from bigglesworth.const import INIT, END, IDW, IDE, MULR, MULD, CHK, NameColumn
+from bigglesworth.multi import Init, Database, Dumped, Buffer, Edited, MultiSetObject, MultiSetObjectFromDB, MultiObject, EmptyCollection
+from bigglesworth.widgets.display import HDisplayGroup
+from bigglesworth.dialogs.multibrowser import MultiBrowser
 
 def _getCssQColorStr(color):
     return 'rgba({},{},{},{:.0f}%)'.format(color.red(), color.green(), color.blue(), color.alphaF() * 100)
@@ -35,176 +35,111 @@ shadowBrush = QtGui.QColor(128, 128, 128, 128)
 displayBackground = QtGui.QBrush(QtGui.QColor(230, 240, 230))
 noteNames = ['{} ({})'.format(_noteNumberToName[v].upper(), v) for v in range(128)]
 
+
+iconNames = {
+    Init: 'document-new', 
+    Database: 'server-database', 
+    Dumped: 'blofeld-b', 
+    Buffer: 'blofeld-buffer', 
+    Init | Edited: 'document-edit-sign', 
+    Database | Edited: 'server-database-edited', 
+    Dumped | Edited: 'blofeld-edited', 
+    Buffer | Edited: 'blofeld-buffer-edited', 
+}
+
+toolTips = {
+    Init: 'Init Multi', 
+    Database: 'From Database', 
+    Dumped: 'Dumped from Blofeld', 
+    Buffer: 'Dumped from Multi Buffer', 
+    Init | Edited: 'Init Multi (edited)', 
+    Database | Edited: 'From Database (edited)', 
+    Dumped | Edited: 'Dumped (edited)', 
+    Buffer | Edited: 'Dumped Buffer (edited)', 
+}
+
+autoDumpTexts = {
+    0: 'Manual dump', 
+    Dumped: 'Auto dump to current Multi index', 
+    Buffer: 'Auto dump to Multi Edit buffer', 
+}
+
+
 leftArrowPath = QtGui.QPainterPath()
-leftArrowPath.moveTo(0, 14)
-leftArrowPath.lineTo(11, 14)
-leftArrowPath.lineTo(11, 10)
-leftArrowPath.lineTo(15, 15)
-leftArrowPath.lineTo(11, 20)
-leftArrowPath.lineTo(11, 16)
-leftArrowPath.lineTo(0, 16)
-leftArrowPath.closeSubpath()
+p = QtGui.QPolygon([
+    0, 14, 
+    11, 14, 
+    11, 10, 
+    15, 15, 
+    11, 20, 
+    11, 16, 
+    0, 16
+])
+leftArrowPath.addPolygon(QtGui.QPolygonF(p))
 
 rightArrowPath = QtGui.QPainterPath()
-rightArrowPath.moveTo(0, 15)
-rightArrowPath.lineTo(4, 10)
-rightArrowPath.lineTo(4, 14)
-rightArrowPath.lineTo(15, 14)
-rightArrowPath.lineTo(15, 16)
-rightArrowPath.lineTo(4, 16)
-rightArrowPath.lineTo(4, 20)
-rightArrowPath.closeSubpath()
+p = QtGui.QPolygon([
+    0, 15, 
+    4, 10, 
+    4, 14, 
+    15, 14, 
+    15, 16, 
+    4, 16, 
+    4, 20
+])
+rightArrowPath.addPolygon(QtGui.QPolygonF(p))
 
+class Dumper(QtWidgets.QProgressDialog):
+    def __init__(self, parent):
+        QtWidgets.QProgressDialog.__init__(self, parent)
+        self.setMaximum(128)
+        self.elapsed = QtCore.QElapsedTimer()
 
-class PartObject(QtCore.QObject):
-    def __init__(self, part=0):
-        QtCore.QObject.__init__(self)
-        self.part = part
-        self.label = 'Part {}'.format(part)
-        self.labelColor = self.borderColor = None
-        self.bank = self.prog = 0
-        self.volume = 100
-        self.pan = self.transpose = self.detune = 64
-        self.channel = part + 2
-        self.lowVel = self.lowKey = 0
-        self.highVel = self.highKey = 127
-        self.midi = self.usb = self.local = self.play = True
-        self.pitch = self.mod = self.pressure = self.sustain = self.edits = self.progChange = True
-        self.ctrlBit = 63
-        self.unknonwnParameter = 0
-        self.tailData = [1, 63, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.progressBar = self.findChild(QtWidgets.QProgressBar)
+        self.label = self.findChild(QtWidgets.QLabel)
+        self.label.setAlignment(QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
+        self.setCancelButton(None)
 
-    @property
-    def index(self):
-        return (self.bank << 7) + self.prog
+        layout = QtWidgets.QGridLayout()
+        self.setLayout(layout)
+        layout.addWidget(self.label, 0, 1)
+        layout.addWidget(self.progressBar, 1, 1)
+        waiter = Waiter()
+        waiter.setMaximumHeight(self.fontMetrics().height() * 3)
+        layout.addWidget(waiter, 0, 0, layout.rowCount(), 1, QtCore.Qt.AlignCenter)
+        layout.addWidget(QtWidgets.QLabel('<b>DO NOT</b> disconnect nor switch off your Blofeld!!!'), 
+            layout.rowCount(), 0, 1, layout.columnCount())
 
-    @index.setter
-    def index(self, index):
-        self.bank = index >> 7
-        self.prog = index & 127
+    def closeEvent(self, event):
+        event.ignore()
 
-    @property
-    def velocityRange(self):
-        return self.lowVel, self.highVel
-
-    @velocityRange.setter
-    def velocityRange(self, velRange):
-        self.lowVel, self.highVel = velRange
-
-    @property
-    def keyRange(self):
-        return self.lowKey, self.highKey
-
-    @keyRange.setter
-    def keyRange(self, keyRange):
-        self.lowKey, self.highKey = keyRange
-
-    @property
-    def mute(self):
-        return not self.play
-
-    @mute.setter
-    def mute(self, mute):
-        self.play = not mute
-
-    @property
-    def receive(self):
-        return (self.mute << 6) + (self.local << 2) + (self.usb << 1) + self.midi
-
-    @receive.setter
-    def receive(self, bitMask):
-        self.mute = bool(bitMask & 64)
-        self.local = bool(bitMask & 4)
-        self.usb = bool(bitMask & 2)
-        self.midi = bool(bitMask & 1)
-
-    @property
-    def ctrl(self):
-        return (self.progChange << 5) + (self.edits << 4) + (self.sustain << 3) + (self.pressure << 2) + (self.mod << 1) + int(bool(self.pitch))
-
-    @ctrl.setter
-    def ctrl(self, bitMask):
-        self.progChange = bool(bitMask & 32)
-        self.edits = bool(bitMask & 16)
-        self.sustain = bool(bitMask & 8)
-        self.pressure = bool(bitMask & 4)
-        self.mod = bool(bitMask & 2)
-        self.pitch = bool(bitMask & 1)
-
-    def getSerializedData(self):
+    def keyPressEvent(self, event):
         pass
 
-    def setSerializedData(self, data):
+    def reject(self):
         pass
 
-    def getMidiData(self):
-        return [self.bank, self.prog, self.volume, self.pan, self.unknonwnParameter, self.transpose, self.detune, self.channel, 
-            self.lowKey, self.highKey, self.lowVel, self.highVel, self.receive, self.ctrl] + self.tailData
+    def resizeEvent(self, event):
+        pass
 
-    def setMidiData(self, data):
-        self.bank, self.prog, self.volume, self.pan, self.unknonwnParameter, self.transpose, self.detune, self.channel, \
-            self.lowKey, self.highKey, self.lowVel, self.highVel, self.receive, self.ctrl = data[:14]
-        self.tailData = data[14:]
-
-    def getData(self):
-        return [self.bank, self.prog, self.volume, self.pan, self.transpose, self.detune, self.channel, 
-            self.lowKey, self.highKey, self.lowVel, self.highVel, 
-            self.midi, self.usb, self.local, self.mute, 
-            self.pitch, self.mod, self.pressure, self.sustain, self.edits, self.progChange]
-
-    def getInfo(self):
-        return self.label, self.labelColor, self.borderColor
-
-    def setLabelData(self, *data):
-        self.label, self.labelColor, self.borderColor = data
-
-    @classmethod
-    def fromMidi(cls, part, data):
-        obj = cls(part)
-        obj.setMidiData(data)
-        return obj
-
-
-class MultiObject(QtCore.QObject):
-    def __init__(self, data=None):
-        QtCore.QObject.__init__(self)
-        self.unknonwnParameter = 0
-        self.unknonwnData = [1, 0, 2, 4, 11, 12, 0, 0, 0, 0, 0, 0, 0]
-        self.buffer = False
-        if data is None:
-            self.index = 0
-            self._nameChars = [73, 110, 105, 116, 32, 77, 117, 108, 116, 105, 32, 32, 32, 32, 32, 32]
-            self.volume = 127
-            self.tempo = 55
-            self.parts = [PartObject(part) for part in range(16)]
-        else:
-            self.parts = []
-            if isinstance(data, (list, tuple)) and len(data) == 418 and isinstance(data[0], int):
-                self.parseMidiData(data)
+    def setCurrent(self, index, name):
+        index += 1
+        self.setValue(index)
+        if index and index != self.maximum():
+            elapsed = self.elapsed.elapsed()
+            if elapsed < 2000:
+                eta = 'computing'
             else:
-                self.parseSerializedData(data)
+                remaining = int((elapsed / float(index)) * (128 - index) / 1000)
+                eta = '{} seconds'.format(remaining)
+            self.setLabelText('Dumped Multi {} of 128<br/>"{}"<br/><br/>ETA: {}'.format(
+                index, name, eta))
 
-    @property
-    def name(self):
-        return ''.join(map(chr, self._nameChars))
-
-    @name.setter
-    def name(self, name=''):
-        self._nameChars = map(ord, name.ljust(16))
-
-    def parseMidiData(self, data):
-        self.buffer = bool(data[0])
-        self.index = data[1]
-        self._nameChars = data[2:18]
-        self.unknonwnParameter, self.volume, self.tempo = data[18:21]
-        self.unknonwnData = data[21:34]
-        partData = data[34:]
-        if not self.parts:
-            for part in range(16):
-                self.parts.append(PartObject.fromMidi(part, partData[part * 24: (part + 1) * 24]))
-        else:
-            for part in self.parts:
-                part.setMidiData(partData[part * 24: (part + 1) * 24])
+    def start(self):
+        self.setValue(0)
+        self.show()
+        self.elapsed.start()
+        QtWidgets.QApplication.processEvents()
 
 
 class TestMidiDevice(QtCore.QObject):
@@ -633,6 +568,7 @@ class RangeHandle(QtWidgets.QWidget):
 class RangeSlider(QtWidgets.QWidget):
     hoverEnter = QtCore.pyqtSignal()
     hoverLeave = QtCore.pyqtSignal()
+    clicked = QtCore.pyqtSignal()
     rangeChanged = QtCore.pyqtSignal(int, int)
 
     def __init__(self, minimum=0, maximum=127):
@@ -745,6 +681,7 @@ class RangeSlider(QtWidgets.QWidget):
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
+            self.clicked.emit()
             pos = event.pos()
             x = event.x()
             y = event.y()
@@ -789,7 +726,8 @@ class RangeSlider(QtWidgets.QWidget):
             delta = float(event.x() - self.deltaPos.x()) / self.stepWidth()
             vRange = self.virtualRange()
             diff = max(vRange) - min(vRange)
-            start = max(self.minimum, min(self.maximum - diff, self.refValue + delta))
+#            start = max(self.minimum, min(self.maximum - diff, self.refValue + delta))
+            start = sanitize(self.minimum, self.refValue + delta, self.maximum - diff)
             self.startHandle.setValue(start)
             self.endHandle.setValue(start + diff)
             pos = QtCore.QPoint(QtGui.QCursor.pos().x(), self.mapToGlobal(self.rect().bottomLeft()).y())
@@ -848,6 +786,9 @@ class MultiNameEdit(NameEdit):
 class DisplaySpinBox(QtWidgets.QSpinBox):
     focusChanged = QtCore.pyqtSignal(bool)
 
+    def contextMenuEvent(self, event):
+        pass
+
     def focusInEvent(self, event):
         self.focusChanged.emit(True)
         QtWidgets.QSpinBox.focusInEvent(self, event)
@@ -861,24 +802,110 @@ class DisplaySpinBox(QtWidgets.QSpinBox):
         self.focusChanged.emit(False)
 
 
+class StatusIcon(QtWidgets.QLabel):
+    def __init__(self, parent):
+        QtWidgets.QLabel.__init__(self, parent)
+        self.iconSize = self.fontMetrics().height() * 1.2
+        self.setFixedSize(self.iconSize * 1.5, self.iconSize * 1.5)
+        self.setAlignment(QtCore.Qt.AlignCenter)
+        self.setStatus(0)
+
+    def setStatus(self, status):
+        pixmap = QtGui.QIcon.fromTheme(iconNames[status]).pixmap(self.iconSize)
+        if pixmap.height() == self.iconSize:
+            pixmap = pixmap.scaledToHeight(self.iconSize, QtCore.Qt.SmoothTransformation)
+        self.setPixmap(pixmap)
+        self.setToolTip(toolTips[status])
+
+
+class ComboArrow(QtWidgets.QWidget):
+    clicked = QtCore.pyqtSignal()
+
+    def __init__(self):
+        QtWidgets.QWidget.__init__(self)
+        fm = self.fontMetrics()
+        contentSize = fm.height()
+        self.setFixedSize(QtCore.QSize(contentSize, contentSize))
+        width = contentSize * .8
+        top = width * .4
+        left = (contentSize - width) / 2
+        self.arrow = QtGui.QPolygonF([
+            QtCore.QPointF(left, top), 
+            QtCore.QPointF(left + width, top), 
+            QtCore.QPointF(left + width / 2, top + width / 2), 
+        ])
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter(self)
+        qp.setRenderHints(qp.Antialiasing)
+        qp.setPen(QtCore.Qt.NoPen)
+        qp.setBrush(QtCore.Qt.black)
+        qp.drawPolygon(self.arrow)
+
+
+class CollectionCombo(HDisplayGroup):
+    clicked = QtCore.pyqtSignal()
+    step = QtCore.pyqtSignal(int)
+
+    def __init__(self):
+        HDisplayGroup.__init__(self)
+        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.label = QtWidgets.QLabel()
+        self.label.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents)
+        self.addWidget(self.label)
+        self.addWidget(ComboArrow())
+        self.setCollection()
+
+    def setCollection(self, collection=None):
+        if collection is None:
+            collection = 'no collection'
+        self.collection = collection
+        self.setToolTip(collection)
+        self.setLabel()
+
+    def wheelEvent(self, event):
+        self.step.emit(1 if event.delta() < 0 else -1)
+
+    def mousePressEvent(self, event):
+        self.clicked.emit()
+
+    def setLabel(self):
+        self.label.setText(self.fontMetrics().elidedText(self.collection, QtCore.Qt.ElideRight, self.label.width()))
+
+    def resizeEvent(self, event):
+        HDisplayGroup.resizeEvent(self, event)
+        self.setLabel()
+
+
 class DisplayWidget(QtWidgets.QWidget):
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
         self.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum)
-        layout = QtWidgets.QHBoxLayout()
+        layout = QtWidgets.QGridLayout()
         self.setLayout(layout)
         self.setContentsMargins(0, 0, 0, 0)
         layout.setContentsMargins(4, 0, 4, 0)
-        layout.setSpacing(4)
+        layout.setSpacing(2)
 
+        self.collectionCombo = CollectionCombo()
+        layout.addWidget(self.collectionCombo, 0, 0, 1, 2)
+
+        slotBox = HDisplayGroup()
+        layout.addWidget(slotBox, 1, 0)
         self.slotSpin = DisplaySpinBox()
+        slotBox.addWidget(self.slotSpin)
+        self.slotSpin.setFrame(False)
+        self.slotSpin.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.slotSpin.setRange(1, 128)
-        layout.addWidget(self.slotSpin)
         self.slotSpin.setObjectName('slotSpin')
-        self.slotSpin.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum)
+        self.slotSpin.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
+        self.slotSpin.setMaximumWidth(self.fontMetrics().width('888') * 3)
+
+        self.statusIcon = StatusIcon(self)
+        layout.addWidget(self.statusIcon, 1, 1)
 
         self.nameEdit = MultiNameEdit()
-        layout.addWidget(self.nameEdit)
+        layout.addWidget(self.nameEdit, 0, 2, 2, 1)
         self.nameEdit.setWindowFlags(QtCore.Qt.BypassGraphicsProxyWidget)
         self.nameEdit.setText('Init Multi')
         self.nameEdit.setFrame(False)
@@ -889,13 +916,19 @@ class DisplayWidget(QtWidgets.QWidget):
 
     def setPalette(self, palette):
         self.setStyleSheet('''
-            QWidget {{
+            /* QWidget {{
                 border-top: 1px solid {dark};
                 border-right: 1px solid {light};
                 border-bottom: 1px solid {light};
                 border-left: 1px solid {dark};
                 border-radius: 4px;
                 background: rgb(230, 240, 230);
+            }} */
+            QSpinBox {{
+                background: transparent;
+            }}
+            StatusIcon {{
+                border: 1px solid darkGray;
             }}
             DisplayWidget, NameEdit {{
                 background: transparent;
@@ -927,8 +960,16 @@ class DisplayScene(QtWidgets.QGraphicsScene):
         self.displayProxy = QtWidgets.QGraphicsProxyWidget()
         self.displayProxy.setWidget(self.displayWidget)
 
-        self.nameEdit = self.displayWidget.nameEdit
+        self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+        self.shadow.setBlurRadius(4)
+        self.shadow.setOffset(1, 1)
+        self.shadow.setColor(QtGui.QColor(100, 100, 100, 150))
+        self.displayProxy.setGraphicsEffect(self.shadow)
+
+        self.collectionCombo = self.displayWidget.collectionCombo
         self.slotSpin = self.displayWidget.slotSpin
+        self.nameEdit = self.displayWidget.nameEdit
+        self.statusIcon = self.displayWidget.statusIcon
 
         self.addItem(self.displayProxy)
 
@@ -937,28 +978,41 @@ class DisplayScene(QtWidgets.QGraphicsScene):
 
 
 class MultiDisplayView(QtWidgets.QGraphicsView):
+    nameChanged = QtCore.pyqtSignal(str)
     def __init__(self, *args, **kwargs):
         QtWidgets.QGraphicsView.__init__(self, *args, **kwargs)
         scene = DisplayScene(self)
         self.setScene(scene)
         self.setBackgroundBrush(displayBackground)
+
         self.displayWidget = scene.displayWidget
-        self.nameEdit = scene.nameEdit
-        self.nameEdit.focusChanged.connect(self.updateFocus)
-        self.nameEdit.returnPressed.connect(self.nameEdit.clearFocus)
+
+        self.collectionCombo = scene.collectionCombo
         self.slotSpin = scene.slotSpin
         self.slotSpin.focusChanged.connect(self.updateFocus)
         self.slotSpin.lineEdit().returnPressed.connect(self.slotSpin.clearFocus)
-        self.slotSpin = scene.slotSpin
+
+        self.statusIcon = scene.statusIcon
+
+        self.nameEdit = scene.nameEdit
+        self.nameEdit.focusChanged.connect(self.updateFocus)
+        self.nameEdit.returnPressed.connect(self.setName)
 
 #        self.setMaximumHeight((self.font().pointSize() * 2 + self.frameWidth()) * 2)
         hint = self.displayWidget.sizeHint()
         hint += QtCore.QSize(self.frameWidth() * 2, self.frameWidth() * 2)
         self.setMinimumSize(hint)
 
-    def setCurrent(self, index, name):
-        self.slotSpin.setValue(index)
-        self.nameEdit.setText(name)
+    def setName(self):
+        self.nameChanged.emit(self.nameEdit.text())
+        self.nameEdit.clearFocus()
+
+    def setCurrent(self, multi):
+        self.slotSpin.blockSignals(True)
+        self.slotSpin.setValue(multi.index + 1)
+        self.slotSpin.blockSignals(False)
+        self.statusIcon.setStatus(multi._status)
+        self.nameEdit.setText(multi.name)
 
     def updateFocus(self, focus=False):
         if focus:
@@ -1008,6 +1062,7 @@ class VelocityScene(QtWidgets.QGraphicsScene):
         invalidPath.lineTo(0, 4)
 
         self.startLine = self.addLine(QtCore.QLineF(0, -10, 0, 150), linePen)
+        self.startLine.setCursor(QtCore.Qt.SizeHorCursor)
         startArrowPath = QtGui.QPainterPath()
         startArrowPath.moveTo(-5, 2)
         startArrowPath.lineTo(-2, 5)
@@ -1028,6 +1083,7 @@ class VelocityScene(QtWidgets.QGraphicsScene):
         
         self.endLine = self.addLine(QtCore.QLineF(0, -10, 0, 150), linePen)
         self.endLine.setX(128)
+        self.endLine.setCursor(QtCore.Qt.SizeHorCursor)
         endArrowPath = QtGui.QPainterPath()
         endArrowPath.moveTo(5, 2)
         endArrowPath.lineTo(2, 5)
@@ -1068,11 +1124,13 @@ class VelocityScene(QtWidgets.QGraphicsScene):
             self.invalidStart.setVisible(True)
             self.invalidEnd.setVisible(True)
             self.startArrow.setVisible(False)
+            self.endArrow.setVisible(False)
             self.selection.setVisible(False)
         else:
             self.invalidStart.setVisible(False)
             self.invalidEnd.setVisible(False)
             self.startArrow.setVisible(True)
+            self.endArrow.setVisible(True)
             minTop = 127 - start
             maxTop = 127 - end
             poly = QtGui.QPolygonF([
@@ -1086,15 +1144,55 @@ class VelocityScene(QtWidgets.QGraphicsScene):
 
 
 class VelocityView(QtWidgets.QGraphicsView):
+    rangeChanged = QtCore.pyqtSignal(int, int)
+    entered = QtCore.pyqtSignal()
+
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setRenderHints(QtGui.QPainter.Antialiasing)
         self.setBackgroundBrush(displayBackground)
+        self.setMouseTracking(True)
         scene = VelocityScene(self)
         self.setScene(scene)
         self.setRange = scene.setRange
         self.hideRange = scene.hideRange
-    
+        self.startLine = scene.startLine
+        self.endLine = scene.endLine
+        self.rangeLines = self.startLine, self.endLine
+        self.selectedLine = None
+        self.isDragging = False
+
+    def enterEvent(self, event):
+        QtWidgets.QGraphicsView.enterEvent(self, event)
+        self.entered.emit()
+
+    def mousePressEvent(self, event):
+        item = self.itemAt(event.pos())
+        if item in self.rangeLines:
+            self.selectedLine = item
+        else:
+            self.selectedLine = self.startLine
+            self.isDragging = True
+
+    def mouseDoubleClickEvent(self, event):
+        self.rangeChanged.emit(0, 127)
+
+    def mouseMoveEvent(self, event):
+        QtWidgets.QGraphicsView.mouseMoveEvent(self, event)
+        if self.selectedLine:
+            value = sanitize(0, int(self.mapToScene(event.pos()).x()), 127)
+            if self.selectedLine == self.startLine:
+                self.rangeChanged.emit(value, int(self.endLine.x()) - 1)
+                if self.isDragging:
+                    self.selectedLine = self.endLine
+            else:
+                self.rangeChanged.emit(int(self.startLine.x()), value - 1)
+
+    def mouseReleaseEvent(self, event):
+        self.selectedLine = None
+        self.isDragging = False
+#        self.viewport().unsetCursor()
+
     def sizeHint(self):
         return QtCore.QSize(25, 25)
 
@@ -1107,10 +1205,11 @@ class PartLabel(QtWidgets.QWidget):
     labelEditRequested = QtCore.pyqtSignal(int)
     dragRequested = QtCore.pyqtSignal()
     clicked = QtCore.pyqtSignal()
+    hoverEnter = QtCore.pyqtSignal()
 
     def __init__(self, part):
         QtWidgets.QWidget.__init__(self)
-        self.part = part
+        self.part = self.index = part
         self.realLabel = str(part + 1)
         self._label = ' {} '.format(self.realLabel)
         palette = self.palette()
@@ -1146,11 +1245,14 @@ class PartLabel(QtWidgets.QWidget):
         if event.type() == QtCore.QEvent.FontChange:
             self.updateSize()
 
+    def enterEvent(self, event):
+        self.hoverEnter.emit()
+
     def mousePressEvent(self, event):
+        self.clicked.emit()
         if not self.parent().selectable:
             self.startPos = event.pos()
         else:
-            self.clicked.emit()
             self.startPos = None
 
     def mouseMoveEvent(self, event):
@@ -1207,10 +1309,13 @@ class RangeEditor(QtWidgets.QWidget):
             label = PartLabel(part)
             label.labelEditRequested.connect(self.labelEditRequested)
             label.dragRequested.connect(lambda part=part: self.dragRequested.emit(part))
-            label.clicked.connect(lambda selector=selector, part=part: self.setSelected(part, not selector.isChecked()))
+            label.hoverEnter.connect(self.sliderEnter)
+#            label.clicked.connect(lambda selector=selector, part=part: self.setSelected(part, not selector.isChecked()))
+            label.clicked.connect(self.labelClicked)
             layout.addWidget(label, part, 1)
             self.labels.append(label)
             slider = RangeSlider()
+            slider.clicked.connect(self.labelClicked)
             slider.index = part
             self.sliders.append(slider)
             layout.addWidget(slider, part, 2)
@@ -1218,7 +1323,7 @@ class RangeEditor(QtWidgets.QWidget):
             slider.rangeChanged.connect(self.checkSelection)
             slider.rangeChanged.connect(self.emitRangeChanged)
 
-        self.currentSlider = None
+        self.currentSlider = self.hoverSlider = None
         self.selectable = False
 
     def getStripRect(self, part):
@@ -1236,10 +1341,7 @@ class RangeEditor(QtWidgets.QWidget):
             widget.setEnabled(not selectable)
 
     def setSelected(self, part, selected):
-        if not self.selectable:
-            return
         self.sliders[part].setEnabled(selected)
-#        self.labels[part].setEnabled(selected)
         if isinstance(self.sender(), (PartCheckBox, PartLabel)):
             self.selected.emit(part, selected)
         else:
@@ -1247,9 +1349,36 @@ class RangeEditor(QtWidgets.QWidget):
             selector.blockSignals(True)
             selector.setChecked(selected)
             selector.blockSignals(False)
+        if not selected and self.currentSlider:
+            selected = [s.part for s in self.selectors if s.isChecked() and s.part != part]
+            if not selected:
+                self.currentSlider = None
+            #forse è meglio trovare il più vicino?
+            elif part <= max(selected):
+                self.currentSlider = self.sliders[min(selected)]
+            else:
+                self.currentSlider = self.sliders[max(selected)]
+            self.update()
+        elif selected:
+            self.currentSlider = self.sliders[part]
+            self.update()
+
+    def labelClicked(self):
+        part = self.sender().index
+        self.setFocus(True)
+        if part != self.currentSlider:
+            self.currentSlider = self.sliders[part]
+            self.update()
+        if self.selectable and isinstance(self.sender(), PartLabel):
+            self.setSelected(part, not self.selectors[part].isChecked())
+
+    def setRangeFromView(self, start, end):
+        if self.currentSlider:
+            self.emitRangeChanged(start, end, self.currentSlider.index)
 
     def highlight(self, part):
-        self.highlightWidget.activate(self.labels[part].geometry() | self.sliders[part].geometry())
+        self.highlightWidget.activate(self.selectors[part].geometry() | self.sliders[part].geometry())
+        self.currentSlider = self.sliders[part]
 
     def setLowValue(self, part, value):
         self.sliders[part].startHandle.setValue(value)
@@ -1260,18 +1389,30 @@ class RangeEditor(QtWidgets.QWidget):
     def sliderEnter(self, slider=None):
         if slider is None:
             slider = self.sender()
-        self.currentSlider = slider
+            if not isinstance(slider, RangeSlider):
+                slider = self.sliders[slider.part]
+        self.hoverSlider = slider
         self.checkSelection(*slider.currentRange())
 
-    def emitRangeChanged(self, start, end):
-        self.rangeChanged.emit(self.sender().index, start, end)
+    def emitRangeChanged(self, start, end, part=None):
+        if part is None:
+            part = self.sender().index
+        self.rangeChanged.emit(part, start, end)
 
     def mouseMoveEvent(self, event):
-        if event.pos() not in self.sliders[0].geometry() | self.sliders[-1].geometry():
-            self.deselect()
+        if event.pos() not in self.labels[0].geometry() | self.sliders[-1].geometry():
+            if self.currentSlider:
+                self.hoverSlider = None
+                self.checkSelection(*self.sliders[self.currentSlider.index].currentRange())
+            else:
+                self.deselect()
 
     def leaveEvent(self, event):
-        self.deselect()
+        if self.currentSlider:
+            self.hoverSlider = None
+            self.checkSelection(*self.sliders[self.currentSlider.index].currentRange())
+        else:
+            self.deselect()
 
     def showEvent(self, event):
         if not event.spontaneous():
@@ -1348,6 +1489,17 @@ class RangeEditor(QtWidgets.QWidget):
         self.dropTargetWidget.setVisible(False)
         QtCore.QTimer.singleShot(0, lambda: self.dropRequested.emit(source, *self.dropTarget))
 
+    def paintEvent(self, event):
+        if self.currentSlider is not None:
+            qp = QtGui.QPainter(self)
+            qp.setRenderHints(qp.Antialiasing)
+            qp.translate(.5, .5)
+            qp.setPen(QtCore.Qt.darkGray)
+            qp.setBrush(QtCore.Qt.NoBrush)
+            rect = (self.selectors[self.currentSlider.index].geometry()|self.sliders[self.currentSlider.index].geometry()).adjusted(-2, -1, 0, 0)
+            qp.drawRoundedRect(rect, 2, 2)
+        QtWidgets.QWidget.paintEvent(self, event)
+
 
 class VelocityRangeEditor(RangeEditor):
     velocityChanged = RangeEditor.rangeChanged
@@ -1359,10 +1511,25 @@ class VelocityRangeEditor(RangeEditor):
         self.currentPartLbl = QtWidgets.QLabel('')
         self.currentPartLbl.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum)
         self.layout().addWidget(self.currentPartLbl, self.layout().rowCount(), 2, 1, 1)
+        self.velocity.rangeChanged.connect(self.setRangeFromView)
+        self.velocity.entered.connect(self.checkCurrent)
+
+    def checkCurrent(self):
+        if self.currentSlider:
+            self.hoverSlider = None
+            self.checkSelection(*self.sliders[self.currentSlider.index].currentRange())
+        else:
+            self.deselect()
 
     def checkSelection(self, start, end):
         self.velocity.setRange(start, end)
-        label = self.labels[self.currentSlider.index].realLabel
+        if self.hoverSlider:
+            index = self.hoverSlider.index
+        elif self.currentSlider:
+            index = self.currentSlider.index
+        else:
+            return
+        label = self.labels[index].realLabel
         velRange = end - start + 1
         if velRange == 128:
             velRange = 'full range'
@@ -1374,9 +1541,60 @@ class VelocityRangeEditor(RangeEditor):
         self.currentPartLbl.setText(text)
 
     def deselect(self):
-        self.currentSlider = None
+        self.hoverSlider = None
         self.velocity.hideRange()
         self.currentPartLbl.setText('')
+
+
+class PianoKeyboardSelectable(PianoKeyboard):
+    entered = QtCore.pyqtSignal()
+    rangeChanged = QtCore.pyqtSignal(int, int)
+    currentRangeStart = currentRangeEnd = selectedKey = None
+    isDragging = False
+
+    def enterEvent(self, event):
+        PianoKeyboard.enterEvent(self, event)
+        self.entered.emit()
+
+    def mousePressEvent(self, event):
+        PianoKeyboard.mousePressEvent(self, event)
+        for item in self.scene().items(self.mapToScene(event.pos())):
+            if isinstance(item, MetaKey):
+                note = item.note
+                if note == self.currentRangeStart:
+                    self.isDragging = True
+                    self.selectedKey = note
+                    self.rangeChanged.emit(note, self.currentRangeEnd)
+                elif note == self.currentRangeEnd:
+                    self.selectedKey = self.currentRangeStart
+                    self.rangeChanged.emit(self.currentRangeStart, note)
+                else:
+                    self.selectedKey = note
+                    self.rangeChanged.emit(item.note, item.note)
+                break
+
+    def mouseMoveEvent(self, event):
+        PianoKeyboard.mouseMoveEvent(self, event)
+        if self.selectedKey is not None:
+            for item in self.scene().items(self.mapToScene(event.pos())):
+                if isinstance(item, MetaKey):
+                    if self.isDragging and self.currentRangeEnd is not None:
+                        self.rangeChanged.emit(item.note, self.currentRangeEnd)
+                    else:
+                        self.rangeChanged.emit(self.selectedKey, item.note)
+                    break
+        elif self.currentRangeStart is not None and self.currentRangeEnd is not None:
+            for item in self.scene().items(self.mapToScene(event.pos())):
+                if isinstance(item, MetaKey) and item.note in (self.currentRangeStart, self.currentRangeEnd):
+                    self.setCursor(QtCore.Qt.SizeHorCursor)
+                    break
+            else:
+                self.unsetCursor()
+
+    def mouseReleaseEvent(self, event):
+        PianoKeyboard.mouseReleaseEvent(self, event)
+        self.selectedKey = None
+        self.isDragging = False
 
 
 class KeyRangeEditor(RangeEditor):
@@ -1387,14 +1605,18 @@ class KeyRangeEditor(RangeEditor):
         for slider in self.sliders:
             slider.values = noteNames
 
-        self.piano = PianoKeyboard()
+        self.piano = PianoKeyboardSelectable()
         self.layout().addWidget(self.piano, self.layout().rowCount(), 2, 1, 1)
         self.piano.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Maximum)
         self.piano.setInteractive(False)
+        self.piano.setMouseTracking(True)
         self.piano.firstNote = 0
         self.piano.octaves = 10
         self.piano.noteOffset = 8
         self.piano.showShortcuts = False
+        self.piano.entered.connect(self.checkCurrent)
+        self.piano.rangeChanged.connect(self.setRangeFromView)
+
         self.selectionColors = QtGui.QColor(255, 0, 0, 128), QtGui.QColor(0, 255, 0, 128)
         self.pianoSelection = self.piano.scene().addPath(QtGui.QPainterPath(), pen=QtGui.QPen(QtCore.Qt.NoPen), brush=self.selectionColors[1])
         self.pianoSelection.setZValue(100)
@@ -1406,9 +1628,17 @@ class KeyRangeEditor(RangeEditor):
         self.currentPartLbl.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum)
         self.layout().addWidget(self.currentPartLbl, self.layout().rowCount(), 2, 1, 1)
 
+    def checkCurrent(self):
+        if self.currentSlider:
+            self.hoverSlider = None
+            self.checkSelection(*self.sliders[self.currentSlider.index].currentRange())
+        else:
+            self.deselect()
+
     def checkSelection(self, start, end):
         path = QtGui.QPainterPath()
-        if self.currentSlider:
+        if self.hoverSlider or self.currentSlider:
+            self.piano.currentRangeStart, self.piano.currentRangeEnd = start, end
             first = min(start, end)
             last = max(start, end)
             self.pianoSelection.setBrush(self.selectionColors[first == start])
@@ -1462,7 +1692,7 @@ class KeyRangeEditor(RangeEditor):
                 region -= QtGui.QRegion(postClear.toRect())
             path.addRegion(region)
             self.pianoBackground.setVisible(True)
-            label = self.labels[self.currentSlider.index].realLabel
+            label = self.labels[self.currentSlider.index if self.currentSlider is not None else self.hoverSlider.index].realLabel
             keyRange = end - start + 1
             if keyRange == 128:
                 keyRange = 'full keyboard'
@@ -1478,7 +1708,7 @@ class KeyRangeEditor(RangeEditor):
         self.pianoSelection.setPath(path)
 
     def deselect(self):
-        self.currentSlider = None
+        self.hoverSlider = None
         self.pianoSelection.setPath(QtGui.QPainterPath())
         self.pianoBackground.setVisible(False)
         self.currentPartLbl.setText('')
@@ -1658,6 +1888,9 @@ class MultiStrip(Frame):
             widget.blockSignals(True)
             slot(getattr(partObject, attr))
             widget.blockSignals(False)
+        self.label = partObject.label
+        self.labelColor = partObject.labelColor if partObject.labelColor else self.palette().text().color()
+        self.borderColor = partObject.borderColor if partObject.borderColor else self.palette().base().color()
 
     def setLabelData(self, *data, **kwargs):
         self.label, labelColor, borderColor = data
@@ -1686,8 +1919,12 @@ class MultiStrip(Frame):
         self.progCombo.combo.setModel(model)
 
     def setCollectionModel(self, model):
+        previous = max(0, self.progCombo.currentIndex)
         self.collectionModel = model
         self.model.setSourceModel(model)
+        self.progCombo.blockSignals(True)
+        self.progCombo.currentIndex = previous
+        self.progCombo.blockSignals(False)
 
     def setBank(self, bank):
         if not self.model:
@@ -1794,15 +2031,16 @@ class MultiStrip(Frame):
         self.resetMidi()
 
     def getData(self):
-        values = [self.bankCombo.combo.currentIndex(), self.progCombo.combo.currentIndex()]
-        for w in self.allWidgets:
-            if isinstance(w, Combo):
-                values.append(w.combo.currentIndex())
-            elif isinstance(w, SquareButton):
-                values.append(w.switched)
-            else:
-                values.append(w.value)
-        return self.label, self.labelColor, self.borderColor, values
+        #TODO: forse meglio prendere i dati dal PartObject?
+#        values = [self.bankCombo.combo.currentIndex(), self.progCombo.combo.currentIndex()]
+#        for w in self.allWidgets:
+#            if isinstance(w, Combo):
+#                values.append(w.combo.currentIndex())
+#            elif isinstance(w, SquareButton):
+#                values.append(w.switched)
+#            else:
+#                values.append(w.value)
+        return self.label, self.labelColor, self.borderColor, self.partObject.getData()
 
     def setData(self, data, mode=None):
         if mode is None:
@@ -2051,6 +2289,83 @@ class ChannelPageWidget(QtWidgets.QWidget):
         QtCore.QTimer.singleShot(0, lambda: self.dropRequested.emit(source, *self.dropTarget))
 
 
+#We need a widget for the QListView, as they have focus issues when Popup flag is set
+class CollectionList(QtWidgets.QWidget):
+    collectionSelected = QtCore.pyqtSignal(object)
+
+    def __init__(self, parent=None):
+        QtWidgets.QWidget.__init__(self, parent)
+        self.main = QtWidgets.QApplication.instance()
+        self.settings = QtCore.QSettings()
+
+        self.setWindowFlags(QtCore.Qt.Popup)
+        self.setAttribute(QtCore.Qt.WA_X11NetWmWindowTypeCombo, True)
+        self.resize(10, 10)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
+        layout = QtWidgets.QVBoxLayout()
+        self.setLayout(layout)
+        self.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self.listView = ListView(self)
+        layout.addWidget(self.listView)
+        self.listView.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.listView.setTextElideMode(QtCore.Qt.ElideMiddle)
+        self.listView.setEditTriggers(self.listView.NoEditTriggers)
+        self.listView.setFrameStyle(0)
+        self.listView.setPalette(self.palette())
+        self.listView.viewport().installEventFilter(self)
+
+        self.model = QtGui.QStandardItemModel()
+        self.listView.setModel(self.model)
+
+    def eventFilter(self, source, event):
+        if self.listView.isVisible():
+            if event.type() == QtCore.QEvent.HoverMove:
+                index = self.listView.indexAt(event.pos())
+                if index.isValid():
+                    self.listView.setCurrentIndex(index)
+#            elif event.type() == QtCore.QEvent.MouseButtonPress:
+#                print('aeoijeoi')
+            elif event.type() == QtCore.QEvent.MouseButtonRelease:
+                index = self.listView.indexAt(event.pos())
+                if index.isValid() and index.flags() & QtCore.Qt.ItemIsEnabled:
+                    self.listView.setCurrentIndex(index)
+                    self.collectionSelected.emit(index.data())
+                    self.hide()
+        return QtWidgets.QWidget.eventFilter(self, source, event)
+
+    def show(self):
+        previousIndex = self.listView.currentIndex()
+        if previousIndex.isValid():
+            previous = previousIndex.row()
+        else:
+            previous = 0
+
+        self.model.clear()
+        self.settings.beginGroup('CollectionIcons')
+        for collection in self.main.referenceModel.collections:
+            if collection == 'Blofeld':
+                iconName = 'bigglesworth'
+            else:
+                iconName = self.settings.value(collection, '')
+            self.model.appendRow(QtGui.QStandardItem(QtGui.QIcon.fromTheme(iconName), collection))
+#        for i in range(5):
+#            self.model.appendRow(QtGui.QStandardItem(QtGui.QIcon.fromTheme(iconName), collection))
+        self.settings.endGroup()
+
+        self.listView.setCurrentIndex(self.model.index(previous, 0))
+
+        width = self.listView.sizeHintForColumn(0)
+        count = self.model.rowCount()
+        if count > 8:
+            width += self.listView.verticalScrollBar().sizeHint().width()
+        height = self.listView.sizeHintForRow(0) * min(8, count) + self.listView.frameWidth() * 2
+        self.listView.setFixedSize(width, height)
+        QtWidgets.QWidget.show(self)
+        self.listView.setFocus()
+
+
 class MultiEditor(QtWidgets.QWidget):
     midiEvent = QtCore.pyqtSignal(object)
     closeRequested = QtCore.pyqtSignal()
@@ -2061,9 +2376,21 @@ class MultiEditor(QtWidgets.QWidget):
         loadUi('ui/multieditor.ui', self)
         self.setAutoFillBackground(True)
         self.main = QtWidgets.QApplication.instance()
+        self.settings = QtCore.QSettings()
+
+        self.stateIcons = {state: QtGui.QIcon.fromTheme(iconName) for state, iconName in iconNames.items()}
 
         if __name__ == '__main__':
-            self.database = None
+            from bigglesworth.multi import FakeBlofeldDB
+            self.database = FakeBlofeldDB()
+            self.main.database = self.database
+
+            from bigglesworth.multi import MultiQueryModel
+            self.database.multiModel = MultiQueryModel()
+
+            from bigglesworth.database import CollectionManagerModel
+            self.main.referenceModel = self.database.referenceModel = self.referenceModel = CollectionManagerModel()
+
             self.midiDevice = TestMidiDevice(self)
             self.midiThread = QtCore.QThread()
             self.midiDevice.moveToThread(self.midiThread)
@@ -2073,12 +2400,123 @@ class MultiEditor(QtWidgets.QWidget):
             palette = self.palette()
             palette.setColor(palette.Active, palette.Button, QtGui.QColor(124, 240, 110))
             self.setPalette(palette)
+            self.main.deviceId = 0
         else:
             self.database = self.main.database
             self.referenceModel = self.database.referenceModel
 
+        self.volumeDial.valueChanged.connect(self.setCurrentVolume)
         self.tempoDial.setValueList(arpTempo)
-        self.requestBtn.clicked.connect(self.sendRequest)
+        self.tempoDial.valueChanged.connect(self.setCurrentTempo)
+
+        self.isDumpingAll = False
+        self.feedbackTimer = QtCore.QTimer()
+        self.feedbackTimer.setSingleShot(True)
+        self.feedbackTimer.setInterval(5000)
+        self.feedbackTimer.timeout.connect(self.noFeedback)
+        self.dumper = Dumper(self)
+
+        self.multiSelectMenu = QtWidgets.QMenu()
+        self.multiSelectMenu.aboutToShow.connect(self.updateSelectDumpMainMenu)
+
+        saveSection = Section()
+        self.autoLayout.addWidget(saveSection, 0, 0, 1, 3)
+        saveSection.lower()
+        self.autoSaveBtn.layout().setContentsMargins(0, 0, 5, 0)
+        dumpSection = Section()
+        self.autoLayout.addWidget(dumpSection, 1, 0, 1, 3)
+        dumpSection.lower()
+        self.autoDumpBtn.layout().setContentsMargins(0, 0, 5, 0)
+
+        self.saveMenu = QtWidgets.QMenu()
+        self.saveBtn.setMenu(self.saveMenu)
+        self.saveBtn.clicked.connect(self.saveCurrent)
+        self.saveMenu.aboutToShow.connect(self.updateSaveMenu)
+        self.saveCurrentAction = self.saveMenu.addAction('')
+        self.saveCurrentAction.triggered.connect(self.saveCurrent)
+        self.saveMenu.addSection('Save as...')
+        self.saveSubMenus = []
+
+        self.dumpMenu = QtWidgets.QMenu()
+        self.dumpBtn.setMenu(self.dumpMenu)
+        self.dumpBtn.popupTimer.setInterval(0)
+        self.dumpMenu.setSeparatorsCollapsible(False)
+        self.dumpMenu.aboutToShow.connect(self.updateDumpMenu)
+
+        self.dumpMenu.addSection('Receive')
+        self.requestCurrentAction = self.dumpMenu.addAction(QtGui.QIcon.fromTheme('blofeld-b'), '')
+        self.requestCurrentAction.triggered.connect(self.sendRequest)
+        mainRequestSubMenu = self.dumpMenu.addMenu(QtGui.QIcon.fromTheme('dump'), 'Request Multi')
+        mainRequestSubMenu.aboutToShow.connect(self.updateSelectDumpMainMenu)
+
+        self.menuCheckedIcons = QtGui.QIcon(), QtGui.QIcon.fromTheme('checkbox')
+
+        for subMulti in range(8):
+            start = subMulti * 16
+            multiRange = range(start, start + 16)
+            title = 'Multi {}-{}'.format(multiRange[0] + 1, multiRange[-1] + 1)
+
+            saveSubMenu = self.saveMenu.addMenu(title)
+            self.saveSubMenus.append(saveSubMenu)
+            saveSubMenu.aboutToShow.connect(self.updateMultiSubMenu)
+            saveSubMenu.menuAction().setData(multiRange)
+
+            selectSubMenu = self.multiSelectMenu.addMenu(title)
+            selectSubMenu.aboutToShow.connect(self.updateMultiSubMenu)
+
+            requestSubMenu = mainRequestSubMenu.addMenu(title)
+            requestSubMenu.aboutToShow.connect(self.updateMultiSubMenu)
+
+            for index in multiRange:
+                action = saveSubMenu.addAction('')
+                action.setData(index)
+                action.triggered.connect(self.saveCurrentAtIndex)
+
+                action = requestSubMenu.addAction('')
+                action.setData(index)
+                action.triggered.connect(lambda _, index=index: self.sendRequest(index))
+
+                action = selectSubMenu.addAction('')
+                action.setData(index)
+
+        #TODO: controllare bigglesworth.compatibility per usare insertMenu da inserire prima
+        #non importantissimo, solo per pulizia del codice
+        self.saveMenu.addSection('Save to collection')
+        self.collectionMenus = []
+
+        requestBufferAction = self.dumpMenu.addAction(QtGui.QIcon.fromTheme('blofeld-buffer'), 'Request Multi Edit buffer')
+        requestBufferAction.triggered.connect(lambda: self.sendRequest(0, True))
+
+        self.requestAllAction = self.dumpMenu.addAction(QtGui.QIcon.fromTheme('edit-select-all'), 'Request all...')
+        self.requestAllAction.triggered.connect(self.sendRequestAll)
+        self.dumpMenu.addSection('Send')
+
+        self.dumpCurrentAction = self.dumpMenu.addAction(QtGui.QIcon.fromTheme('blofeld-b'), '')
+        self.dumpCurrentAction.triggered.connect(self.dumpCurrent)
+        dumpBufferAction = self.dumpMenu.addAction(QtGui.QIcon.fromTheme('blofeld-buffer'), 'Dump to Multi Edit buffer')
+        dumpBufferAction.triggered.connect(lambda: self.dumpCurrent(True))
+
+        autoDumpMenu = QtWidgets.QMenu(self)
+        self.autoDumpBtn.setMenu(autoDumpMenu)
+        self.autoDumpBtn.clicked.connect(self.cycleAutoDump)
+#        self.autoDumpBtn.popupTimer.setInterval(0)
+        autoDumpBufferAction = autoDumpMenu.addAction(QtGui.QIcon.fromTheme('blofeld-buffer'), autoDumpTexts[Buffer])
+        autoDumpBufferAction.setCheckable(True)
+        autoDumpBufferAction.setData(Buffer)
+        autoDumpIndexAction = autoDumpMenu.addAction(QtGui.QIcon.fromTheme('blofeld-b'), autoDumpTexts[Dumped])
+        autoDumpIndexAction.setCheckable(True)
+        autoDumpIndexAction.setData(Dumped)
+        autoDumpDisabledAction = autoDumpMenu.addAction(QtGui.QIcon.fromTheme('blofeld-b-disabled'), autoDumpTexts[0])
+        autoDumpDisabledAction.setCheckable(True)
+        autoDumpDisabledAction.setChecked(True)
+        autoDumpDisabledAction.setData(0)
+        self.autoDumpActionGroup = QtWidgets.QActionGroup(self)
+        self.autoDumpActionGroup.addAction(autoDumpBufferAction)
+        self.autoDumpActionGroup.addAction(autoDumpIndexAction)
+        self.autoDumpActionGroup.addAction(autoDumpDisabledAction)
+        self.autoDumpActionGroup.triggered.connect(self.setAutoDump)
+
+        self.manageBtn.clicked.connect(self.showMultiBrowser)
         self.groupEditBtn.switchToggled.connect(self.setGroupEdit)
 
         self.closeBtn.clicked.connect(self.closeRequested)
@@ -2114,8 +2552,7 @@ class MultiEditor(QtWidgets.QWidget):
             strip.dragRequested.connect(self.dragStrip)
             strip.pasteRequested.connect(lambda data, strip=strip: self.pasteData(strip, data))
             strip.labelReset.connect(self.setPartLabels)
-            if self.database:
-                strip.setModel(ProgProxyModel())
+            strip.setModel(ProgProxyModel())
 
             strip.beginChanReset.connect(self.beginChanReset)
             strip.endChanReset.connect(self.endChanReset)
@@ -2132,16 +2569,183 @@ class MultiEditor(QtWidgets.QWidget):
             for signal, slotName in strip.signalSlotNames:
                 signal.connect(lambda part, value, slotName=slotName: self.updateGroup(part, slotName, value))
 
+        self.collectionCombo = self.display.collectionCombo
+        self.collectionCombo.clicked.connect(self.showCollectionList)
+        self.collectionCombo.step.connect(self.collectionStep)
+        self.collectionList = CollectionList(self)
+        self.collectionList.collectionSelected.connect(self.setCollection)
+
+        self.slotSpin = self.display.slotSpin
+        self.slotSpin.valueChanged.connect(self.setCurrentMultiIndex)
+        self.slotSpin.customContextMenuRequested.connect(self.showMultiListMenu)
+        self.display.nameChanged.connect(self.setMultiName)
+
         self.velocityBtn.clicked.connect(self.showVelocities)
         self.keyBtn.clicked.connect(self.showKeys)
         self.mainBtn.clicked.connect(self.showMixer)
         self.channelPage.dropRequested.connect(self.dropRequested)
+
+        self.autoDumpTimer = QtCore.QTimer()
+        self.autoDumpTimer.setSingleShot(True)
+        self.autoDumpTimer.setInterval(1000)
+        self.autoDumpTimer.timeout.connect(self.processAutoDump)
+
+        self.autoSaveTimer = QtCore.QTimer()
+        self.autoSaveTimer.setSingleShot(True)
+        self.autoSaveTimer.setInterval(1000)
+        self.autoSaveTimer.timeout.connect(self.saveCurrent)
+
         self.groupEdit = False
+        self.previousGroupSelection = []
+        self.currentMultiSet = None
         self.currentMulti = None
         self.currentCollection = None
         self.currentCollectionModel = None
+        self._autoDump = 0
         self.isResettingChannels = False
-        self.setCurrentMulti(MultiObject())
+        self.cachedSets = {}
+
+    @property
+    def autoSave(self):
+        return self.autoSaveBtn.switched
+
+    @autoSave.setter
+    def autoSave(self, state):
+        self.autoSaveBtn.setSwitched(state)
+        #salva nel database
+
+    @property
+    def autoDump(self):
+        return self._autoDump
+
+    @autoDump.setter
+    def autoDump(self, mode):
+        self._autoDump = mode
+        self.autoDumpBtn.icon = QtGui.QIcon.fromTheme(iconNames[mode] if mode else 'blofeld-b-disabled')
+        self.autoDumpBtn.setSwitched(bool(mode))
+        self.autoDumpBtn.setToolTip(autoDumpTexts[mode])
+
+    @property
+    def deviceId(self):
+        return self.main.deviceId
+
+    def updateMultiSubMenu(self):
+        menu = self.sender()
+        current = self.slotSpin.value() - 1
+        for action in menu.actions():
+            index = action.data()
+            if self.currentMultiSet.exists(index):
+                multi = self.currentMultiSet[index]
+                action.setText('{} - {}'.format(index + 1, multi.name))
+                if index == current:
+                    action.setIcon(QtGui.QIcon.fromTheme('checkbox'))
+                    setBold(action)
+                else:
+                    action.setIcon(self.stateIcons[multi.status])
+                    setBold(action, False)
+                setItalic(action, False)
+            else:
+                action.setText('{} - Empty slot'.format(index + 1))
+                action.setIcon(self.stateIcons[Init])
+                setItalic(action)
+
+    def updateSaveMenu(self):
+        self.saveCurrentAction.setText('Save Multi {}'.format(self.slotSpin.value()))
+        current = self.slotSpin.value() - 1
+        existing = set(self.currentMultiSet.existingIndexes())
+        for m, menu in enumerate(self.saveSubMenus):
+            multiRange = range(m * 16, (m + 1) * 16)
+            icon = self.menuCheckedIcons[current in multiRange]
+            menu.menuAction().setIcon(icon)
+            title = 'Multi {}-{}'.format(multiRange[0] + 1, multiRange[-1] + 1)
+            count = set(multiRange) & existing
+            if count:
+                title += ' ({})'.format(len(count))
+            menu.setTitle(title)
+            setItalic(menu.menuAction(), not count)
+
+        for action in self.collectionMenus:
+            self.saveMenu.removeAction(action)
+        self.collectionMenus[:] = []
+        self.settings.beginGroup('CollectionIcons')
+        for collection in self.referenceModel.collections:
+            if collection == self.currentCollection:
+                continue
+            if collection == 'Blofeld':
+                iconName = 'bigglesworth'
+            else:
+                iconName = self.settings.value(collection, '')
+            if collection in self.cachedSets:
+                multiSet = self.cachedSets[collection]
+            else:
+                multiSet = self.cachedSets[collection] = MultiSetObjectFromDB(collection)
+            count = multiSet.count()
+            if count:
+                title = '{} ({})'.format(collection, count)
+            else:
+                title = collection
+            menu = self.saveMenu.addMenu(QtGui.QIcon.fromTheme(iconName), title)
+            menu.menuAction().setData(collection)
+            if not count:
+                setItalic(menu.menuAction())
+            menu.aboutToShow.connect(self.updateSaveSubMenu)
+            self.collectionMenus.append(menu.menuAction())
+        self.settings.endGroup()
+
+    def updateSaveSubMenu(self):
+        menu = self.sender()
+        if menu.actions():
+            return
+        collection = menu.menuAction().data()
+        multiSet = self.cachedSets[collection]
+        for subMulti in range(8):
+            start = subMulti * 16
+            multiRange = range(start, start + 16)
+            subMenu = menu.addMenu('')
+            title = 'Multi {}-{}'.format(multiRange[0] + 1, multiRange[-1] + 1)
+            count = 0
+            for index in multiRange:
+                action = subMenu.addAction('')
+                action.setData((index, collection))
+                action.triggered.connect(self.saveCurrentToCollection)
+                if multiSet.exists(index):
+                    count += 1
+                    multi = multiSet[index]
+                    action.setText('{} - {}'.format(index + 1, multi.name))
+                    action.setIcon(self.stateIcons[multi.status])
+                else:
+                    action.setText('{} - Empty slot'.format(index + 1))
+                    action.setIcon(self.stateIcons[Init])
+                    setItalic(action)
+            if count:
+                subMenu.setTitle('{} ({})'.format(title, count))
+            else:
+                subMenu.setTitle(title)
+            setItalic(subMenu.menuAction(), not count)
+
+    def updateDumpMenu(self):
+        self.requestCurrentAction.setText('Request Multi {}'.format(self.slotSpin.value()))
+        self.dumpCurrentAction.setText('Dump to Multi {}'.format(self.slotSpin.value()))
+
+    def updateSelectDumpMainMenu(self):
+        if self.currentMulti:
+            current = self.currentMulti.index
+            existing = set(self.currentMultiSet.existingIndexes())
+            for m, menuAction in enumerate(self.sender().actions()):
+                multiRange = range(m * 16, (m + 1) * 16)
+                icon = self.menuCheckedIcons[current in multiRange]
+                menuAction.setIcon(icon)
+                title = 'Multi {}-{}'.format(multiRange[0] + 1, multiRange[-1] + 1)
+                count = set(multiRange) & existing
+                if count:
+                    title += ' ({})'.format(len(count))
+                menuAction.setText(title)
+                setItalic(menuAction, not count)
+
+    def showMultiListMenu(self):
+        res = self.multiSelectMenu.exec_(QtGui.QCursor.pos())
+        if res and self.currentMultiSet and isinstance(res.data(), int):
+            self.setCurrentMultiIndex(res.data() + 1)
 
     def beginChanReset(self):
         self.isResettingChannels = True
@@ -2149,14 +2753,78 @@ class MultiEditor(QtWidgets.QWidget):
     def endChanReset(self):
         self.isResettingChannels = False
 
+    def cycleAutoDump(self):
+        actions = self.autoDumpActionGroup.actions()
+        for index, action in enumerate(actions):
+            if action.isChecked():
+                break
+        index += 1
+        if index >= len(actions):
+            index = 0
+        actions[index].trigger()
+        QtWidgets.QToolTip.showText(QtGui.QCursor.pos(), self.autoDumpBtn.toolTip(), self.autoDumpBtn)
+
+#        self.setAutoDump(actions[index].data())
+
+    def setAutoDump(self, mode):
+        if self.sender() == self.autoDumpActionGroup:
+            mode = mode.data()
+        self.autoDump = mode
+
+    def showCollectionList(self):
+        viewportPos = self.display.mapFromScene(self.collectionCombo.geometry().bottomLeft())
+        pos = self.display.mapToGlobal(viewportPos) + self.display.viewport().geometry().topLeft() + QtCore.QPoint(0, 1)
+        self.collectionList.move(pos)
+        self.collectionList.show()
+
+    def collectionStep(self, step):
+        if self.currentCollection == None:
+            if step < 0:
+                return
+            else:
+                index = 0
+        else:
+            try:
+                index = self.referenceModel.collections.index(self.currentCollection)
+            except:
+                index = 0
+            index = sanitize(0, index + step, len(self.referenceModel.collections) - 1)
+        self.setCollection(self.referenceModel.collections[index])
+
     def setCollection(self, collection=None):
-        if self.currentCollection == collection:
+        if self.currentCollection == collection and self.currentMultiSet:
             return
+#        if self.currentCollection is None and not self.currentMultiSet.isClean():
+#            res = QtWidgets.QMessageBox.question(self, 'Multi set modified', 
+#                'The current Multi set has been modified.<br/>' 
+#                'Multi sets can be stored only on a "parent" collection.', 
+#                QtWidgets.QMessageBox.Save|QtWidgets.QMessageBox.Discard|QtWidgets.QMessageBox.Cancel)
+#            if res == QtWidgets.QMessageBox.Save
+
+        if self.currentMultiSet:
+            self.currentMultiSet.previousIndex = self.slotSpin.value() - 1
+
         self.currentCollection = collection
-        if collection is not None:
-            model = self.database.openCollection(collection)
+        if collection is None:
+            self.currentMultiSet = MultiSetObject()
+        elif collection in self.cachedSets:
+            self.currentMultiSet = self.cachedSets[collection]
+        else:
+            self.currentMultiSet = self.cachedSets[collection] = MultiSetObjectFromDB(collection)
+        self.slotSpin.blockSignals(True)
+        self.slotSpin.setValue(self.currentMultiSet.previousIndex + 1)
+        self.slotSpin.blockSignals(False)
+        self.setCurrentMulti(self.currentMultiSet[self.currentMultiSet.previousIndex], fromIndex=True)
+        try:
+            if collection is None:
+                model = EmptyCollection()
+            else:
+                model = self.database.openCollection(collection)
             for strip in self.strips:
                 strip.setCollectionModel(model)
+            self.collectionCombo.setCollection(collection)
+        except Exception as e:
+            print('Error setting collection!', e)
 
     def showEditDialog(self, part):
         if self.groupEdit:
@@ -2177,8 +2845,47 @@ class MultiEditor(QtWidgets.QWidget):
 #            velocityLabel.update()
 #            keyLabel.update()
 
+    def setMultiName(self, name):
+        self.currentMulti.name = name
+
+    def saveCurrent(self):
+        index = self.slotSpin.value() - 1
+        self.currentMultiSet.saveIndex(index)
+
+    def saveCurrentAtIndex(self):
+        source = self.slotSpin.value() - 1
+        target = self.sender().data()
+        self.currentMultiSet.saveIndexAs(source, target)
+        self.slotSpin.blockSignals(True)
+        self.slotSpin.setValue(target + 1)
+        self.slotSpin.blockSignals(False)
+        self.setCurrentMulti(self.currentMultiSet[target], fromIndex=True)
+
+    def saveCurrentToCollection(self):
+        sourceIndex = self.slotSpin.value() - 1
+        targetIndex, collection = self.sender().data()
+        if collection in self.cachedSets:
+            multiSet = self.cachedSets[collection]
+        else:
+            multiSet = self.cachedSets[collection] = MultiSetObjectFromDB(collection)
+        multiSet.saveDataToIndex(self.currentMultiSet[sourceIndex].getSerializedData(), targetIndex)
+#        Cambiare collezione?
+#        self.slotSpin.blockSignals(True)
+#        self.slotSpin.setValue(target + 1)
+#        self.slotSpin.blockSignals(False)
+#        self.setCurrentMulti(self.currentMultiSet[target], fromIndex=True)
+
+    def showMultiBrowser(self):
+        #TODO: controlla tutti i multi non clean!
+        for multiSet in self.cachedSets.values():
+            if not multiSet.isClean():
+                print('{} NOT CLEAN!'.format(multiSet.collection))
+        MultiBrowser(self, self.currentCollection).exec_()
+
     def setGroupEdit(self, active):
         self.groupEdit = active
+        if not active:
+            self.previousGroupSelection = [strip.part for strip in self.strips if strip.selectChk.isChecked()]
         for strip in self.strips:
             strip.setSelectable(active)
             if active:
@@ -2195,6 +2902,9 @@ class MultiEditor(QtWidgets.QWidget):
         else:
             self.velocityRangeEditor.selected.disconnect(self.setStripSelected)
             self.keyRangeEditor.selected.disconnect(self.setStripSelected)
+        if active:
+            for part in self.previousGroupSelection:
+                self.setStripSelected(part, True)
 
     def setStripSelected(self, part, selected):
         self.keyRangeEditor.setSelected(part, selected)
@@ -2242,6 +2952,14 @@ class MultiEditor(QtWidgets.QWidget):
         if part is not None:
             self.keyRangeEditor.highlight(part)
 
+    def setCurrentVolume(self, volume):
+        if self.currentMulti:
+            self.currentMulti.volume = volume
+
+    def setCurrentTempo(self, tempo):
+        if self.currentMulti:
+            self.currentMulti.tempo = tempo
+
     def setPartLabels(self, part=None, data=None, override=True):
         palette = self.palette()
         if part is None:
@@ -2268,8 +2986,8 @@ class MultiEditor(QtWidgets.QWidget):
         keyLabel = self.keyRangeEditor.labels[part]
 
         velocityLabel.label = keyLabel.label = label
-        velocityLabel.pen = keyLabel.pen = foregroundColor
-        velocityLabel.brush = keyLabel.brush = backgroundColor
+        velocityLabel.pen = keyLabel.pen = strip.labelColor
+        velocityLabel.brush = keyLabel.brush = strip.borderColor
 
         velocityLabel.update()
         keyLabel.update()
@@ -2289,20 +3007,62 @@ class MultiEditor(QtWidgets.QWidget):
                 if strip.isSelected():
                     self.setPartData(strip.part, data, pasteMask)
 
-    def setCurrentMulti(self, multi):
-        self.groupEditBtn.setSwitched(False)
-        if not self.currentMulti:
-            override = True
+    def setCurrentMultiSet(self, multiSet, index=0):
+        if self.currentMultiSet is None:
+            self.currentMultiSet = MultiSetObject()
+        #non invertire l'ordine di questo controllo!
+        elif self.currentMultiSet == multiSet:
+            return
         else:
-            override = self.currentMulti.index != multi.index
-        self.currentMulti = multi
+            if not self.currentMultiSet.isClean():
+                print('chiedi conferma, salva, sticazzi')
+            self.currentMultiSet = multiSet if multiSet else MultiSetObject()
+        self.setCurrentMulti(self.currentMultiSet[index], fromIndex=True)
+
+    def setCurrentMultiIndex(self, index):
+        if self.sender() == self.slotSpin:
+            index -= 1
+        if self.currentMulti is not None and self.currentMulti.index == index:
+            return
+        self.setCurrentMulti(self.currentMultiSet[index], fromIndex=True)
+
+    def setCurrentMulti(self, multi, fromIndex=False):
+        self.groupEditBtn.setSwitched(False)
+        if isinstance(multi, (tuple, list)):
+            multi = MultiObject(multi)
+        if self.currentMulti:
+            self.currentMulti.statusChanged.disconnect(self.currentStatusChanged)
+            if not fromIndex:
+                if not self.currentMulti.isClean():
+                    print('oh, è cambiato!')
+                if self.currentMulti.index != multi.index and not self.currentMultiSet[multi.index].isClean():
+                    print('oh, pure questo è cambiato')
+                #if a buffer is received, keep the current multi
+                if not multi._status & Buffer:
+                    self.currentMulti = self.currentMultiSet[multi.index]
+                self.currentMulti.setMidiData(multi.getMidiData())
+                multi = self.currentMulti
+        self.volumeDial.blockSignals(True)
         self.volumeDial.setValue(multi.volume)
+        self.volumeDial.blockSignals(False)
+        self.tempoDial.blockSignals(True)
         self.tempoDial.setValue(multi.tempo)
-        self.display.setCurrent(multi.index, multi.name)
+        self.tempoDial.blockSignals(False)
+        self.display.setCurrent(multi)
+        self.currentMulti = multi
+        self.currentMulti.statusChanged.connect(self.currentStatusChanged)
 
         for part in multi.parts:
             self.strips[part.part].setPartObject(part)
-            self.setPartLabels(part.part, part.getInfo(), override)
+
+    def currentStatusChanged(self, status=0):
+        self.display.statusIcon.setStatus(status)
+        if status & Edited:
+            if self._autoDump:
+                #controlla connessione output e nel caso disattiva autodump
+                self.autoDumpTimer.start()
+            if self.autoSave:
+                self.autoSaveTimer.start()
 
     def setPartData(self, part, data, pasteMask=MultiStrip.PasteAll):
         self.strips[part].setData(data[3], pasteMask)
@@ -2390,12 +3150,60 @@ class MultiEditor(QtWidgets.QWidget):
                 self.setPartData(strip, data)
             self.setPartData(target + 1, targetData)
 
-    def sendRequest(self):
+    def noFeedback(self):
+        QtWidgets.QProgressDialog.reject(self.dumper)
+        if self.lastDumpIndex is None:
+            message = 'There has been no response from your Blofeld.<br/>' \
+                'Check your MIDI connections or, eventually, switch it ' \
+                'off and on and restart the process again.'
+        else:
+            message = 'It seems that the dump process has been interrupted after Multi {}.<br/>' \
+                'Check your MIDI connections and ensure that your Blofeld has finished ' \
+                'the Multi dump process before retrying.<br/><br/>' \
+                'If you still have issues, try switching the Blofeld off and on again.'.format(self.lastDumpIndex + 1)
+        self.isDumpingAll = False
+        self.lastDumpIndex = None
+        self.dumpedMultiSet = None
+        QtWidgets.QMessageBox.warning(self, 'No Multi received', message, 
+            QtWidgets.QMessageBox.Ok)
+
+    @QtCore.pyqtSlot()
+    def sendRequest(self, index=None, buffer=False):
+        #chiedere prima conferma?!
         self.groupEditBtn.setSwitched(False)
-        deviceId = 0
-        bank = self.bankSpin.value()
-        prog = self.progSpin.value()
-        self.midiEvent.emit(SysExEvent(1, [INIT, IDW, IDE, deviceId, MULR, bank, prog, END]))
+#        bank, prog = 0x40, 0
+        bank = 127 if buffer else 0
+        prog = index if index is not None else self.slotSpin.value() - 1
+        self.midiEvent.emit(SysExEvent(1, [INIT, IDW, IDE, self.deviceId, MULR, bank, prog, END]))
+#        self.requestBtn.setEnabled(False)
+
+    def sendRequestAll(self):
+        if self.currentMultiSet.isClean():
+            cleanText = ''
+        else:
+            cleanText = 'Some of the current Multis have unsaved data.<br/>'
+        if QtWidgets.QMessageBox.question(self, 'Dump all Multis', 
+            'Do you want to dump all 128 Multis?<br/>{}<br/>'
+            '<b>NOTE</b>:The operation cannot be stopped'.format(cleanText), 
+            QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel
+            ) != QtWidgets.QMessageBox.Ok:
+                return
+        self.groupEditBtn.setSwitched(False)
+        self.dumper.start()
+        self.isDumpingAll = True
+        self.lastDumpIndex = None
+        self.dumpedMultiSet = MultiSetObject()
+        self.midiEvent.emit(SysExEvent(1, [INIT, IDW, IDE, self.deviceId, MULR, 0x40, 0, END]))
+        self.feedbackTimer.start()
+
+    def processAutoDump(self):
+        self.dumpCurrent(buffer=self._autoDump == Buffer)
+
+    def dumpCurrent(self, buffer=False):
+        self.dumpBtn.setEnabled(False)
+        sysex = [INIT, IDW, IDE, self.deviceId, MULD] + self.currentMulti.getMidiData(buffer) + [CHK, END]
+        self.midiEvent.emit(SysExEvent(1, sysex))
+        QtCore.QTimer.singleShot(1000, lambda: self.dumpBtn.setEnabled(True))
 
     def midiEventReceived(self, event):
         if event.type != SYSEX:
@@ -2405,92 +3213,74 @@ class MultiEditor(QtWidgets.QWidget):
         self.multiReceived(event.sysex)
 
     def multiReceived(self, sysex):
-        #ignore checksum (last value)
+        #ignore checksum (last value), important for debug mode only
         if sysex[-1] == 0xf7:
             multiData = sysex[5:-2]
         else:
             multiData = sysex[5:-1]
-        self.setCurrentMulti(MultiObject(multiData))
-#        index = multiData[:2]
-#        name = multiData[2:18]
-#        volume = multiData[19]
-#        tempo = multiData[20]
-#        boh = multiData[21:34]
-#        self.volumeDial.setValue(volume)
-#        self.tempoDial.setValue(tempo)
-##        print('{1}:{2} {0}'.format(getName(name), *index))
-#        self.display.setCurrent(index, getName(name))
-#        if boh != [1, 0, 2, 4, 11, 12, 0, 0, 0, 0, 0, 0, 0]:
-#            print('other data differs: {}'.format(boh))
-#        for part in range(16):
-#            data = multiData[34 + part * 24: 34 + (part + 1) * 24]
-#            strip = self.strips[part]
-#
-#            strip.setChannel(data[7])
-#            strip.setBank(data[0])
-#            strip.setProg(data[1])
-#
-#            strip.setVolume(data[2])
-#            strip.setPan(data[3])
-#            #field 4 is probably ignored?
-#            if data[4] != 0:
-#                print('field 4 is not 0: {}'.format(data[0]))
-#            strip.setTranspose(data[5])
-#            strip.setDetune(data[6])
-#
-#            strip.setLowKey(data[8])
-#            strip.setHighKey(data[9])
-#            strip.setLowVel(data[10])
-#            strip.setHighVel(data[11])
-#
-#            midiByte = data[12]
-#            strip.setMidi(midiByte & 1)
-#            strip.setUsb(midiByte & 2)
-#            strip.setLocal(midiByte & 4)
-#            strip.setPlay(midiByte & 64)
-#
-#            ctrlByte = data[13]
-#            strip.setPitch(ctrlByte & 1)
-#            strip.setMod(ctrlByte & 2)
-#            strip.setPressure(ctrlByte & 4)
-#            strip.setSustain(ctrlByte & 8)
-#            strip.setEdits(ctrlByte & 16)
-#            strip.setProgChange(ctrlByte & 32)
-#
-#            if data[14:] != [1, 63, 0, 0, 0, 0, 0, 0, 0, 0]:
-#                print('final part {} is different! {}'.format(part, data[14:]))
+        if self.isDumpingAll:
+            index = multiData[1]
+#            if self.lastDumpIndex is not None:
+#                if index != self.lastDumpIndex + 1:
+#                    if index > self.lastDumpIndex + 1:
+#                        QtWidgets.QMessageBox.warning(self, 'Invalid Multi dump', 
+#                            'You have probably reconnected your Blofeld while it '
+#                            'was sending a full Multi dump.<br/>'
+#                            'Please, don\'t do that.', QtWidgets.QMessageBox.Ok)
+                
+            multi = self.dumpedMultiSet[index]
+            multi.setMidiData(multiData)
+            self.dumper.setCurrent(index, multi.name)
+            if index >= 127:
+                self.dumper.accept()
+                self.isDumpingAll = False
+                self.feedbackTimer.stop()
+                self.setCurrentMultiSet(self.dumpedMultiSet, self.slotSpin.value() - 1)
+                self.lastDumpIndex = None
+            else:
+                self.feedbackTimer.start()
+                self.lastDumpIndex = index
+#            multi = MultiObject(multiData)
+#            self.currentRequest += 1
+#            if self.currentRequest >= 128:
+#                return
+#            self.feedbackTimer.start()
+#            QtCore.QTimer.singleShot(100, self.sendRequestAll)
+        else:
+            try:
+                self.setCurrentMulti(multiData)
+            except Exception as e:
+                print(e)
+#            self.requestBtn.setEnabled(True)
 
-#    def dragEnterEvent(self, event):
-#        if event.mimeData().hasFormat('bigglesworth/MultiStrip'):
-#            event.accept()
-#        else:
-#            event.ignore()
-#
-#    def dragMoveEvent(self, event):
-#        if event.mimeData().hasFormat('bigglesworth/MultiStrip') and event.pos() in self.stackedWidget.geometry():
-#            widget = QtWidgets.QApplication.widgetAt(QtGui.QCursor.pos())
-#            if not widget:
-#                return event.ignore()
-#            event.accept()
-#            self.paintEvent = self.dragPaintEvent
-##            if isinstance(widget, MultiStrip):
-##                self.dragPaint = 
-#        else:
-#            event.ignore()
+    def resetStripSizes(self):
+        labelWidth = max(self.fontMetrics().width('PLAY'), self.fontMetrics().width('MUTE'))
+        for strip in self.strips:
+            strip.playBtn._labelWidget.setMinimumWidth(labelWidth)
+
+    def hide(self):
+        #TODO: check the currentMultiSet status before exit?
+        QtWidgets.QWidget.hide(self)
+#        self.cachedSets = {}
 
     def changeEvent(self, event):
         if event.type() == QtCore.QEvent.PaletteChange:
             self.display.displayWidget.setPalette(self.palette())
+            if self.isVisible():
+                self.resetStripSizes()
 
-    def resizeEvent(self, event):
-        QtWidgets.QWidget.resizeEvent(self, event)
-#        self.velocityRangeEditor.velocity.setMaximumHeight(self.keyRangeEditor.piano.sizeHint().height())
+    def showEvent(self, event):
+        QtWidgets.QWidget.showEvent(self, event)
+        if not event.spontaneous():
+            self.resetStripSizes()
+        if not self.currentMultiSet:
+#            self.setCurrentMultiSet()
+#            self.setCollection('Blofeld')
+            self.setCollection()
 
-#    paintEvent = defaultPaintEvent = lambda *args: QtWidgets.QWidget.paintEvent(*args)
-#
-#    def dragPaintEvent(self, event):
-#        print('aghaaa')
-#        QtWidgets.QWidget.paintEvent(self, event)
+#    def resizeEvent(self, event):
+#        QtWidgets.QWidget.resizeEvent(self, event)
+#        self.saveBtn.setFixedSize(self.dumpBtn.size())
 
 
 if __name__ == '__main__':
@@ -2500,6 +3290,13 @@ if __name__ == '__main__':
         from mididings.event import SysExEvent as mdSysExEvent
 
     app = QtWidgets.QApplication(sys.argv)
+    app.setOrganizationName('jidesk')
+    app.setApplicationName('Bigglesworth')
+
+    dataPath = QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.DataLocation)
+    db = QtSql.QSqlDatabase.addDatabase('QSQLITE')
+    db.setDatabaseName(dataPath + '/library.sqlite')
+
     multi = MultiEditor()
     multi.show()
     sys.exit(app.exec_())

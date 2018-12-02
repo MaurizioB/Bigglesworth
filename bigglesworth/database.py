@@ -8,7 +8,7 @@ import re
 from xml.etree import ElementTree as ET
 #from threading import Lock
 
-from Qt import QtCore, QtGui, QtSql
+from Qt import QtCore, QtGui, QtSql, QtWidgets
 QtCore.pyqtSignal = QtCore.Signal
 
 from bigglesworth.utils import Enum, localPath, getName, getSizeStr, elapsedFrom, getValidQColor
@@ -18,6 +18,7 @@ from bigglesworth.const import (factoryPresets, NameColumn, chr2ord, backgroundR
     LogInfo, LogWarning, LogCritical, LogFatal, LogDebug)
 from bigglesworth.library import CollectionModel, LibraryModel
 from bigglesworth.backup import BackUp
+from bigglesworth.multi import MultiQueryModel
 
 renameRegExp = re.compile(r'^(?=.{16}$)(?P<name>.*)~(?P<count>[1-9][0-9]{0,2}){0,1} *$')
 parameterList = Parameters.parameterList
@@ -63,11 +64,11 @@ class BlofeldDB(QtCore.QObject):
     factoryStatus = QtCore.pyqtSignal(str, int)
     wavetableStatus = QtCore.pyqtSignal(str, int)
 
-    def __init__(self, main):
+    def __init__(self):
         QtCore.QObject.__init__(self)
 #        self.sql = QtSql.QSqlDatabase.addDatabase('QSQLITE')
-        self.main = main
-        self.logger = main.logger
+        self.main = QtWidgets.QApplication.instance()
+        self.logger = self.main.logger
         self.logger.append(LogInfo, 'Starting database engine')
         self.sql = QtSql.QSqlDatabase.addDatabase('QSQLITE')
 #        self.lock = Lock()
@@ -224,6 +225,7 @@ class BlofeldDB(QtCore.QObject):
         self.tagsModel.setTable('tags')
         self.tagsModel.select()
         self.referenceModel = CollectionManagerModel()
+        self.multiModel = MultiQueryModel()
 #        self.query.exec_('PRAGMA foreign_keys=ON')
         self.backupThread.start()
         if self.backupTimer.interval() != 0:

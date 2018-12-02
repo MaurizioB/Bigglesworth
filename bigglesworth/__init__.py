@@ -275,7 +275,7 @@ class Bigglesworth(QtWidgets.QApplication):
             self.loggerWindow.show()
         self.splash.showMessage('Loading database engine', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .2)
 
-        self.database = BlofeldDB(self)
+        self.database = BlofeldDB()
         if not self.database.initialize(self.argparse.database):
             if self.database.lastError & self.database.EmptyMask:
                 self.database.factoryStatus.connect(self.updateSplashFactory)
