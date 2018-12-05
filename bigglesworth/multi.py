@@ -182,16 +182,16 @@ class PartObject(QtCore.QObject):
 class MultiObject(QtCore.QObject):
     statusChanged = QtCore.pyqtSignal(int)
 
-    def __init__(self, data=None, index=0):
+    def __init__(self, data=None, index=None):
         QtCore.QObject.__init__(self)
         self.unknonwnParameter = 0
         self.unknonwnData = [1, 0, 2, 4, 11, 12, 0, 0, 0, 0, 0, 0, 0]
         self._status = Init
         self.parts = []
-        self.index = None
+        self.index = index
         if data is None:
             self.isNew = True
-            self.setDefaultValues(index)
+            self.setDefaultValues(index if index is not None else 0)
         else:
             self.isNew = False
             if isinstance(data, (list, tuple)) and len(data) == 418 and isinstance(data[0], int):
@@ -299,6 +299,10 @@ class MultiObject(QtCore.QObject):
             self.setMidiData(midiData)
         else:
             self.setDefaultValues()
+        #the midi data of the multi name is overridden if set on the database
+        name = data.get('name')
+        if name:
+            self._nameChars = map(ord, name.ljust(16)[:16])
         labelData = data.get('labelData')
         if labelData:
             for part, labelDict in zip(self.parts, labelData):
@@ -348,6 +352,13 @@ class MultiSetObject(QtCore.QObject):
             if multi is not None and multi._status & Edited:
                 return False
         return True
+
+    def dirtyList(self):
+        dirty = []
+        for multi in self.multis.values():
+            if multi is not None and multi._status & Edited:
+                dirty.append(multi)
+        return dirty
 
     def count(self):
         return len(tuple(multi for multi in self.multis.values() if multi is not None))
@@ -404,7 +415,7 @@ class MultiSetObjectFromDB(MultiSetObject):
             for index in range(128):
                 data = self.updateQuery.value(index)
                 if data:
-                    self.multis[index] = MultiObject(json.loads(data))
+                    self.multis[index] = MultiObject(json.loads(data), index)
         self.updateQuery.finish()
 
     def saveAll(self):
@@ -450,6 +461,7 @@ class MultiSetObjectFromDB(MultiSetObject):
 
 
 class MultiSetModel(QtCore.QIdentityProxyModel):
+    clean = True
     def __init__(self, source):
         QtCore.QIdentityProxyModel.__init__(self)
         self.setSourceModel(source)
@@ -468,7 +480,16 @@ class MultiSetModel(QtCore.QIdentityProxyModel):
         return indexList
 
     def clearMultis(self, indexes):
-        self.sourceModel().clearMultis([self.mapToSource(index) for index in indexes])
+        if self.sourceModel().clearMultis([self.mapToSource(index) for index in indexes]):
+            self.clean = False
+
+    def alphaSortRequest(self):
+        if self.sourceModel().assembleRequest(alphaSort=True):
+            self.clean = False
+
+    def assembleRequest(self):
+        if self.sourceModel().assembleRequest():
+            self.clean = False
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if role == QtCore.Qt.DisplayRole:
@@ -481,7 +502,10 @@ class MultiSetModel(QtCore.QIdentityProxyModel):
         return QtCore.QIdentityProxyModel.data(self, index, role)
 
     def setData(self, index, value, role=QtCore.Qt.EditRole):
-        return QtCore.QIdentityProxyModel.setData(self, index, value, role)
+        done = QtCore.QIdentityProxyModel.setData(self, index, value, role)
+        if done:
+            self.clean = False
+        return done
 
     def mapFromSource(self, index):
         if index.isValid():
@@ -515,9 +539,9 @@ class MultiSetModel(QtCore.QIdentityProxyModel):
 class MultiQueryModel(QtSql.QSqlQueryModel):
     def __init__(self):
         QtSql.QSqlQueryModel.__init__(self)
-        db = QtSql.QSqlDatabase.database()
+        self.db = QtSql.QSqlDatabase.database()
         self.updateQuery = QtSql.QSqlQuery()
-        if not 'multi' in db.tables():
+        if not 'multi' in self.db.tables():
             createNames = ', '.join('multi{:03} blob'.format(m) for m in range(128))
             if not self.updateQuery.exec_('CREATE TABLE multi (collection varchar, {})'.format(createNames)):
                 print(self.updateQuery.lastError().driverText(), self.updateQuery.lastError().databaseText())
@@ -540,12 +564,15 @@ class MultiQueryModel(QtSql.QSqlQueryModel):
             self.currentCollection = collection
 
     def clearMultis(self, indexes):
+        self.db.transaction()
         for index in indexes:
             if not self.updateQuery.exec_('UPDATE multi SET multi{:03}=NULL WHERE collection="{}"'.format(
                 index.column(), self.currentCollection)):
                     print(self.updateQuery.lastError().driverText(), self.updateQuery.lastError().databaseText())
+                    self.db.rollBack()
                     return False
         self.setCollection()
+        self.db.commit()
         return True
 
     def existingIndexes(self):
@@ -558,6 +585,49 @@ class MultiQueryModel(QtSql.QSqlQueryModel):
             if self.updateQuery.value(v):
                 indexes.append(v)
         return indexes
+
+    def assembleRequest(self, alphaSort=False):
+        if self.currentCollection is None:
+            return True
+        if not self.updateQuery.exec_('SELECT {} FROM multi WHERE collection="{}"'.format(
+            MultiNames, self.currentCollection)):
+                print(self.updateQuery.lastError().driverText(), self.updateQuery.lastError().databaseText())
+        self.updateQuery.next()
+        multis = []
+        for i in range(128):
+            try:
+                multiData = json.loads(self.updateQuery.value(i))
+                assert isinstance(multiData, dict) and multiData
+            except:
+                continue
+            multis.append(multiData)
+        if not multis:
+            return True
+        if alphaSort:
+            multis.sort(key=lambda m: m.get('name', 'Init Multi      '))
+
+        self.beginResetModel()
+        self.db.transaction()
+        for index, multiData in enumerate(multis):
+            self.updateQuery.prepare('UPDATE multi SET multi{:03}=:data WHERE collection="{}"'.format(index, self.currentCollection))
+            self.updateQuery.bindValue(':data', json.dumps(multiData))
+            if not self.updateQuery.exec_():
+                print(self.updateQuery.lastError().driverText(), self.updateQuery.lastError().databaseText())
+                self.db.rollBack()
+                self.endResetModel()
+                return False
+        for index in range(len(multis), 128):
+            if not self.updateQuery.exec_('UPDATE multi SET multi{:03}=NULL WHERE collection="{}"'.format(index, self.currentCollection)):
+                print(self.updateQuery.lastError().driverText(), self.updateQuery.lastError().databaseText())
+                self.db.rollBack()
+                self.endResetModel()
+                return False
+        self.db.commit()
+        self.endResetModel()
+        #both resetModel and layoutChanged signal/methods do not "reload" the model,
+        #we need to manually do that...
+        self.setCollection()
+        return True
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if role == MultiNameRole:

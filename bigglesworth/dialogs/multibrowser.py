@@ -114,6 +114,7 @@ class MultiTableView(QtWidgets.QTableView):
     dropIntoPen = QtCore.Qt.blue
     dropIntoBrush = QtGui.QBrush(QtGui.QColor(32, 128, 255, 96))
     dropLinePen = QtGui.QPen(QtCore.Qt.blue, 2)
+    selectionChangedSignal = QtCore.pyqtSignal()
 
     def __init__(self, *args, **kwargs):
         QtWidgets.QTableView.__init__(self, *args, **kwargs)
@@ -163,12 +164,13 @@ class MultiTableView(QtWidgets.QTableView):
             QtCore.QTimer.singleShot(0, lambda: self.setCurrentIndex(index))
 
     def clearIndexes(self):
-        indexes = self.sender().data()
+        indexes = self.selectedIndexes()
+#        indexes = self.sender().data()
         if len(indexes) == 1:
-            message = 'Do you want to clear slot {}?<br/>' \
+            message = 'Do you want to clear slot {}?<br/><br/>' \
                 'The operation cannot be undone.'.format(indexes[0].data(MultiIndexRole) + 1)
         else:
-            message = 'Do you want to clear the following slots?<br/>'
+            message = 'Do you want to clear the following slots?<br/><br/>'
             if len(indexes) <= 10:
                 count = 10
             else:
@@ -198,9 +200,14 @@ class MultiTableView(QtWidgets.QTableView):
         if self.model():
             self.model().layoutChanged.disconnect(self.resetSizes)
         QtWidgets.QTableView.setModel(self, model)
-        self.setSelectionModel(SelectionModel(model))
         model.layoutChanged.connect(self.resetSizes)
+        selectionModel = SelectionModel(model)
+        self.setSelectionModel(selectionModel)
         self.resetSizes()
+
+    def selectionChanged(self, selected, deselected):
+        self.selectionChangedSignal.emit()
+        QtWidgets.QTableView.selectionChanged(self, selected, deselected)
 
     def getValidSiblingHorizontal(self, index, direction=1):
         row = index.row()
@@ -519,9 +526,6 @@ class MultiTableView(QtWidgets.QTableView):
 
 
 class MultiBrowser(QtWidgets.QDialog):
-    alphaSortRequest = QtCore.pyqtSignal()
-    assembleRequest = QtCore.pyqtSignal()
-
     def __init__(self, parent=None, collection=None):
         QtWidgets.QDialog.__init__(self, parent)
         self.main = QtWidgets.QApplication.instance()
@@ -542,12 +546,12 @@ class MultiBrowser(QtWidgets.QDialog):
         self.settings.beginGroup('CollectionIcons')
         collections = self.referenceModel.collections
         current = collections.index(collection) if collection is not None else 0
-        for collection in collections:
-            if collection == 'Blofeld':
+        for coll in collections:
+            if coll == 'Blofeld':
                 iconName = 'bigglesworth'
             else:
-                iconName = self.settings.value(collection, '')
-            self.collectionCombo.addItem(QtGui.QIcon.fromTheme(iconName), collection)
+                iconName = self.settings.value(coll, '')
+            self.collectionCombo.addItem(QtGui.QIcon.fromTheme(iconName), coll)
         self.collectionCombo.currentIndexChanged[str].connect(self.setCollection)
         self.collectionCombo.setCurrentIndex(current)
 
@@ -555,10 +559,27 @@ class MultiBrowser(QtWidgets.QDialog):
         self.organizeBtn.setMenu(organizeMenu)
         organizeMenu.aboutToShow.connect(self.checkOrganizeMenu)
         self.alphaSortAction = organizeMenu.addAction(QtGui.QIcon.fromTheme('view-sort-ascending'), 'Sort alphabetically')
-        self.alphaSortAction.triggered.connect(self.alphaSortRequest)
+        self.alphaSortAction.triggered.connect(self.model.alphaSortRequest)
         organizeMenu.addSeparator()
         self.assembleAction = organizeMenu.addAction(QtGui.QIcon.fromTheme('edit-select-all'), 'Assemble all Multis')
-        self.assembleAction.triggered.connect(self.assembleRequest)
+        self.assembleAction.triggered.connect(self.model.assembleRequest)
+
+        self.setCollection(collection)
+
+        self.multiTable.selectionChangedSignal.connect(self.checkSelection)
+        self.clearBtn.clicked.connect(self.multiTable.clearIndexes)
+        self.openBtn.clicked.connect(self.openMulti)
+
+    def openMulti(self):
+        index = self.multiTable.currentIndex()
+        if not index.isValid():
+            return
+        self.accept()
+
+    def checkSelection(self):
+        selected = len(self.multiTable.selectedIndexes())
+        self.clearBtn.setEnabled(selected)
+        self.openBtn.setEnabled(selected == 1)
 
     def checkOrganizeMenu(self):
         count = len(self.model.sourceModel().existingIndexes())
@@ -566,7 +587,11 @@ class MultiBrowser(QtWidgets.QDialog):
         self.assembleAction.setEnabled(count and count < 128)
 
     def setCollection(self, collection):
+        if collection is None:
+            collection = 'Blofeld'
+        self.currentCollection = collection
         self.model.setCollection(collection)
+        self.checkSelection()
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape:

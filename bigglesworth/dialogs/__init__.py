@@ -6,8 +6,9 @@ from bigglesworth.dialogs.tags import TagsDialog, TagEditDialog, TagsTableView, 
 #from bigglesworth.dialogs.soundtagsedit import SoundTagsEditDialog, MultiSoundTagsEditDialog
 from bigglesworth.dialogs.newcollection import NewCollectionDialog
 from bigglesworth.dialogs.managecollections import ManageCollectionsDialog
-from bigglesworth.dialogs.messageboxes import (RemoveSoundsMessageBox, DeleteSoundsMessageBox, DropDuplicatesMessageBox, 
-    DatabaseCorruptionMessageBox, QuestionMessageBox, WarningMessageBox, InputMessageBox, LocationRequestDialog)
+from bigglesworth.dialogs.messageboxes import (RemoveSoundsMessageBox, DeleteSoundsMessageBox, 
+    DropDuplicatesMessageBox, DatabaseCorruptionMessageBox, QuestionMessageBox, WarningMessageBox, 
+    InputMessageBox, LocationRequestDialog, AdvancedMessageBox)
 from bigglesworth.dialogs.about import AboutDialog
 from bigglesworth.dialogs.random import RandomDialog
 from bigglesworth.dialogs.globals import GlobalsWaiter, GlobalsDialog

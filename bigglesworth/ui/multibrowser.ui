@@ -81,7 +81,9 @@
         <string>Organize</string>
        </property>
        <property name="icon">
-        <iconset theme="view-list-details"/>
+        <iconset theme="view-list-details">
+         <normaloff/>
+        </iconset>
        </property>
        <property name="popupMode">
         <enum>QToolButton::InstantPopup</enum>
@@ -109,11 +111,16 @@
      </item>
      <item>
       <widget class="QPushButton" name="clearBtn">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
         <string>Clear</string>
        </property>
        <property name="icon">
-        <iconset theme="edit-delete"/>
+        <iconset theme="edit-delete">
+         <normaloff/>
+        </iconset>
        </property>
       </widget>
      </item>
@@ -132,11 +139,16 @@
      </item>
      <item>
       <widget class="QPushButton" name="openBtn">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
         <string>Open</string>
        </property>
        <property name="icon">
-        <iconset theme="document-open"/>
+        <iconset theme="document-open">
+         <normaloff/>
+        </iconset>
        </property>
       </widget>
      </item>

@@ -16,12 +16,13 @@ from pianokeyboard import PianoKeyboard, _isWhiteKey, _noteNumberToName, MetaKey
 sys.path.append('../..')
 
 from bigglesworth.widgets import NameEdit, Waiter
-from bigglesworth.dialogs import QuestionMessageBox
+from bigglesworth.dialogs import QuestionMessageBox, AdvancedMessageBox
 from bigglesworth.utils import loadUi, sanitize, setBold, setItalic
 from bigglesworth.parameters import panRange, arpTempo, fullRangeCenterZero
 from bigglesworth.midiutils import SysExEvent, SYSEX
 from bigglesworth.const import INIT, END, IDW, IDE, MULR, MULD, CHK, NameColumn
-from bigglesworth.multi import Init, Database, Dumped, Buffer, Edited, MultiSetObject, MultiSetObjectFromDB, MultiObject, EmptyCollection
+from bigglesworth.multi import (Init, Database, Dumped, Buffer, Edited, MultiIndexRole, 
+    MultiSetObject, MultiSetObjectFromDB, MultiObject, EmptyCollection)
 from bigglesworth.widgets.display import HDisplayGroup
 from bigglesworth.dialogs.multibrowser import MultiBrowser
 
@@ -2801,6 +2802,19 @@ class MultiEditor(QtWidgets.QWidget):
 #                QtWidgets.QMessageBox.Save|QtWidgets.QMessageBox.Discard|QtWidgets.QMessageBox.Cancel)
 #            if res == QtWidgets.QMessageBox.Save
 
+        if self.currentMultiSet and self.currentMultiSet.collection is None and not self.currentMultiSet.isClean():
+            changed = ', '.join('{} ({})'.format(multi.index + 1, multi.name) for multi in self.currentMultiSet.dirtyList())
+            if AdvancedMessageBox(self, 'Unsaved Multis', 
+                'Some Multis have been edited.<br/>'
+                'Multi sets can only be linked to collections, but no collection was set prior editing.<br/>'
+                'If you proceed by clicking "Discard" all modified data will be lost.<br/>'
+                'Press "Cancel" to keep the current data and save it to existing collections.', 
+                detailed='The following Multis have been edited:<br/><br/>' + changed, 
+                buttons=AdvancedMessageBox.Discard|AdvancedMessageBox.Cancel, 
+                icon=AdvancedMessageBox.Warning, 
+                ).exec_() != AdvancedMessageBox.Discard:
+                    return
+
         if self.currentMultiSet:
             self.currentMultiSet.previousIndex = self.slotSpin.value() - 1
 
@@ -2851,6 +2865,7 @@ class MultiEditor(QtWidgets.QWidget):
     def saveCurrent(self):
         index = self.slotSpin.value() - 1
         self.currentMultiSet.saveIndex(index)
+        self.currentStatusChanged(self.currentMulti._status)
 
     def saveCurrentAtIndex(self):
         source = self.slotSpin.value() - 1
@@ -2880,7 +2895,13 @@ class MultiEditor(QtWidgets.QWidget):
         for multiSet in self.cachedSets.values():
             if not multiSet.isClean():
                 print('{} NOT CLEAN!'.format(multiSet.collection))
-        MultiBrowser(self, self.currentCollection).exec_()
+        dialog = MultiBrowser(self, self.currentCollection)
+        res = dialog.exec_()
+        if not dialog.model.clean:
+            self.cachedSets.clear()
+        if res and dialog.multiTable.currentIndex().isValid():
+            self.setCollection(collection = dialog.currentCollection)
+            self.setCurrentMultiIndex(dialog.multiTable.currentIndex().data(MultiIndexRole))
 
     def setGroupEdit(self, active):
         self.groupEdit = active
