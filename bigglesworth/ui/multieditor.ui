@@ -46,37 +46,39 @@
         <string>Volume</string>
        </property>
        <property name="labelPos" stdset="0">
-        <enum>Qt::RightDockWidgetArea</enum>
-       </property>
-       <property name="minimumWidgetSize" stdset="0">
-        <size>
-         <width>24</width>
-         <height>24</height>
-        </size>
+        <enum>Qt::BottomDockWidgetArea</enum>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="Dial" name="tempoDial">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <property name="spacing">
+        <number>4</number>
        </property>
-       <property name="label" stdset="0">
-        <string>Tempo</string>
+       <property name="margin">
+        <number>0</number>
        </property>
-       <property name="labelPos" stdset="0">
-        <enum>Qt::RightDockWidgetArea</enum>
-       </property>
-       <property name="minimumWidgetSize" stdset="0">
-        <size>
-         <width>24</width>
-         <height>24</height>
-        </size>
-       </property>
-      </widget>
+       <item>
+        <widget class="TempoSpinBox" name="tempoSpin">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>Tempo</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
      <item>
       <widget class="MultiDisplayView" name="display">
@@ -221,7 +223,7 @@
          </property>
          <property name="minimumWidgetSize" stdset="0">
           <size>
-           <width>24</width>
+           <width>8</width>
            <height>8</height>
           </size>
          </property>
@@ -558,15 +560,17 @@
          </property>
          <property name="minimumWidgetSize" stdset="0">
           <size>
-           <width>16</width>
-           <height>16</height>
+           <width>24</width>
+           <height>18</height>
           </size>
          </property>
          <property name="fullMode" stdset="0">
           <bool>true</bool>
          </property>
          <property name="icon" stdset="0">
-          <iconset theme="close-x"/>
+          <iconset theme="close-x">
+           <normaloff/>
+          </iconset>
          </property>
         </widget>
        </item>
@@ -592,15 +596,17 @@
          </property>
          <property name="minimumWidgetSize" stdset="0">
           <size>
-           <width>16</width>
-           <height>16</height>
+           <width>24</width>
+           <height>18</height>
           </size>
          </property>
          <property name="fullMode" stdset="0">
           <bool>true</bool>
          </property>
          <property name="icon" stdset="0">
-          <iconset theme="window-duplicate"/>
+          <iconset theme="window-duplicate">
+           <normaloff/>
+          </iconset>
          </property>
         </widget>
        </item>
@@ -661,6 +667,11 @@
    <extends>QWidget</extends>
    <header>bigglesworth.widgets.multieditor</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>TempoSpinBox</class>
+   <extends>QSpinBox</extends>
+   <header>bigglesworth.widgets.multieditor</header>
   </customwidget>
  </customwidgets>
  <resources/>

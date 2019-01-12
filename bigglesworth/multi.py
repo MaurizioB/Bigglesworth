@@ -9,6 +9,8 @@ EmptyFlags = QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsDropEnabled
 
 MultiNames = ', '.join('multi{:03}'.format(m) for m in range(128))
 
+from bigglesworth.parameters import arpTempoValues
+
 #a fake BlofeldDB for debugging purposes
 class FakeBlofeldDB(QtCore.QObject):
     def getCollectionsFromUid(self, uid):
@@ -494,11 +496,24 @@ class MultiSetModel(QtCore.QIdentityProxyModel):
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if role == QtCore.Qt.DisplayRole:
             return '{:03}  {}'.format(index.data(MultiIndexRole) + 1, index.data(MultiNameRole))
-        if role == QtCore.Qt.ForegroundRole:
+        elif role == QtCore.Qt.ForegroundRole:
             if not isinstance(self.mapToSource(index).data(), (str, unicode)):
                 return QtWidgets.QApplication.palette().color(QtGui.QPalette.Disabled, QtGui.QPalette.Text)
-        if role == MultiIndexRole:
+        elif role == MultiIndexRole:
             return self.mapToSource(index).column()
+        elif role == QtCore.Qt.ToolTipRole:
+            if index.flags() & QtCore.Qt.ItemIsEditable:
+                index = self.mapToSource(index)
+                data = index.data(MultiMidiRole)
+                if not data:
+                    volume = 127
+                    tempo = 120
+                else:
+                    volume = data[19]
+                    tempo = arpTempoValues[data[20]]
+                return '<b>{}</b><br/>Volume: {}<br/>Tempo: {}'.format(index.data(MultiNameRole), volume, tempo)
+            else:
+                return 'Double click to create new Multi'
         return QtCore.QIdentityProxyModel.data(self, index, role)
 
     def setData(self, index, value, role=QtCore.Qt.EditRole):

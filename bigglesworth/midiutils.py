@@ -123,6 +123,8 @@ Controllers = {
                 127: 'Poly On (Mono Off)'
                }
 
+NamedControllers = Controllers.copy()
+
 for c in range(128):
     if not c in Controllers.keys():
         Controllers[c] = 'Undefined'

@@ -115,6 +115,7 @@ class MultiTableView(QtWidgets.QTableView):
     dropIntoBrush = QtGui.QBrush(QtGui.QColor(32, 128, 255, 96))
     dropLinePen = QtGui.QPen(QtCore.Qt.blue, 2)
     selectionChangedSignal = QtCore.pyqtSignal()
+    openRequested = QtCore.pyqtSignal()
 
     def __init__(self, *args, **kwargs):
         QtWidgets.QTableView.__init__(self, *args, **kwargs)
@@ -289,12 +290,14 @@ class MultiTableView(QtWidgets.QTableView):
             return
         menu = QtWidgets.QMenu()
         if index.flags() & QtCore.Qt.ItemIsEditable:
-            editAction = menu.addAction(QtGui.QIcon.fromTheme('document-edit'), 
-                'Rename {}'.format(index.data(MultiNameRole)))
-            editAction.triggered.connect(lambda: self.edit(index))
-            menu.addSeparator()
             selected = self.selectedIndexes()
             if len(selected) == 1:
+                openAction = menu.addAction(QtGui.QIcon.fromTheme('document-open'), 
+                    'Open "{}"'.format(index.data(MultiNameRole).strip()))
+                openAction.triggered.connect(self.openRequested)
+                editAction = menu.addAction(QtGui.QIcon.fromTheme('document-edit'), 'Rename...')
+                editAction.triggered.connect(lambda: self.edit(index))
+                menu.addSeparator()
                 deleteAction = menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 
                     'Clear Multi slot {}'.format(index.data(MultiIndexRole) + 1))
             else:
@@ -456,10 +459,13 @@ class MultiTableView(QtWidgets.QTableView):
         swap = modifiers == QtCore.Qt.ControlModifier
         overwrite = []
         if dropIndicatorPosition == self.OnItem:
+            sources = sorted(self.selectedIndexes(), key=lambda i: i.row() + i.column() * 32)
+            targets = sorted(self.currentDropTargetIndexes, key=lambda i: i.row() + i.column() * 32)
+            targetMultiIndex = targets[0].data(MultiIndexRole)
+            for index in self.currentDropTargetIndexes:
+                if index.flags() & QtCore.Qt.ItemIsEditable:
+                    overwrite.append(index)
             if copy:
-                for index in self.currentDropTargetIndexes:
-                    if index.flags() & QtCore.Qt.ItemIsEditable:
-                        overwrite.append(index)
                 if overwrite:
                     names = QtCore.Qt.escape(', '.join('"{}"'.format(index.data(MultiNameRole)) for index in overwrite))
                     if QtWidgets.QMessageBox.question(self, 'Overwrite Multi', 
@@ -469,25 +475,19 @@ class MultiTableView(QtWidgets.QTableView):
                         QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel) != QtWidgets.QMessageBox.Ok:
                             self.currentDropTargetRange = self.currentDropTargetIndexes = None
                             return
-                sources = sorted(self.selectedIndexes(), key=lambda i: i.row() + i.column() * 32)
-                targets = sorted(self.currentDropTargetIndexes, key=lambda i: i.row() + i.column() * 32)
                 self.overwriteDropData(sources, targets)
-            elif swap:
-                sources = sorted(self.selectedIndexes(), key=lambda i: i.row() + i.column() * 32)
-                targets = sorted(self.currentDropTargetIndexes, key=lambda i: i.row() + i.column() * 32)
+            elif swap or not overwrite:
                 self.swapDropData(sources, targets)
             else:
                 #this should happen when drops happen on empty slots.
                 #might want to think again about this behavior
-                sources = sorted(self.selectedIndexes(), key=lambda i: i.row() + i.column() * 32)
-                targets = sorted(self.currentDropTargetIndexes, key=lambda i: i.row() + i.column() * 32)
                 self.overwriteDropData(sources, targets)
         else:
             targetIndex = sorted(self.currentDropTargetIndexes, key=lambda i: i.row() + i.column() * 32)[0]
-            target = targetIndex.data(MultiIndexRole)
+            targetMultiIndex = targetIndex.data(MultiIndexRole)
             if dropIndicatorPosition == self.BelowItem:
-                target += 1
-            self.insertDropData([i.data(MultiIndexRole) for i in self.selectedIndexes()], target)
+                targetMultiIndex += 1
+            self.insertDropData([i.data(MultiIndexRole) for i in self.selectedIndexes()], targetMultiIndex)
 #            if self._dropIndicatorPosition in (self.AboveItem, self.BelowItem):
 #                print(self._dropIndicatorPosition)
 #        for index in self.selectedIndexes():
@@ -497,6 +497,7 @@ class MultiTableView(QtWidgets.QTableView):
         self._dropIndicatorIndex = None
         self._dropIndicatorPosition = self.OnViewport
         self.viewport().update()
+        QtCore.QTimer.singleShot(0, lambda: self.setCurrentIndex(self.model().indexFromMultiIndex(targetMultiIndex)))
 
     def paintEvent(self, event):
         QtWidgets.QTableView.paintEvent(self, event)
@@ -567,12 +568,15 @@ class MultiBrowser(QtWidgets.QDialog):
         self.setCollection(collection)
 
         self.multiTable.selectionChangedSignal.connect(self.checkSelection)
+        self.model.layoutChanged.connect(self.checkSelection)
         self.clearBtn.clicked.connect(self.multiTable.clearIndexes)
         self.openBtn.clicked.connect(self.openMulti)
+        self.multiTable.openRequested.connect(self.openMulti)
 
     def openMulti(self):
         index = self.multiTable.currentIndex()
         if not index.isValid():
+            self.openBtn.setEnabled(False)
             return
         self.accept()
 

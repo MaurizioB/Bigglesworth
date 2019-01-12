@@ -34,6 +34,8 @@ ctrl2sysex = {
     113: 235, 114: 237, 115: 238, 116: 239, 117: 240, 118: 241,   #env4 env
     }
 
+sysex2ctrl = {v: k for k, v in ctrl2sysex.items()}
+
 class RangeObject(tuple):
     def __init__(self, args):
         tuple.__init__(self, args)
@@ -208,7 +210,8 @@ arpLength = ('1/96', '1/48', '1/32', '1/16T', '1/32.', '1/16', '1/8T', '1/16.', 
 arpOctave = tuple([str(x) for x in range(1, 11)])
 arpDirection = ('Up', 'Down', 'Alt Up', 'Alt Down')
 arpPatternLength = tuple(str(pl) for pl in range(1, 17))
-arpTempo = tuple([str(x) for x in range(40,90,2)+range(90,165)+range(165,301,5)])
+arpTempoValues = range(40, 90, 2) + range(90, 165) + range(165, 301, 5)
+arpTempo = tuple([str(x) for x in arpTempoValues])
 characters = tuple(str(unichr(l)) for l in range(32,127))
 characters = characters + (u'°', )
 effectPolarity = ('positive', 'negative')

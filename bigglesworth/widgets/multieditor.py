@@ -18,7 +18,7 @@ sys.path.append('../..')
 from bigglesworth.widgets import NameEdit, Waiter
 from bigglesworth.dialogs import QuestionMessageBox, AdvancedMessageBox
 from bigglesworth.utils import loadUi, sanitize, setBold, setItalic
-from bigglesworth.parameters import panRange, arpTempo, fullRangeCenterZero
+from bigglesworth.parameters import panRange, arpTempoValues, arpTempo, fullRangeCenterZero
 from bigglesworth.midiutils import SysExEvent, SYSEX
 from bigglesworth.const import INIT, END, IDW, IDE, MULR, MULD, CHK, NameColumn
 from bigglesworth.multi import (Init, Database, Dumped, Buffer, Edited, MultiIndexRole, 
@@ -89,6 +89,135 @@ p = QtGui.QPolygon([
     4, 20
 ])
 rightArrowPath.addPolygon(QtGui.QPolygonF(p))
+
+class TempoList(QtWidgets.QWidget):
+    currentIndexChanged = QtCore.pyqtSignal(int)
+
+    def __init__(self, parent=None):
+        QtWidgets.QWidget.__init__(self, parent)
+        self.main = QtWidgets.QApplication.instance()
+
+        self.setWindowFlags(QtCore.Qt.Popup)
+        self.setAttribute(QtCore.Qt.WA_X11NetWmWindowTypeCombo, True)
+        self.resize(10, 10)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
+        layout = QtWidgets.QVBoxLayout()
+        self.setLayout(layout)
+        self.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self.listView = ListView(self)
+        layout.addWidget(self.listView)
+        self.listView.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.listView.setTextElideMode(QtCore.Qt.ElideMiddle)
+        self.listView.setEditTriggers(self.listView.NoEditTriggers)
+        self.listView.setFrameStyle(0)
+        self.listView.setPalette(self.palette())
+        self.listView.viewport().installEventFilter(self)
+
+        self.model = QtGui.QStandardItemModel()
+        self.listView.setModel(self.model)
+
+        for tempo in arpTempo:
+            self.model.appendRow(QtGui.QStandardItem(tempo))
+
+    def setCurrentIndex(self, index):
+        self.listView.setCurrentIndex(self.model.index(index, 0))
+
+    def eventFilter(self, source, event):
+        if self.listView.isVisible():
+            if event.type() == QtCore.QEvent.HoverMove:
+                index = self.listView.indexAt(event.pos())
+                if index.isValid():
+                    self.listView.setCurrentIndex(index)
+#            elif event.type() == QtCore.QEvent.MouseButtonPress:
+#                print('aeoijeoi')
+            elif event.type() == QtCore.QEvent.MouseButtonRelease:
+                index = self.listView.indexAt(event.pos())
+                if index.isValid() and index.flags() & QtCore.Qt.ItemIsEnabled:
+                    self.listView.setCurrentIndex(index)
+                    self.currentIndexChanged.emit(index.row())
+                    self.hide()
+        return QtWidgets.QWidget.eventFilter(self, source, event)
+
+    def show(self):
+        width = self.listView.sizeHintForColumn(0)
+        count = self.model.rowCount()
+        if count > 8:
+            width += self.listView.verticalScrollBar().sizeHint().width()
+        height = self.listView.sizeHintForRow(0) * min(8, count) + self.listView.frameWidth() * 2
+        self.setMinimumWidth(width)
+        self.listView.setFixedHeight(height)
+        self.listView.scrollTo(self.listView.currentIndex(), self.listView.PositionAtCenter)
+        QtWidgets.QWidget.show(self)
+        self.listView.setFocus()
+
+
+class TempoSpinBox(QtWidgets.QSpinBox):
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QSpinBox.__init__(self, *args, **kwargs)
+        self.setMaximum(127)
+        self.setValue(55)
+        self.tempoList = TempoList(self)
+        self.tempoList.currentIndexChanged.connect(self.setValue)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
+        self.setMaximumWidth(self.fontMetrics().width('888') * 3)
+        self.editingFinished.connect(self.clearFocus)
+
+    def textFromValue(self, value):
+        return arpTempo[value]
+
+    def validate(self, text, pos):
+        if not text:
+            return QtGui.QValidator.Intermediate, text, pos
+        elif not text.isdigit():
+            return QtGui.QValidator.Invalid, text, pos
+        for tempo in arpTempo:
+            if tempo == text:
+                return QtGui.QValidator.Acceptable, text, pos
+            elif tempo.startswith(text):
+                return QtGui.QValidator.Intermediate, text, pos
+        try:
+            value = int(text)
+            if 40 <= value <= 300:
+                return QtGui.QValidator.Intermediate, text, pos
+        except Exception as e:
+            print(e)
+        return QtGui.QValidator.Invalid, text, pos
+
+    def fixup(self, text):
+        try:
+            value = int(text)
+            text = str(min(arpTempoValues, key=lambda v: abs(v - value)))
+        except Exception as e:
+            print(e)
+        return text
+
+    def valueFromText(self, text):
+        try:
+            value = int(text)
+            newValue = min(arpTempoValues, key=lambda v: abs(v - value))
+            return arpTempoValues.index(newValue)
+        except Exception as e:
+            print(e)
+        return QtWidgets.QSpinBox.valueFromText(self, text)
+
+    def contextMenuEvent(self, event):
+        pos = self.mapToGlobal(self.rect().bottomLeft())
+        self.tempoList.blockSignals(True)
+        self.tempoList.setCurrentIndex(self.value())
+        self.tempoList.blockSignals(False)
+        self.tempoList.move(pos)
+        self.tempoList.show()
+        if self.tempoList.width() < self.width():
+            self.tempoList.setMinimumWidth(self.width())
+
+    def _wheelEvent(self, event):
+        #invert event delta, as it does with spinboxes!
+        newEvent = QtGui.QWheelEvent(event.pos(), event.globalPos(), -event.delta(), event.buttons(), 
+            event.modifiers(), event.orientation())
+        QtWidgets.QComboBox.wheelEvent(self, newEvent)
+
 
 class Dumper(QtWidgets.QProgressDialog):
     def __init__(self, parent):
@@ -1889,6 +2018,10 @@ class MultiStrip(Frame):
             widget.blockSignals(True)
             slot(getattr(partObject, attr))
             widget.blockSignals(False)
+            #override required for "play" button special behavior, 
+            #might need to better dig into that... right?
+            if attr == 'play':
+                self.playSwitched(getattr(partObject, attr))
         self.label = partObject.label
         self.labelColor = partObject.labelColor if partObject.labelColor else self.palette().text().color()
         self.borderColor = partObject.borderColor if partObject.borderColor else self.palette().base().color()
@@ -2407,8 +2540,11 @@ class MultiEditor(QtWidgets.QWidget):
             self.referenceModel = self.database.referenceModel
 
         self.volumeDial.valueChanged.connect(self.setCurrentVolume)
-        self.tempoDial.setValueList(arpTempo)
-        self.tempoDial.valueChanged.connect(self.setCurrentTempo)
+        self.tempoSpin.valueChanged.connect(self.setCurrentTempo)
+#        self.tempoDial.setValueList(arpTempo)
+#        print(arpTempo)
+#        self.tempoDial.valueChanged.connect(self.setCurrentTempo)
+#        self.tempoCombo.currentIndexChanged.connect(self.setCurrentTempo)
 
         self.isDumpingAll = False
         self.feedbackTimer = QtCore.QTimer()
@@ -2484,6 +2620,7 @@ class MultiEditor(QtWidgets.QWidget):
         #non importantissimo, solo per pulizia del codice
         self.saveMenu.addSection('Save to collection')
         self.collectionMenus = []
+        self.autoSaveBtn.switchToggled.connect(self.setAutoSave)
 
         requestBufferAction = self.dumpMenu.addAction(QtGui.QIcon.fromTheme('blofeld-buffer'), 'Request Multi Edit buffer')
         requestBufferAction.triggered.connect(lambda: self.sendRequest(0, True))
@@ -2606,6 +2743,7 @@ class MultiEditor(QtWidgets.QWidget):
         self.isResettingChannels = False
         self.cachedSets = {}
 
+    #maybe it's better to use an internal state instead of picking it from the button?
     @property
     def autoSave(self):
         return self.autoSaveBtn.switched
@@ -2613,7 +2751,10 @@ class MultiEditor(QtWidgets.QWidget):
     @autoSave.setter
     def autoSave(self, state):
         self.autoSaveBtn.setSwitched(state)
-        #salva nel database
+
+    def setAutoSave(self, state):
+        if state:
+            self.saveCurrent()
 
     @property
     def autoDump(self):
@@ -2792,7 +2933,7 @@ class MultiEditor(QtWidgets.QWidget):
             index = sanitize(0, index + step, len(self.referenceModel.collections) - 1)
         self.setCollection(self.referenceModel.collections[index])
 
-    def setCollection(self, collection=None):
+    def setCollection(self, collection=None, ignoreEdited=False):
         if self.currentCollection == collection and self.currentMultiSet:
             return
 #        if self.currentCollection is None and not self.currentMultiSet.isClean():
@@ -2802,7 +2943,7 @@ class MultiEditor(QtWidgets.QWidget):
 #                QtWidgets.QMessageBox.Save|QtWidgets.QMessageBox.Discard|QtWidgets.QMessageBox.Cancel)
 #            if res == QtWidgets.QMessageBox.Save
 
-        if self.currentMultiSet and self.currentMultiSet.collection is None and not self.currentMultiSet.isClean():
+        if not ignoreEdited and self.currentMultiSet and self.currentMultiSet.collection is None and not self.currentMultiSet.isClean():
             changed = ', '.join('{} ({})'.format(multi.index + 1, multi.name) for multi in self.currentMultiSet.dirtyList())
             if AdvancedMessageBox(self, 'Unsaved Multis', 
                 'Some Multis have been edited.<br/>'
@@ -2892,6 +3033,19 @@ class MultiEditor(QtWidgets.QWidget):
 
     def showMultiBrowser(self):
         #TODO: controlla tutti i multi non clean!
+        if self.currentCollection is None and not self.currentMultiSet.isClean():
+            changed = ', '.join('{} ({})'.format(multi.index + 1, multi.name) for multi in self.currentMultiSet.dirtyList())
+            if AdvancedMessageBox(self, 'Unsaved Multis', 
+                'Some Multis have been edited.<br/>'
+                'Multi sets can only be linked to collections, but no collection was set prior editing.<br/>'
+                'If you proceed by clicking "Discard" and decide to open another Multi from the management '
+                'dialog, all modified data will be lost.<br/>'
+                'Press "Cancel" to keep the current data and save it to existing collections.', 
+                detailed='The following Multis have been edited:<br/><br/>' + changed, 
+                buttons=AdvancedMessageBox.Discard|AdvancedMessageBox.Cancel, 
+                icon=AdvancedMessageBox.Warning, 
+                ).exec_() != AdvancedMessageBox.Discard:
+                    return
         for multiSet in self.cachedSets.values():
             if not multiSet.isClean():
                 print('{} NOT CLEAN!'.format(multiSet.collection))
@@ -2900,8 +3054,15 @@ class MultiEditor(QtWidgets.QWidget):
         if not dialog.model.clean:
             self.cachedSets.clear()
         if res and dialog.multiTable.currentIndex().isValid():
-            self.setCollection(collection = dialog.currentCollection)
+            self.currentCollection = None
+            self.setCollection(dialog.currentCollection, ignoreEdited=True)
             self.setCurrentMultiIndex(dialog.multiTable.currentIndex().data(MultiIndexRole))
+        elif self.currentCollection is not None:
+            #ensure that the collection is reloaded anyway
+            collection = self.currentCollection
+            self.currentCollection = None
+            self.setCollection(collection, ignoreEdited=True)
+            self.setCurrentMultiIndex(self.slotSpin.value() - 1)
 
     def setGroupEdit(self, active):
         self.groupEdit = active
@@ -3066,9 +3227,12 @@ class MultiEditor(QtWidgets.QWidget):
         self.volumeDial.blockSignals(True)
         self.volumeDial.setValue(multi.volume)
         self.volumeDial.blockSignals(False)
-        self.tempoDial.blockSignals(True)
-        self.tempoDial.setValue(multi.tempo)
-        self.tempoDial.blockSignals(False)
+        self.tempoSpin.blockSignals(True)
+        self.tempoSpin.setValue(multi.tempo)
+        self.tempoSpin.blockSignals(False)
+#        self.tempoDial.blockSignals(True)
+#        self.tempoDial.setValue(multi.tempo)
+#        self.tempoDial.blockSignals(False)
         self.display.setCurrent(multi)
         self.currentMulti = multi
         self.currentMulti.statusChanged.connect(self.currentStatusChanged)
