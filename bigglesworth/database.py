@@ -48,6 +48,25 @@ def splitter(uidList, limit=500):
         delta += 1
         splitList = uidList[limit * delta: limit * (delta + 1)]
 
+validColRegex = re.compile('^[ !#(),\/0-9<=>@A-Z[\]^_a-z{|}~]*$')
+
+def getValidUniqueColumns(columns):
+    newColumns = []
+#    existing = [c.strip() for c in columns]
+    for col in columns:
+        col = col.strip()
+        if validColRegex.match(col) and col not in newColumns:
+            newColumns.append(col)
+            continue
+        newName = ''.join('_' if c in u'"%&\'+-.:;?`°' else c for c in col)
+        if not newName in newColumns:
+            newColumns.append(newName)
+            continue
+        newIndex = 1
+        while newName + ' ({})'.format(newIndex) in newColumns:
+            newIndex += 1
+        newColumns.append(newName + ' ({})'.format(newIndex))
+    return newColumns
 
 class BlofeldDB(QtCore.QObject):
 
@@ -73,6 +92,7 @@ class BlofeldDB(QtCore.QObject):
         self.sql = QtSql.QSqlDatabase.addDatabase('QSQLITE')
 #        self.lock = Lock()
         self.lastError = None
+        self.fixes = []
         self.collections = {}
         self.backup = BackUp(self)
         self.backupThread = QtCore.QThread()
@@ -237,7 +257,7 @@ class BlofeldDB(QtCore.QObject):
         self.query.exec_('DROP TABLE IF EXISTS _oldreference')
 #        self.query.exec_('SELECT name FROM sqlite_master WHERE type="table"')
         tables = set(self.sql.tables())
-        defaultSet = set(('sounds', 'reference', 'ascii', 'tags', 'fake_reference', 'templates', 'wavetables', 'dumpedwt'))
+        defaultSet = set(('sounds', 'reference', 'ascii', 'tags', 'fake_reference', 'templates', 'wavetables', 'dumpedwt', 'multi'))
         if tables and (tables | defaultSet) ^ defaultSet:
             self.logger.append(LogCritical, 'Database table mismatch', 'Missing tables or unknown tables found')
             self.lastError = self.DatabaseFormatError
@@ -260,6 +280,7 @@ class BlofeldDB(QtCore.QObject):
                 self.lastError = self.TableFormatError
                 return False
 
+        fixes = []
         self.logger.append(LogDebug, 'Checking reference table')
         if not 'reference' in tables:
             self.logger.append(LogDebug, 'Preparing creation of reference table')
@@ -270,8 +291,9 @@ class BlofeldDB(QtCore.QObject):
             columns = []
             while self.query.next():
                 columns.append(self.query.value(1))
-            newColumns = columns[len(referenceColumns):]
             baseColumns = columns[:len(referenceColumns)]
+            newColumns = columns[len(referenceColumns):]
+            safeNewColumns = getValidUniqueColumns(newColumns)
             if baseColumns != referenceColumns:
                 self.logger.append(LogCritical, 'Reference table column mismatch, deep checking', extMessage=columns)
 #                self.query.exec_('SAVEPOINT refRename')
@@ -279,9 +301,9 @@ class BlofeldDB(QtCore.QObject):
                     self.sql.transaction()
                     assert self.query.exec_('ALTER TABLE reference RENAME TO reference_old'), 1
                     self.sql.commit()
-                    newLayout = ', '.join('"{}"'.format(c) for c in referenceColumns + newColumns)
+                    newLayout = ', '.join('"{}"'.format(c) for c in referenceColumns + safeNewColumns)
                     newLayoutDef = 'uid varchar primary key, tags varchar, {}'.format(
-                        ', '.join('"{}" int'.format(col) for col in referenceColumns[2:] + newColumns[:]))
+                        ', '.join('"{}" int'.format(col) for col in referenceColumns[2:] + safeNewColumns))
                     self.sql.transaction()
                     assert self.query.exec_('CREATE TABLE reference({})'.format(newLayoutDef)), 2
                     self.sql.commit()
@@ -289,13 +311,15 @@ class BlofeldDB(QtCore.QObject):
                     if 'blofeld' in baseColumns:
                         reordered.pop(reordered.index('Blofeld'))
                         reordered.insert(referenceColumns.index('Blofeld'), 'blofeld')
+                        fixes.append('"Blofeld" letter case')
                     self.sql.transaction()
                     assert self.query.exec_('INSERT INTO reference({}) SELECT {} FROM reference_old'.format(
-                        newLayout, ', '.join(reordered + newColumns))), 3
+                        newLayout, ', '.join('"{}"'.format(c) for c in reordered + newColumns))), 3
                     self.sql.commit()
+                    fixes.append('Reference table order')
                 except Exception as e:
                     self.sql.rollback()
-#                    print(self.query.lastError().databaseText(), self.query.lastError().driverText())
+                    e = e[0]
                     if e == 1:
                         extMessage = 'Source not renamed'
                     elif e >= 2:
@@ -306,15 +330,58 @@ class BlofeldDB(QtCore.QObject):
                             extMessage = 'New table not created'
                         self.query.exec_('ALTER TABLE reference_old RENAME TO reference')
                     self.logger.append(LogCritical, 'Failed to reorder reference table', extMessage)
-#                    self.query.exec_('ROLLBACK TO refRename')
                     self.lastError = self.TableFormatError
                     return False
-#                self.query.exec_('COMMIT')
+
                 self.sql.transaction()
                 if not self.query.exec_('DROP TABLE reference_old'):
                     self.logger.append(LogWarning, 'Old reference not removed')
                 self.sql.commit()
                 self.logger.append(LogDebug, 'Reference table successfully reordered')
+
+            elif newColumns != safeNewColumns:
+                invalidColumns = (set(newColumns) ^ set(safeNewColumns)) & set(newColumns)
+                self.logger.append(LogCritical, 'Invalid symbols in collection names, fixing', 
+                    extMessage=', '.join(invalidColumns))
+                try:
+                    self.sql.transaction()
+                    assert self.query.exec_('ALTER TABLE reference RENAME TO reference_old'), 1
+                    self.sql.commit()
+#                    safeNewColumns = getValidUniqueColumns(newColumns)
+                    newLayout = ', '.join('"{}"'.format(c) for c in referenceColumns + safeNewColumns)
+                    newLayoutDef = 'uid varchar primary key, tags varchar, {}'.format(
+                        ', '.join('"{}" int'.format(col) for col in referenceColumns[2:] + safeNewColumns))
+                    self.sql.transaction()
+                    assert self.query.exec_('CREATE TABLE reference({})'.format(newLayoutDef)), 2
+                    self.sql.commit()
+                    self.sql.transaction()
+                    assert self.query.exec_('INSERT INTO reference({}) SELECT {} FROM reference_old'.format(
+                        newLayout, ', '.join('"{}"'.format(c) for c in referenceColumns + newColumns))), 3
+                    self.sql.commit()
+                    for i in invalidColumns:
+                        fixes.append('"{}" renamed to "{}"'.format(
+                            i, safeNewColumns[newColumns.index(i)]))
+                except Exception as e:
+                    self.sql.rollback()
+                    e = e[0]
+                    if e == 1:
+                        extMessage = 'Source not renamed'
+                    elif e >= 2:
+                        if e == 3:
+                            self.query.exec_('DROP TABLE reference')
+                            extMessage = 'Data not inserted'
+                        else:
+                            extMessage = 'New table not created'
+                        self.query.exec_('ALTER TABLE reference_old RENAME TO reference')
+                    self.logger.append(LogCritical, 'Failed to fix collection symbols', extMessage)
+                    self.lastError = self.TableFormatError
+                    return False
+
+                self.sql.transaction()
+                if not self.query.exec_('DROP TABLE reference_old'):
+                    self.logger.append(LogWarning, 'Old reference not removed')
+                self.sql.commit()
+                self.logger.append(LogDebug, 'Collection names successfully fixed')
 
             self.logger.append(LogDebug, 'Checking collection consistency')
             self.query.exec_('PRAGMA table_info(reference)')
@@ -364,7 +431,8 @@ class BlofeldDB(QtCore.QObject):
                                     break
                     else:
                         self.sql.commit()
-                        self.logger.append(LogDebug, 'Collection "{}" successfully resized'.format(collection))
+                        self.logger.append(LogDebug, u'Collection "{}" successfully resized'.format(collection))
+                        fixes.append(u'Collection "{}" resized'.format(collection))
                 elif len(set(items)) != count:
                     self.dbErrorLog('Duplicate indexes found in "{}", purging'.format(collection), logLevel=LogWarning)
                     indexes = set()
@@ -382,6 +450,7 @@ class BlofeldDB(QtCore.QObject):
                             break
                     else:
                         self.logger.append(LogDebug, 'Collection "{}" successfully fixed'.format(collection))
+                        fixes.append(u'Duplicate indexes fixed for collection "{}"'.format(collection))
                 else:
                     self.logger.append(LogDebug, 'Collection "{}" checked with {}errors'.format(collection, ('', 'no ')[valid]), 
                         extMessage='{} sound{}'.format(count, '' if count == 1 else 's'))
@@ -497,6 +566,7 @@ class BlofeldDB(QtCore.QObject):
                 return False
 
         self.logger.append(LogInfo, 'Reference/sounds completed successfully!')
+        self.fixes = fixes
         return True
 
 

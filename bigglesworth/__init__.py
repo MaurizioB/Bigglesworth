@@ -31,7 +31,7 @@ from bigglesworth.themes import ThemeCollection
 from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, GlobalsDialog, FirmwareDialog, 
     DumpReceiveDialog, DumpSendDialog, WarningMessageBox, SmallDumper, FirstRunWizard, LogWindow, 
     BlofeldDumper, FindDuplicates, SoundImport, SoundExportMulti, SoundListExport, MidiDuplicateDialog, 
-    DonateDialog, MidiChartDialog, AboutDialog, UpdateDialog)
+    DonateDialog, MidiChartDialog, AboutDialog, UpdateDialog, AdvancedMessageBox)
 from bigglesworth.help import HelpDialog
 
 from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, MULD, SNDR, LogInfo, LogWarning, factoryPresets, factoryPresetsNamesDict
@@ -294,6 +294,19 @@ class Bigglesworth(QtWidgets.QApplication):
                     print('porcozzio', self.database.lastError)
             else:
                 print(self.database.lastError)
+        if self.database.fixes:
+            msgBox = AdvancedMessageBox(self.splash, 'Database fixed', 
+                '''The following issues found in the database have been fixed:<br/>
+                    <ul><li>{}</li></ul>
+                '''.format('</li><li>'.join(self.database.fixes)), 
+                icon=AdvancedMessageBox.Information, 
+                buttons={
+                    AdvancedMessageBox.Ok: None, 
+                    AdvancedMessageBox.Help: (QtGui.QIcon.fromTheme('text-x-log'),'Log')}
+                )
+            if msgBox.exec_() == AdvancedMessageBox.Help:
+                self.loggerWindow.show()
+                self.loggerWindow.loadFull()
         self.tagsModel = self.database.tagsModel
 
         try:
