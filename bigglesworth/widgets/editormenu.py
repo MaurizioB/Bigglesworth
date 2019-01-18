@@ -11,7 +11,7 @@ from bigglesworth.utils import setItalic, setBold
 _mnemonics = re.compile('(?<!&)&(?!&)')
 
 def escapeAmp(txt):
-    return _mnemonics.sub('&&', txt)
+    return _mnemonics.sub(u'&&', txt)
 
 class FactoryMenu(QtWidgets.QMenu):
     @QtCore.pyqtSlot(QtGui.QIcon, str)
@@ -32,7 +32,7 @@ class FactoryMenu(QtWidgets.QMenu):
             for c, b in enumerate(range(location.bit_length() & 7)):
                 if b:
                     break
-            action.setStatusTip('"{}" is part of the preset "{}": changes will not be stored unless manually saved.'.format(
+            action.setStatusTip(u'"{}" is part of the preset "{}": changes will not be stored unless manually saved.'.format(
                 name, 
                 factoryPresetsNames[c]))
         elif location >> 3:
@@ -44,12 +44,12 @@ class FactoryMenu(QtWidgets.QMenu):
                 if location & (1 << b):
                     collections.append(allCollections[b])
             if len(collections) == 1:
-                text = '"{}" is part of the collection "{}"'.format(name, collections[0])
+                text = u'"{}" is part of the collection "{}"'.format(name, collections[0])
             else:
-                text = '"{}" is part of the following collections: '.format(name) + ', '.join('"{}"'.format(c) for c in collections)
+                text = u'"{}" is part of the following collections: '.format(name) + ', '.join(u'"{}"'.format(c) for c in collections)
             action.setStatusTip(text)
         else:
-            action.setStatusTip('"{}" is not part of any collection'.format(name))
+            action.setStatusTip(u'"{}" is not part of any collection'.format(name))
 #            print(self.referenceModel.allCollections)
 
 class SoundsMenu(FactoryMenu):
@@ -156,6 +156,7 @@ class SoundsMenu(FactoryMenu):
                     loc = self.referenceModel.index(row, 2 + b).data()
                     if isinstance(loc, (int, long)):
                         self.locations[b].append((loc, name, uid))
+        print('qui', self.referenceModel.index(0, 0).data(QtCore.Qt.DisplayRole), self.referenceModel.index(3330, 5).data())
 
     def getCollectionMenu(self, collection):
         if not self.done:
@@ -186,12 +187,12 @@ class SoundsMenu(FactoryMenu):
                 colMenu.setTitle(title + ' (empty)')
                 colMenu.setEnabled(False)
                 continue
-            colMenu.setTitle('{} ({})'.format(title, len(content)))
+            colMenu.setTitle(u'{} ({})'.format(title, len(content)))
             if len(content) <= 128:
                 for locId, name, uid in sorted(content):
                     bank = uppercase[locId >> 7]
                     prog = (locId & 127) + 1
-                    soundAction = colMenu.addAction('{}{:03} {}'.format(bank, prog, name))
+                    soundAction = colMenu.addAction(u'{}{:03} {}'.format(bank, prog, name))
                     soundAction.setData(uid)
                     if c <= 2:
                         setItalic(soundAction)
@@ -204,14 +205,14 @@ class SoundsMenu(FactoryMenu):
                     alphaMenu = alphaSet[bank]
                 except:
                     alphaMenu = alphaSet.setdefault(bank, colMenu.addMenu('Bank ' + bank))
-                soundAction = alphaMenu.addAction('{:03} {}'.format(prog, name))
+                soundAction = alphaMenu.addAction(u'{:03} {}'.format(prog, name))
                 soundAction.setData(uid)
                 if c <= 2:
                     setItalic(soundAction)
         self.settings.endGroup()
 
     def getCommonLetters(self, a, b):
-        text = ''
+        text = u''
         for la, lb in zip(a, b):
             text += la
             if la != lb:
@@ -228,17 +229,17 @@ class SoundsMenu(FactoryMenu):
             if mainMenu == self.tagsMenu:
                 menuIcon = self.getTagIcon(mainKey)
             if not content:
-                subMenu = mainMenu.addMenu(menuIcon, title + ('empty)'))
+                subMenu = mainMenu.addMenu(menuIcon, title + u'empty)')
                 subMenu.setEnabled(False)
                 continue
             if len(content) < 64:
                 subMenu = mainMenu.addMenu(menuIcon, '')
-                subMenu.setTitle('{} ({})'.format(title, len(content)))
+                subMenu.setTitle(u'{} ({})'.format(title, len(content)))
                 for name, uid, location in sorted(content, key=lambda _: _[0].lower()):
                     self.createSoundAction(subMenu, name, uid, location)
                 continue
             if subLevel:
-                parentMenu = mainMenu.addMenu('{} ({})'.format(title, len(content)))
+                parentMenu = mainMenu.addMenu(u'{} ({})'.format(title, len(content)))
             else:
                 parentMenu = mainMenu
             division = len(content) / 64.
@@ -261,7 +262,7 @@ class SoundsMenu(FactoryMenu):
                     titleFirst = prevFirstName[:len(titleLast)]
                     if pos == 1:
                         titleFirst = titleFirst[:2]
-                    prevMenu.setTitle('{}..{} ({})'.format(escapeAmp(titleFirst), escapeAmp(titleLast), lastCount))
+                    prevMenu.setTitle(u'{}..{} ({})'.format(escapeAmp(titleFirst), escapeAmp(titleLast), lastCount))
                 subAlphaMenu = parentMenu.addMenu('')
                 subContent = content[first:last]
                 for name, uid, location in subContent:
@@ -270,7 +271,7 @@ class SoundsMenu(FactoryMenu):
                 prevFirstName = firstName
                 lastName = name
                 lastCount = len(subContent)
-            subAlphaMenu.setTitle('{}..{} ({})'.format(
+            subAlphaMenu.setTitle(u'{}..{} ({})'.format(
                 escapeAmp(firstName[:len(titleLast)]), 
                 escapeAmp(self.getCommonLetters(lastName, titleLast)), 
                 lastCount

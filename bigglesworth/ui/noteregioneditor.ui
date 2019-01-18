@@ -236,7 +236,7 @@
   <customwidget>
    <class>NoteRegionView</class>
    <extends>QGraphicsView</extends>
-   <header>bigglesworth.sequencer.editor</header>
+   <header>bigglesworth.sequencer.noteeditor</header>
   </customwidget>
   <customwidget>
    <class>ComboSpin</class>
@@ -246,7 +246,7 @@
   <customwidget>
    <class>AutoChordWidget</class>
    <extends>QFrame</extends>
-   <header>bigglesworth.sequencer.editor</header>
+   <header>bigglesworth.sequencer.noteeditor</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

@@ -5,14 +5,15 @@ os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
 from Qt import QtCore, QtGui, QtWidgets
 
 from bigglesworth.utils import sanitize
+from bigglesworth.parameters import Parameters
 from bigglesworth.sequencer.const import (Bar, Marker, Tempo, Meter, BeatHUnit, 
     PlayheadPen, EndMarkerPen, SnapModes, DefaultPatternSnapModeId, 
-    CtrlParameter, Mappings, getCtrlNameFromMapping)
+    CtrlParameter, BlofeldParameter, Mappings, getCtrlNameFromMapping)
 from bigglesworth.sequencer.structure import Structure, MarkerEvent, EndMarker, LoopStartMarker, LoopEndMarker, TempoEvent, MeterEvent, RegionInfo, NoteOffEvent, NoteOnEvent
 from bigglesworth.sequencer.graphics import SequencerScene, NotePatternItem, PatternRectItem, TrackContainer
 from bigglesworth.sequencer.dialogs import TempoEditDialog, MeterEditDialog, AddAutomationDialog, AddTracksDialog, QuantizeDialog
 from bigglesworth.sequencer.widgets import ComboSpin, ZoomWidget, ScrollBarSpacer
-from bigglesworth.sequencer.editor import NoteRegionEditor
+from bigglesworth.sequencer.noteeditor import NoteRegionEditor
 
 
 class TimelineEventWidget(QtWidgets.QWidget):
@@ -753,7 +754,7 @@ class AutomationWidget(QtWidgets.QWidget):
 #        qp.drawRect(self.rect().adjusted(0, 0, -1, -1))
         qp.save()
         qp.setPen(QtCore.Qt.NoPen)
-        qp.setBrush(QtCore.Qt.black)
+        qp.setBrush(QtCore.Qt.black if self.track.automations() else QtCore.Qt.darkGray)
         qp.drawPath(self.arrows[self._status])
 
         qp.restore()
@@ -906,10 +907,16 @@ class AutomationTrackWidget(MetaRegionWidget):
         self.layout().setContentsMargins(l + self.automationPadding, t, r, b)
         self.automationInfo = automationInfo
 
-        if automationInfo.parameterType == CtrlParameter:
+        if automationInfo.parameterType == BlofeldParameter:
+            param = Parameters.parameterData[automationInfo.parameterId >> 4]
+            if param.children:
+                param.children[automationInfo.parameterId & 7]
+            self.label = QtWidgets.QLabel(param.fullName)
+            self.setToolTip(param.fullName)
+        elif automationInfo.parameterType == CtrlParameter:
             description = getCtrlNameFromMapping(automationInfo.parameterId, mapping=automationInfo.mapping, short=True)[0]
+            self.label = QtWidgets.QLabel(description)
             self.setToolTip('CC {}\n{}'.format(automationInfo.parameterId, description))
-        self.label = QtWidgets.QLabel(description)
         self.layout().addWidget(self.label)
 
 
@@ -1014,8 +1021,15 @@ class TrackContainerWidget(QtWidgets.QWidget):
     def dropEvent(self, event):
         self.structure.moveTrack(event.source().track, self.dropIndex)
         self.dropIndex = None
-        for index, track in enumerate(self.structure.tracks):
+        index = 0
+        for track in self.structure.tracks:
             self.layout().insertWidget(index, self.trackWidgets[track])
+            index += 1
+            automationTrackWidgets = self.automationTrackWidgets[track]
+            for automationInfo in sorted(automationTrackWidgets.keys()):
+                self.layout().insertWidget(index, automationTrackWidgets[automationInfo])
+                index += 1
+
         QtWidgets.QApplication.processEvents()
         self.structure.changed.emit()
         self.update()
@@ -1027,7 +1041,6 @@ class TrackContainerWidget(QtWidgets.QWidget):
             qp.setRenderHints(qp.Antialiasing)
             qp.translate(.5, .5)
             qp.setPen(self.dragPen)
-            print('hae', len(self.trackWidgets))
             if self.dropIndex == len(self.trackWidgets):
                 y = self.height() - 2
             else:
@@ -1046,6 +1059,8 @@ class TrackBackground(QtWidgets.QWidget):
 class SequencerView(QtWidgets.QGraphicsView):
     repeatDialogRequested = QtCore.pyqtSignal(object)
     zoomChanged = QtCore.pyqtSignal(float)
+    playheadMoved = QtCore.pyqtSignal(float)
+
     barPen = QtGui.QPen(QtCore.Qt.lightGray, 1)
     barPen.setCosmetic(True)
     thinPen = QtGui.QPen(QtCore.Qt.darkGray, .5)
@@ -1150,6 +1165,7 @@ class SequencerView(QtWidgets.QGraphicsView):
         time = max(0, (float(x) / BeatHUnit) // self.beatSnap * self.beatSnap)
         self.playheadTime = time
         self.timelineDragMovement(x)
+        self.playheadMoved.emit(time)
 
     def timelineDragMovement(self, x=None):
         viewport = self.viewport()
@@ -1242,8 +1258,7 @@ class SequencerView(QtWidgets.QGraphicsView):
     def ensurePlayheadVisible(self):
         if not self.followPlayhead:
             return
-        y = self.mapToScene(self.viewport().rect().center()).y()
-        self.ensureVisible(QtCore.QRectF(self.playhead.x(), y, 1, 1))
+        self.ensureVisible(QtCore.QRectF(self.playhead.x(), self.mapToScene(self.viewport().rect().center()).y(), 1, 1))
 
     def setPlayheadTime(self, time):
         self.playheadTime = time
@@ -1270,7 +1285,7 @@ class SequencerView(QtWidgets.QGraphicsView):
 
     def addAutomation(self, track, automationInfo=None):
         if automationInfo is None:
-            dialog = AddAutomationDialog(self, [a[1] for a in track.automations(CtrlParameter)])
+            dialog = AddAutomationDialog(self, track.automations(CtrlParameter))
             if not dialog.exec_():
                 return
             automationInfo = track.addAutomation(dialog.automationInfo())

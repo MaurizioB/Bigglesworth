@@ -354,6 +354,10 @@
         <file alias="16x16/media-playback-start.svg">icons/Bigglesworth/16x16/media-playback-start.svg</file>
         <file alias="22x22/media-playback-start.svg">icons/Bigglesworth/22x22/media-playback-start.svg</file>
         <file alias="24x24/media-playback-start.svg">icons/Bigglesworth/24x24/media-playback-start.svg</file>
+        <file alias="32x32/zoom-out-large.svg">icons/Bigglesworth/32x32/zoom-out-large.svg</file>
+        <file alias="16x16/zoom-out-large.svg">icons/Bigglesworth/16x16/zoom-out-large.svg</file>
+        <file alias="22x22/zoom-out-large.svg">icons/Bigglesworth/22x22/zoom-out-large.svg</file>
+        <file alias="24x24/zoom-out-large.svg">icons/Bigglesworth/24x24/zoom-out-large.svg</file>
         <file alias="32x32/media-playlist-repeat.svg">icons/Bigglesworth/32x32/media-playlist-repeat.svg</file>
         <file alias="16x16/media-playlist-repeat.svg">icons/Bigglesworth/16x16/media-playlist-repeat.svg</file>
         <file alias="22x22/media-playlist-repeat.svg">icons/Bigglesworth/22x22/media-playlist-repeat.svg</file>
@@ -436,6 +440,10 @@
         <file alias="16x16/view-right-close.svg">icons/Bigglesworth/16x16/view-right-close.svg</file>
         <file alias="22x22/view-right-close.svg">icons/Bigglesworth/22x22/view-right-close.svg</file>
         <file alias="24x24/view-right-close.svg">icons/Bigglesworth/24x24/view-right-close.svg</file>
+        <file alias="32x32/zoom-in-large.svg">icons/Bigglesworth/32x32/zoom-in-large.svg</file>
+        <file alias="16x16/zoom-in-large.svg">icons/Bigglesworth/16x16/zoom-in-large.svg</file>
+        <file alias="22x22/zoom-in-large.svg">icons/Bigglesworth/22x22/zoom-in-large.svg</file>
+        <file alias="24x24/zoom-in-large.svg">icons/Bigglesworth/24x24/zoom-in-large.svg</file>
         <file alias="16x16/tag.svg">icons/Bigglesworth/16x16/tag.svg</file>
         <file alias="22x22/tag.svg">icons/Bigglesworth/22x22/tag.svg</file>
         <file alias="24x24/tag.svg">icons/Bigglesworth/24x24/tag.svg</file>

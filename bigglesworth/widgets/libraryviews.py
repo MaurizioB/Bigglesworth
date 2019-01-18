@@ -899,7 +899,7 @@ class BaseLibraryView(QtWidgets.QTableView):
                     dumpToMultiAction.triggered.connect(lambda _, part=part: self.dumpToRequested.emit(uid, part, True))
 
                 menu.addSeparator()
-                deleteAction = menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), 'Delete "{}"'.format(name))
+                deleteAction = menu.addAction(QtGui.QIcon.fromTheme('edit-delete'), u'Delete "{}"'.format(name))
                 deleteAction.setStatusTip('Delete the selected sound from the library and any collection')
                 duplicateAction.setStatusTip('Duplicate the selected sound')
                 if not nameIndex.flags() & QtCore.Qt.ItemIsEditable:

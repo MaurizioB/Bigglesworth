@@ -5,9 +5,10 @@ os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
 from Qt import QtCore, QtGui, QtWidgets
 
 from bigglesworth.utils import loadUi
+from bigglesworth.parameters import Parameters, ctrl2sysex, sysex2ctrl
 from bigglesworth.sequencer.const import (ValidMappingRole, ParameterRole, QuantizeRole, 
     SnapModes, DefaultNoteSnapModeId, 
-    Mappings, CtrlParameter, SysExParameter, getCtrlNameFromMapping)
+    Mappings, CtrlParameter, SysExParameter, BlofeldParameter, getCtrlNameFromMapping)
 from bigglesworth.sequencer.structure import RegionInfo, MetaRegion
 
 
@@ -194,7 +195,53 @@ class AddAutomationDialog(QtWidgets.QDialog):
     def __init__(self, parent, existing=None):
         QtWidgets.QDialog.__init__(self, parent)
         loadUi('ui/sequenceraddautomationdialog.ui', self)
-        self.existing = set(existing if existing is not None else [])
+        if existing is not None:
+            self.existing = set(existing)
+            self.existingCtrl = set()
+            self.existingBlofeld = set()
+            for regionInfo in existing:
+                if regionInfo.parameterType == CtrlParameter:
+                    self.existingCtrl.add(regionInfo.parameterId)
+                    if regionInfo.parameterId >> 4 in ctrl2sysex:
+                        self.existingBlofeld.add(ctrl2sysex[regionInfo.parameterId >> 4])
+                elif regionInfo.parameterType == BlofeldParameter:
+                    self.existingBlofeld.add(regionInfo.parameterId)
+                    if regionInfo.parameterId >> 4 in sysex2ctrl:
+                        self.existingCtrl.add(sysex2ctrl[regionInfo.parameterId >> 4])
+
+        self.blofeldModel = QtGui.QStandardItemModel()
+        self.blofeldCombo.setModel(self.blofeldModel)
+        index = 0
+        for param in Parameters.parameterData:
+            if param.id >= 359:
+                break
+            elif param.attr.startswith('reserved'):
+                continue
+            if param.children:
+                for childId in sorted(param.children.keys()):
+                    child = param.children[childId]
+                    item = QtGui.QStandardItem(child.fullName)
+                    item.setData(child, ParameterRole)
+                    if (param.id << 4) + childId in self.existingBlofeld:
+                        item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEnabled)
+                    self.blofeldModel.appendRow(item)
+#                    self.blofeldCombo.addItem(child.fullName)
+#                    self.blofeldCombo.setItemData(index, child, ParameterRole)
+                    index += 1
+            else:
+                item = QtGui.QStandardItem(param.fullName)
+                item.setData(param, ParameterRole)
+                #no, a questo punto vedi se val la pena far lo sbattimento di aggiungereun "sub parameterId"
+                #o lasciar perdere completamente l'implementazione dei parametri blofeld non ctrl
+                if param.id << 4 in self.existingBlofeld:
+                    item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEnabled)
+#                self.blofeldCombo.addItem(param.fullName)
+#                self.blofeldCombo.setItemData(index, param, ParameterRole)
+                self.blofeldModel.appendRow(item)
+                index += 1
+
+        self.blofeldCombo.currentIndexChanged.connect(self.setBlofeldLabel)
+
         self.mappingCombo.addItem(QtGui.QIcon.fromTheme('blofeld-b'), 'Blofeld')
         self.mappingCombo.setItemData(0, 'Blofeld')
         for mappingName in Mappings.keys():
@@ -225,8 +272,32 @@ class AddAutomationDialog(QtWidgets.QDialog):
 #        self.existing = [a[1] for a in self.track.automations(CtrlParameter)]
 
         self.setMapping(0)
+        self.setBlofeld(0)
         self.validMappingLbl.installEventFilter(self)
 #        self.validMappingChk.setChecked(True)
+
+    def setBlofeld(self, index):
+        if self.blofeldModel.item(index).flags() & QtCore.Qt.ItemIsEnabled:
+            self.blofeldCombo.setCurrentIndex(index)
+            return
+        for row in range(self.blofeldModel.rowCount()):
+            if self.blofeldModel.item(row).flags() & QtCore.Qt.ItemIsEnabled:
+                self.blofeldCombo.setCurrentIndex(row)
+                return
+
+    def setBlofeldLabel(self, index):
+        param = self.blofeldCombo.itemData(index, ParameterRole)
+        text = 'Minimum: {minVal} ({minText})<br/>Maximum: {maxVal} ({maxText})<br/>' \
+            'Default: {defaultVal} ({defaultText})'.format(
+            minVal=param.range.minimum, 
+            minText=param.values[0], 
+            maxVal=param.range.maximum, 
+            maxText=param.values[-1], 
+            defaultVal=param.default, 
+            defaultText=param.valueDict[param.default])
+        if param.range.step > 1:
+            text += '<br/>In steps of {}'.format(param.range.step)
+        self.blofeldLbl.setText(text)
 
     def setCtrlStyle(self, index):
         try:
@@ -262,7 +333,7 @@ class AddAutomationDialog(QtWidgets.QDialog):
                     item.setData(validFont, QtCore.Qt.FontRole)
                 elif not valid:
                     item.setData(unmapFont, QtCore.Qt.FontRole)
-                if ctrl in self.existing:
+                if ctrl in self.existingCtrl:
                     item.setEnabled(False)
                 sourceModel.appendRow(item)
 
@@ -301,9 +372,16 @@ class AddAutomationDialog(QtWidgets.QDialog):
         return QtWidgets.QDialog.eventFilter(self, source, event)
 
     def automationInfo(self):
-        return RegionInfo(self.parameterTypeGroup.checkedId(), 
-            self.ctrlCombo.itemData(self.ctrlCombo.currentIndex(), ParameterRole), 
-            mapping=self.mappingCombo.itemData(self.mappingCombo.currentIndex()))
+        if self.tabWidget.currentIndex():
+            return RegionInfo(self.parameterTypeGroup.checkedId(), 
+                self.ctrlCombo.itemData(self.ctrlCombo.currentIndex(), ParameterRole), 
+                mapping=self.mappingCombo.itemData(self.mappingCombo.currentIndex()))
+        parameter = self.blofeldCombo.itemData(self.blofeldCombo.currentIndex(), ParameterRole)
+        if parameter.parent:
+            id = (parameter.parent.id << 4) + parameter.id
+        else:
+            id = parameter.id << 4
+        return RegionInfo(BlofeldParameter, id)
 
 
 class RepetitionsDialog(QtWidgets.QDialog):

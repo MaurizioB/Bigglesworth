@@ -103,6 +103,8 @@
    <addaction name="playAction"/>
    <addaction name="loopAction"/>
    <addaction name="stopAction"/>
+   <addaction name="separator"/>
+   <addaction name="minimizeAction"/>
   </widget>
   <action name="playAction">
    <property name="checkable">
@@ -170,7 +172,9 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset theme="media-playlist-repeat"/>
+    <iconset theme="media-playlist-repeat">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>Loop</string>
@@ -180,6 +184,17 @@
    </property>
    <property name="shortcut">
     <string>L</string>
+   </property>
+  </action>
+  <action name="minimizeAction">
+   <property name="icon">
+    <iconset theme="zoom-out-large"/>
+   </property>
+   <property name="text">
+    <string>Minimize</string>
+   </property>
+   <property name="toolTip">
+    <string>Toggle window size</string>
    </property>
   </action>
  </widget>

@@ -15,11 +15,14 @@ PlayheadPen.setCosmetic(True)
 EndMarkerPen = QtGui.QPen(QtGui.QColor(88, 167, 255))
 EndMarkerPen.setCosmetic(True)
 
+#special event type, which equals to NONE in midiutils, but for this implementation is fine enough
+BLOFELD = 0
+
 #NoteNames = 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'
 OctaveOffset = 1
 MinimumLength = 1./512
-NoteParameter, CtrlParameter, SysExParameter, AdvancedParameter = 0, 1, 4, 6
-ParameterTypes = CtrlParameter, SysExParameter, AdvancedParameter
+NoteParameter, CtrlParameter, SysExParameter, BlofeldParameter = 0, 1, 4, 6
+ParameterTypes = CtrlParameter, SysExParameter, BlofeldParameter
 ParameterTypeMask = 7
 #TODO BeatHUnit will be set from pixelratio!
 BeatHUnit = 16

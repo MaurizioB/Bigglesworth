@@ -45,6 +45,8 @@ from bigglesworth.welcome import Welcome
 from bigglesworth.version import isNewer
 from bigglesworth.dialogs.updates import UpdateChecker
 
+from bigglesworth.sequencer import SequencerWindow
+
 
 class SqlTableModelFix(QtSql.QSqlTableModel):
     def submitAll(self):
@@ -425,6 +427,10 @@ class Bigglesworth(QtWidgets.QApplication):
         self.mainWindow.soundEditRequested.connect(self.editorWindow.openSoundFromUid)
 #        self.editorWindow.midiInWidget.setConnections(len([conn for conn in self.midiDevice.input.connections.input if not conn.hidden]))
 #        self.editorWindow.midiOutWidget.setConnections(len([conn for conn in self.midiDevice.output.connections.output if not conn.hidden]))
+
+        self.sequencerWindow = SequencerWindow()
+        self.sequencerWindow.midiEvent.connect(self.sendMidiEvent)
+        self.sequencerWindow.blofeldEvent.connect(self.editorWindow.sequencerEvent)
 
         self.splash.showMessage('Applying preferences', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, 1)
 
@@ -1216,6 +1222,10 @@ class Bigglesworth(QtWidgets.QApplication):
             waveTableAction.triggered.connect(self.showWavetables)
             menu.wavetableActions = []
             menu.aboutToShow.connect(self.checkWavetableMenu)
+        if not isinstance(parent, SequencerWindow):
+            sequencerAction = menu.addAction(QtGui.QIcon.fromTheme('media-playback-start'), 'Se&quencer')
+            sequencerAction.setShortcut(QtGui.QKeySequence('Alt+P'))
+            sequencerAction.triggered.connect(lambda: self.sequencerWindow.activate())
         menu.wavetableSection = menu.addSection('Open wavetables')
         menu.windowsSeparator = menu.addSeparator()
         settingsAction = menu.addAction(QtGui.QIcon.fromTheme('settings'), '&Settings')

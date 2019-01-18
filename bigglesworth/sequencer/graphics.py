@@ -368,7 +368,7 @@ class NoteRegionScene(QtWidgets.QGraphicsScene):
         self.notes.append(noteItem)
         self.addItem(noteItem)
         noteItem.setZValue(10)
-        self.playNote[int].emit(note)
+#        self.playNote[int].emit(note)
         self.edited = True
         return noteItem
 
@@ -443,7 +443,22 @@ class NoteRegionScene(QtWidgets.QGraphicsScene):
 
     def mouseDoubleClickEvent(self, event):
         if not self.selectedItems() and not self.mouseMode() == Erase:
-            self.createNoteAtPos(event.scenePos())
+            pos = event.scenePos()
+            noteItem = self.createNoteAtPos(pos)
+            if noteItem:
+                self.newNotes[1] = noteItem
+                self.currentItem = noteItem
+                self.currentItem.setSelected(True)
+                self.currentItem.resizeMode = 1
+                self.mousePos = pos
+            x = pos.x()
+            y = pos.y()
+            for diatonicInterval, interval in self.autoChordWidget.intervals():
+                chordNoteItem = self.createNoteAtPos(
+                    QtCore.QPointF(x, y - (interval * self.noteHeight)))
+                if chordNoteItem:
+                    self.newNotes[diatonicInterval] = chordNoteItem
+                    chordNoteItem.setSelected(True)
 
     def mouseMoveEvent(self, event):
         if event.buttons() == QtCore.Qt.LeftButton and self.currentItem:

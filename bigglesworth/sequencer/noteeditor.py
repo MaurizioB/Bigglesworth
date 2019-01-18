@@ -6,13 +6,15 @@ from Qt import QtCore, QtGui, QtWidgets
 
 from bigglesworth.utils import sanitize, loadUi
 from bigglesworth.midiutils import MidiEvent, NOTEOFF, NOTEON
+from bigglesworth.parameters import Parameters
 from bigglesworth.dialogs import AdvancedMessageBox
 from bigglesworth.sequencer.const import (noteNames, Intervals, IntervalNames, IntervalNamesShort, Chords, Cardinals, 
     SnapModes, SnapModeRole, DefaultNoteSnapModeId, Erase, Draw, Select, 
-    CtrlParameter, ParameterRole, getCtrlNameFromMapping)
+    BlofeldParameter, CtrlParameter, ParameterRole, getCtrlNameFromMapping)
 from bigglesworth.sequencer.dialogs import AddAutomationDialog
 from bigglesworth.sequencer.widgets import ScrollBarSpacer, ZoomWidget
 from bigglesworth.sequencer.graphics import NoteRegionScene
+from bigglesworth.sequencer.structure import BlofeldParameterRegion
 
 
 class VerticalPiano(QtWidgets.QWidget):
@@ -513,7 +515,7 @@ class AutomationScene(QtWidgets.QGraphicsScene):
                         index += 2
                     path.setElementPositionAt(index, self.sceneRect().right(), currentY)
             except Exception as e:
-                print('redrawing because:', e)
+#                print('redrawing because:', e)
                 path = QtGui.QPainterPath()
                 if self.currentRegion.continuous:
                     path.moveTo(0, currentPoints[0].y())
@@ -545,9 +547,9 @@ class AutomationScene(QtWidgets.QGraphicsScene):
         time = min(time, self.pattern.length - self.beatSnap)
         value = sanitize(0, 127 - int(pos.y()), 127)
         event = self.currentRegion.addEvent(
-            ctrl=self.currentRegion.id, 
+#            ctrl=self.currentRegion.id, 
             value=value, 
-            channel=self.pattern.track.channel, 
+#            channel=self.pattern.track.channel, 
             time=time)
         autoItem = AutoItem(event, self)
         automationPoints = self.automationPoints[self.currentRegion]
@@ -598,6 +600,10 @@ class AutomationScene(QtWidgets.QGraphicsScene):
         if minValue or maxValue < 127:
             #value coordinates are inverted!
             deltaValue = int(self.mousePos.y() - scenePos.y())
+            if isinstance(self.currentRegion, BlofeldParameterRegion):
+                if self.currentRegion.parameter.range.step > 1:
+                    step = self.currentRegion.parameter.range.step
+                    deltaValue = (deltaValue // step) * step
             if minValue + deltaValue < 0 or maxValue + deltaValue > 127:
                 deltaValue = None
         else:
@@ -791,7 +797,14 @@ class NoteEditorAutomationWidget(QtWidgets.QWidget):
         index = 0
         self.automationCombo.blockSignals(True)
         for automation in self.track.automations():
-            if automation.parameterType == CtrlParameter:
+            if automation.parameterType == BlofeldParameter:
+                parameter = Parameters.parameterData[automation.parameterId >> 4]
+                if parameter.children:
+                    parameter = parameter[automation.parameterId & 7]
+                self.automationCombo.addItem(parameter.fullName)
+                self.automationCombo.setItemData(index, automation, ParameterRole)
+                index += 1
+            elif automation.parameterType == CtrlParameter:
                 self.automationCombo.addItem(getCtrlNameFromMapping(automation.parameterId)[0])
                 self.automationCombo.setItemData(index, automation, ParameterRole)
                 index += 1
@@ -807,7 +820,7 @@ class NoteEditorAutomationWidget(QtWidgets.QWidget):
         self.automationScene.setAutomation(automationInfo)
 
     def addAutomation(self):
-        dialog = AddAutomationDialog(self, [r.id for r in self.pattern.regions[1:]])
+        dialog = AddAutomationDialog(self, [r.regionInfo for r in self.pattern.regions[1:]])
         if not dialog.exec_():
             return
         #TODO: let's uniform automationData variable names to automationInfo...
@@ -825,7 +838,16 @@ class NoteEditorAutomationWidget(QtWidgets.QWidget):
         self.automationCombo.blockSignals(True)
         self.automationCombo.clear()
         for automationInfo in sorted(automationInfoSet):
-            if automationInfo.parameterType == CtrlParameter:
+            if automationInfo.parameterType == BlofeldParameter:
+                parameter = Parameters.parameterData[automationInfo.parameterId >> 4]
+                if parameter.children:
+                    parameter = parameter.children[automationInfo.parameterId & 7]
+                self.automationCombo.addItem(parameter.fullName)
+                self.automationCombo.setItemData(index, automationInfo, ParameterRole)
+                if automationInfo == newAutomationInfo:
+                    newIndex = index
+                index += 1
+            elif automationInfo.parameterType == CtrlParameter:
                 self.automationCombo.addItem(getCtrlNameFromMapping(automationInfo.parameterId)[0])
                 self.automationCombo.setItemData(index, automationInfo, ParameterRole)
                 if automationInfo == newAutomationInfo:
@@ -1112,6 +1134,7 @@ class NoteRegionEditor(QtWidgets.QDialog):
         self.autoChordWidget.setChord(action.data())
 
     def playNote(self, note, velocity=None):
+        print('playo', note)
         self.midiEvent.emit(MidiEvent(NOTEON, 1, self.pattern.track.channel, data1=note, 
             data2=velocity if velocity is not None else self.defaultVelocityCombo.value()))
         if self.sender() == self.noteScene:

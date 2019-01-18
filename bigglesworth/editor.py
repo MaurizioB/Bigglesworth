@@ -1684,6 +1684,9 @@ class EditorWindow(QtWidgets.QMainWindow):
             return True
         return id == self.main.blofeldId
 
+    def sequencerEvent(self, event):
+        setattr(self.parameters, event.parameter.attr, event.value)
+
     def midiEventReceived(self, event):
         if event.type == PROGRAM:
             if self.main.progReceiveState and event.channel in self.main.chanReceive:
@@ -1896,8 +1899,8 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.parameters.blockSignals(False)
         name = getName(self.parameters[363:379]).strip()
         self.undoStack.clear()
-        self.undoView.setEmptyLabel('"{}" clean status'.format(name))
-        self.display.setStatusText('"{}" loaded'.format(name))
+        self.undoView.setEmptyLabel(u'"{}" clean status'.format(name))
+        self.display.setStatusText(u'"{}" loaded'.format(name))
 #        self.display.editStatusWidget.setStatus(0)
 
     def showDisplayMenu(self, pos):
@@ -1947,10 +1950,10 @@ class EditorWindow(QtWidgets.QMainWindow):
             setattr(self.parameters, p.attr, value)
 #        self.parameters.blockSignals(False)
         self.undoStack.endMacro()
-        name = getName(self.parameters[363:379]).strip()
+#        name = getName(self.parameters[363:379]).strip()
 #        self.undoStack.clear()
 #        self.undoView.setEmptyLabel('"{}" clean status'.format(name))
-        self.display.setStatusText('Sound INITed'.format(name))
+        self.display.setStatusText('Sound INITed')
 
     def randomizeAll(self):
         if self.display.editStatusWidget.status:

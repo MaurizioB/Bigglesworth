@@ -1,5 +1,6 @@
 import os
 from bisect import bisect_left
+import numpy as np
 
 os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
 
@@ -7,8 +8,9 @@ from Qt import QtCore
 
 from bigglesworth.utils import sanitize
 from bigglesworth.midiutils import NOTE, NOTEON, NOTEOFF, CTRL, SYSEX, SYSRT_STOP, MidiEvent
-from bigglesworth.sequencer.const import (NoteParameter, CtrlParameter, SysExParameter, AdvancedParameter, ParameterTypeMask, 
-    Bar, Marker, Tempo, Meter, TimelineEventMask, 
+from bigglesworth.parameters import Parameters
+from bigglesworth.sequencer.const import (NoteParameter, CtrlParameter, SysExParameter, BlofeldParameter, ParameterTypeMask, 
+    Bar, Marker, Tempo, Meter, TimelineEventMask, BLOFELD, 
     BeatHUnit, noteNamesWithPitch, MinimumLength, getCtrlNameFromMapping)
 
 
@@ -16,9 +18,9 @@ def eventTimeComparison(a, b):
     #ensure that note off events take precedence over same-note on events
     time1, event1 = a
     time2, event2 = b
-    if time1 == time2 and event1.type & NOTE and event2.type & NOTE and \
+    if time1 == time2 and event1.eventType & NOTE and event2.eventType & NOTE and \
         event1.note == event2.note:
-            return -1 if event1.type == NOTEOFF else 1
+            return -1 if event1.eventType == NOTEOFF else 1
     diff = time1 - time2
     if not diff:
         return 0
@@ -110,6 +112,30 @@ class NoteOffEvent(MetaNoteEvent):
     def __init__(self, note=60, velocity=0, channel=0, time=0):
         MetaNoteEvent.__init__(self, NOTEOFF, note, time)
         self.midiEvent = MidiEvent(NOTEOFF, 1, channel, note, velocity)
+
+
+class BlofeldEvent(MetaEvent):
+    valueChanged = QtCore.pyqtSignal(int)
+
+    def __init__(self, id, value, part=0, time=0):
+        MetaEvent.__init__(self, BLOFELD, time)
+        self.id = id
+        self.part = part
+        self.value = value
+        parameter = Parameters.parameterData[id >> 4]
+        if parameter.children:
+            self.parameter = parameter.children[id & 7]
+        else:
+            self.parameter = parameter
+
+    def setValue(self, value):
+        value = self.parameter.range.sanitize(value)
+        if value != self.value:
+            self.value = value
+            self.valueChanged.emit(self.value)
+
+    def clone(self):
+        return BlofeldEvent(self.id, self.value, self.part, self.time)
 
 
 class CtrlEvent(MetaEvent):
@@ -466,32 +492,6 @@ class ParameterRegion(MetaRegion):
             self.events.remove(event)
         self.sort()
 
-    def moveEventsBy(self, events, deltaValue=None, deltaTime=None):
-        for event in events:
-            if deltaValue is not None:
-                event.setValue(event.value + deltaValue)
-            if deltaTime is not None:
-                event.time = max(0, event.time + deltaTime)
-        self.sort()
-
-    def clone(self, pattern=None):
-        eventRegion = ParameterRegion(pattern if pattern is not None else self.pattern, self.parameterType, self.id)
-        eventRegion.events[:] = [event.clone() for event in self.events]
-        eventRegion.continuous = self.continuous
-        return eventRegion
-
-    def cloneFrom(self, other):
-        self.events[:] = [event.clone() for event in other.events]
-        self.continuous = other.continuous
-        self.sort()
-
-
-class CtrlParameterRegion(ParameterRegion):
-    def __init__(self, pattern, id, mapping='Blofeld'):
-        ParameterRegion.__init__(self, pattern, CtrlParameter, id)
-        self.mapping = mapping
-        self.setNameFromMapping(mapping)
-
     def setContinuous(self, continuous):
         if self.continuous == continuous:
             return
@@ -507,17 +507,30 @@ class CtrlParameterRegion(ParameterRegion):
             newEvents = []
             while True:
                 extent = abs(current.value - next.value)
-                if extent > 1:
-                    if current.value < next.value:
-                        iterator = range(current.value + 1, next.value)
-                    else:
-                        iterator = range(current.value - 1, next.value, -1)
-                    timeRatio = float(next.time - current.time) / extent
-                    currentTime = current.time + timeRatio
-                    for i, value in enumerate(iterator, 1):
-                        event = CtrlEvent(current.ctrl, value, current.channel, currentTime)
-                        newEvents.append(event)
-                        currentTime += timeRatio
+                try:
+                    if extent > 1:
+                        if isinstance(self, CtrlParameterRegion):
+                            isCtrl = True
+                            step = 1
+                        else:
+                            isCtrl = False
+                            step = self.parameter.range.step
+                            assert extent > step
+                        if current.value < next.value:
+                            iterator = range(current.value + 1, next.value, step)
+                        else:
+                            iterator = range(current.value - 1, next.value, -1, step)
+                        timeRatio = float(next.time - current.time) / extent
+                        currentTime = current.time + timeRatio
+                        for i, value in enumerate(iterator, 1):
+                            if isCtrl:
+                                event = CtrlEvent(current.ctrl, value, current.channel, currentTime)
+                            else:
+                                event = BlofeldEvent(current.id, value, current.part, currentTime)
+                            newEvents.append(event)
+                            currentTime += timeRatio
+                except:
+                    pass
                 try:
                     current = next
                     next = eventIter.next()
@@ -526,6 +539,50 @@ class CtrlParameterRegion(ParameterRegion):
             events.extend(newEvents)
             events.sort(key=lambda event: event.time)
         return events
+
+    def moveEventsBy(self, events, deltaValue=None, deltaTime=None):
+        for event in events:
+            if deltaValue is not None:
+                event.setValue(event.value + deltaValue)
+            if deltaTime is not None:
+                event.time = max(0, event.time + deltaTime)
+        self.sort()
+
+#    def clone(self, pattern=None):
+#        eventRegion = ParameterRegion(pattern if pattern is not None else self.pattern, self.parameterType, self.id)
+#        eventRegion.events[:] = [event.clone() for event in self.events]
+#        eventRegion.continuous = self.continuous
+#        return eventRegion
+
+    def cloneFrom(self, other):
+        self.events[:] = [event.clone() for event in other.events]
+        self.continuous = other.continuous
+        self.sort()
+
+
+class BlofeldParameterRegion(ParameterRegion):
+    def __init__(self, pattern, id, part=0):
+        ParameterRegion.__init__(self, pattern, BlofeldParameter)
+        self.id = id
+        self.part = part
+        parameter = Parameters.parameterData[id >> 4]
+        if parameter.children:
+            self.parameter = parameter.children[id & 7]
+        else:
+            self.parameter = parameter
+
+    def addEvent(self, value, time=0):
+        event = BlofeldEvent(self.id, self.parameter.range.sanitize(value), self.part, time)
+        self.events.append(event)
+        self.sort()
+        return event
+
+
+class CtrlParameterRegion(ParameterRegion):
+    def __init__(self, pattern, id, mapping='Blofeld'):
+        ParameterRegion.__init__(self, pattern, CtrlParameter, id)
+        self.mapping = mapping
+        self.setNameFromMapping(mapping)
 
     def addEvent(self, ctrl=0, value=127, channel=0, time=0):
         event = CtrlEvent(ctrl, value, channel, time)
@@ -547,14 +604,11 @@ class SysExParameterRegion(ParameterRegion):
         pass
 
 
-class AdvancedParameterRegion(ParameterRegion):
-    pass
-
 
 AutomationClasses = {
     CtrlParameter: CtrlParameterRegion, 
     SysExParameter: SysExParameterRegion, 
-    AdvancedParameter: AdvancedParameterRegion
+    BlofeldParameter: BlofeldParameterRegion, 
 }
 
 
@@ -911,6 +965,7 @@ class MeterEvent(TimelineEvent):
         self.denominator = int(denominator)
         TimelineEvent.__init__(self, structure, time, '{}/{}'.format(self.numerator, self.denominator), first)
         self.beats = float(numerator) / denominator * 4
+        self.beatRatio = 1. / numerator
         self._bar = bar
 
     @property
@@ -953,8 +1008,12 @@ class MeterEvent(TimelineEvent):
             self.numerator = numerator
             self.denominator = denominator
             self.beats = float(numerator) / denominator * 4
+            self.beatRatio = 1. / numerator
             self.label = '{}/{}'.format(self.numerator, self.denominator)
             self.meterChanged.emit(self.numerator, self.denominator)
+
+    def __repr__(self):
+        return self.label
 
 
 class MarkerEvent(TimelineEvent):
@@ -996,6 +1055,7 @@ class Structure(QtCore.QObject):
         meterEvent.meterChanged.connect(self.meterChanged)
         self.meters = [meterEvent]
         self.meterTimes = [0]
+        self.meterCoords = [0, 1024], [0, 256]
         self.endMarker = EndMarker(self, 16)
         self.endMarker.timeChanged.connect(self.timelineChanged)
         self.markers = [self.endMarker]
@@ -1054,18 +1114,28 @@ class Structure(QtCore.QObject):
 
     def rebuildMeterTimes(self):
         self.meterTimes[:] = [0]
+        meterBars = [0]
         self.meters.sort(key=lambda meter: meter._bar)
         meterIter = iter(self.meters)
         currentMeter = meterIter.next()
+        currentBar = 0
         currentTime = 0
         while True:
             try:
                 nextMeter = meterIter.next()
-                currentTime += (nextMeter.bar - currentMeter.bar) * currentMeter.beats
+                nextBar = nextMeter.bar
+                currentTime += (nextBar - currentBar) * currentMeter.beats
                 self.meterTimes.append(currentTime)
+                meterBars.append(nextBar)
                 currentMeter = nextMeter
+                currentBar = nextBar
             except:
+                meterBars.append(currentBar + 1024)
+                times = self.meterTimes[:] + [currentTime + currentMeter.beats * 1024]
+                self.meterCoords = times, meterBars
+#                print(currentBar, currentTime)
                 break
+        print(self.meterCoords)
 
     def checkMeters(self):
         meterBars = self.meters[:]
@@ -1175,24 +1245,48 @@ class Structure(QtCore.QObject):
 
     def barFromTime(self, time):
         if not time:
-            return time
+            return 0
         meterIter = iter(self.meters)
         currentMeter = meterIter.next()
         keepGoing = True
-        currentTime = bar = 0
+#        currentTime = 0
+        bar = 0
         while keepGoing:
             try:
                 nextMeter = meterIter.next()
                 if time > nextMeter.time:
                     diff = nextMeter.time - currentMeter.time
                     bar += diff / currentMeter.beats
-                    currentTime += diff
+#                    currentTime += diff
                 else:
                     break
                 currentMeter = nextMeter
             except:
                 break
         return int(bar + (time - currentMeter.time) / currentMeter.beats)
+
+    def timeFromBarBeat(self, bar, beat=0):
+#        if not bar and not beat:
+#            return 0
+        barBeats = int(np.interp(bar, self.meterCoords[1], self.meterCoords[0]))
+        try:
+            meter = self.meters[self.meterTimes.index(barBeats)]
+        except:
+            meter = self.meters[max(0, bisect_left(self.meterTimes, barBeats) - 1)]
+        return barBeats + min(float(beat) * 4 / meter.denominator, meter.beats - meter.beats / meter.numerator)
+#        referenceBar = 0
+#        for index, meterBar in enumerate(self.meterCoords[1]):
+#            if meterBar < bar:
+#                referenceBar = meterBar
+#            else:
+#                break
+#        meterIter = iter(self.meters)
+#        currentMeter = meterIter.next()
+#        currentTime = 0
+#        while True:
+#            try:
+#                nextMeter = meterIter.next()
+#                if nextMeter.bar > bar:
 
     def addLoop(self, start, end):
         if self.loopStart:
@@ -1301,7 +1395,7 @@ class Structure(QtCore.QObject):
             for pattern in track.patterns:
 #                patternEvents = []
                 for event in pattern.events:
-                    events.append((event.time + pattern.time, event.midiEvent))
+                    events.append((event.time + pattern.time, event))
 #                events.extend(sorted(patternEvents, cmp=eventTimeComparison))
         events.sort(cmp=eventTimeComparison)
 
@@ -1318,7 +1412,7 @@ class Structure(QtCore.QObject):
         if start == endTime:
             return {}
 
-        events.append((endTime, MidiEvent(SYSRT_STOP)))
+        events.append((endTime, MetaEvent(-1, endTime)))
         eventDict = {}
 
         startSecs = self.secsFromTime(start)
@@ -1345,7 +1439,7 @@ class Structure(QtCore.QObject):
                 eventDict[currentRealTime - startSecs] = [event]
 
         #ignore too "short" event regions
-        if len(eventDict) == 1 and eventDict.keys()[0] < 10 and all(event.type != NOTEON for event in eventDict.values()[0]):
+        if len(eventDict) == 1 and eventDict.keys()[0] < 10 and all(event.eventType != NOTEON for event in eventDict.values()[0]):
             return {}
         return eventDict
 
