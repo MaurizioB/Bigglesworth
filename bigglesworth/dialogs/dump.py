@@ -376,11 +376,11 @@ class BaseImportDialog(QtWidgets.QDialog):
             if not collList:
                 collList = ['(Main library only)']
             names.append(name.strip())
-            colls.append('<b>{}</b>: {}'.format(name.strip(), ', '.join(factoryPresetsNamesDict.get(c, c) for c in collList)))
-        dupItem = QtGui.QStandardItem(', '.join(set(names)))
+            colls.append(u'<b>{}</b>: {}'.format(name.strip(), ', '.join(factoryPresetsNamesDict.get(c, c) for c in collList)))
+        dupItem = QtGui.QStandardItem(u', '.join(set(names)))
         if colls:
             colls = set(colls)
-            dupItem.setData('Duplicate locations:<ul><li>' + '</li><li>'.join(coll for coll in colls) + '</li></ul>'
+            dupItem.setData(u'Duplicate locations:<ul><li>' + '</li><li>'.join(coll for coll in colls) + '</li></ul>'
                 , QtCore.Qt.ToolTipRole)
         
         self.dumpModel.appendRow([checkItem, indexItem, nameItem, catItem, dupItem, destItem])
