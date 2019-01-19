@@ -108,6 +108,15 @@ class MultiEditorCover(QtWidgets.QWidget):
         qp.fillRect(self.rect(), self.brush)
 
 
+class MultiEditorDialog(QtWidgets.QDialog):
+    def __init__(self, parent, multiEditor):
+        QtWidgets.QDialog.__init__(self, parent)
+        self.multiEditor = multiEditor
+        layout = QtWidgets.QHBoxLayout()
+        self.setLayout(layout)
+        layout.addWidget(self.multiEditor)
+
+
 class Osc3Proxy(QtCore.QSortFilterProxyModel):
     def __init__(self, sourceModel):
         QtCore.QSortFilterProxyModel.__init__(self)
@@ -979,7 +988,15 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.multiEditorCover.hide()
         self.multiEditor = MultiEditor(self)
         self.multiEditor.midiEvent.connect(self.midiEvent)
-        self.multiEditor.hide()
+        self.multiEditor.closeRequested.connect(self.closeMultiEditor)
+        self.multiEditor.toggleDetach.connect(self.toggleDetachMultiEditor)
+        if not self.settings.value('MultiEditorEmbed', True, type=bool):
+            self.multiEditorDialog = MultiEditorDialog(self, self.multiEditor)
+            self.multiEditor.show()
+            self.multiEditor.closeBtn.hide()
+        else:
+            self.multiEditor.hide()
+            self.multiEditorDialog = None
 
     def setMode(self, mode):
         self.display.setMode(mode)
@@ -987,11 +1004,40 @@ class EditorWindow(QtWidgets.QMainWindow):
             self.multiEditor.setCollection(self.currentCollection)
 
     def showMultiEditor(self):
-        self.resizeMultiEditor()
-        self.multiEditorCover.show()
-        self.multiEditor.show()
+        if self.multiEditor.parent() == self:
+            self.resizeMultiEditor()
+            self.multiEditorCover.show()
+            self.multiEditor.show()
+        else:
+            self.multiEditorDialog.show()
+            self.multiEditorDialog.raise_()
+            self.multiEditorDialog.activateWindow()
+
+    def toggleDetachMultiEditor(self):
+        if self.multiEditor.parent() == self:
+            self.multiEditorDialog = MultiEditorDialog(self, self.multiEditor)
+            self.multiEditorDialog.show()
+            self.multiEditorCover.hide()
+            self.multiEditor.closeBtn.hide()
+            self.settings.setValue('MultiEditorEmbed', False)
+        else:
+            self.multiEditor.setParent(self)
+            self.multiEditor.closeBtn.show()
+            self.resizeMultiEditor()
+            self.multiEditorCover.show()
+            self.multiEditor.show()
+            self.multiEditor.raise_()
+            self.multiEditorDialog.deleteLater()
+            self.multiEditorDialog = None
+            self.settings.setValue('MultiEditorEmbed', True)
+
+    def closeMultiEditor(self):
+        self.multiEditor.hide()
+        self.multiEditorCover.hide()
 
     def resizeMultiEditor(self):
+        if self.multiEditor.parent() != self:
+            return
         self.multiEditorCover.resize(self.centralWidget().size())
         hint = self.multiEditor.minimumSizeHint()
         mainWidth = self.width()

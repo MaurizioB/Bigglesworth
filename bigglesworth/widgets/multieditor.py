@@ -36,6 +36,7 @@ shadowBrush = QtGui.QColor(128, 128, 128, 128)
 displayBackground = QtGui.QBrush(QtGui.QColor(230, 240, 230))
 noteNames = ['{} ({})'.format(_noteNumberToName[v].upper(), v) for v in range(128)]
 
+EmptySlotRole = QtCore.Qt.UserRole + 128
 
 iconNames = {
     Init: 'document-new', 
@@ -303,6 +304,20 @@ class TestMidiDevice(QtCore.QObject):
             outputEvent(mdSysExEvent(1, event.sysex))
 
 
+class ProgDelegate(QtWidgets.QStyledItemDelegate):
+    def paint(self, qp, option, index):
+        QtWidgets.QStyledItemDelegate.paint(self, qp, option, index)
+        if not index.data(EmptySlotRole):
+            option = QtWidgets.QStyleOptionViewItemV4(option)
+            self.initStyleOption(option, index)
+            textRect = option.widget.style().subElementRect(QtWidgets.QStyle.SE_ItemViewItemText, option, option.widget)
+            color = option.palette.color(option.palette.Disabled, option.palette.Text)
+            if option.state & QtWidgets.QStyle.State_Selected:
+                color = color.lighter()
+            qp.setPen(color)
+            qp.drawText(option.rect.adjusted(textRect.width(), 0, 0, 0), option.displayAlignment, '(empty slot)')
+
+
 class ProgProxyModel(QtCore.QSortFilterProxyModel):
     DefaultItemFlags = QtCore.Qt.ItemIsSelectable|QtCore.Qt.ItemIsEnabled
     bank = 0
@@ -320,7 +335,12 @@ class ProgProxyModel(QtCore.QSortFilterProxyModel):
         index = self.sourceModel().index(row, NameColumn) 
         data = index.data(role)
         if role == QtCore.Qt.DisplayRole:
-            data = '{} {}'.format(index.row() + 1, data) if index.flags() & QtCore.Qt.ItemIsEnabled else str(index.row() + 1)
+            if index.flags() & QtCore.Qt.ItemIsEnabled:
+                data = u'{} {}'.format(index.row() + 1 - self.bank * 128, data)
+            else:
+                data = str(index.row() + 1 - self.bank * 128)
+        elif role == EmptySlotRole:
+            return index.flags() & QtCore.Qt.ItemIsEnabled
 #        elif role == QtCore.Qt.ForegroundRole:
 #            print('trattoria')
 #            return QtGui.QBrush(QtGui.QColor(QtCore.Qt.green))
@@ -1937,6 +1957,7 @@ class MultiStrip(Frame):
         self.bankCombo.currentIndexChanged.connect(self.setBank)
         self.progCombo.setExpanding(True)
         self.progCombo.setValueList(self.emptyProgNames)
+        self.progCombo.combo.view().setItemDelegate(ProgDelegate())
         self.selectChk.setReallyVisible(False)
         self.selectChk.toggled.connect(self.setSelected)
         self.selectable = False
@@ -2430,6 +2451,7 @@ class CollectionList(QtWidgets.QWidget):
     def __init__(self, parent=None):
         QtWidgets.QWidget.__init__(self, parent)
         self.main = QtWidgets.QApplication.instance()
+        self.referenceModel = self.main.database.referenceModel
         self.settings = QtCore.QSettings()
 
         self.setWindowFlags(QtCore.Qt.Popup)
@@ -2478,7 +2500,7 @@ class CollectionList(QtWidgets.QWidget):
 
         self.model.clear()
         self.settings.beginGroup('CollectionIcons')
-        for collection in self.main.referenceModel.collections:
+        for collection in self.referenceModel.collections:
             if collection == 'Blofeld':
                 iconName = 'bigglesworth'
             else:
@@ -2503,7 +2525,7 @@ class CollectionList(QtWidgets.QWidget):
 class MultiEditor(QtWidgets.QWidget):
     midiEvent = QtCore.pyqtSignal(object)
     closeRequested = QtCore.pyqtSignal()
-    detachRequested = QtCore.pyqtSignal()
+    toggleDetach = QtCore.pyqtSignal()
 
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
@@ -2658,7 +2680,7 @@ class MultiEditor(QtWidgets.QWidget):
         self.groupEditBtn.switchToggled.connect(self.setGroupEdit)
 
         self.closeBtn.clicked.connect(self.closeRequested)
-        self.detachBtn.clicked.connect(self.detachRequested)
+        self.detachBtn.clicked.connect(self.toggleDetach)
         cornerBtnSize = min(self.closeBtn.button.width(), self.detachBtn.button.width())
         self.closeBtn.button.setMaximumWidth(cornerBtnSize)
         self.detachBtn.button.setMaximumWidth(cornerBtnSize)
@@ -2778,7 +2800,7 @@ class MultiEditor(QtWidgets.QWidget):
             index = action.data()
             if self.currentMultiSet.exists(index):
                 multi = self.currentMultiSet[index]
-                action.setText('{} - {}'.format(index + 1, multi.name))
+                action.setText(u'{} - {}'.format(index + 1, multi.name))
                 if index == current:
                     action.setIcon(QtGui.QIcon.fromTheme('checkbox'))
                     setBold(action)
@@ -2823,7 +2845,7 @@ class MultiEditor(QtWidgets.QWidget):
                 multiSet = self.cachedSets[collection] = MultiSetObjectFromDB(collection)
             count = multiSet.count()
             if count:
-                title = '{} ({})'.format(collection, count)
+                title = u'{} ({})'.format(collection, count)
             else:
                 title = collection
             menu = self.saveMenu.addMenu(QtGui.QIcon.fromTheme(iconName), title)
@@ -2853,14 +2875,14 @@ class MultiEditor(QtWidgets.QWidget):
                 if multiSet.exists(index):
                     count += 1
                     multi = multiSet[index]
-                    action.setText('{} - {}'.format(index + 1, multi.name))
+                    action.setText(u'{} - {}'.format(index + 1, multi.name))
                     action.setIcon(self.stateIcons[multi.status])
                 else:
-                    action.setText('{} - Empty slot'.format(index + 1))
+                    action.setText(u'{} - Empty slot'.format(index + 1))
                     action.setIcon(self.stateIcons[Init])
                     setItalic(action)
             if count:
-                subMenu.setTitle('{} ({})'.format(title, count))
+                subMenu.setTitle(u'{} ({})'.format(title, count))
             else:
                 subMenu.setTitle(title)
             setItalic(subMenu.menuAction(), not count)
@@ -2944,13 +2966,13 @@ class MultiEditor(QtWidgets.QWidget):
 #            if res == QtWidgets.QMessageBox.Save
 
         if not ignoreEdited and self.currentMultiSet and self.currentMultiSet.collection is None and not self.currentMultiSet.isClean():
-            changed = ', '.join('{} ({})'.format(multi.index + 1, multi.name) for multi in self.currentMultiSet.dirtyList())
+            changed = ', '.join(u'{} ({})'.format(multi.index + 1, multi.name) for multi in self.currentMultiSet.dirtyList())
             if AdvancedMessageBox(self, 'Unsaved Multis', 
                 'Some Multis have been edited.<br/>'
                 'Multi sets can only be linked to collections, but no collection was set prior editing.<br/>'
                 'If you proceed by clicking "Discard" all modified data will be lost.<br/>'
                 'Press "Cancel" to keep the current data and save it to existing collections.', 
-                detailed='The following Multis have been edited:<br/><br/>' + changed, 
+                detailed=u'The following Multis have been edited:<br/><br/>' + changed, 
                 buttons=AdvancedMessageBox.Discard|AdvancedMessageBox.Cancel, 
                 icon=AdvancedMessageBox.Warning, 
                 ).exec_() != AdvancedMessageBox.Discard:
@@ -3034,21 +3056,21 @@ class MultiEditor(QtWidgets.QWidget):
     def showMultiBrowser(self):
         #TODO: controlla tutti i multi non clean!
         if self.currentCollection is None and not self.currentMultiSet.isClean():
-            changed = ', '.join('{} ({})'.format(multi.index + 1, multi.name) for multi in self.currentMultiSet.dirtyList())
+            changed = ', '.join(u'{} ({})'.format(multi.index + 1, multi.name) for multi in self.currentMultiSet.dirtyList())
             if AdvancedMessageBox(self, 'Unsaved Multis', 
                 'Some Multis have been edited.<br/>'
                 'Multi sets can only be linked to collections, but no collection was set prior editing.<br/>'
                 'If you proceed by clicking "Discard" and decide to open another Multi from the management '
                 'dialog, all modified data will be lost.<br/>'
                 'Press "Cancel" to keep the current data and save it to existing collections.', 
-                detailed='The following Multis have been edited:<br/><br/>' + changed, 
+                detailed=u'The following Multis have been edited:<br/><br/>' + changed, 
                 buttons=AdvancedMessageBox.Discard|AdvancedMessageBox.Cancel, 
                 icon=AdvancedMessageBox.Warning, 
                 ).exec_() != AdvancedMessageBox.Discard:
                     return
         for multiSet in self.cachedSets.values():
             if not multiSet.isClean():
-                print('{} NOT CLEAN!'.format(multiSet.collection))
+                print('u{} NOT CLEAN!'.format(multiSet.collection))
         dialog = MultiBrowser(self, self.currentCollection)
         res = dialog.exec_()
         if not dialog.model.clean:
@@ -3453,6 +3475,8 @@ class MultiEditor(QtWidgets.QWidget):
             self.display.displayWidget.setPalette(self.palette())
             if self.isVisible():
                 self.resetStripSizes()
+        elif event.type() == QtCore.QEvent.ParentChange:
+            self.detachBtn.setToolTip('Attach' if isinstance(self.parent(), QtWidgets.QDialog) else 'Detach')
 
     def showEvent(self, event):
         QtWidgets.QWidget.showEvent(self, event)
