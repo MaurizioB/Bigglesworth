@@ -8,12 +8,15 @@ try:
     from bigglesworth.parameters import categories
     from bigglesworth.widgets import NameEdit
     from bigglesworth.const import factoryPresetsNamesDict
+    from bigglesworth.utils import sanitize
 except:
     QtCore.pyqtSignal = QtCore.Signal
     QtCore.pyqtProperty = QtCore.Property
     QtCore.pyqtSlot = QtCore.Slot
     from nameedit import NameEdit
     categories = ('Init', 'Arp ', 'Atmo', 'Bass', 'Drum', 'FX  ', 'Keys', 'Lead', 'Mono', 'Pad ', 'Perc', 'Poly', 'Seq ')
+    def sanitize(minimum, value, maximum):
+        return max(minimum, min(maximum, value))
 #from bigglesworth.const import TagsColumn
 
 def _getCssQColorStr(color):
@@ -363,7 +366,7 @@ class HDisplayGroup(DisplayGroup):
         self.setLayout(layout)
 
 
-class Switch(QtWidgets.QWidget):
+class TextSwitch(QtWidgets.QWidget):
     disabledColor = QtGui.QColor(220, 220, 200, 128)
     bgColor = enabledColor = QtGui.QColor(QtCore.Qt.black)
     bgColors = disabledColor, enabledColor
@@ -395,11 +398,16 @@ class Switch(QtWidgets.QWidget):
         font = self.font()
         font.setBold(True)
         path = QtGui.QPainterPath()
-        path.addRoundedRect(QtCore.QRectF(self.rect().adjusted(0, 0, -1, -1)), 2, 2)
+        rect = self.rect().adjusted(0, 0, -1, -1)
+        path.addRoundedRect(QtCore.QRectF(rect), 2, 2)
         if self.isEnabled():
-            left = (self.width() - self.fontMetrics().width(self.text)) / 2 - 2
-            top = self.height() - self.fontMetrics().descent() - 2
-            path.addText(left, top, font, self.text)
+#            left = (self.width() - self.fontMetrics().width(self.text)) / 2 - 2
+#            top = self.height() - self.fontMetrics().descent() - 2
+            textRect = self.fontMetrics().boundingRect(self.text)
+#            if self.text == 'Single':
+#                print(textRect)
+            textRect.moveCenter(rect.center())
+            path.addText(textRect.bottomLeft() + QtCore.QPoint(-1, -self.fontMetrics().descent()), font, self.text)
             qp.drawPath(path)
         else:
             qp.drawPath(path)
@@ -419,27 +427,209 @@ class MixerButton(HDisplayGroup):
             self.clicked.emit()
 
 
-class ModeSwitcher(HDisplayGroup):
+class PartSwitcher(QtWidgets.QWidget):
+    disabledColor = QtGui.QColor(220, 220, 200, 128)
+    enabledColor = QtGui.QColor(QtCore.Qt.black)
+    bgColors = disabledColor, enabledColor
+    shiftBtnBorders = QtCore.Qt.lightGray, QtCore.Qt.darkGray
+    partChangeRequested = QtCore.pyqtSignal(int)
+
+    def __init__(self):
+        QtWidgets.QWidget.__init__(self)
+        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Maximum))
+        self.setMouseTracking(True)
+
+        baseSize = self.fontMetrics().boundingRect('16').size()
+        self.buttonWidth = baseSize.width()
+        self._sizeHint = QtCore.QSize(baseSize.width() * 6 + 5, baseSize.height() + 4)
+
+        self.prevBtnRect = buttonRect = QtCore.QRect(0, 0, self.buttonWidth, self._sizeHint.height() - 1)
+        self.buttonRects = []
+        self.baseX = []
+        x = deltaX = self.buttonWidth + 1
+        x += 1
+        for b in range(16):
+            self.buttonRects.append(buttonRect.translated(x, 0))
+            self.baseX.append(x)
+            x += deltaX
+        self.buttonPos = 0
+        self.fullButtonRect = self.buttonRects[0] | self.buttonRects[-1]
+        self.setMaximumWidth(self.fullButtonRect.width() + self.buttonWidth * 2 + 2)
+        self.setMinimumWidth(self.buttonWidth * 5)
+        self.buttonArea = QtCore.QRect()
+        self.nextBtnRect = QtCore.QRect(buttonRect)
+
+        self.underPrev = self.underNext = False
+        self.currentPart = 0
+        self.scrollTimer = QtCore.QTimer()
+        self.scrollTimer.timeout.connect(self.scroll)
+
+    def setMultiPart(self, part):
+        self.currentPart = part
+        self.update()
+
+    def sizeHint(self):
+        return self._sizeHint
+
+    def scroll(self):
+        buttonPos = sanitize(self.nextBtnRect.left() - 4 - self.fullButtonRect.width() - self.buttonWidth, self.buttonPos + self.scrollDelta, 0)
+#        print(self.buttonArea.width() - self.buttonPos, self.fullButtonRect.width())
+        if buttonPos == self.buttonPos:
+            self.scrollTimer.stop()
+            return
+        self.buttonPos = buttonPos
+        for buttonRect, baseX in zip(self.buttonRects, self.baseX):
+            buttonRect.moveLeft(baseX + self.buttonPos)
+        if self.scrollTimer.interval() > 50:
+            self.scrollTimer.setInterval(50)
+        if abs(self.scrollDelta) < 8:
+            self.scrollDelta *= 2
+        self.update()
+
+    def mouseMoveEvent(self, event):
+        if event.pos() in self.prevBtnRect:
+            if not self.underPrev:
+                self.underPrev = True
+                self.underNext = False
+                self.update()
+        elif event.pos() in self.nextBtnRect:
+            if not self.underNext:
+                self.underNext = True
+                self.underPrev = False
+                self.update()
+        elif self.underPrev or self.underNext:
+            self.underPrev = self.underNext = False
+            self.update()
+
+    def mousePressEvent(self, event):
+        pos = event.pos()
+        if pos in self.buttonArea:
+            for index, buttonRect in enumerate(self.buttonRects):
+                if pos in buttonRect:
+                    if index != self.currentPart:
+                        self.partChangeRequested.emit(index)
+                    break
+        elif pos in self.prevBtnRect or pos in self.nextBtnRect:
+            if pos in self.prevBtnRect and self.buttonPos < 0:
+                scrollDelta = 10
+#                self.buttonPos = min(0, self.buttonPos + self.scrollDelta)
+            elif pos in self.nextBtnRect and self.buttonPos > self.nextBtnRect.left() - 4 - self.fullButtonRect.width() - self.buttonWidth:
+                scrollDelta = -10
+#                self.buttonPos = max(-self.buttonArea.width(), self.buttonPos + self.scrollDelta)
+            else:
+                return
+            self.buttonPos = sanitize(self.nextBtnRect.left() - 4 - self.fullButtonRect.width() - self.buttonWidth, self.buttonPos + scrollDelta, 0)
+            for buttonRect, baseX in zip(self.buttonRects, self.baseX):
+                buttonRect.moveLeft(baseX + self.buttonPos)
+            self.scrollDelta = scrollDelta * .1
+            self.update()
+            self.scrollTimer.setInterval(500)
+            self.scrollTimer.start()
+
+    def mouseReleaseEvent(self, event):
+        if self.scrollTimer.isActive():
+            self.scrollTimer.stop()
+
+    def leaveEvent(self, event):
+        if self.underPrev or self.underNext:
+            self.underPrev = self.underNext = False
+            self.update()
+
+    def resizeEvent(self, event):
+        self.nextBtnRect.moveRight(self.width() - 2)
+        self.buttonArea = QtCore.QRect(
+            self.prevBtnRect.topRight() + QtCore.QPoint(2, 0), 
+            self.nextBtnRect.bottomLeft() + QtCore.QPoint(-4, 0)
+            )
+        buttonPos = sanitize(self.nextBtnRect.left() - 4 - self.fullButtonRect.width() - self.buttonWidth, self.buttonPos, 0)
+        if buttonPos != self.buttonPos or True:
+            self.buttonPos = buttonPos
+            for buttonRect, baseX in zip(self.buttonRects, self.baseX):
+                buttonRect.moveLeft(baseX + self.buttonPos)
+            self.update()
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter(self)
+        qp.setRenderHints(qp.Antialiasing)
+        qp.translate(.5, .5)
+
+        if not self.isEnabled():
+            qp.setOpacity(.5)
+        qp.setPen(self.shiftBtnBorders[self.underPrev])
+        qp.setBrush(self.disabledColor)
+        qp.drawRoundedRect(self.prevBtnRect, 2, 2)
+        qp.setPen(QtCore.Qt.darkGray)
+        qp.drawText(self.prevBtnRect.adjusted(0, 1, 0, 0), QtCore.Qt.AlignCenter, '<')
+
+        qp.save()
+#        qp.setClipRect(QtCore.QRect(self.prevBtnRect.topRight(), self.nextBtnRect.bottomLeft()).adjusted(2, 0, -4, 0))
+        qp.setClipRect(self.buttonArea)
+        for part, buttonRect in enumerate(self.buttonRects):
+            qp.setPen(QtCore.Qt.NoPen)
+            if part == self.currentPart:
+                qp.setBrush(self.enabledColor)
+                qp.drawRoundedRect(buttonRect, 2, 2)
+                qp.setPen(QtCore.Qt.lightGray)
+                
+            else:
+                qp.setPen(QtCore.Qt.lightGray)
+                qp.setBrush(self.disabledColor)
+                qp.drawRoundedRect(buttonRect, 2, 2)
+                qp.setPen(QtCore.Qt.darkGray)
+            qp.drawText(buttonRect.adjusted(0, 1, 0, 0), QtCore.Qt.AlignCenter, str(part + 1))
+
+        qp.restore()
+        qp.setPen(self.shiftBtnBorders[self.underNext])
+        qp.drawRoundedRect(self.nextBtnRect, 2, 2)
+        qp.setPen(QtCore.Qt.darkGray)
+        qp.drawText(self.nextBtnRect.adjusted(0, 1, 0, 0), QtCore.Qt.AlignCenter, '>')
+
+
+class MultiSwitcher(HDisplayGroup):
     modeChanged = QtCore.pyqtSignal(bool)
     modeClicked = QtCore.pyqtSignal(bool)
 
     def __init__(self):
         HDisplayGroup.__init__(self)
-        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum))
+        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum))
         self.mode = None
-        self.layout().setSpacing(3)
+        layout = self.layout()
+        layout.setSpacing(0)
 
-        self.singleLbl = Switch('Single')
-        self.layout().addWidget(self.singleLbl)
-        self.layout().addSpacing(6)
-        self.multiLbl = Switch('Multi')
-        self.layout().addWidget(self.multiLbl)
+        self.singleLbl = TextSwitch('Single')
+        layout.addWidget(self.singleLbl)
+        layout.addSpacing(6)
+#        layout.addSpacerItem(QtWidgets.QSpacerItem(6, 1, QtWidgets.QSizePolicy.Expanding))
+        self.multiLbl = TextSwitch('Multi')
+        layout.addWidget(self.multiLbl)
+
+        layout.addSpacing(2)
+        self.partLbl = QtWidgets.QLabel('Part 1')
+        layout.addWidget(self.partLbl)
+        self.partLbl.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Maximum)
+        font = self.font()
+        font.setBold(True)
+        self.partLbl.setFont(font)
+        self.partLbl.setFixedWidth(self.partLbl.fontMetrics().width('Part 16'))
+
+        layout.addSpacing(6)
+        self.partSwitcher = PartSwitcher()
+        layout.addWidget(self.partSwitcher)
+        self.partChangeRequested = self.partSwitcher.partChangeRequested
+#        self.setMultiPart = self.partSwitcher.setMultiPart
+
+        layout.addSpacing(6)
         self.mixerBtn = MixerButton()
-        self.layout().addWidget(self.mixerBtn)
+        layout.addWidget(self.mixerBtn)
         self.mixerBtn.setEnabled(False)
         self.multiEditClicked = self.mixerBtn.clicked
 
+#        layout.addStretch(6)
         self.setMode(0)
+
+    def setMultiPart(self, part):
+        self.partSwitcher.setMultiPart(part)
+        self.partLbl.setText('Part {}'.format(part + 1))
 
     def setMode(self, mode):
         if mode == self.mode:
@@ -448,6 +638,8 @@ class ModeSwitcher(HDisplayGroup):
         self.singleLbl.setEnabled(not mode)
         self.multiLbl.setEnabled(mode)
         self.mixerBtn.setEnabled(mode)
+        self.partLbl.setEnabled(mode)
+        self.partSwitcher.setEnabled(mode)
         self.modeChanged.emit(mode)
 
     def mousePressEvent(self, event):
@@ -850,16 +1042,18 @@ class DisplayWidget(QtWidgets.QWidget):
         layout.addLayout(editLayout, 0, 3)
         self.editStatusWidget = EditStatusWidget()
         editLayout.addWidget(self.editStatusWidget)
-        self.editModeLabel = QtWidgets.QLabel(self.modeLabels[0])
-        self.editModeLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Maximum))
-        editLayout.addWidget(self.editModeLabel)
+#        self.editModeLabel = QtWidgets.QLabel(self.modeLabels[0])
+#        self.editModeLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Maximum))
+#        editLayout.addWidget(self.editModeLabel)
 
-        self.modeSwitch = ModeSwitcher()
+        self.modeSwitch = MultiSwitcher()
         self.mode = self.modeSwitch.mode
         editLayout.addWidget(self.modeSwitch)
 #        self.modeSwitch.modeClicked.connect(self.setMode)
         self.modeClicked = self.modeSwitch.modeClicked
         self.multiEditClicked = self.modeSwitch.multiEditClicked
+        self.partChangeRequested = self.modeSwitch.partChangeRequested
+        self.setMultiPart = self.modeSwitch.setMultiPart
 
         self.nameEdit = DisplayNameEdit()
         #see note on GraphicsSpin
@@ -886,7 +1080,7 @@ class DisplayWidget(QtWidgets.QWidget):
         statusLayout.addWidget(self.redoBtn)
 
     def setMode(self, mode):
-        self.editModeLabel.setText(self.modeLabels[mode])
+#        self.editModeLabel.setText(self.modeLabels[mode])
         self.modeSwitch.setMode(mode)
         self.modeChanged.emit(mode)
 
@@ -953,6 +1147,8 @@ class BlofeldDisplay(QtWidgets.QGraphicsView):
         self.modeClicked = self.mainWidget.modeClicked
         self.multiEditClicked = self.mainWidget.multiEditClicked
         self.modeChanged = self.mainWidget.modeChanged
+        self.partChangeRequested = self.mainWidget.partChangeRequested
+        self.setMultiPart = self.mainWidget.setMultiPart
         self.setMode = self.mainWidget.setMode
 
     def setLocation(self, uid, collection=None):
@@ -1054,11 +1250,18 @@ class BlofeldDisplay(QtWidgets.QGraphicsView):
                 tip = widget.statusTip()
             else:
                 tip = ''
-            self.window().statusBar().showMessage(tip)
+            try:
+                #this is for debug only
+                self.window().statusBar().showMessage(tip)
+            except:
+                pass
         return QtWidgets.QGraphicsView.mouseMoveEvent(self, event)
 
     def leaveEvent(self, event):
-        self.window().statusBar().showMessage('')
+        try:
+            self.window().statusBar().showMessage('')
+        except:
+            pass
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.RightButton and event.pos() in self.nameEdit.geometry() and not self.nameEdit.hasFocus():
@@ -1068,6 +1271,8 @@ class BlofeldDisplay(QtWidgets.QGraphicsView):
 
 if __name__ == '__main__':
     import sys
+    from PyQt4.QtGui import QStyleOptionFrameV3
+    QtWidgets.QStyleOptionFrameV3 = QStyleOptionFrameV3
     app = QtWidgets.QApplication(sys.argv)
     w = BlofeldDisplay()
     w.show()

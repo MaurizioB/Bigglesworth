@@ -504,7 +504,8 @@ class SequencerWindow(QtWidgets.QMainWindow):
                 if toolBar != self.playToolBar:
                     toolBar.show()
             self.statusBar().show()
-            self.restoreGeometry(self.savedWindowState)
+            if self.savedWindowState:
+                self.restoreGeometry(self.savedWindowState)
             self.playToolBar.setMovable(True)
             self.minimizeAction.setIcon(QtGui.QIcon.fromTheme('zoom-out-large'))
         self.show()

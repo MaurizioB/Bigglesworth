@@ -114,6 +114,8 @@ class MultiEditorDialog(QtWidgets.QDialog):
         self.multiEditor = multiEditor
         layout = QtWidgets.QHBoxLayout()
         self.setLayout(layout)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.setContentsMargins(1, 1, 1, 1)
         layout.addWidget(self.multiEditor)
 
 
@@ -702,8 +704,9 @@ class EditorWindow(QtWidgets.QMainWindow):
         randomCustomAction.triggered.connect(self.randomizeCustom)
 
         self.display.customContextMenuRequested.connect(self.showDisplayMenu)
-        self.display.modeClicked.connect(self.setMode)
+        self.display.modeClicked.connect(self.setMultiMode)
         self.display.multiEditClicked.connect(self.showMultiEditor)
+        self.display.partChangeRequested.connect(self.setMultiPart)
 
         self.parameters = Parameters(self)
         self.parameters.parameterChanged.connect(self.parameterChanged)
@@ -998,10 +1001,31 @@ class EditorWindow(QtWidgets.QMainWindow):
             self.multiEditor.hide()
             self.multiEditorDialog = None
 
-    def setMode(self, mode):
+        self.currentMultiPart = 0
+        self._multiMode = self.settings.value('MultiMode', False, type=bool)
+        self.display.setMode(self._multiMode)
+
+    @property
+    def multiMode(self):
+        return self._multiMode
+
+    @multiMode.setter
+    def multiMode(self, mode):
+        if mode == self._multiMode:
+            return
+        self._multiMode = mode
         self.display.setMode(mode)
         if mode:
             self.multiEditor.setCollection(self.currentCollection)
+
+    def setMultiMode(self, mode):
+        self.multiMode = mode
+
+    def setMultiPart(self, part):
+        if self.currentMultiPart == part:
+            return
+        self.currentMultiPart = part
+        self.display.setMultiPart(part)
 
     def showMultiEditor(self):
         if self.multiEditor.parent() == self:

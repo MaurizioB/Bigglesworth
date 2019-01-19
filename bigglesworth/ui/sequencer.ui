@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Sequencer test</string>
+   <string>Sequencer</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -188,7 +188,9 @@
   </action>
   <action name="minimizeAction">
    <property name="icon">
-    <iconset theme="zoom-out-large"/>
+    <iconset theme="zoom-out-large">
+     <normaloff/>
+    </iconset>
    </property>
    <property name="text">
     <string>Minimize</string>
