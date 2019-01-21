@@ -427,10 +427,26 @@ class TempoEditDialog(QtWidgets.QDialog):
         self.tempoEdit.setAccelerated(True)
         self.tempoEdit.selectAll()
 
+        self.tapBtn = QtWidgets.QPushButton('Tap')
+        layout.addWidget(self.tapBtn, 1, 0, 1, 2)
+        self.tapBtn.clicked.connect(self.tap)
+
         self.buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok|QtWidgets.QDialogButtonBox.Cancel)
-        layout.addWidget(self.buttonBox, 1, 0, 1, 2)
+        layout.addWidget(self.buttonBox, 2, 0, 1, 2)
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
+
+        self.tapTimer = QtCore.QElapsedTimer()
+
+    def tap(self):
+        elapsed = self.tapTimer.elapsed()
+        if elapsed > 4000:
+            pass
+        elif elapsed > 2000:
+            self.tempoEdit.setValue(30)
+        else:
+            self.tempoEdit.setValue(60000 / elapsed)
+        self.tapTimer.start()
 
     def exec_(self):
         res = QtWidgets.QDialog.exec_(self)
@@ -459,6 +475,11 @@ class DenominatorSpin(QtWidgets.QSpinBox):
 
     def textFromValue(self, value):
         return self.denominatorsStr[value]
+
+    def validate(self, text, pos):
+        if text in ('1', '2', '4', '8', '16'):
+            return QtGui.QValidator.Acceptable, text, pos
+        return QtWidgets.QSpinBox.validate(self, text, pos)
 
     def valueFromText(self, text):
         try:

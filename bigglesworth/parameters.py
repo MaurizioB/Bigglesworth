@@ -834,7 +834,8 @@ class Parameters(QtCore.QObject):
             widget.setValue(value)
             widget.blockSignals(False)
         except Exception as e:
-            print('Error trying to set parameter "{}" ({})'.format(parameter, e))
+#            print('Error trying to set parameter "{}" ({})'.format(parameter, e))
+            pass
         for widget in self.widgets.get(parameter, []):
             widget.blockSignals(True)
             widget.setValue(value)

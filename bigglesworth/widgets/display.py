@@ -60,6 +60,7 @@ class GraphicsSpin(QtWidgets.QSpinBox):
     def __init__(self):
         QtWidgets.QSpinBox.__init__(self)
         self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Maximum))
+        self.setAlignment(QtCore.Qt.AlignRight)
         self.lineEdit().setReadOnly(True)
         self.lineEdit().selectionChanged.connect(lambda: self.lineEdit().deselect())
         self.lineEdit().setStyleSheet('''color: none''')
@@ -202,20 +203,43 @@ class BankSpin(TextSpin):
         GraphicsSpin.stepBy(self, step)
 
 
-class ProgSpin(GraphicsSpin):
+class ShiftValueSpin(GraphicsSpin):
     def __init__(self):
         GraphicsSpin.__init__(self)
         self.setReadOnly(False)
         self.setKeyboardTracking(False)
+        self.setMaximum(127)
+
+    def validate(self, text, pos):
+        try:
+            assert 1 <= int(text) <= 128
+            return QtGui.QValidator.Acceptable, text, pos
+        except:
+            return QtGui.QValidator.Invalid, text, pos
+
+    def valueFromText(self, text):
+        try:
+            return int(text) - 1
+        except:
+            return self.value()
+
+    def textFromValue(self, value):
+        return str(value + 1)
+
+
+class ProgSpin(ShiftValueSpin):
+    def __init__(self):
+        ShiftValueSpin.__init__(self)
+        self.setReadOnly(False)
+        self.setKeyboardTracking(False)
         self.valid = []
-        self.rangeLen = 128
         self.setValidIndexes([0])
 
     def setValidIndexes(self, indexes, bank=0):
         self.fullValid = [[], [], [], [], [], [], [], []]
         for index in indexes:
             bank = index >> 7
-            prog = (index & 127) + 1
+            prog = index & 127
             self.fullValid[bank].append(prog)
         self.setBank(bank)
 
@@ -249,7 +273,7 @@ class ProgSpin(GraphicsSpin):
         return value
 
     def validate(self, input, pos):
-        valid, input, pos = GraphicsSpin.validate(self, input, pos)
+        valid, input, pos = ShiftValueSpin.validate(self, input, pos)
         if valid in (QtGui.QValidator.Intermediate, QtGui.QValidator.Acceptable):
             if input:
                 for value in self.valid:
@@ -265,7 +289,7 @@ class ProgSpin(GraphicsSpin):
         return valid, input, pos
 
     def stepBy(self, step):
-        if len(self.valid) != self.rangeLen:
+        if len(self.valid) != 128:
             currentIndex = self.valid.index(self.getValid())
             newIndex = currentIndex + step
             if newIndex >= len(self.valid):
@@ -275,7 +299,7 @@ class ProgSpin(GraphicsSpin):
                 step = newValue - self.value()
             else:
                 step = self.valid[0] - self.value()
-        GraphicsSpin.stepBy(self, step)
+        ShiftValueSpin.stepBy(self, step)
 #        self.setReadOnly(True)
 #        self.setReadOnly(False)
 
@@ -452,7 +476,7 @@ class PartSwitcher(QtWidgets.QWidget):
             self.buttonRects.append(buttonRect.translated(x, 0))
             self.baseX.append(x)
             x += deltaX
-        self.buttonPos = 0
+        self._buttonPos = 0
         self.fullButtonRect = self.buttonRects[0] | self.buttonRects[-1]
         self.setMaximumWidth(self.fullButtonRect.width() + self.buttonWidth * 2 + 2)
         self.setMinimumWidth(self.buttonWidth * 5)
@@ -463,10 +487,31 @@ class PartSwitcher(QtWidgets.QWidget):
         self.currentPart = 0
         self.scrollTimer = QtCore.QTimer()
         self.scrollTimer.timeout.connect(self.scroll)
+        self.centerAnimation = QtCore.QPropertyAnimation(self, b'buttonPos')
+        self.centerAnimation.setDuration(350)
+        self.centerAnimation.setEasingCurve(QtCore.QEasingCurve.InOutCubic)
+        self.leaveTimer = QtCore.QTimer()
+        self.leaveTimer.setSingleShot(True)
+        self.leaveTimer.setInterval(500)
+        self.leaveTimer.timeout.connect(self.ensureVisible)
+
+    @QtCore.pyqtProperty(int)
+    def buttonPos(self):
+        return self._buttonPos
+
+    @buttonPos.setter
+    def buttonPos(self, pos):
+        if pos == self.buttonPos:
+            return
+        self._buttonPos = pos
+        for buttonRect, baseX in zip(self.buttonRects, self.baseX):
+            buttonRect.moveLeft(baseX + self.buttonPos)
+        self.update()
 
     def setMultiPart(self, part):
         self.currentPart = part
         self.update()
+        self.ensureVisible()
 
     def sizeHint(self):
         return self._sizeHint
@@ -478,13 +523,23 @@ class PartSwitcher(QtWidgets.QWidget):
             self.scrollTimer.stop()
             return
         self.buttonPos = buttonPos
-        for buttonRect, baseX in zip(self.buttonRects, self.baseX):
-            buttonRect.moveLeft(baseX + self.buttonPos)
         if self.scrollTimer.interval() > 50:
             self.scrollTimer.setInterval(50)
         if abs(self.scrollDelta) < 8:
             self.scrollDelta *= 2
-        self.update()
+
+    def ensureVisible(self):
+        if not self.buttonArea.contains(self.buttonRects[self.currentPart]):
+            buttonRect = self.buttonRects[self.currentPart]
+            if buttonRect.x() < self.buttonArea.left():
+                target = min(0, -self.currentPart * (self.buttonWidth + 1) + self.buttonWidth)
+            else:
+                target = self.buttonArea.right() - self.fullButtonRect.width() - self.buttonWidth - 1
+                if self.currentPart < 15:
+                    target += (14 - self.currentPart) * (self.buttonWidth + 1)
+            self.centerAnimation.setStartValue(self._buttonPos)
+            self.centerAnimation.setEndValue(target)
+            self.centerAnimation.start()
 
     def mouseMoveEvent(self, event):
         if event.pos() in self.prevBtnRect:
@@ -502,27 +557,28 @@ class PartSwitcher(QtWidgets.QWidget):
             self.update()
 
     def mousePressEvent(self, event):
+        if event.button() != QtCore.Qt.LeftButton:
+            return
         pos = event.pos()
         if pos in self.buttonArea:
+            self.centerAnimation.stop()
             for index, buttonRect in enumerate(self.buttonRects):
                 if pos in buttonRect:
                     if index != self.currentPart:
                         self.partChangeRequested.emit(index)
+                        if __name__ == '__main__':
+                            self.setMultiPart(index)
                     break
         elif pos in self.prevBtnRect or pos in self.nextBtnRect:
+            self.centerAnimation.stop()
             if pos in self.prevBtnRect and self.buttonPos < 0:
                 scrollDelta = 10
-#                self.buttonPos = min(0, self.buttonPos + self.scrollDelta)
             elif pos in self.nextBtnRect and self.buttonPos > self.nextBtnRect.left() - 4 - self.fullButtonRect.width() - self.buttonWidth:
                 scrollDelta = -10
-#                self.buttonPos = max(-self.buttonArea.width(), self.buttonPos + self.scrollDelta)
             else:
                 return
             self.buttonPos = sanitize(self.nextBtnRect.left() - 4 - self.fullButtonRect.width() - self.buttonWidth, self.buttonPos + scrollDelta, 0)
-            for buttonRect, baseX in zip(self.buttonRects, self.baseX):
-                buttonRect.moveLeft(baseX + self.buttonPos)
             self.scrollDelta = scrollDelta * .1
-            self.update()
             self.scrollTimer.setInterval(500)
             self.scrollTimer.start()
 
@@ -530,10 +586,19 @@ class PartSwitcher(QtWidgets.QWidget):
         if self.scrollTimer.isActive():
             self.scrollTimer.stop()
 
+    def wheelEvent(self, event):
+        scrollDelta = 1 if event.delta() > 0 else -1
+        scrollDelta *= self.buttonWidth * .5
+        self.buttonPos = sanitize(self.nextBtnRect.left() - 4 - self.fullButtonRect.width() - self.buttonWidth, self.buttonPos + scrollDelta, 0)
+
+    def enterEvent(self, event):
+        self.leaveTimer.stop()
+
     def leaveEvent(self, event):
         if self.underPrev or self.underNext:
             self.underPrev = self.underNext = False
             self.update()
+        self.leaveTimer.start()
 
     def resizeEvent(self, event):
         self.nextBtnRect.moveRight(self.width() - 2)
@@ -542,11 +607,9 @@ class PartSwitcher(QtWidgets.QWidget):
             self.nextBtnRect.bottomLeft() + QtCore.QPoint(-4, 0)
             )
         buttonPos = sanitize(self.nextBtnRect.left() - 4 - self.fullButtonRect.width() - self.buttonWidth, self.buttonPos, 0)
-        if buttonPos != self.buttonPos or True:
+        if buttonPos != self.buttonPos:
             self.buttonPos = buttonPos
-            for buttonRect, baseX in zip(self.buttonRects, self.baseX):
-                buttonRect.moveLeft(baseX + self.buttonPos)
-            self.update()
+        self.ensureVisible()
 
     def paintEvent(self, event):
         qp = QtGui.QPainter(self)
@@ -604,19 +667,17 @@ class MultiSwitcher(HDisplayGroup):
         layout.addWidget(self.multiLbl)
 
         layout.addSpacing(2)
-        self.partLbl = QtWidgets.QLabel('Part 1')
-        layout.addWidget(self.partLbl)
-        self.partLbl.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Maximum)
-        font = self.font()
-        font.setBold(True)
-        self.partLbl.setFont(font)
-        self.partLbl.setFixedWidth(self.partLbl.fontMetrics().width('Part 16'))
+        self.multiIndexSpin = ShiftValueSpin()
+        layout.addWidget(self.multiIndexSpin)
+        self.multiIndexSpin.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Maximum)
+        self.setMultiIndex = self.multiIndexSpin.setValue
+        self.multiIndexChanged = self.multiIndexSpin.valueChanged
 
         layout.addSpacing(6)
         self.partSwitcher = PartSwitcher()
         layout.addWidget(self.partSwitcher)
         self.partChangeRequested = self.partSwitcher.partChangeRequested
-#        self.setMultiPart = self.partSwitcher.setMultiPart
+        self.setMultiPart = self.partSwitcher.setMultiPart
 
         layout.addSpacing(6)
         self.mixerBtn = MixerButton()
@@ -625,20 +686,20 @@ class MultiSwitcher(HDisplayGroup):
         self.multiEditClicked = self.mixerBtn.clicked
 
 #        layout.addStretch(6)
-        self.setMode(0)
+        self.setMultiMode(1)
 
-    def setMultiPart(self, part):
-        self.partSwitcher.setMultiPart(part)
-        self.partLbl.setText('Part {}'.format(part + 1))
+#    def setMultiPart(self, part):
+#        self.partSwitcher.setMultiPart(part)
+#        self.multiIndexSpin.setText('Part {}'.format(part + 1))
 
-    def setMode(self, mode):
+    def setMultiMode(self, mode):
         if mode == self.mode:
             return
         self.mode = mode
         self.singleLbl.setEnabled(not mode)
         self.multiLbl.setEnabled(mode)
         self.mixerBtn.setEnabled(mode)
-        self.partLbl.setEnabled(mode)
+        self.multiIndexSpin.setEnabled(mode)
         self.partSwitcher.setEnabled(mode)
         self.modeChanged.emit(mode)
 
@@ -746,9 +807,10 @@ class RedoProxy(UndoRedoProxy):
 
 class UndoView(QtWidgets.QListView):
     undoSelected = QtCore.pyqtSignal(int)
+
     def __init__(self, view, mode):
         QtWidgets.QListView.__init__(self)
-        self.undoStack = view.stack()
+        self.undoGroup = view.group()
         self.undoView = view
         self.mode = mode
         if mode:
@@ -756,11 +818,15 @@ class UndoView(QtWidgets.QListView):
         else:
             proxy = UndoProxy()
         proxy.setSourceModel(self.undoView.model())
-        self.undoStack.indexChanged.connect(proxy.setUndoIndex)
-        self.undoStack.indexChanged.connect(self.computeSize)
+        self.undoGroup.indexChanged.connect(proxy.setUndoIndex)
+        self.undoGroup.indexChanged.connect(self.computeSize)
+#        self.undoGroup.activeStackChanged.connect(self.updateStack)
         self.setModel(proxy)
         self.entered.connect(self.checkRows)
         self.setMouseTracking(True)
+
+#    def updateStack(self, stack):
+#        self.model().setSourceModel()
 
     def computeSize(self, *args):
         rowHeight = self.sizeHintForRow(0)
@@ -778,7 +844,7 @@ class UndoView(QtWidgets.QListView):
             index = self.model().mapToSource(index).row()
             if not self.mode:
                 index = max(0, index - 1)
-            self.undoStack.setIndex(index)
+            self.undoGroup.activeStack().setIndex(index)
             self.undoSelected.emit(index)
 
     def leaveEvent(self, event):
@@ -790,12 +856,15 @@ class UndoView(QtWidgets.QListView):
         self.selectionModel().select(selection, QtCore.QItemSelectionModel.ClearAndSelect)
 
 
-class AbstractUndoButton(QtWidgets.QPushButton):
+class UndoDisplayBtn(QtWidgets.QPushButton):
+    showUndo = QtCore.pyqtSignal()
+    undoRequest = QtCore.pyqtSignal(object)
+
     def __init__(self, icon):
         QtWidgets.QPushButton.__init__(self)
         self.setIcon(icon)
         self.setStyleSheet('''
-            AbstractUndoButton {
+            QPushButton {
                 border-radius: 1px;
                 border-left: 1px solid palette(midlight);
                 border-right: 1px solid palette(mid);
@@ -804,21 +873,21 @@ class AbstractUndoButton(QtWidgets.QPushButton):
                 background: rgba(220, 220, 180, 65);
                 min-width: 30px;
             }
-            AbstractUndoButton::menu-indicator {
+            QPushButton::menu-indicator {
                 subcontrol-origin: margin;
                 subcontrol-position: right;
                 width: 12px;
             }
-            AbstractUndoButton:disabled {
+            QPushButton:disabled {
                 color: darkGray;
             }
-            AbstractUndoButton:hover {
+            QPushButton:hover {
                 border-left: 1px solid palette(light);
                 border-right: 1px solid palette(dark);
                 border-top: 1px solid palette(light);
                 border-bottom: 1px solid palette(dark);
             }
-            AbstractUndoButton:pressed {
+            QPushButton:pressed {
                 color: green;
                 padding-top: 1px;
                 padding-left: 1px;
@@ -829,13 +898,6 @@ class AbstractUndoButton(QtWidgets.QPushButton):
             }
             ''')
         self.setMaximumWidth(30)
-
-class UndoDisplayBtn(AbstractUndoButton):
-    showUndo = QtCore.pyqtSignal()
-    undoRequest = QtCore.pyqtSignal(object)
-
-    def __init__(self, icon):
-        AbstractUndoButton.__init__(self, icon)
         self.popupTimer = QtCore.QBasicTimer()
         self.undoActions = []
         self._menu = QtWidgets.QMenu()
@@ -844,19 +906,19 @@ class UndoDisplayBtn(AbstractUndoButton):
         self._menu.aboutToHide.connect(lambda: self.setDown(False))
 
     def setUndoView(self, view, mode):
-        self.undoStack = view.stack()
+        self.undoGroup = view.group()
         self.undoWidgetAction = QtWidgets.QWidgetAction(self._menu)
         self.undoView = UndoView(view, mode)
         self.undoView.undoSelected.connect(lambda: self._menu.close())
         self.undoWidgetAction.setDefaultWidget(self.undoView)
         self._menu.addAction(self.undoWidgetAction)
         if mode:
-            self.clicked.connect(self.undoStack.redo)
-            self.undoStack.indexChanged.connect(self.redoComputeContents)
+            self.clicked.connect(self.undoGroup.redo)
+            self.undoGroup.indexChanged.connect(self.redoComputeContents)
             self.undoView.undoSelected.connect(lambda index: self.undoRequest.emit(index - 1))
         else:
-            self.clicked.connect(self.undoStack.undo)
-            self.undoStack.indexChanged.connect(self.undoComputeContents)
+            self.clicked.connect(self.undoGroup.undo)
+            self.undoGroup.indexChanged.connect(self.undoComputeContents)
             self.undoView.undoSelected.connect(lambda index: self.undoRequest.emit(index))
         self.clicked.connect(lambda: self.undoRequest.emit(None))
 
@@ -872,32 +934,32 @@ class UndoDisplayBtn(AbstractUndoButton):
             else:
                 self.setMenu(None)
             try:
-                self.setToolTip(self.undoStack.command(index - 1).undoText())
+                self.setToolTip(self.undoGroup.activeStack().command(index - 1).undoText())
             except:
-                self.setToolTip(self.undoStack.command(index - 1).text())
+                self.setToolTip(self.undoGroup.activeStack().command(index - 1).text())
 
     def redoComputeContents(self, index):
-        if index == self.undoStack.count():
+        if index == self.undoGroup.activeStack().count():
             self.setEnabled(False)
             self.setMenu(None)
             self.setToolTip('')
         else:
             self.setEnabled(True)
-            if index < self.undoStack.count() - 1:
+            if index < self.undoGroup.activeStack().count() - 1:
                 self.setMenu(self._menu)
             else:
                 self.setMenu(None)
             try:
-                self.setToolTip(self.undoStack.command(index).redoText())
+                self.setToolTip(self.undoGroup.activeStack().command(index).redoText())
             except:
-                self.setToolTip(self.undoStack.command(index).text())
+                self.setToolTip(self.undoGroup.activeStack().command(index).text())
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
             self.popupTimer.start(600, self)
             self.setDown(True)
         else:
-            AbstractUndoButton.mousePressEvent(self, event)
+            QtWidgets.QPushButton.mousePressEvent(self, event)
 
     def mouseReleaseEvent(self, event):
         self.popupTimer.stop()
@@ -972,6 +1034,25 @@ class EditStatusWidget(QtWidgets.QWidget):
         qp.drawPath(path)
 
 
+class MultiSoundLabel(HDisplayGroup):
+    def __init__(self):
+        HDisplayGroup.__init__(self)
+        self.text = '  INIT          '
+        self.label = QtWidgets.QLabel(self.text.rstrip())
+        self.addWidget(self.label)
+
+    def setText(self, text):
+        if text != self.text:
+            self.text = text
+            self.updateText()
+
+    def updateText(self):
+        self.label.setText(self.fontMetrics().elidedText(self.text.rstrip(), QtCore.Qt.ElideRight, self.label.width()))
+
+    def resizeEvent(self, event):
+        self.updateText()
+
+
 class DisplayWidget(QtWidgets.QWidget):
     modeLabels = 'Sound mode Edit buffer', 'Multi mode Edit buffer'
     modeChanged = QtCore.pyqtSignal(bool)
@@ -1031,12 +1112,16 @@ class DisplayWidget(QtWidgets.QWidget):
         layout.addWidget(self.progSendWidget, 1, 2)
 
         self.catWidget = HDisplayGroup()
-        self.catWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum))
         layout.addWidget(self.catWidget, 2, 0, 1, 3)
+        self.catWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum))
         self.catWidget.layout().setSpacing(8)
         self.catWidget.addWidget(QtWidgets.QLabel('Cat:'))
         self.catSpin = TextSpin(categories)
         self.catWidget.addWidget(self.catSpin)
+
+        self.multiSoundLabel = MultiSoundLabel()
+        layout.addWidget(self.multiSoundLabel, 2, 0, 1, 3)
+        self.multiSoundLabel.setSizePolicy(self.catWidget.sizePolicy())
 
         editLayout = QtWidgets.QHBoxLayout()
         layout.addLayout(editLayout, 0, 3)
@@ -1047,13 +1132,15 @@ class DisplayWidget(QtWidgets.QWidget):
 #        editLayout.addWidget(self.editModeLabel)
 
         self.modeSwitch = MultiSwitcher()
-        self.mode = self.modeSwitch.mode
+#        self.mode = self.modeSwitch.mode
         editLayout.addWidget(self.modeSwitch)
 #        self.modeSwitch.modeClicked.connect(self.setMode)
         self.modeClicked = self.modeSwitch.modeClicked
         self.multiEditClicked = self.modeSwitch.multiEditClicked
         self.partChangeRequested = self.modeSwitch.partChangeRequested
         self.setMultiPart = self.modeSwitch.setMultiPart
+        self.setMultiIndex = self.modeSwitch.setMultiIndex
+        self.multiIndexChanged = self.modeSwitch.multiIndexChanged
 
         self.nameEdit = DisplayNameEdit()
         #see note on GraphicsSpin
@@ -1079,10 +1166,14 @@ class DisplayWidget(QtWidgets.QWidget):
         self.redoBtn.setEnabled(False)
         statusLayout.addWidget(self.redoBtn)
 
-    def setMode(self, mode):
+    def setMultiMode(self, mode):
 #        self.editModeLabel.setText(self.modeLabels[mode])
-        self.modeSwitch.setMode(mode)
+        self.modeSwitch.setMultiMode(mode)
         self.modeChanged.emit(mode)
+        if mode:
+            self.multiSoundLabel.setFixedSize(self.catWidget.size())
+        self.catWidget.setVisible(not mode)
+        self.multiSoundLabel.setVisible(mode)
 
     def mousePressEvent(self, event):
         if not event.pos() in self.nameEdit.geometry() and self.nameEdit.hasFocus():
@@ -1148,8 +1239,11 @@ class BlofeldDisplay(QtWidgets.QGraphicsView):
         self.multiEditClicked = self.mainWidget.multiEditClicked
         self.modeChanged = self.mainWidget.modeChanged
         self.partChangeRequested = self.mainWidget.partChangeRequested
+        self.multiIndexChanged = self.mainWidget.multiIndexChanged
+        self.setMultiMode = self.mainWidget.setMultiMode
+        self.setMultiIndex = self.mainWidget.setMultiIndex
         self.setMultiPart = self.mainWidget.setMultiPart
-        self.setMode = self.mainWidget.setMode
+        self.multiSoundLabel = self.mainWidget.multiSoundLabel
 
     def setLocation(self, uid, collection=None):
         self.bankSpin.blockSignals(True)
@@ -1177,7 +1271,7 @@ class BlofeldDisplay(QtWidgets.QGraphicsView):
         prog = (location & 127)
         self.bankSpin.setValue(bank)
         self.progSpin.setBank(bank)
-        self.progSpin.setValue(prog + 1)
+        self.progSpin.setValue(prog)
         self.bankSpin.blockSignals(False)
         self.progSpin.blockSignals(False)
         return bank, prog

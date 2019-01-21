@@ -46,6 +46,7 @@ def makeQtProperty(name, propertyType=int):
 
 class PartObject(QtCore.QObject):
     changed = QtCore.pyqtSignal()
+    indexChanged = QtCore.pyqtSignal(int)
 
     def __init__(self, part=0):
         QtCore.QObject.__init__(self)
@@ -96,6 +97,7 @@ class PartObject(QtCore.QObject):
     def index(self, index):
         self.bank = index >> 7
         self.prog = index & 127
+        self.indexChanged.emit(index)
 
     @property
     def velocityRange(self):

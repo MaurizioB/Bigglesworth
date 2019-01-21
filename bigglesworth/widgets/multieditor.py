@@ -2027,8 +2027,19 @@ class MultiStrip(Frame):
         self.startPos = None
         self.model = None
 
+    def setIndex(self, index):
+        self.bankCombo.blockSignals(True)
+        self.bankCombo.setValue(index >> 7)
+        self.bankCombo.blockSignals(False)
+        self.progCombo.blockSignals(True)
+        self.progCombo.setValue(index & 7)
+        self.progCombo.blockSignals(False)
+
     def setPartObject(self, partObject):
+        if self.partObject:
+            self.partObject.indexChanged.disconnect(self.setIndex)
         self.partObject = partObject
+        self.partObject.indexChanged.connect(self.setIndex)
         self.bankCombo.blockSignals(True)
         self.bankCombo.setValue(partObject.bank)
         self.bankCombo.blockSignals(False)

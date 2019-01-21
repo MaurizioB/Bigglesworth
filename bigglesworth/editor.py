@@ -130,20 +130,27 @@ class Osc3Proxy(QtCore.QSortFilterProxyModel):
 
 class UndoView(QtWidgets.QUndoView):
     def __init__(self, parent):
-        QtWidgets.QUndoView.__init__(self, parent.undoStack, parent)
+        QtWidgets.QUndoView.__init__(self, parent.undoGroup, parent)
         self.setWindowFlags(self.windowFlags() | QtCore.Qt.Window | QtCore.Qt.Tool)
         self.setWindowTitle('Bigglesworth editor undo list')
         self.setEmptyLabel('"Init" clean status')
         self.setCleanIcon(QtGui.QIcon.fromTheme('document-new'))
-        self.undoStack = parent.undoStack
-        self.undoStack.cleanChanged.connect(self.cleanChanged)
+#        self.undoStack = parent.undoStack
+        self.currentStack = self.stack()
+        self.currentStack.cleanChanged.connect(self.cleanChanged)
+        self.group().activeStackChanged.connect(self.setActiveStack)
 
     def cleanChanged(self, clean):
         if clean:
-            if self.undoStack.cleanIndex():
+            if self.stack().cleanIndex():
                 self.setCleanIcon(QtGui.QIcon.fromTheme('document-save'))
             else:
                 self.setCleanIcon(QtGui.QIcon.fromTheme('document-new'))
+
+    def setActiveStack(self, stack):
+        self.currentStack.cleanChanged.disconnect(self.cleanChanged)
+        self.currentStack = self.stack()
+        self.currentStack.cleanChanged.connect(self.cleanChanged)
 
     def showEvent(self, event):
         if not event.spontaneous():
@@ -711,9 +718,12 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.parameters = Parameters(self)
         self.parameters.parameterChanged.connect(self.parameterChanged)
 
-        self.undoStack = QtWidgets.QUndoStack()
-        self.undoStack.indexChanged.connect(self.editStatusCheck)
-        self.undoStack.cleanChanged.connect(self.editStatusCheck)
+        self.undoGroup = QtWidgets.QUndoGroup(self)
+        self.singleUndoStack = QtWidgets.QUndoStack(self)
+        self.undoGroup.addStack(self.singleUndoStack)
+        self.undoGroup.setActiveStack(self.singleUndoStack)
+        self.singleUndoStack.indexChanged.connect(self.editStatusCheck)
+        self.singleUndoStack.cleanChanged.connect(self.editStatusCheck)
 
         self.undoView = UndoView(self)
 #        self.undoView.show()
@@ -927,15 +937,17 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.display.progSendWidget.clicked.connect(self.sendProgramChange)
 
         saveMenu = QtWidgets.QMenu(self)
-        self.saveAction = saveMenu.addAction('Save')
+        self.saveAction = saveMenu.addAction('Save sound')
         self.saveAction.setShortcut(QtGui.QKeySequence('Ctrl+S'))
         self.saveAction.triggered.connect(self.save)
-#        saveMenu.addAction(self.saveAction)
-#        self.addAction(self.saveAction)
-        self.saveAsAction = saveMenu.addAction('Save as...')
+
+        self.saveAsAction = saveMenu.addAction('Save sound as...')
         self.saveAsAction.setShortcut(QtGui.QKeySequence('Ctrl+Shift+S'))
         self.saveAsAction.triggered.connect(self.saveAs)
-#        saveMenu.addAction(self.saveAsAction)
+
+        saveMenu.addSeparator()
+        self.saveMultiAction = saveMenu.addAction('Save multi')
+
         self.addActions(saveMenu.actions())
         self.saveBtn.setMenu(saveMenu)
 
@@ -987,6 +999,11 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.main.midiClock.beat.connect(self.midiClockLed.activate)
         self.main.midiClock.stateChanged.connect(self.setMidiClockButton)
 
+        self.multiUndoStacks = []
+        for part in range(16):
+            stack = QtWidgets.QUndoStack(self)
+            self.multiUndoStacks.append(stack)
+
         self.multiEditorCover = MultiEditorCover(self)
         self.multiEditorCover.hide()
         self.multiEditor = MultiEditor(self)
@@ -1000,10 +1017,21 @@ class EditorWindow(QtWidgets.QMainWindow):
         else:
             self.multiEditor.hide()
             self.multiEditorDialog = None
+        self.saveMultiAction.triggered.connect(self.multiEditor.saveCurrent)
 
-        self.currentMultiPart = 0
-        self._multiMode = self.settings.value('MultiMode', False, type=bool)
-        self.display.setMode(self._multiMode)
+        self.currentMultiPartIndex = None
+        self.currentMultiIndex = None
+        self._multiMode = False
+        self.display.setMultiMode(False)
+        self.display.multiIndexChanged.connect(self.setMultiIndex)
+#        self._multiMode = self.settings.value('MultiMode', False, type=bool)
+#        self.display.setMode(self._multiMode)
+
+    @property
+    def undoStack(self):
+        if self._multiMode:
+            return self.multiUndoStacks[self.currentMultiPartIndex]
+        return self.singleUndoStack
 
     @property
     def multiMode(self):
@@ -1014,18 +1042,54 @@ class EditorWindow(QtWidgets.QMainWindow):
         if mode == self._multiMode:
             return
         self._multiMode = mode
-        self.display.setMode(mode)
+        self.display.setMultiMode(mode)
         if mode:
+            self.saveBtn.clicked.disconnect(self.save)
+            self.saveBtn.popupTimer.setInterval(0)
+            self.nextSoundTimer.timeout.disconnect(self.openSoundFromBankProg)
+            self.nextSoundTimer.timeout.connect(self.openSoundForMulti)
             self.multiEditor.setCollection(self.currentCollection)
+            self.setMultiIndex(self.currentMultiIndex)
+            self.undoGroup.setActiveStack(self.multiUndoStacks[self.currentMultiPartIndex])
+        else:
+            self.saveBtn.clicked.connect(self.save)
+            self.saveBtn.popupTimer.setInterval(250)
+            self.nextSoundTimer.timeout.disconnect(self.openSoundForMulti)
+            self.nextSoundTimer.timeout.connect(self.openSoundFromBankProg)
+            self.undoGroup.setActiveStack(self.singleUndoStack)
 
     def setMultiMode(self, mode):
         self.multiMode = mode
 
-    def setMultiPart(self, part):
-        if self.currentMultiPart == part:
-            return
-        self.currentMultiPart = part
-        self.display.setMultiPart(part)
+    @property
+    def currentMultiSet(self):
+        return self.multiEditor.currentMultiSet
+
+    @property
+    def currentMulti(self):
+        return self.multiEditor.currentMulti
+
+    def setMultiIndex(self, index):
+        if index is None:
+            index = 0
+        self.currentMultiIndex = index
+        self.multiEditor.setCurrentMultiIndex(index)
+        self.display.setMultiIndex(index)
+        self.setMultiPart(self.currentMultiPartIndex)
+        self.nameEdit.setText(self.currentMulti.name)
+
+    @property
+    def currentMultiPart(self):
+        return self.currentMulti.parts[self.currentMultiPartIndex]
+
+    def setMultiPart(self, partIndex):
+        if partIndex is None:
+            partIndex = 0
+        self.currentMultiPartIndex = partIndex
+        self.display.setMultiPart(partIndex)
+        self.undoGroup.setActiveStack(self.multiUndoStacks[self.currentMultiPartIndex])
+        if self.currentMultiPart.prog >= 0:
+            self.openSoundForMulti(self.currentMultiPart.bank, self.currentMultiPart.prog)
 
     def showMultiEditor(self):
         if self.multiEditor.parent() == self:
@@ -1508,7 +1572,7 @@ class EditorWindow(QtWidgets.QMainWindow):
     def progChanged(self, prog):
         if not self.currentCollection:
             return
-        self._nextSoundChange[1] = prog - 1
+        self._nextSoundChange[1] = prog
         self.nextSoundTimer.start()
 
     def setTheme(self, theme):
@@ -1531,6 +1595,7 @@ class EditorWindow(QtWidgets.QMainWindow):
             self.editorMenuBar.setPalette(palette)
         else:
             self.setPalette(theme.palette)
+        self.multiEditor.setPalette(theme.palette)
         self.setFont(theme.font)
         dialStart, dialZero, dialEnd, dialGradient, dialBgd, dialScale, dialNotches, dialIndicator = theme.dialData
         for child in self.findChildren(Dial):
@@ -1592,22 +1657,6 @@ class EditorWindow(QtWidgets.QMainWindow):
 #            self.display.nameEdit.setText('')
         self.display.setStatusText(text)
 
-#    def getUndoText(self, index, mode):
-#        cmd = self.undoStack.command(index)
-#        if mode:
-#            modeStr = 'Restore'
-#            if isinstance(cmd, NameUndo):
-#                value = '"{}"'.format(cmd.newText)
-#            else:
-#                value = cmd.valueStr
-#        else:
-#            modeStr = 'Reset'
-#            if isinstance(cmd, NameUndo):
-#                value = '"{}"'.format(cmd.oldText)
-#            else:
-#                value = cmd.oldValueStr
-#        return '{m} {a} to {v}'.format(m=modeStr, a=cmd.actionText(), v=value)
-
     def showValues(self, state):
         if not self.valueWidgets:
             self.valueWidgets = self.findChildren(Dial) + self.findChildren(Slider)
@@ -1615,10 +1664,12 @@ class EditorWindow(QtWidgets.QMainWindow):
             widget.showValue(state)
 
     def createNameUndo(self, text=None):
-#        print('cambiato! "{}'.format(text))
         if text is None:
             text = self.nameEdit.text()
         newName = text.ljust(16, ' ')[:16]
+        if self.multiMode:
+            print('set multi name!!!')
+            return
 #        oldText = getName(c.default for c in Parameters.parameterData[363:379])
         oldName = getName(self.parameters[363:379])
         if newName == oldName:
@@ -1955,6 +2006,29 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.setValues(data, fromDump=fromDump, resetIndex=True)
         self.activate()
 
+    def openSoundForMulti(self, bank=None, prog=None):
+        if not self.currentCollection:
+            return
+        if bank is None or prog is None:
+            if bank is None:
+                bank = self.display.bankSpin.value()
+            if prog is None:
+                prog = self.display.progSpin.value()
+            self.currentMultiPart.index = (bank << 7) + prog
+        self.display.bankSpin.blockSignals(True)
+        self.display.bankSpin.setValue(bank)
+        self.display.bankSpin.blockSignals(False)
+        self.display.progSpin.blockSignals(True)
+        self.display.progSpin.setValue(prog)
+        self.display.progSpin.blockSignals(False)
+#        self.openSoundFromUid(self.database.getUidFromCollection(bank, prog, collection), collection, show)
+#        self.saveBtn.setSwitchable(False)
+#        self.saveBtn.setSwitched(False)
+        self.currentBank = bank
+        self.currentProg = prog
+        self.currentUid = self.database.getUidFromCollection(bank, prog, self.currentCollection)
+        self.setValues(self.database.getSoundDataFromUid(self.currentUid))
+
     def setValues(self, data=None, fromDump=False, resetIndex=True):
         self.setFromDump = fromDump
         self.display.bankWidget.setDisabled(fromDump and resetIndex)
@@ -1963,14 +2037,18 @@ class EditorWindow(QtWidgets.QMainWindow):
         if not data:
             data = [p.default for p in Parameters.parameterData]
         for p, value in zip(Parameters.parameterData, data):
-            if p.attr.startswith('reserved'):
+            if p.attr.startswith('reserved') or (self._multiMode and p.attr.startswith('nameChar')):
                 continue
             setattr(self.parameters, p.attr, value)
         self.parameters.blockSignals(False)
-        name = getName(self.parameters[363:379]).strip()
+        name = getName(data[363:379]).strip()
         self.undoStack.clear()
         self.undoView.setEmptyLabel(u'"{}" clean status'.format(name))
-        self.display.setStatusText(u'"{}" loaded'.format(name))
+        print(name)
+        if self._multiMode:
+            self.display.multiSoundLabel.setText(name)
+        else:
+            self.display.setStatusText(u'"{}" loaded'.format(name))
 #        self.display.editStatusWidget.setStatus(0)
 
     def showDisplayMenu(self, pos):
