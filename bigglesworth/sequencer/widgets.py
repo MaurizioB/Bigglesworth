@@ -7,6 +7,29 @@ from Qt import QtCore, QtGui, QtWidgets
 from bigglesworth.utils import sanitize
 
 
+class FakeToolBarHandle(QtWidgets.QWidget):
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QWidget.__init__(self, *args, **kwargs)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
+        try:
+            self.setMinimumSize(self._option.rect.size())
+        except:
+            self.setMinimumSize(1, 1)
+            self._option = self.__class__._option = QtWidgets.QStyleOptionToolBar()
+            self._option.initFrom(self)
+            self._option.features = self._option.Movable
+            self._option.toolBarArea = QtCore.Qt.TopToolBarArea
+            self._option.positionOfLine = self._option.Beginning
+            self._option.state |= QtWidgets.QStyle.State_Horizontal
+            self._option.positionWithinLine = self._option.Beginning
+            self._option.rect.setWidth(self.style().pixelMetric(QtWidgets.QStyle.PM_ToolBarHandleExtent, QtWidgets.QStyleOptionToolBar(), self))
+            self.setMinimumSize(self._option.rect.size())
+
+    def paintEvent(self, event):
+        qp = QtWidgets.QStylePainter(self)
+        qp.drawPrimitive(QtWidgets.QStyle.PE_IndicatorToolBarHandle, self._option)
+
+
 class ComboSpin(QtWidgets.QComboBox):
     def __init__(self, *args, **kwargs):
         QtWidgets.QComboBox.__init__(self, *args, **kwargs)
@@ -84,10 +107,12 @@ class ZoomWidget(QtWidgets.QWidget):
         self.plusBtn = QtWidgets.QPushButton('+', self)
         layout.addWidget(self.plusBtn)
         self.plusBtn.setFixedSize(size, size)
+        self.plusBtn.setFocusPolicy(QtCore.Qt.NoFocus)
 
         self.minusBtn = QtWidgets.QPushButton('-', self)
         layout.addWidget(self.minusBtn)
         self.minusBtn.setFixedSize(size, size)
+        self.minusBtn.setFocusPolicy(QtCore.Qt.NoFocus)
 
         self.plusBtn.clicked.connect(lambda: self.zoomChanged.emit(1))
         self.minusBtn.clicked.connect(lambda: self.zoomChanged.emit(-1))

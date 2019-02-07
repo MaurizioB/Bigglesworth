@@ -298,3 +298,36 @@ class SoundFileImport(UnknownFileImport):
             'The selected file does not contain valid sound data.', 
             QtWidgets.QMessageBox.Ok)
 
+
+class SongExportDialog(BaseFileDialog):
+    filtersDesc = [
+        ('mid', 'MIDI file'), 
+        ('bws', 'Bigglesworth song file'), 
+    ]
+    def __init__(self, parent, name=''):
+        BaseFileDialog.__init__(self, parent, BaseFileDialog.AcceptSave)
+        self.setWindowTitle('Export song')
+#        self.setNameFilters(['MIDI file (*.mid)', 'SysEx file (*.syx)' 'All files (*)'])
+        self.setNameFilters(['{} (*.{})'.format(desc, suffix) for suffix, desc in self.filtersDesc] + ['All files (*)'])
+        self.setDefaultSuffix('mid')
+        self.selectFile(name)
+        if QtCore.QFileInfo(name).isAbsolute():
+            self.selectFile(name)
+        else:
+            self.setDirectory(self._locations[self.Home].toLocalFile())
+        self.setSystemUrls(self.Desktop|self.Computer|self.Home|self.Documents|self.Music|self.Program)
+        self.filterSelected.connect(self.getSuffix)
+
+    def getSuffix(self, selected):
+        for (suffix, desc), filter in zip(self.filtersDesc, self.nameFilters()):
+            if filter == selected:
+                self.setDefaultSuffix(suffix)
+                break
+
+
+class SongImportDialog(SongExportDialog):
+    def __init__(self, parent):
+        SongExportDialog.__init__(self, parent)
+        self.setAcceptMode(BaseFileDialog.AcceptOpen)
+
+

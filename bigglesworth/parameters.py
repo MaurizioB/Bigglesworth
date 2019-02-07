@@ -753,6 +753,7 @@ class Parameters(QtCore.QObject):
     indexedValidParameterList = []
     ids = []
     groups = set()
+    attrDict = {}
 
     def __new__(cls, *args, **kwargs):
         obj = QtCore.QObject.__new__(cls, *args, **kwargs)
@@ -766,10 +767,12 @@ class Parameters(QtCore.QObject):
                     childProperty = MakeChildParameter(param.id, childId, child.attr, child.range, child.default)
                     setattr(cls, child.attr, childProperty)
                     childProperties.append((childId, childProperty, mask))
+                    cls.attrDict[child.attr] = child
                 parameterProperty = MakeParameter(param.id, param.attr, param.range, param.default, childProperties)
                 cls.ids.append(param.attr)
                 setattr(cls, param.attr, parameterProperty)
                 cls.parameterList.append(param.attr)
+                cls.attrDict[param.attr] = param
                 if not param.attr.startswith('reserved'):
                     cls.validParameterData.append(param)
                     cls.validParameterList.append(param.attr)
@@ -800,6 +803,10 @@ class Parameters(QtCore.QObject):
     def __iter__(self):
         for i in range(383):
             yield self[i]
+
+    @classmethod
+    def getFromAttribute(cls, attr):
+        return cls.attrDict.get(attr)
 
 #    def getValues(self):
 #        return [getattr()]

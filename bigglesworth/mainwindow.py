@@ -333,6 +333,8 @@ class MainWindow(QtWidgets.QMainWindow):
                         break
 
     def programChange(self, bank, prog):
+        if bank is None:
+            return
         if isinstance(self.leftTabWidget.currentWidget(), CollectionWidget):
             self.leftTabWidget.currentWidget().focusIndex(bank, prog)
         if self.dualMode and isinstance(self.rightTabWidget.currentWidget(), CollectionWidget):

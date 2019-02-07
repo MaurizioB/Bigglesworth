@@ -10,9 +10,6 @@
     <height>433</height>
    </rect>
   </property>
-  <property name="windowTitle">
-   <string>Sequencer</string>
-  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
@@ -63,6 +60,19 @@
      <height>24</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menu_File">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <addaction name="newSongAction"/>
+    <addaction name="openSongAction"/>
+    <addaction name="saveSongAction"/>
+    <addaction name="saveSongAsAction"/>
+    <addaction name="separator"/>
+    <addaction name="importSongAction"/>
+    <addaction name="exportSongAction"/>
+   </widget>
+   <addaction name="menu_File"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="mainToolBar">
@@ -81,6 +91,9 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="openSongAction"/>
+   <addaction name="saveSongAction"/>
+   <addaction name="separator"/>
    <addaction name="addTracksAction"/>
   </widget>
   <widget class="QToolBar" name="playToolBar">
@@ -137,6 +150,9 @@
    <property name="toolTip">
     <string>Stop playback</string>
    </property>
+   <property name="shortcut">
+    <string>.</string>
+   </property>
   </action>
   <action name="rewindAction">
    <property name="icon">
@@ -164,7 +180,7 @@
     <string>Create new tracks</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+N</string>
+    <string>Ctrl+T</string>
    </property>
   </action>
   <action name="loopAction">
@@ -197,6 +213,90 @@
    </property>
    <property name="toolTip">
     <string>Toggle window size</string>
+   </property>
+  </action>
+  <action name="newSongAction">
+   <property name="icon">
+    <iconset theme="document-new">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>New song</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="saveSongAction">
+   <property name="icon">
+    <iconset theme="document-save">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Save song</string>
+   </property>
+   <property name="toolTip">
+    <string>Save current song to database</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="openSongAction">
+   <property name="icon">
+    <iconset theme="document-open">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Browse songs...</string>
+   </property>
+   <property name="toolTip">
+    <string>Browse songs in the database</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="exportSongAction">
+   <property name="icon">
+    <iconset theme="document-export">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Export to MIDI file</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+E</string>
+   </property>
+  </action>
+  <action name="importSongAction">
+   <property name="icon">
+    <iconset theme="document-import">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Import from MIDI file</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+I</string>
+   </property>
+  </action>
+  <action name="saveSongAsAction">
+   <property name="icon">
+    <iconset theme="document-save-as">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Save song as...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+S</string>
    </property>
   </action>
  </widget>

@@ -2,6 +2,8 @@ from collections import OrderedDict
 
 import os
 
+from unidecode import unidecode
+
 os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
 
 from Qt import QtCore, QtGui
@@ -10,6 +12,15 @@ from pianokeyboard import _noteNumberToName
 from bigglesworth.parameters import ctrl2sysex, Parameters
 from bigglesworth.midiutils import NamedControllers
 
+
+class UnicodeValidator(QtGui.QValidator):
+    def validate(self, text, pos):
+        newText = unidecode(text)
+        if len(newText) != text:
+            pos += len(newText) - len(text)
+        return QtGui.QValidator.Acceptable, newText, pos
+
+
 PlayheadPen = QtGui.QPen(QtCore.Qt.red)
 PlayheadPen.setCosmetic(True)
 EndMarkerPen = QtGui.QPen(QtGui.QColor(88, 167, 255))
@@ -17,6 +28,8 @@ EndMarkerPen.setCosmetic(True)
 
 #special event type, which equals to NONE in midiutils, but for this implementation is fine enough
 BLOFELD = 0
+
+UidColumn, DataColumn, TitleColumn, TracksColumn, EditedColumn, CreatedColumn = range(6)
 
 #NoteNames = 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'
 OctaveOffset = 1
@@ -88,9 +101,11 @@ Cardinals = {
 
 IntervalNames = {}
 IntervalNamesShort = {}
+IntervalTypes = {}
 for diatonicInterval, intervals in Intervals.items():
+    intervalTypeLabels = IntervalTypes[diatonicInterval] = []
     for interval in intervals:
-        if diatonicInterval in (4, 5):
+        if diatonicInterval in (4, 5, 8):
             if interval == intervals[0]:
                 chordType = 'Perfect'
                 chordTypeShort = 'perf'
@@ -110,18 +125,26 @@ for diatonicInterval, intervals in Intervals.items():
             else:
                 chordTypeShort = 'aug'
                 chordType = 'Augmented'
+        intervalTypeLabels.append(chordType)
         IntervalNames[(diatonicInterval, interval)] = '{} {}'.format(chordType, Cardinals[diatonicInterval])
         IntervalNamesShort[(diatonicInterval, interval)] = chordTypeShort
 
 Chords = (
+    ({}, 'Triads'), 
     ({3: 4, 5: 7}, 'Major triad'), 
     ({3: 3, 5: 7}, 'Minor triad'), 
     ({3: 3, 5: 6}, 'Diminished triad'), 
+    ({}, 'Sevenths'), 
     ({3: 4, 5: 7, 7: 11}, 'Major seventh'), 
     ({3: 4, 5: 7, 7: 10}, 'Dominant seventh'), 
     ({3: 3, 5: 7, 7: 10}, 'Minor seventh'), 
     ({3: 3, 5: 6, 7: 10}, 'Half-diminished seventh'), 
     ({3: 3, 5: 6, 7: 9}, 'Diminished seventh'), 
+    ({}, 'Suspended'), 
+    ({2: 2, 5: 7}, 'Sus 2'), 
+    ({4: 5, 5: 7}, 'Sus 4'), 
+    ({2: 2, 4: 5, 5: 7}, 'Sus 2-4'), 
+    ({2: 2, 4: 5, 5: 7, 7: 10}, 'Sus 7 (2-4)')
 )
 
 class SnapMode(object):

@@ -813,14 +813,19 @@ class Bigglesworth(QtWidgets.QApplication):
 #                self.device_event.emit(event.sysex)
             return
         elif event.type in (CTRL, NOTEON, NOTEOFF, PROGRAM):
-            self.editorWindow.midiEventReceived(event)
             if WaveTableWindow.openedWindows and event.type in (NOTEON, NOTEOFF):
                 WaveTableWindow.openedWindows[0].midiEventReceived(event)
             if event.type == CTRL and not event.param:
-                self.bankBuffer = event.value
-            elif event.type == PROGRAM and self.bankBuffer is not None:
-                self.mainWindow.programChange(self.bankBuffer, event.program)
+                if self._progReceiveState:
+                    self.bankBuffer = event.value
+                return
+            elif event.type == PROGRAM:
+                if self._progReceiveState:
+                    self.mainWindow.programChange(self.bankBuffer, event.program)
+                    self.editorWindow.programChange(self.bankBuffer, event.program)
                 self.bankBuffer = None
+                return
+            self.editorWindow.midiEventReceived(event)
 
     def sendMidiEvent(self, event, ignoreChanSend=False):
 #        if self.debug_sysex and event.type == SYSEX:
@@ -1382,12 +1387,12 @@ class Bigglesworth(QtWidgets.QApplication):
     def progChangeRequest(self, index, collection):
         if not self.sendLibraryProgChange:
             return
-        if self.editorWindow._editStatus == self.editorWindow.Modified:
-            self.mainWindow.statusbar.showMessage('Failsafe active, program change ignored: current sound in Editor is unsaved!')
-        else:
-            bank = index >> 7
-            prog = index & 127
-            self.editorWindow.openSoundFromBankProg(bank, prog, collection, show=False)
+#        if self.editorWindow._editStatus == self.editorWindow.Modified:
+#            self.mainWindow.statusbar.showMessage('Failsafe active, program change ignored: current sound in Editor is unsaved!')
+#        else:
+#            bank = index >> 7
+#            prog = index & 127
+#            self.editorWindow.openSoundFromBankProg(bank, prog, collection, show=False)
 
     def isClean(self):
         if self.editorWindow._editStatus == self.editorWindow.Modified:

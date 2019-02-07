@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>842</width>
-    <height>450</height>
+    <width>725</width>
+    <height>436</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -21,6 +21,109 @@
     <number>4</number>
    </property>
    <item row="1" column="0">
+    <layout class="QHBoxLayout" name="inputToolBarLayout">
+     <item>
+      <widget class="FakeToolBarHandle" name="widget_3" native="true"/>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Input defaults:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="defaultLengthCombo">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="Line" name="line">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string>Velocity:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="ComboSpin" name="defaultVelocityCombo">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="Line" name="line_4">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="autoChordBtn">
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
+       <property name="text">
+        <string>AutoChord</string>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+       <property name="popupMode">
+        <enum>QToolButton::MenuButtonPopup</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="AutoChordWidget" name="autoChordWidget">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Sunken</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item row="2" column="0">
     <widget class="NoteRegionView" name="noteView">
      <property name="frameShape">
       <enum>QFrame::NoFrame</enum>
@@ -40,11 +143,17 @@
     </widget>
    </item>
    <item row="0" column="0">
-    <layout class="QHBoxLayout" name="horizontalLayout">
+    <layout class="QHBoxLayout" name="mainToolBarLayout">
+     <item>
+      <widget class="FakeToolBarHandle" name="widget_2" native="true"/>
+     </item>
      <item>
       <widget class="QPushButton" name="drawBtn">
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
        <property name="toolTip">
-        <string>Draw notes</string>
+        <string>Draw notes (F1)</string>
        </property>
        <property name="icon">
         <iconset theme="document-edit">
@@ -64,8 +173,11 @@
      </item>
      <item>
       <widget class="QPushButton" name="selectBtn">
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
        <property name="toolTip">
-        <string>Select</string>
+        <string>Select (F2)</string>
        </property>
        <property name="icon">
         <iconset theme="edit-select-all">
@@ -82,8 +194,11 @@
      </item>
      <item>
       <widget class="QPushButton" name="eraseBtn">
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
        <property name="toolTip">
-        <string>Delete notes</string>
+        <string>Delete notes (F3)</string>
        </property>
        <property name="icon">
         <iconset theme="draw-eraser">
@@ -113,7 +228,11 @@
       </widget>
      </item>
      <item>
-      <widget class="QComboBox" name="snapCombo"/>
+      <widget class="QComboBox" name="snapCombo">
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QPushButton" name="lockSnapLengthBtn">
@@ -123,8 +242,14 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
+       <property name="toolTip">
+        <string>Link to input note default</string>
+       </property>
        <property name="icon">
-        <iconset theme="lock">
+        <iconset theme="link">
          <normaloff/>
         </iconset>
        </property>
@@ -137,74 +262,76 @@
       </widget>
      </item>
      <item>
-      <widget class="Line" name="line">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
+      <widget class="FakeToolBarHandle" name="widget" native="true"/>
+     </item>
+     <item>
+      <widget class="QPushButton" name="rewindBtn">
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
+       <property name="icon">
+        <iconset theme="media-skip-backward">
+         <normaloff/>
+        </iconset>
+       </property>
+       <property name="flat">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLabel" name="label_2">
-       <property name="text">
-        <string>Input default:</string>
+      <widget class="QPushButton" name="playBtn">
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
        </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QComboBox" name="defaultLengthCombo">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="label_3">
-       <property name="text">
-        <string>Velocity:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="ComboSpin" name="defaultVelocityCombo">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QToolButton" name="autoChordBtn">
-       <property name="text">
-        <string>AutoChord</string>
+       <property name="icon">
+        <iconset theme="media-playback-start">
+         <normaloff/>
+        </iconset>
        </property>
        <property name="checkable">
         <bool>true</bool>
        </property>
-       <property name="popupMode">
-        <enum>QToolButton::MenuButtonPopup</enum>
+       <property name="flat">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="AutoChordWidget" name="autoChordWidget">
-       <property name="enabled">
-        <bool>false</bool>
+      <widget class="QPushButton" name="loopBtn">
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
        </property>
-       <property name="frameShape">
-        <enum>QFrame::StyledPanel</enum>
+       <property name="icon">
+        <iconset theme="media-playlist-repeat">
+         <normaloff/>
+        </iconset>
        </property>
-       <property name="frameShadow">
-        <enum>QFrame::Sunken</enum>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+       <property name="flat">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
      <item>
-      <spacer name="horizontalSpacer">
+      <widget class="QPushButton" name="stopBtn">
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
+       <property name="icon">
+        <iconset theme="media-playback-stop">
+         <normaloff/>
+        </iconset>
+       </property>
+       <property name="flat">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_2">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
@@ -247,6 +374,12 @@
    <class>AutoChordWidget</class>
    <extends>QFrame</extends>
    <header>bigglesworth.sequencer.noteeditor</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>FakeToolBarHandle</class>
+   <extends>QWidget</extends>
+   <header>bigglesworth.sequencer.widgets</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

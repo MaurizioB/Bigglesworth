@@ -35,7 +35,7 @@ class NoteItem(QtWidgets.QGraphicsRectItem):
         self.setPen(self.defaultPen)
         self.setPos(x, y)
         self.setAcceptHoverEvents(True)
-        self.setFlags(self.flags() | self.ItemIsSelectable)
+        self.setFlags(self.flags() | self.ItemIsSelectable | self.ItemSendsGeometryChanges)
         self.noteOnEvent = noteOnEvent
         self.noteOffEvent = noteOffEvent
         self.noteOnEvent.timeChanged.connect(self.reset)
@@ -80,6 +80,13 @@ class NoteItem(QtWidgets.QGraphicsRectItem):
     def updateToolTip(self):
         self.setToolTip('{}<br/>Vel: {}'.format(noteNamesWithPitch[self.noteOnEvent.note], self.noteOnEvent.velocity))
 
+    def checkScenePosition(self):
+        if self.scene():
+            if not self.sceneBoundingRect().intersects(self.scene().sceneRect()):
+                self.setOpacity(.5)
+            else:
+                self.setOpacity(1)
+
     def hoverMoveEvent(self, event):
         rect = self.rect()
         diff = sanitize(2, rect.width() / 6, self.scene().noteHeight)
@@ -109,8 +116,10 @@ class NoteItem(QtWidgets.QGraphicsRectItem):
     def itemChange(self, change, value):
         if change == self.ItemSelectedHasChanged:
             self.setPen(self.pens[value])
-#        elif change == self.ItemPositionChange and self.isSelected():
-#            value.setY(self.y())
+        elif change == self.ItemPositionChange:
+            self.checkScenePosition()
+        elif change == self.ItemSceneHasChanged:
+            self.checkScenePosition()
         return QtWidgets.QGraphicsRectItem.itemChange(self, change, value)
 
     def paint(self, qp, option, widget):
@@ -194,6 +203,10 @@ class NoteRegionScene(QtWidgets.QGraphicsScene):
             self.notes.append(noteItem)
             self.addItem(noteItem)
             noteItem.setZValue(10)
+
+        self.playhead = QtWidgets.QGraphicsLineItem(0, -100, 0, height + 100)
+        self.addItem(self.playhead)
+        self.playhead.setPen(PlayheadPen)
 
         self.selectionChanged.connect(self.checkSelection)
         self.pendingNotes = set()
@@ -419,6 +432,14 @@ class NoteRegionScene(QtWidgets.QGraphicsScene):
                             self.newNotes[diatonicInterval] = chordNoteItem
                             chordNoteItem.setSelected(True)
                     return
+        elif event.buttons() == QtCore.Qt.RightButton:
+            item = self.itemAt(event.scenePos())
+            if isinstance(item, NoteItem) and self.moveModifiers == QtCore.Qt.ShiftModifier:
+                if item not in self.selectedItems():
+                    self.clearSelection()
+                self.eraseNotes(event.scenePos())
+                return
+
         selected = self.selectedItems()
         QtWidgets.QGraphicsScene.mousePressEvent(self, event)
         if event.buttons() == QtCore.Qt.RightButton:
@@ -516,6 +537,9 @@ class NoteRegionScene(QtWidgets.QGraphicsScene):
         QtWidgets.QGraphicsScene.mouseReleaseEvent(self, event)
 
     def copyNotes(self):
+        print('copioh')
+        if not self.selectedItems():
+            return
         mimeData = QtCore.QMimeData()
         byteArray = QtCore.QByteArray()
         stream = QtCore.QDataStream(byteArray, QtCore.QIODevice.WriteOnly)
@@ -531,7 +555,9 @@ class NoteRegionScene(QtWidgets.QGraphicsScene):
             time = pos.x() // (self.beatSnap * self.beatSize) * self.beatSnap
             time = min(time, self.pattern.length - self.beatSnap)
         else:
-            time = 0
+            pos = self.view.mapToScene(self.view.mapFromGlobal(QtGui.QCursor.pos()))
+            time = pos.x() // (self.beatSnap * self.beatSize) * self.beatSnap
+            time = min(time, self.pattern.length - self.beatSnap)
 
         byteArray = QtWidgets.QApplication.clipboard().mimeData().data('bigglesworth/NoteRegion')
         stream = QtCore.QDataStream(byteArray)
@@ -541,6 +567,8 @@ class NoteRegionScene(QtWidgets.QGraphicsScene):
             self.addNote(time + noteTime, note, velocity, length)
 
     def contextMenuEvent(self, event):
+        if event.modifiers() == QtCore.Qt.ShiftModifier:
+            return
         menu = QtWidgets.QMenu()
         selected = self.selectedItems()
         copyAction = menu.addAction(QtGui.QIcon.fromTheme('edit-copy'), 'Copy')
@@ -647,6 +675,10 @@ class NoteRegionScene(QtWidgets.QGraphicsScene):
                 return
         elif event.key() in KeyToInterval and self.newNotes and not event.isAutoRepeat():
             self.editChord(KeyToInterval[event.key()])
+        elif event.matches(QtGui.QKeySequence.Copy):
+            self.copyNotes()
+        elif event.matches(QtGui.QKeySequence.Paste):
+            self.pasteNotes()
         QtWidgets.QGraphicsScene.keyPressEvent(self, event)
 
 
@@ -738,6 +770,7 @@ class NotePatternItem(PatternRectItem):
         self.notePathItem.setPen(QtCore.Qt.white)
         self.setNotes()
         self.finalize()
+        self.autoRectItems = []
 
     def setNotes(self):
         if isinstance(self.parentItem(), self.__class__):
@@ -895,18 +928,22 @@ class TrackContainer(QtWidgets.QGraphicsWidget):
                     autoSizes[automation] = autoWidget.geometry().y() + trackWidget.margin, autoWidget.geometry().height() - trackWidget.margin * 2
                     trackAutomations[automation] = []
                 except:
+                    #THIS IS WRONG!!! IT WORKS BUT WRONG!!!
                     print('track possibly without automation widgets set yet')
+                    self.trackContainerWidget.addAutomation(track, automation)
+                    self.rebuild()
+                    return
 
             trackPatterns = self.patterns[track] = []
             y = trackWidget.geometry().y()
             height = trackWidget.geometry().height() - trackWidget.margin
             for pattern in track.patterns:
                 width = pattern.length * BeatHUnit
-                patternRectItem = NotePatternItem(self, 
+                notePatternItem = NotePatternItem(self, 
                     0, 0, width, height, pattern)
                 x = pattern.time * BeatHUnit
-                patternRectItem.setPos(x, y)
-                trackPatterns.append(patternRectItem)
+                notePatternItem.setPos(x, y)
+                trackPatterns.append(notePatternItem)
 
                 for automation in automations:
                     autoY, autoHeight = autoSizes[automation]
@@ -916,6 +953,8 @@ class TrackContainer(QtWidgets.QGraphicsWidget):
                     if not automationTrackWidgets[automation].isVisible():
                         autoRectItem.setVisible(False)
                     trackAutomations[automation].append(autoRectItem)
+                    autoRectItem.notePatternItem = notePatternItem
+                    notePatternItem.autoRectItems.append(autoRectItem)
 
         self.checkGeometry()
 #        self.setGeometry(self.childrenBoundingRect())
@@ -1006,8 +1045,13 @@ class SequencerScene(QtWidgets.QGraphicsScene):
 
     def movePatterns(self, pos):
         snapRatio = self.beatSnap * BeatHUnit
-        diffX, rest = divmod(pos.x() - self.currentItem.x(), snapRatio)
-        diffX *= self.beatSnap
+        try:
+            diffX = (pos.x() - self.currentItem.x()) // snapRatio
+            diffX *= self.beatSnap
+        except:
+            diffX = (pos.x() - self.currentItem.x()) / BeatHUnit
+#        diffX, rest = divmod(pos.x() - self.currentItem.x(), snapRatio)
+#        diffX *= self.beatSnap
 
         currentTrack = self.currentItem.pattern.track.index()
         diffY = 0
@@ -1064,8 +1108,11 @@ class SequencerScene(QtWidgets.QGraphicsScene):
         if x < 0:
             return
         snapRatio = self.beatSnap * BeatHUnit
-        diff, rest = divmod(x - self.currentItem.x(), snapRatio)
-        diff *= self.beatSnap
+        try:
+            diff, rest = divmod(x - self.currentItem.x(), snapRatio)
+            diff *= self.beatSnap
+        except:
+            diff, rest = (x - self.currentItem.x()) / BeatHUnit, 0
 
         if not self.resizeItems:
             for item in self.selectedItems():
@@ -1108,10 +1155,20 @@ class SequencerScene(QtWidgets.QGraphicsScene):
         return QtWidgets.QGraphicsScene.eventFilter(self, source, event)
 
     def mousePressEvent(self, event):
-        if not self.itemAt(event.scenePos()):
+        underMouse = self.itemAt(event.scenePos())
+        if not underMouse:
             #see the mousePressEvent workaround for PatternRectItem
             #after a menu is dismissed
             self.clearSelection()
+        elif not isinstance(underMouse, NotePatternItem):
+            while underMouse.parentItem():
+                if isinstance(underMouse, NotePatternItem):
+                    break
+                elif isinstance(underMouse, AutoPatternItem):
+                    self.clearSelection()
+                    underMouse.notePatternItem.setSelected(True)
+                    break
+                underMouse = underMouse.parentItem()
         QtWidgets.QGraphicsScene.mousePressEvent(self, event)
         if self.selectedItems():
             self.mousePos = event.scenePos()
@@ -1122,6 +1179,7 @@ class SequencerScene(QtWidgets.QGraphicsScene):
             else:
                 self.currentItem = self.selectedItems()[0]
             self._dragCopy = event.modifiers() == QtCore.Qt.ShiftModifier and not self.currentItem.resizeMode
+
 
     def mouseMoveEvent(self, event):
         if event.buttons() == QtCore.Qt.LeftButton and self.currentItem:

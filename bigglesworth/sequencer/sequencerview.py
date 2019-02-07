@@ -9,9 +9,11 @@ from bigglesworth.parameters import Parameters
 from bigglesworth.sequencer.const import (Bar, Marker, Tempo, Meter, BeatHUnit, 
     PlayheadPen, EndMarkerPen, SnapModes, DefaultPatternSnapModeId, 
     CtrlParameter, BlofeldParameter, Mappings, getCtrlNameFromMapping)
-from bigglesworth.sequencer.structure import Structure, MarkerEvent, EndMarker, LoopStartMarker, LoopEndMarker, TempoEvent, MeterEvent, RegionInfo, NoteOffEvent, NoteOnEvent
+from bigglesworth.sequencer.structure import (Structure, MarkerEvent, EndMarker, LoopStartMarker, LoopEndMarker, 
+    TempoEvent, MeterEvent, RegionInfo, NoteOffEvent, NoteOnEvent)
 from bigglesworth.sequencer.graphics import SequencerScene, NotePatternItem, PatternRectItem, TrackContainer
-from bigglesworth.sequencer.dialogs import TempoEditDialog, MeterEditDialog, AddAutomationDialog, AddTracksDialog, QuantizeDialog
+from bigglesworth.sequencer.dialogs import (TempoEditDialog, MeterEditDialog, AddAutomationDialog, AddTracksDialog, 
+    QuantizeDialog, InputTextDialog)
 from bigglesworth.sequencer.widgets import ComboSpin, ZoomWidget, ScrollBarSpacer
 from bigglesworth.sequencer.noteeditor import NoteRegionEditor
 
@@ -101,10 +103,11 @@ class MarkerWidget(TimelineEventWidget):
         event.labelChanged.connect(self.setLabel)
 
     def edit(self):
-        newLabel, res = QtWidgets.QInputDialog.getText(self, 'Rename marker', 
-            'Type the marker label (16 characters max):', text=self.event.label)
-        if res:
-            self.event.label = newLabel[:16].strip()
+        res = InputTextDialog(self, 'Rename marker', 
+            'Type the marker label (16 characters max):', 
+            self.event.label).exec_()
+        if res is not None:
+            self.event.label = res
 
     def mouseDoubleClickEvent(self, event):
         if event.buttons() == QtCore.Qt.LeftButton:
@@ -273,6 +276,7 @@ class TimelineWidget(QtWidgets.QWidget):
 
     def __init__(self, parent, timelineHeader, structure):
         QtWidgets.QWidget.__init__(self, parent)
+        self.setMouseTracking(True)
         self.timelineHeader = timelineHeader
         self.structure = structure
         structure.timelineChanged.connect(self.checkMarkers)
@@ -354,6 +358,10 @@ class TimelineWidget(QtWidgets.QWidget):
             self.dragMovement.emit()
         return QtWidgets.QWidget.eventFilter(self, source, event)
 
+    def leaveEvent(self, event):
+        QtWidgets.QWidget.leaveEvent(self, event)
+        self.window().statusBar().clearMessage()
+
     def mousePressEvent(self, event):
         if event.buttons() == QtCore.Qt.LeftButton:
             self._mousePos = self.mousePos = event.x()
@@ -371,6 +379,15 @@ class TimelineWidget(QtWidgets.QWidget):
             self.longPressTimer.stop()
             self.dragPlayhead.emit()
 #            self.dragMovement.emit()
+        timelineEventType = self.timelineHeader.timelineTypeFromPos(event.y())
+        if timelineEventType == Marker:
+            self.window().statusBar().showMessage('Double click to add/edit marker, context menu to add loop')
+        elif timelineEventType == Tempo:
+            self.window().statusBar().showMessage('Double click to add/edit tempo')
+        elif timelineEventType == Meter:
+            self.window().statusBar().showMessage('Double click to add/edit meter')
+        else:
+            self.window().statusBar().clearMessage()
 
     def mouseReleaseEvent(self, event):
         self.mousePos = None
@@ -816,19 +833,34 @@ class MainTrackWidget(MetaRegionWidget):
         self.labelEdit.setFrame(False)
         self.labelEdit.editingFinished.connect(self.setTrackLabel)
 
-        chanLayout = QtWidgets.QHBoxLayout()
-        self.layout().addLayout(chanLayout)
+        partChanLayout = QtWidgets.QGridLayout()
+        self.layout().addLayout(partChanLayout)
         chanLbl = QtWidgets.QLabel('Channel:')
         chanLbl.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
-        chanLayout.addWidget(chanLbl)
+        partChanLayout.addWidget(chanLbl)
         self.channelCombo = ComboSpin(self)
-        chanLayout.addWidget(self.channelCombo)
+        partChanLayout.addWidget(self.channelCombo, 0, 1)
         self.channelCombo.setRange(1, 16)
         self.channelCombo.setFrame(False)
         self.channelCombo.setCurrentIndex(track.channel)
         self.channelCombo.currentIndexChanged.connect(self.setTrackChannel)
 
-        self.layout().addStretch(0)
+#        partLayout = QtWidgets.QHBoxLayout()
+#        self.layout().addLayout(partLayout)
+#        partLbl = QtWidgets.QLabel('Part:')
+#        partLbl.setSizePolicy(chanLbl.sizePolicy())
+#        partChanLayout.addWidget(partLbl, 1, 0)
+#        self.partCombo = QtWidgets.QComboBox()
+##        self.partCombo.setSizePolicy(chanLbl.sizePolicy())
+#        partChanLayout.addWidget(self.partCombo, 1, 1)
+#        self.partCombo.sizeHint = self.channelCombo.sizeHint
+#        self.partCombo.addItems([str(p) for p in range(1, 17)])
+#        self.partCombo.setEditable(True)
+#        self.partCombo.lineEdit().setAlignment(QtCore.Qt.AlignRight)
+#        self.partCombo.lineEdit().setReadOnly(True)
+#        self.partCombo.setFrame(False)
+
+#        self.layout().addStretch(0)
 
         self.automationWidget = AutomationWidget(track)
         self.layout().addWidget(self.automationWidget)
@@ -836,6 +868,7 @@ class MainTrackWidget(MetaRegionWidget):
 
     def setTrackLabel(self):
         self.track.label = self.labelEdit.text()
+        print('setto label', self.track.label)
 
     def setTrackChannel(self, channel):
         self.track.channel = channel
@@ -908,13 +941,23 @@ class AutomationTrackWidget(MetaRegionWidget):
         self.automationInfo = automationInfo
 
         if automationInfo.parameterType == BlofeldParameter:
-            param = Parameters.parameterData[automationInfo.parameterId >> 4]
+#            come cazzo si chiama la regione?
+            param = Parameters.parameterData[automationInfo.parameterId >> 4 & 511]
             if param.children:
                 param.children[automationInfo.parameterId & 7]
-            self.label = QtWidgets.QLabel(param.fullName)
-            self.setToolTip(param.fullName)
+            part = automationInfo.parameterId >> 15
+            label = param.fullName
+            if part:
+                label += ' (part {})'.format(part + 1)
+#            print('eccomi', param, automationInfo.parameterId)
+            self.label = QtWidgets.QLabel(label)
+            self.setToolTip(label)
         elif automationInfo.parameterType == CtrlParameter:
-            description = getCtrlNameFromMapping(automationInfo.parameterId, mapping=automationInfo.mapping, short=True)[0]
+            try:
+                mapping = automationInfo.mapping
+            except:
+                mapping = 'Blofeld'
+            description = getCtrlNameFromMapping(automationInfo.parameterId, mapping=mapping, short=True)[0]
             self.label = QtWidgets.QLabel(description)
             self.setToolTip('CC {}\n{}'.format(automationInfo.parameterId, description))
         self.layout().addWidget(self.label)
@@ -929,6 +972,9 @@ class TrackContainerWidget(QtWidgets.QWidget):
     def __init__(self, parent, structure):
         QtWidgets.QWidget.__init__(self, parent)
         self.structure = structure
+        self.structure.trackDeleted.connect(self.deleteTrack)
+        self.structure.trackAdded.connect(self.addTrack)
+        self.structure.automationChanged.connect(self.checkAutomations)
         self.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Expanding)
         self.setMinimumSize(10, 10)
         self.setMouseTracking(True)
@@ -947,13 +993,21 @@ class TrackContainerWidget(QtWidgets.QWidget):
         for track in structure.tracks:
             self.addTrack(track)
 
+    def checkAutomations(self, track, automationInfo, added):
+        if added and not automationInfo in self.automationTrackWidgets[track]:
+            self.addAutomation(track, automationInfo)
+
     def addAutomation(self, track, automationInfo):
-        if track.index() == self.structure.trackCount() - 1:
-            index = self.layout().count()
-        else:
-            index = self.layout().indexOf(self.trackWidgets[self.structure.tracks[track.index() + 1]])
+        if automationInfo in self.automationTrackWidgets[track]:
+            print('ignoro')
+            return
+        index = self.layout().indexOf(self.trackWidgets[self.structure.tracks[track.index()]]) + 1
+        try:
+            index += track.automations().index(automationInfo)
+        except Exception as e:
+            print('Automation not found?!', e)
         widget = AutomationTrackWidget(track, automationInfo)
-        widget.setMaximumWidth(self.width())
+        widget.setMaximumWidth(self.width() - self.layout().spacing() - 2)
         self.automationTrackWidgets[track][automationInfo] = widget
         self.layout().insertWidget(index, widget)
         #this is necessary for the following comprehension, as for some reason the widget is added but not yet visible
@@ -963,16 +1017,22 @@ class TrackContainerWidget(QtWidgets.QWidget):
         automationWidget.blockSignals(True)
         automationWidget.status = automationWidget.Expanded if all(visible) else automationWidget.Partial
         automationWidget.blockSignals(False)
+        QtWidgets.QApplication.processEvents()
 
-    def deleteTrack(self, track):
+    def deleteTrackRequest(self, track):
         if QtWidgets.QMessageBox.warning(self, 'Delete track', 
             'Do you want to remove track "{}" and all its contents?<br>'
             'This operation cannot be undone!'.format(track.label), 
             QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel) == QtWidgets.QMessageBox.Ok:
-                trackWidget = self.trackWidgets.pop(track)
-                self.layout().removeWidget(trackWidget)
                 self.structure.deleteTrack(track)
-                trackWidget.deleteLater()
+
+    def deleteTrack(self, track):
+        trackWidget = self.trackWidgets.pop(track)
+        self.layout().removeWidget(trackWidget)
+        trackWidget.deleteLater()
+        for automationWidget in self.automationTrackWidgets[track].values():
+            self.layout().removeWidget(automationWidget)
+            automationWidget.deleteLater()
 
     def addTrack(self, track):
         self.automationTrackWidgets[track] = {}
@@ -981,7 +1041,7 @@ class TrackContainerWidget(QtWidgets.QWidget):
         trackWidget.addAutomationRequested[object].connect(
             lambda automationInfo, track=track: self.addAutomationRequested[object, object].emit(track, automationInfo))
         trackWidget.automationWidget.statusChanged.connect(self.automationDisplayChanged)
-        trackWidget.deleteRequested.connect(lambda track=track: self.deleteTrack(track))
+        trackWidget.deleteRequested.connect(lambda track=track: self.deleteTrackRequest(track))
         trackWidget.wheelEventSignal.connect(self.wheelEventSignal)
         self.trackWidgets[track] = trackWidget
         self.layout().addWidget(trackWidget)
@@ -1087,6 +1147,7 @@ class SequencerView(QtWidgets.QGraphicsView):
         self.trackBackground.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 #        self.trackBackground.setFocusPolicy(QtCore.Qt.NoFocus)
         self.trackBackground.customContextMenuRequested.connect(self.showTrackMenu)
+        self.trackBackground.setStatusTip('Double click to add tracks')
 
         self.trackContainerWidget = TrackContainerWidget(self, self.structure)
         self.trackContainerWidget.move(0, self.timelineHeight)
@@ -1115,16 +1176,13 @@ class SequencerView(QtWidgets.QGraphicsView):
         self.menuActive = False
 
         self.playhead = scene.playhead
+        self.setPlayheadTime = self.window().setPlayheadTime
 #        self.playheadTimer = QtCore.QTimer()
 #        self.playheadTimer.setInterval(20)
 #        self.playheadTimer.timeout.connect(self.setPlayhead)
 #        self.elapsedTimer = QtCore.QElapsedTimer()
         self.endLine = scene.endLine
         self.followPlayhead = True
-        self.playAnimation = QtCore.QSequentialAnimationGroup()
-        self.structure.timelineChanged.connect(self.setPlayAnimation)
-        self._playheadTime = 0
-        self.setPlayAnimation()
 
     def setZoom(self, delta):
         factor = self.transform().m11()
@@ -1138,22 +1196,16 @@ class SequencerView(QtWidgets.QGraphicsView):
             self.zoomChanged.emit(factor)
 
     @property
-    def addTracksAction(self):
-        return self.window().addTracksAction
-
-    @QtCore.pyqtProperty(float)
     def playheadTime(self):
-        return self._playheadTime
+        return self.window()._playheadTime
 
     @playheadTime.setter
     def playheadTime(self, time):
-        self._playheadTime = time
-        pos = BeatHUnit * time
-        self.playhead.setX(pos)
-        self.timelineWidget.setPlayheadPos(pos)
+        self.setPlayheadTime(time)
 
-    def _wheelEvent(self, event):
-        print(self, event)
+    @property
+    def addTracksAction(self):
+        return self.window().addTracksAction
 
     def showTrackMenu(self):
         menu = QtWidgets.QMenu()
@@ -1220,68 +1272,13 @@ class SequencerView(QtWidgets.QGraphicsView):
     def deleteMarker(self, marker):
         self.structure.deleteMarker(marker)
 
-    def setPlayAnimation(self):
-        self.playAnimation.clear()
-        tempoIter = iter(self.structure.tempos)
-        currentTempo = tempoIter.next()
-        currentTime = 0
-        currentPos = 0
-        keepGoing = True
-        while keepGoing:
-            animation = QtCore.QPropertyAnimation(self, b'playheadTime')
-            try:
-                nextTempo = tempoIter.next()
-                diff = nextTempo.time - currentTempo.time
-            except:
-                nextTempo = None
-                diff = 20000
-                keepGoing = False
-            duration = diff * currentTempo.beatLengthMs
-            animation.setDuration(duration)
-            currentTime += duration
-            animation.setStartValue(currentPos)
-            currentPos += duration * currentTempo.beatSize
-            animation.setEndValue(currentPos)
-            self.playAnimation.addAnimation(animation)
-            currentTempo = nextTempo
-
     def stop(self):
         self.playheadTime = 0
-        self.playAnimation.stop()
-
-    def togglePlay(self, state):
-        if state:
-            self.playAnimation.start()
-        else:
-            self.playAnimation.stop()
 
     def ensurePlayheadVisible(self):
         if not self.followPlayhead:
             return
         self.ensureVisible(QtCore.QRectF(self.playhead.x(), self.mapToScene(self.viewport().rect().center()).y(), 1, 1))
-
-    def setPlayheadTime(self, time):
-        self.playheadTime = time
-        self.ensurePlayheadVisible()
-
-#    def setPlayhead(self):
-##        x = self.tempoMapLambda(self.elapsedTimer.elapsed())
-##        self.playhead.setX(self.elapsedTimer.elapsed() * .002 * BeatHUnit)
-##        elapsed = self.elapsedTimer.elapsed() * .001
-##        if 0 <= elapsed % 1000 <= 100:
-##            e = elapsed * .002 * BeatHUnit
-##            l = self.tempoMapLambda(elapsed * .001 / BeatHUnit)
-##            print('e: {:.2f}, l: {:.02f}, d: {:.05f}'.format(e, l, e-l))
-#        elapsed = self.elapsedTimer.elapsed()
-#        for time, func in self.tempoLambdas:
-#            if time > elapsed:
-##                x = elapsed * .002 * BeatHUnit
-##                print(x, func(elapsed) * BeatHUnit)
-#                x = func(elapsed) * BeatHUnit
-#                break
-#        self.playhead.setX(x)
-#        self.timelineWidget.setPlayheadPos(x)
-#        self.ensurePlayheadVisible()
 
     def addAutomation(self, track, automationInfo=None):
         if automationInfo is None:
@@ -1291,9 +1288,9 @@ class SequencerView(QtWidgets.QGraphicsView):
             automationInfo = track.addAutomation(dialog.automationInfo())
         else:
             automationInfo = track.addAutomation(automationInfo)
-        if automationInfo:
-            self.trackContainerWidget.addAutomation(track, automationInfo)
-            self.trackContainer.rebuild()
+#        if automationInfo:
+#            self.trackContainerWidget.addAutomation(track, automationInfo)
+#            self.trackContainer.rebuild()
 
     def setBeatSnapMode(self, snapMode):
         self.beatSnap = self.scene().beatSnap = snapMode.length
@@ -1301,11 +1298,15 @@ class SequencerView(QtWidgets.QGraphicsView):
 
     def editItem(self, item):
         if isinstance(item, NotePatternItem):
-            editor = NoteRegionEditor(self.window(), item.pattern)
+            self.window().stop()
+            pattern = item.pattern
+            editor = NoteRegionEditor(self.window(), pattern)
+#            print(self.window().player.playFrom)
+#            editor.playBtn.toggled.connect(lambda: self.window().player.playFrom(pattern.time, pattern.time + pattern.length, pattern=editor.pattern))
             if editor.exec_():
-                track = item.pattern.track
+                track = pattern.track
                 existing = track.automations()
-                item.pattern.copyFrom(editor.pattern)
+                pattern.copyFrom(editor.pattern)
                 for automation in track.automations():
                     if automation not in existing:
                         self.trackContainerWidget.addAutomation(track, automation)
@@ -1339,9 +1340,13 @@ class SequencerView(QtWidgets.QGraphicsView):
             return
         count, label, channel = res
         for t in range(count):
-            track = self.structure.addTrack(label=label, channel=channel)
-            self.trackContainerWidget.addTrack(track)
-        self.trackContainer.rebuild()
+            self.structure.addTrack(label=label, channel=channel)
+#            self.trackContainerWidget.addTrack(track)
+#        self.trackContainer.rebuild()
+#
+#    def trackAdded(self, track):
+#        self.trackContainerWidget.addTrack(track)
+#        self.trackContainer.rebuild()
 
     def deletePatterns(self, items):
         if QtWidgets.QMessageBox.warning(self, 'Delete patterns', 
@@ -1463,6 +1468,10 @@ class SequencerView(QtWidgets.QGraphicsView):
             self.cursorLine.setVisible(False)
         elif event.type() == QtCore.QEvent.Enter:
             self.cursorLine.setVisible(True)
+        elif event.type() == QtCore.QEvent.Wheel:
+            delta = 1 if event.delta() > 0 else -1
+            scrollBar = self.horizontalScrollBar()
+            scrollBar.setValue(scrollBar.value() + (scrollBar.pageStep() + scrollBar.singleStep()) * delta * .125)
         return QtWidgets.QGraphicsView.viewportEvent(self, event)
 
     def mouseDoubleClickEvent(self, event):
@@ -1484,13 +1493,15 @@ class SequencerView(QtWidgets.QGraphicsView):
         QtWidgets.QGraphicsView.mouseMoveEvent(self, event)
 
     def contextMenuEvent(self, event):
+        print('view menu')
         selected = self.scene().selectedItems()
+        pos = event.pos()
         menu = QtWidgets.QMenu()
         if not selected:
             for track, top, bottom in self.trackSizes():
                 if top <= event.y() - self.trackContainerWidget.y() + self.timelineHeader.height() <= bottom:
                     newPatternAction = menu.addAction(QtGui.QIcon.fromTheme('document-new'), 'Add pattern to "{}"'.format(track.label))
-                    newPatternAction.triggered.connect(lambda: self.addPattern(track, pos=event.pos()))
+                    newPatternAction.triggered.connect(lambda: self.addPattern(track, pos=pos))
                     break
             menu.addSeparator()
             menu.addAction(self.addTracksAction)
@@ -1509,6 +1520,29 @@ class SequencerView(QtWidgets.QGraphicsView):
                     if item.pattern.repetitions > 1:
                         unloopAction = menu.addAction('Unlink {} loops'.format(item.pattern.repetitions - 1))
                         unloopAction.triggered.connect(item.pattern.unloop)
+                if pos not in item.sceneBoundingRect() and item.autoRectItems:
+                    for autoRectItem in item.autoRectItems:
+                        if pos in autoRectItem.sceneBoundingRect():
+                            break
+                    menu.addSection(str(autoRectItem.regionInfo))
+                    clearAutoAction = menu.addAction('Clear automation data')
+                    region = autoRectItem.pattern.getAutomationRegion(autoRectItem.regionInfo)
+                    if not region.events:
+                        clearAutoAction.setEnabled(False)
+                    automationGroup = QtWidgets.QActionGroup(self)
+                    discreteAction = menu.addAction(QtGui.QIcon.fromTheme('labplot-xy-smoothing-curve'), 'Discrete')
+                    automationGroup.addAction(discreteAction)
+                    discreteAction.setCheckable(True)
+                    continuousAction = menu.addAction(QtGui.QIcon.fromTheme('labplot-xy-interpolation-curve'), 'Continuous')
+                    automationGroup.addAction(continuousAction)
+                    continuousAction.setCheckable(True)
+                    if region.continuous:
+                        continuousAction.setChecked(True)
+                    else:
+                        discreteAction.setChecked(True)
+                    discreteAction.triggered.connect(lambda: [region.setContinuous(False), self.trackContainer.rebuild()])
+                    continuousAction.triggered.connect(lambda: [region.setContinuous(True), self.trackContainer.rebuild()])
+                    menu.addSeparator()
             else:
                 plural = 's'
             quantizeAction = menu.addAction(QtGui.QIcon.fromTheme('grid-rectangular'), 'Quantize pattern' + plural)

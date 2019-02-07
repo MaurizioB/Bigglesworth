@@ -3,11 +3,13 @@
 import sys, os
 from math import modf
 from bisect import bisect_left
+from xml.etree import ElementTree as ET
+from uuid import uuid4
 import numpy as np
 
 os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
 
-from Qt import QtCore, QtGui, QtWidgets
+from Qt import QtCore, QtGui, QtSql, QtWidgets
 from PyQt4.QtGui import QStyleOptionFrameV3
 QtWidgets.QStyleOptionFrameV3 = QStyleOptionFrameV3
 
@@ -16,9 +18,153 @@ if __name__ == '__main__':
     sys.path.append('../..')
 
 from bigglesworth.utils import loadUi
-from bigglesworth.midiutils import NOTEON, NOTEOFF, CTRL, SYSEX, MidiEvent
-from bigglesworth.sequencer.const import SnapModes, SnapModeRole, DefaultPatternSnapModeId, BLOFELD
-from bigglesworth.sequencer.dialogs import RepetitionsDialog
+from bigglesworth.midiutils import NOTEON, NOTEOFF, CTRL, SYSEX, MidiEvent, IDW, IDE, SNDP
+from bigglesworth.sequencer.const import (SnapModes, SnapModeRole, DefaultPatternSnapModeId, BLOFELD, BeatHUnit, 
+    UidColumn, DataColumn, TitleColumn, TracksColumn, EditedColumn, CreatedColumn, BlofeldParameter, CtrlParameter)
+from bigglesworth.sequencer.dialogs import RepetitionsDialog, SongBrowser, InputTextDialog, BlofeldIdDialog, MidiImportProgressDialog
+from bigglesworth.sequencer.structure import NoteOnEvent, NoteOffEvent, CtrlEvent, LoopStartMarker, LoopEndMarker
+from bigglesworth.dialogs import SongExportDialog, SongImportDialog
+from bigglesworth.libs import midifile
+
+
+event2MidiFileClasses = {
+    NoteOnEvent: midifile.NoteOnEvent, 
+    NoteOffEvent: midifile.NoteOffEvent, 
+    CtrlEvent: midifile.ControlChangeEvent, 
+}
+midiEvent2EventClasses = {v:k for k, v in event2MidiFileClasses.items()}
+
+#def event2MidiFile(event):
+#    midiEvent = event.midiEvent
+#    if event.eventType == NoteOnEvent:
+#        return midifile.NoteOnEvent(channel=midiEvent.channel, pitch=midiEvent.data1, velocity=midiEvent.velocity)
+#    elif event.eventType == NoteOffEvent:
+#        return midifile.NoteOffEvent(channel=midiEvent.channel, pitch=midiEvent.data1, velocity=midiEvent.velocity)
+#    return midifile.ControlChangeEvent(channel=midiEvent.channel, control=midiEvent.data1, value=midiEvent.velocity)
+
+
+class FakeBlofeldDB(QtCore.QObject):
+    def __init__(self):
+        QtCore.QObject.__init__(self)
+        db = QtSql.QSqlDatabase.database()
+        self.updateQuery = QtSql.QSqlQuery()
+        if not 'songs' in db.tables():
+            if not self.updateQuery.exec_('CREATE TABLE songs (uid varchar, data blob)'):
+                print(self.updateQuery.lastError().driverText(), self.updateQuery.lastError().databaseText())
+
+
+class SongModel(QtSql.QSqlTableModel):
+    def __init__(self):
+        QtSql.QSqlTableModel.__init__(self)
+        self.updateQuery = QtSql.QSqlQuery()
+        if not 'songs' in self.database().tables():
+            if not self.updateQuery.exec_('CREATE TABLE songs (uid varchar, data blob)'):
+                print(self.updateQuery.lastError().driverText(), self.updateQuery.lastError().databaseText())
+        self.setTable('songs')
+        self.select()
+
+    def setData(self, *args, **kwargs):
+        assert QtSql.QSqlTableModel.setData(self, *args, **kwargs)
+        res = self.submitAll()
+        print('salvato')
+        return res
+
+class SongProxyModel(QtCore.QIdentityProxyModel):
+    headers = {
+        TitleColumn: 'Title', 
+        TracksColumn: 'Tracks', 
+        EditedColumn: 'Edited', 
+        CreatedColumn: 'Created', 
+    }
+    dataChangedSignal = QtCore.pyqtSignal(QtCore.QModelIndex)
+
+    def __init__(self):
+        QtCore.QIdentityProxyModel.__init__(self)
+        self.setSourceModel(SongModel())
+
+    def columnCount(self, parent=None):
+        return 6
+
+    def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
+        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
+            try:
+                return self.headers[section]
+            except:
+                pass
+        return QtCore.QIdentityProxyModel.headerData(self, section, orientation, role)
+
+    def index(self, row, column, parent=QtCore.QModelIndex()):
+        if column >= TitleColumn:
+            return self.createIndex(row, column)
+        return QtCore.QIdentityProxyModel.index(self, row, column, parent)
+
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        if index.column() >= TitleColumn and role in (QtCore.Qt.DisplayRole, QtCore.Qt.EditRole):
+            try:
+                root = ET.fromstring(self.sourceModel().index(index.row(), DataColumn).data(role))
+                songElement = root.find('SequencerSong')
+                column = index.column()
+                if column == TitleColumn:
+                    return songElement.get('title')
+                elif column == TracksColumn:
+                    return str(len(songElement.findall('Track')))
+                elif column == EditedColumn:
+                    return QtCore.QDateTime.fromMSecsSinceEpoch(int(songElement.get('edited')))
+                elif column == CreatedColumn:
+                    return QtCore.QDateTime.fromMSecsSinceEpoch(int(songElement.get('created')))
+            except Exception as e:
+                print('Not able to read data', e)
+        if index.column() == TracksColumn and role == QtCore.Qt.TextAlignmentRole:
+            return QtCore.Qt.AlignCenter
+        return QtCore.QIdentityProxyModel.data(self, index, role)
+
+    def setData(self, index, value, role=QtCore.Qt.EditRole):
+        if index.column() == TitleColumn and role == QtCore.Qt.EditRole:
+            try:
+                root = ET.fromstring(self.sourceModel().index(index.row(), DataColumn).data(role))
+                root.find('SequencerSong').set('title', value)
+                try:
+                    return QtCore.QIdentityProxyModel.setData(self, 
+                        index.sibling(index.row(), DataColumn), 
+                        unicode(ET.tostring(root, encoding='utf-8').decode('utf-8')), 
+                        role)
+                finally:
+                    self.dataChangedSignal.emit(index)
+            except Exception as e:
+                print('error saving title', e)
+        if QtCore.QIdentityProxyModel.setData(self, index, value, role):
+            print('salvato')
+            return True
+        else:
+            print('buuuuh')
+            return False
+
+    def flags(self, index):
+        flags = QtCore.QIdentityProxyModel.flags(self, index)
+        flags |= QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+        if index.column() == TitleColumn:
+            flags |= QtCore.Qt.ItemIsEditable
+        return flags
+
+    def getTitleFromUid(self, uid):
+        indexes = self.match(self.index(0, 0), QtCore.Qt.DisplayRole, uid, flags=QtCore.Qt.MatchExactly)
+        if indexes:
+            return self.data(indexes[0].sibling(indexes[0].row(), TitleColumn), QtCore.Qt.DisplayRole)
+
+    def saveSong(self, uid, data):
+        model = self.sourceModel()
+        indexes = model.match(model.index(0, 0), QtCore.Qt.DisplayRole, uid, flags=QtCore.Qt.MatchExactly)
+        try:
+            if not indexes:
+                row = model.rowCount()
+                assert self.insertRow(row)
+            else:
+                row = indexes[0].row()
+            assert model.setData(model.index(row, UidColumn), uid, QtCore.Qt.EditRole)
+            assert model.setData(model.index(row, DataColumn), data, QtCore.Qt.EditRole)
+            return True
+        except:
+            return False
 
 
 class TestMidiDevice(QtCore.QObject):
@@ -90,10 +236,14 @@ class Player(QtCore.QObject):
         else:
             self.structure = parent.pattern.structure
 
-    def midiEvents(self, start=0, end=None):
-        if isinstance(self.parent(), SequencerWindow):
+    def midiEvents(self, start=0, end=None, pattern=None):
+        if pattern is None:
             return self.parent().structure.midiEvents(start, end)
-        return self.parent().pattern.midiEvents(start, end)
+        return self.parent().structure.midiEvents(start, end, pattern)
+#        if isinstance(self.parent(), SequencerWindow):
+#            return self.parent().structure.midiEvents(start, end)
+#        return self.parent().structure.midiEvents(start, end, pattern=self.parent().pattern)
+#        return self.parent().pattern.midiEvents(start, end)
 
     @property
     def status(self):
@@ -134,7 +284,7 @@ class Player(QtCore.QObject):
         else:
             self.stop()
 
-    def clearLoop(self):
+    def clearLoop(self, stop=False):
         if self.status == self.Playing and self.buffers and self.isLooping:
             self.isLooping = False
 #            if loop:
@@ -142,7 +292,8 @@ class Player(QtCore.QObject):
 #                self.buffers[-1].destroyed.connect(lambda: self.playFrom(self.currentStart, self.currentEnd, loop))
 #                self.buffers[-1].destroyed.connect(lambda: self.restarted.emit(self.structure.secsFromTime(self.currentStart)))
             self.buffers[-1].destroyed.disconnect()
-            self.buffers[-1].destroyed.connect(lambda: self.playFrom(self.currentEnd))
+            if not stop:
+                self.buffers[-1].destroyed.connect(lambda: self.playFrom(self.currentEnd))
 #            self.buffers[-1].destroyed.connect(self.stop)
 
     def stop(self):
@@ -159,13 +310,13 @@ class Player(QtCore.QObject):
             note, channel = self.pendingNotes.pop()
             self.midiEvent.emit(MidiEvent(NOTEOFF, 1, channel, note, 0))
 
-    def playFrom(self, start=None, end=None, loop=False):
+    def playFrom(self, start=None, end=None, loop=False, pattern=None):
         if start is None:
             start = self.currentStart
         self.clearBuffers()
 #        bufferLength = structure.tempos[0]
         bufferLength = 2000.
-        midiEvents = self.midiEvents(start, end)
+        midiEvents = self.midiEvents(start, end, pattern=pattern)
         if not midiEvents:
             self.status = self.Stopped
             self.statusChanged.emit(self.status)
@@ -403,6 +554,7 @@ class TimeStampWidget(QtWidgets.QFrame):
 
 class SequencerWindow(QtWidgets.QMainWindow):
     timeStampChanged = QtCore.pyqtSignal(int, int)
+    playheadTimeChanged = QtCore.pyqtSignal(float)
 #    midiEvent = QtCore.pyqtSignal(object)
 #    blofeldEvent
 
@@ -412,6 +564,7 @@ class SequencerWindow(QtWidgets.QMainWindow):
         self.sequencerScene = self.sequencerView.scene()
         self.sequencerView.repeatDialogRequested.connect(self.showRepeatDialog)
         self.structure = self.sequencerView.structure
+        self.setWindowTitle('Sequencer - {} [*]'.format(self.structure.title))
 
         self.mainToolBar.addSeparator()
         self.mainToolBar.addWidget(QtWidgets.QLabel('Snap'))
@@ -431,21 +584,27 @@ class SequencerWindow(QtWidgets.QMainWindow):
         self.player = Player(self)
         self.midiEvent = self.player.midiEvent
         self.blofeldEvent = self.player.blofeldEvent
-        self.player.restarted.connect(self.sequencerView.playAnimation.setCurrentTime)
         self.playAction.triggered.connect(self.togglePlay)
         self.stopAction.triggered.connect(self.stop)
         self.loopAction.triggered.connect(self.setLoop)
         self.rewindAction.triggered.connect(self.rewind)
         self.player.statusChanged.connect(self.statusChanged)
+
+        self.main = QtWidgets.QApplication.instance()
         if __name__ == '__main__':
+            self.main.blofeldId = 0
             self.midiDevice = TestMidiDevice(self)
             self.midiThread = QtCore.QThread()
             self.midiDevice.moveToThread(self.midiThread)
             self.midiThread.started.connect(self.midiDevice.start)
             self.midiThread.start()
+#            self.database = FakeBlofeldDB()
 #            self.player.midiEvent.connect(self.midiEvent)
         else:
-            self.midiDevice = QtWidgets.QApplication.instance().midiDevice
+            self.database = self.main.database
+            self.midiDevice = self.main.midiDevice
+
+        self.songModel = SongProxyModel()
 
         self.timeStampTimer = QtCore.QTimer()
         self.timeStampTimer.setInterval(50)
@@ -457,19 +616,406 @@ class SequencerWindow(QtWidgets.QMainWindow):
         self.timeStampWidget.timeStampChanged.connect(self.setTimeStamp)
         self.sequencerView.playheadMoved.connect(self.currentTimeChanged)
 
+        self.newSongAction.triggered.connect(self.newSong)
+        self.saveSongAction.triggered.connect(self.saveSong)
+        self.openSongAction.triggered.connect(self.openSong)
+        self.exportSongAction.triggered.connect(self.exportSong)
+        self.importSongAction.triggered.connect(self.importSong)
         self.addTracksAction.triggered.connect(self.sequencerView.addTracks)
+
+        self.playAnimation = QtCore.QSequentialAnimationGroup()
+        self.player.restarted.connect(self.playAnimation.setCurrentTime)
+        self.structure.timelineChanged.connect(self.setPlayAnimation)
+        self._playheadTime = 0
+        self.setPlayAnimation()
+        self.structure.changed.connect(lambda: self.setWindowModified(True))
+        self.structure.titleChanged.connect(lambda title: self.setWindowTitle('Sequencer - {} [*]'.format(title)))
+
+        self.sequencerView.viewport().setStatusTip('Double click to create/edit patterns, Ctrl+click for multi selection, Shift+drag to duplicate; Shift+wheel for horizontal scroll.')
 
     def activate(self):
         self.show()
         self.activateWindow()
 
-    @property
+    def newSong(self):
+        if self.isWindowModified():
+            if QtWidgets.QMessageBox.question(self, 'Create new song', 
+                'Do you want to create a new song?<br/>Existing data will be cleared!!!', 
+                QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel) != QtWidgets.QMessageBox.Ok:
+                    return
+#        elif len(self.structure.tracks) == 1 and not self.structure.tracks[0].patterns:
+#            return
+        self.structure.newSong()
+        self.setWindowModified(False)
+
+    def saveSong(self):
+        if not self.structure.uid:
+            res = InputTextDialog(self, 'Save song', 
+                'Type the song name:', 
+                self.structure.title).exec_()
+            if res is None:
+                return
+            self.structure.title = res
+            self.structure.uid = str(uuid4())
+        self.songModel.saveSong(self.structure.uid, self.structure.getSerializedData())
+        self.setWindowModified(False)
+#        for track in reversed(self.structure.tracks):
+#            self.structure.deleteTrack(track)
+
+    def openSong(self):
+        res = SongBrowser(self, self.songModel).exec_()
+        if res:
+            if self.isWindowModified():
+                if QtWidgets.QMessageBox.question(self, 'Open song', 
+                    '''The current song has been modified. Opening another one will '''
+                    '''result in clearing existing data.<br/>Do you want to proceed?''', 
+                    QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel) != QtWidgets.QMessageBox.Ok:
+                        return
+            uid, data = res
+            self.structure.uid = uid
+            self.structure.setSerializedData(data)
+            self.sequencerView.trackContainer.rebuild()
+#            self.setWindowModified(False)
+            QtCore.QTimer.singleShot(0, lambda: self.setWindowModified(False))
+#            QtCore.QTimer.singleShot(0, lambda: self.sequencerView.trackContainer.rebuild())
+        elif self.structure.uid:
+            title = self.songModel.getTitleFromUid(self.structure.uid)
+            if title is None:
+                self.setWindowModified(True)
+            else:
+                self.structure.title = title
+
+    def exportSong(self):
+        events = self.structure.midiEvents()
+        if len(events) == 1 and events.values()[0][0].eventType == -1:
+            return
+        filePath = SongExportDialog(self, self.structure.title).exec_()
+        if filePath:
+            if filePath.endswith('.bws'):
+                self.exportToBws(filePath)
+            else:
+                self.exportToMidi(filePath)
+
+    def exportToBws(self, filePath):
+        try:
+            with open(filePath, 'w') as f:
+                f.write(self.structure.getSerializedData())
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, 'Error exporting song', 
+                'There was an error while trying to export the song:<br/><br/>{}'.format(e), 
+                QtWidgets.QMessageBox.Ok)
+
+    def exportToMidi(self, filePath):
+        resolution = 480
+        midiPattern = midifile.Pattern()
+        midiPattern.resolution = resolution
+        showChildAlert = []
+        blofeldEvents = []
+        for index, track in enumerate(self.structure.tracks):
+            midiTrack = midifile.Track()
+            midiPattern.append(midiTrack)
+
+            midiTrack.append(midifile.TrackNameEvent(text=track.label))
+
+            channelPrefixEvent = midifile.ChannelPrefixEvent()
+            channelPrefixEvent.data[0] = track.channel
+            midiTrack.append(channelPrefixEvent)
+
+            events = []
+            for pattern in track.patterns:
+                repetitions = pattern.repetitions
+                for region in pattern.regions:
+                    if region.parameterType != BlofeldParameter:
+                        for event in region.patternEvents():
+                            eventTime = pattern.time + event._time
+                            midiEvent = event2MidiFileClasses[type(event)](
+                                channel=event.channel, data=[event.midiEvent.data1, event.midiEvent.data2])
+                            for r in range(repetitions):
+                                events.append((
+                                    eventTime + pattern.time * r, 
+                                    midiEvent))
+                    else:
+                        if region.parameter.parent is not None:
+                            showChildAlert.append(region.parameter)
+                            continue
+                        part = region.parameterId >> 15
+                        parHigh, parLow = divmod(region.parameterId >> 4 & 511, 128)
+                        for event in region.patternEvents():
+                            eventTime = pattern.time + event._time
+                            midiEvent = midifile.SysexEvent(
+                                #9 is the length of the sysex string
+                                data=[9, IDW, IDE, 0, SNDP, part, parHigh, parLow, event.value]
+                                )
+                            blofeldEvents.append(midiEvent)
+                            for r in range(repetitions):
+                                events.append((
+                                    eventTime + pattern.time * r, 
+                                    midiEvent))
+
+            events.sort()
+            prevTime = 0
+            for time, event in events:
+                event.tick = int(round((time - prevTime) * resolution, 1))
+                midiTrack.append(event)
+                prevTime = time
+
+            if not index:
+                midiTrack.make_ticks_abs()
+
+                midiTrack.append(midifile.EndOfTrackEvent(tick=int(self.structure.endMarker.time * resolution)))
+                for marker in self.structure.markers:
+                    if marker == self.structure.endMarker:
+                        continue
+                    if isinstance(marker, LoopStartMarker):
+                        text = 'Loop start'
+                    elif isinstance(marker, LoopEndMarker):
+                        text = 'Loop end'
+                    else:
+                        text = marker.label
+                    midiTrack.append(midifile.MarkerEvent(
+                        tick=int(marker.time * resolution), 
+                        text=text))
+
+                for tempoEvent in self.structure.tempos:
+                    midiTrack.append(midifile.SetTempoEvent(
+                        tick=int(tempoEvent.time * resolution), 
+                        bpm=tempoEvent.tempo))
+
+                for meterEvent in self.structure.meters:
+                    midiTrack.append(midifile.TimeSignatureEvent(
+                        tick=int(meterEvent.time * resolution), 
+                        numerator=meterEvent.numerator, 
+                        denominator=meterEvent.denominator, 
+                        metronome=24, 
+                        thirtyseconds=8, 
+                        ))
+
+                #fix for unsorted events in absolute mode
+                print(midiTrack)
+                midiTrack.sort(key=lambda e: e.tick)
+                print(midiTrack)
+                midiTrack.make_ticks_rel()
+                print(midiTrack)
+
+        if blofeldEvents and not self.main.blofeldId or self.main.blofeldId != 127:
+            res = BlofeldIdDialog(self, self.main.blofeldId).exec_()
+            if res is not None:
+                for event in blofeldEvents:
+                    event.data[4] = res
+
+        try:
+            midifile.write_midifile(filePath, midiPattern)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, 'Error exporting MIDI file', 
+                'There was an error while trying to export the MIDI file:<br/><br/>{}'.format(e), 
+                QtWidgets.QMessageBox.Ok)
+
+    def importSong(self):
+        filePath = SongImportDialog(self).exec_()
+        if filePath:
+            if filePath.endswith('.bws'):
+                self.importFromBws(filePath)
+            else:
+                self.importFromMidi(filePath)
+
+    def importFromBws(self, filePath):
+        try:
+            with open(filePath, 'r') as f:
+                self.structure.setSerializedData(f.read())
+            self.structure.uid = None
+            self.sequencerView.trackContainer.rebuild()
+#            QtCore.QTimer.singleShot(0, lambda: self.setWindowModified(False))
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, 'Error importing file', 
+                'There was an error while trying to import "{}":<br/><br/>{}'.format(
+                    QtCore.QFileInfo(filePath).fileName(), e), 
+                QtWidgets.QMessageBox.Ok)
+
+    def importFromMidi(self, filePath):
+        try:
+            midiPattern = midifile.read_midifile(filePath)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, 'Error importing MIDI file', 
+                'There was an error while trying to import "{}":<br/><br/>{}'.format(
+                    QtCore.QFileInfo(filePath).fileName(), e), 
+                QtWidgets.QMessageBox.Ok)
+            return
+
+        progressDialog = MidiImportProgressDialog(self, len(midiPattern))
+
+        self.structure.clearSong()
+        tempoEvents = []
+        meterEvents = []
+        markerEvents = []
+        loopStart = loopEnd = None
+        endOfTrack = 0
+
+        resolution = float(midiPattern.resolution)
+        for index, midiTrack in enumerate(midiPattern):
+            progressDialog.setValue(index)
+            midiTrack.make_ticks_abs()
+            trackName = 'Track {}'.format(index + 1)
+            channel = None
+
+            noteData = []
+            noteOnEvents = {}
+            ctrlEvents = {}
+            blofeldEvents = {}
+
+            for midiEvent in midiTrack:
+                if isinstance(midiEvent, midifile.TrackNameEvent):
+                    trackName = midiEvent.text
+                elif isinstance(midiEvent, midifile.ChannelPrefixEvent):
+                    channel = midiEvent.data[0]
+                else:
+                    if isinstance(midiEvent, midifile.NoteOnEvent):
+                        try:
+                            assert not midiEvent.velocity and midiEvent.pitch in noteOnEvents
+                            noteOnData = noteOnEvents[midiEvent.pitch]
+                            time = midiEvent.tick / resolution
+                            assert noteOnData[0] < time, 'boh'
+                            noteData.append((midiEvent.pitch, noteOnData[1], noteOnData[0], time - noteOnData[0], midiEvent.velocity))
+                            noteOnEvents.pop(midiEvent.pitch)
+                        except:
+                            noteOnEvents[midiEvent.pitch] = midiEvent.tick / resolution, midiEvent.velocity
+                        if channel is None:
+                            channel = midiEvent.channel
+                    elif isinstance(midiEvent, midifile.NoteOffEvent):
+                        try:
+                            noteOnData = noteOnEvents[midiEvent.pitch]
+                            time = midiEvent.tick / resolution
+                            assert noteOnData[0] < time, 'Wrong NoteOff time?'
+                            noteData.append((midiEvent.pitch, noteOnData[1], noteOnData[0], time - noteOnData[0], midiEvent.velocity))
+                            noteOnEvents.pop(midiEvent.pitch)
+                        except Exception as e:
+                            print(e)
+                    elif isinstance(midiEvent, midifile.ControlChangeEvent):
+                        try:
+                            ctrlEvents[midiEvent.control].append((midiEvent.value, midiEvent.tick / resolution))
+                        except:
+                            ctrlEvents[midiEvent.control] = [(midiEvent.value, midiEvent.tick / resolution)]
+                        if channel is None:
+                            channel = midiEvent.channel
+                    elif isinstance(midiEvent, midifile.SysexEvent) and midiEvent.data[:3] == [9, IDW, IDE]:
+                        part = midiEvent.data[5]
+                        parameterIndex = midiEvent.data[6] * 128 + midiEvent.data[7]
+                        parameterId = (part << 15) + (parameterIndex << 4)
+                        try:
+                            blofeldEvents[parameterId].append((midiEvent.data[8], midiEvent.tick / resolution))
+                        except:
+                            blofeldEvents[parameterId] = [(midiEvent.data[8], midiEvent.tick / resolution)]
+                    elif isinstance(midiEvent, midifile.MarkerEvent):
+                        if midiEvent.text == 'Loop start':
+                            loopStart = midiEvent.tick / resolution
+                        elif midiEvent.text == 'Loop end':
+                            loopEnd = midiEvent.tick / resolution
+                        else:
+                            markerEvents.append((midiEvent.text, midiEvent.tick / resolution))
+                    elif isinstance(midiEvent, midifile.SetTempoEvent):
+                        tempoEvents.append(midiEvent)
+                    elif isinstance(midiEvent, midifile.TimeSignatureEvent):
+                        meterEvents.append(midiEvent)
+                    elif isinstance(midiEvent, midifile.EndOfTrackEvent):
+                        endOfTrack = max(endOfTrack, midiEvent.tick / resolution)
+
+#            if index == 2:
+#                print(noteData)
+
+            track = self.structure.addTrack(channel=channel, label=trackName)
+            self.structure.blockSignals(True)
+
+            pattern = track.addPattern()
+            lastTime = 0
+            for note, velocity, time, length, offVelocity in noteData:
+                pattern.noteRegion.addNote(note, velocity, time=time, length=length, offVelocity=offVelocity)
+                lastTime = max(lastTime, time + length)
+            for ctrl in sorted(ctrlEvents):
+                region = pattern.getAutomationRegion(track.addAutomation(CtrlParameter, ctrl))
+                for value, time in ctrlEvents[ctrl]:
+                    region.addEvent(value=value, time=time)
+            for blofeld in sorted(blofeldEvents):
+                region = pattern.getAutomationRegion(track.addAutomation(BlofeldParameter, blofeld))
+                for value, time in blofeldEvents[blofeld]:
+                    region.addEvent(value=value, time=time)
+            pattern.length = lastTime
+            if index == 2:
+                print('lastTime', lastTime)
+
+            self.structure.blockSignals(False)
+#            self.structure.changed.emit()
+
+        for meterEvent in meterEvents:
+            if not meterEvent.tick:
+                self.structure.meters[0].setMeter(meterEvent.numerator, meterEvent.denominator)
+            else:
+                self.structure.addMeter(meterEvent.numerator, meterEvent.denominator, meterEvent.tick / resolution)
+
+        for tempoEvent in tempoEvents:
+            if not tempoEvent.tick:
+                self.structure.tempos[0].setTempo(tempoEvent.get_bpm())
+            else:
+                self.structure.addTempo(tempoEvent.get_bpm(), tempoEvent.tick / resolution)
+
+        if loopStart is not None and loopEnd is not None:
+            self.structure.addLoop(loopStart, loopEnd)
+        for markerData in markerEvents:
+            self.structure.addMarker(*markerData)
+
+        if not endOfTrack:
+            endOfTrack = 16
+            for track in self.structure.tracks:
+                for pattern in track.patterns:
+                    endOfTrack = max(16, pattern.time + pattern.length * pattern.repetitions)
+        self.structure.endMarker.time = endOfTrack
+        self.structure.changed.emit()
+        progressDialog.setValue(len(midiPattern))
+        self.sequencerView.timelineWidget.setMinimumWidth(max(4000, self.sequencerView.trackContainer.geometry().width()))
+        print(self.sequencerView.trackContainer.geometry())
+
+    @QtCore.pyqtProperty(float)
     def playheadTime(self):
-        return self.sequencerView.playheadTime
+        return self._playheadTime
+
+    @playheadTime.setter
+    def playheadTime(self, time):
+        self._playheadTime = time
+        pos = BeatHUnit * time
+        self.sequencerView.playhead.setX(pos)
+        self.sequencerView.timelineWidget.setPlayheadPos(pos)
+        self.sequencerView.ensurePlayheadVisible()
+        self.playheadTimeChanged.emit(time)
+
+    def setPlayheadTime(self, time):
+        self.playheadTime = time
+
+    def setPlayAnimation(self):
+        self.playAnimation.clear()
+        tempoIter = iter(self.structure.tempos)
+        currentTempo = tempoIter.next()
+        currentTime = 0
+        currentPos = 0
+        keepGoing = True
+        while keepGoing:
+            animation = QtCore.QPropertyAnimation(self, b'playheadTime')
+            try:
+                nextTempo = tempoIter.next()
+                diff = nextTempo.time - currentTempo.time
+            except:
+                nextTempo = None
+                diff = 20000
+                keepGoing = False
+            duration = diff * currentTempo.beatLengthMs
+            animation.setDuration(duration)
+            currentTime += duration
+            animation.setStartValue(currentPos)
+            currentPos += duration * currentTempo.beatSize
+            animation.setEndValue(currentPos)
+            self.playAnimation.addAnimation(animation)
+            currentTempo = nextTempo
 
     def setTimeStamp(self, bar, beat):
         time = self.structure.timeFromBarBeat(bar, beat)
-        self.sequencerView.setPlayheadTime(time)
+        self.setPlayheadTime(time)
         self.currentTimeChanged()
 
     def currentTimeChanged(self, time=None):
@@ -496,6 +1042,7 @@ class SequencerWindow(QtWidgets.QMainWindow):
             self.playToolBar.setMovable(False)
             self.setFixedSize(self.playToolBar.sizeHint())
             self.minimizeAction.setIcon(QtGui.QIcon.fromTheme('zoom-in-large'))
+            self.menuBar().hide()
         else:
             self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowStaysOnTopHint)
             self.setMaximumSize(16777215, 16777215)
@@ -508,32 +1055,39 @@ class SequencerWindow(QtWidgets.QMainWindow):
                 self.restoreGeometry(self.savedWindowState)
             self.playToolBar.setMovable(True)
             self.minimizeAction.setIcon(QtGui.QIcon.fromTheme('zoom-out-large'))
+            self.menuBar().show()
         self.show()
         self.windowState = not self.windowState
 #        print(self.minimumSize())
 
-    def togglePlay(self, state):
+    def togglePlay(self, state, start=None, end=None, pattern=None):
         if state:
-            time = self.structure.secsFromTime(self.playheadTime)
-            if self.player.playFrom(self.playheadTime):
-                self.sequencerView.playAnimation.setCurrentTime(time)
+            startTime = start if start is not None else self._playheadTime
+            time = self.structure.secsFromTime(startTime)
+            if self.player.playFrom(startTime, end, pattern=pattern):
+                self.playAnimation.start()
+                self.playAnimation.setCurrentTime(time)
             elif time:
-                self.sequencerView.setPlayheadTime(0)
+                self.setPlayheadTime(0)
                 self.togglePlay(state)
+                self.playAnimation.start()
+                print('togglePlay resulted in failing playFrom({})? ({})'.format(self.playheadTime, time))
         else:
             self.player.stop()
             self.loopAction.blockSignals(True)
             self.loopAction.setChecked(False)
             self.loopAction.blockSignals(False)
+            self.playAnimation.stop()
 
-    def setLoop(self, loop):
+    def setLoop(self, loop, start=None, end=None, pattern=None):
         if loop:
-            if not self.structure.loopStart:
-                start = 0
-                end = self.structure.endMarker.time
-            else:
-                start = self.structure.loopStart.time
-                end = self.structure.loopEnd.time
+            if start is None and end is None:
+                if not self.structure.loopStart:
+                    start = 0
+                    end = self.structure.endMarker.time
+                else:
+                    start = self.structure.loopStart.time
+                    end = self.structure.loopEnd.time
 #            if not self.player.status == self.player.Playing:
 #                self.sequencerView.playAnimation.setCurrentTime(start)
 #                self.player.playFrom(start, end, loop)
@@ -541,26 +1095,29 @@ class SequencerWindow(QtWidgets.QMainWindow):
 #            else:
             if self.player.status == self.player.Playing:
                 self.player.stop()
-            self.player.playFrom(start, end, loop)
+            self.player.playFrom(start, end, loop, pattern)
             self.loopAction.blockSignals(True)
             self.loopAction.setChecked(True)
             self.loopAction.blockSignals(False)
+            self.playAnimation.start()
+            self.playAnimation.setCurrentTime(start)
         else:
             self.player.clearLoop()
 
     def stop(self):
-        time = self.playheadTime
+        time = self._playheadTime
         prevStatus = self.player.status
         self.player.stop()
+        self.playAnimation.stop()
         if time and prevStatus == self.player.Stopped:
-            self.sequencerView.setPlayheadTime(0)
+            self.setPlayheadTime(0)
         self.currentTimeChanged()
 
     def rewind(self):
         restart = self.player.status == self.player.Playing
         self.player.stop()
         self.statusChanged(False)
-        self.sequencerView.setPlayheadTime(0)
+        self.setPlayheadTime(0)
         if restart:
             QtCore.QTimer.singleShot(0, self.player.play)
         else:
@@ -569,7 +1126,6 @@ class SequencerWindow(QtWidgets.QMainWindow):
     def statusChanged(self, state):
         self.playAction.setChecked(state)
         self.playAction.setIcon(self.playIcons[bool(state)])
-        self.sequencerView.togglePlay(state)
         if state:
             self.timeStampTimer.start()
         else:
@@ -577,6 +1133,7 @@ class SequencerWindow(QtWidgets.QMainWindow):
             self.loopAction.blockSignals(True)
             self.loopAction.setChecked(False)
             self.loopAction.blockSignals(False)
+            self.playAnimation.stop()
 
     def setBeatSnap(self, index):
         self.sequencerView.setBeatSnapMode(self.snapCombo.itemData(index, SnapModeRole))
@@ -588,6 +1145,11 @@ class SequencerWindow(QtWidgets.QMainWindow):
         self.sequencerView.verticalScrollBar().setValue(0)
         self.sequencerView.horizontalScrollBar().setValue(0)
 
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Home:
+            self.rewind()
+            return
+        QtWidgets.QMainWindow.keyPressEvent(self, event)
 
 
 if __name__ == '__main__':
@@ -600,6 +1162,11 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     app.setOrganizationName('jidesk')
     app.setApplicationName('Bigglesworth')
+
+    dataPath = QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.DataLocation)
+    db = QtSql.QSqlDatabase.addDatabase('QSQLITE')
+    db.setDatabaseName(dataPath + '/library.sqlite')
+
     s = SequencerWindow()
     s.show()
     sys.exit(app.exec_())

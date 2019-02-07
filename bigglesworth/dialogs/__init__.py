@@ -12,7 +12,8 @@ from bigglesworth.dialogs.messageboxes import (RemoveSoundsMessageBox, DeleteSou
 from bigglesworth.dialogs.about import AboutDialog
 from bigglesworth.dialogs.random import RandomDialog
 from bigglesworth.dialogs.globals import GlobalsWaiter, GlobalsDialog
-from bigglesworth.dialogs.filedialogs import BaseFileDialog, UnknownFileImport, SoundFileImport, SoundFileExport
+from bigglesworth.dialogs.filedialogs import (BaseFileDialog, UnknownFileImport, SoundFileImport, SoundFileExport, 
+    SongExportDialog, SongImportDialog)
 from bigglesworth.dialogs.settings import SettingsDialog
 from bigglesworth.dialogs.dump import DumpReceiveDialog, DumpSendDialog, SmallDumper, BlofeldDumper, SoundImport
 from bigglesworth.dialogs.savesoundas import SaveSoundAs

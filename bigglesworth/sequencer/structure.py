@@ -1,5 +1,7 @@
 import os
 from bisect import bisect_left
+from xml.etree import ElementTree as ET
+import xml.dom.minidom as minidom
 import numpy as np
 
 os.environ['QT_PREFERRED_BINDING'] = 'PyQt4'
@@ -27,6 +29,11 @@ def eventTimeComparison(a, b):
     elif diff < 0:
         return -1
     return 1
+
+def automationTypeComparison(a, b):
+    if a.parameterType != b.parameterType:
+        return -1 if a.parameterType == BlofeldParameter else 1
+    return a.parameterId - b.parameterId
 
 
 class MetaEvent(QtCore.QObject):
@@ -117,14 +124,14 @@ class NoteOffEvent(MetaNoteEvent):
 class BlofeldEvent(MetaEvent):
     valueChanged = QtCore.pyqtSignal(int)
 
-    def __init__(self, id, value, part=0, time=0):
+    def __init__(self, parameterId, value, part=0, time=0):
         MetaEvent.__init__(self, BLOFELD, time)
-        self.id = id
+        self.parameterId = parameterId
         self.part = part
         self.value = value
-        parameter = Parameters.parameterData[id >> 4]
+        parameter = Parameters.parameterData[parameterId >> 4 & 511]
         if parameter.children:
-            self.parameter = parameter.children[id & 7]
+            self.parameter = parameter.children[parameterId & 7]
         else:
             self.parameter = parameter
 
@@ -135,7 +142,7 @@ class BlofeldEvent(MetaEvent):
             self.valueChanged.emit(self.value)
 
     def clone(self):
-        return BlofeldEvent(self.id, self.value, self.part, self.time)
+        return BlofeldEvent(self.parameterId, self.value, self.part, self.time)
 
 
 class CtrlEvent(MetaEvent):
@@ -241,10 +248,24 @@ class RegionInfo(object):
             except:
                 yield None
 
+    def __str__(self):
+        if self.parameterType == BlofeldParameter:
+            parameter = Parameters.parameterData[self.parameterId >> 4 & 511]
+            if parameter.children:
+                parameter = parameter.children[self.parameterId & 7]
+            text = parameter.fullName
+            if self.parameterId >> 15:
+                text += ' (part {})'.format((self.parameterId >> 15) + 1)
+            return text
+        try:
+            return getCtrlNameFromMapping(self.parameterId, self.mapping, True)[0]
+        except:
+            return getCtrlNameFromMapping(self.parameterId, '', True)[0]
+
     def __eq__(self, other):
         return self.parameterType == other.parameterType and self.parameterId == other.parameterId
 
-    def hash(self):
+    def __hash__(self):
         return hash((self.parameterType, self.parameterId))
 
 
@@ -256,7 +277,7 @@ class MetaRegion(QtCore.QObject):
     QuantizeCtrl = 8
     QuantizeAll = QuantizeNoteStartEnd | QuantizeCtrl
     parameterType = NoteParameter
-    id = -1
+    parameterId = -1
     extData = mapping = None
     __kwargs__ = {}
 
@@ -270,14 +291,14 @@ class MetaRegion(QtCore.QObject):
         try:
             return self._regionInfo
         except:
-            self._regionInfo = RegionInfo(self.parameterType, self.id, **self.kwargs())
+            self._regionInfo = RegionInfo(self.parameterType, self.parameterId, **self.kwargs())
             return self._regionInfo
 
     def kwargs(self):
         return self.__kwargs__
 
-    def patternEvents(self, pattern):
-        return [event for event in self.events if 0 <= event.time <= pattern.length]
+    def patternEvents(self, pattern=None):
+        return [event for event in self.events if 0 <= event.time <= (self.pattern.length if pattern is None else pattern.length)]
 
     def sort(self):
         self.events.sort(key=lambda e: e.time)
@@ -338,7 +359,9 @@ class NoteRegion(MetaRegion):
     def notes(self):
         return sorted(self.notePairs.items(), key=lambda (noteOnEvent, noteOffEvent): noteOnEvent.time)
 
-    def patternEvents(self, pattern):
+    def patternEvents(self, pattern=None):
+        if pattern is None:
+            pattern = self.pattern
         events = []
         for noteOnEvent, noteOffEvent in self.notePairs.items():
             if noteOffEvent.time < 0 or noteOnEvent.time > pattern.length:
@@ -362,13 +385,42 @@ class NoteRegion(MetaRegion):
             noteOffEvent = self.notePairs[noteOnEvent]
         return noteOffEvent.time - noteOnEvent.time
 
-    def addNote(self, note, velocity=127, channel=0, length=1, time=0):
+    def addNote(self, note, velocity=127, channel=0, length=1, time=0, offVelocity=0):
         noteOnEvent = NoteOnEvent(note, velocity, channel, time)
-        noteOffEvent = NoteOffEvent(note, 0, channel, time + length)
+        noteOffEvent = NoteOffEvent(note, offVelocity, channel, time + length)
         self.notePairs[noteOnEvent] = noteOffEvent
         self.events.extend((noteOnEvent, noteOffEvent))
         self.sort()
         return noteOnEvent, noteOffEvent
+
+    def checkNotesAfterImport(self):
+        noteOnEvents = []
+        noteOffEvents = {}
+        for event in self.events:
+            if isinstance(event, NoteOnEvent):
+                noteOnEvents.append(event)
+            elif isinstance(event, NoteOffEvent):
+                try:
+                    noteOffEvents[event.note].append(event)
+                except:
+                    noteOffEvents[event.note] = [event]
+            else:
+                print('Event discarded! {}'.format(event))
+                continue
+        noteOnEvents.sort(key=lambda e: e._time)
+        [ev.sort(key=lambda e: e._time) for ev in noteOffEvents.values()]
+        for noteOnEvent in noteOnEvents:
+            try:
+                noteOffEvent = noteOffEvents.get(noteOnEvent.note)[0]
+                if noteOffEvent._time < noteOnEvent._time:
+                    self.events.remove(noteOffEvents[noteOnEvent.note].pop(0))
+                    noteOffEvent = NoteOffEvent(noteOnEvent.note, 0, noteOnEvent.channel, noteOnEvent._time + 1)
+                else:
+                    self.notePairs[noteOnEvent] = noteOffEvents[noteOnEvent.note].pop(0)
+            except Exception as e:
+                print('Event ignored?! {} {}'.format(noteOnEvent, e))
+                self.events.remove(noteOnEvent)
+        self.sort()
 
     def deleteNote(self, noteOnEvent):
         try:
@@ -398,7 +450,7 @@ class NoteRegion(MetaRegion):
             noteOffEvent = self.notePairs[noteOnEvent]
             if deltaNote is not None:
                 noteOnEvent.setNote(noteOnEvent.note + deltaNote)
-                noteOffEvent.setNote(noteOnEvent.note + deltaNote)
+                noteOffEvent.setNote(noteOnEvent.note)
             if deltaTime is not None:
                 noteOnEvent.time = max(0, noteOnEvent.time + deltaTime)
                 noteOffEvent.time = noteOffEvent.time + deltaTime
@@ -481,10 +533,10 @@ class ParameterRegion(MetaRegion):
     continuous = False
     continuousModeChanged = QtCore.pyqtSignal(bool)
 
-    def __init__(self, pattern, parameterType=CtrlParameter, id=0):
+    def __init__(self, pattern, parameterType=CtrlParameter, parameterId=0):
         MetaRegion.__init__(self, pattern)
         self.parameterType = parameterType
-        self.id = id
+        self.parameterId = parameterId
         #TODO: needs further developing!
 
     def removeEvents(self, events):
@@ -498,8 +550,8 @@ class ParameterRegion(MetaRegion):
         self.continuous = continuous
         self.continuousModeChanged.emit(continuous)
 
-    def patternEvents(self, pattern):
-        events = [event for event in self.events if 0 <= event.time <= pattern.length]
+    def patternEvents(self, pattern=None):
+        events = [event for event in self.events if 0 <= event.time <= (self.pattern.length if pattern is None else pattern.length)]
         if self.continuous and len(events) > 1:
             eventIter = iter(events)
             current = eventIter.next()
@@ -526,7 +578,7 @@ class ParameterRegion(MetaRegion):
                             if isCtrl:
                                 event = CtrlEvent(current.ctrl, value, current.channel, currentTime)
                             else:
-                                event = BlofeldEvent(current.id, value, current.part, currentTime)
+                                event = BlofeldEvent(current.parameterId, value, current.part, currentTime)
                             newEvents.append(event)
                             currentTime += timeRatio
                 except:
@@ -549,7 +601,7 @@ class ParameterRegion(MetaRegion):
         self.sort()
 
 #    def clone(self, pattern=None):
-#        eventRegion = ParameterRegion(pattern if pattern is not None else self.pattern, self.parameterType, self.id)
+#        eventRegion = ParameterRegion(pattern if pattern is not None else self.pattern, self.parameterType, self.parameterId)
 #        eventRegion.events[:] = [event.clone() for event in self.events]
 #        eventRegion.continuous = self.continuous
 #        return eventRegion
@@ -561,42 +613,52 @@ class ParameterRegion(MetaRegion):
 
 
 class BlofeldParameterRegion(ParameterRegion):
-    def __init__(self, pattern, id, part=0):
+    def __init__(self, pattern, parameterId, part=0):
         ParameterRegion.__init__(self, pattern, BlofeldParameter)
-        self.id = id
-        self.part = part
-        parameter = Parameters.parameterData[id >> 4]
+        self.parameterId = parameterId
+        self.part = parameterId >> 15
+        parameter = Parameters.parameterData[parameterId >> 4 & 511]
         if parameter.children:
-            self.parameter = parameter.children[id & 7]
+            self.parameter = parameter.children[parameterId & 7]
         else:
             self.parameter = parameter
 
-    def addEvent(self, value, time=0):
-        event = BlofeldEvent(self.id, self.parameter.range.sanitize(value), self.part, time)
+    def addEvent(self, value=0, time=0):
+        event = BlofeldEvent(self.parameterId, self.parameter.range.sanitize(value), self.part, time)
         self.events.append(event)
         self.sort()
         return event
+
+    def addEvents(self, data):
+        for value, time in data:
+            self.events.append(BlofeldEvent(self.parameterId, self.parameter.range.sanitize(value), self.part, time))
+        self.sort()
 
 
 class CtrlParameterRegion(ParameterRegion):
-    def __init__(self, pattern, id, mapping='Blofeld'):
-        ParameterRegion.__init__(self, pattern, CtrlParameter, id)
+    def __init__(self, pattern, parameterId, mapping='Blofeld'):
+        ParameterRegion.__init__(self, pattern, CtrlParameter, parameterId)
         self.mapping = mapping
         self.setNameFromMapping(mapping)
 
-    def addEvent(self, ctrl=0, value=127, channel=0, time=0):
-        event = CtrlEvent(ctrl, value, channel, time)
+    def addEvent(self, value=127, channel=0, time=0):
+        event = CtrlEvent(self.parameterId, value, channel, time)
         self.events.append(event)
         self.sort()
         return event
 
+    def addEvents(self, data):
+        for value, channel, time in data:
+            self.events.append(CtrlEvent(self.parameterId, value, channel, time))
+        self.sort()
+
     def setNameFromMapping(self, mapping):
         self.__kwargs__.update({'mapping': mapping})
-        description, valid = getCtrlNameFromMapping(self.id, mapping)
+        description, valid = getCtrlNameFromMapping(self.parameterId, mapping)
         if valid:
             self.name = description
         else:
-            self.name = self.name = 'CC {}'.format(self.id)
+            self.name = self.name = 'CC {}'.format(self.parameterId)
 
 
 class SysExParameterRegion(ParameterRegion):
@@ -694,7 +756,7 @@ class Pattern(QtCore.QObject):
                 newAutomationInfo = RegionInfo(parameterType, parameterId, **parameterExtData)
         else:
             parameterType = kwargs.pop('parameterType')
-            parameterId = kwargs.pop('id')
+            parameterId = kwargs.pop('parameterId')
             try:
                 parameterExtData = kwargs.pop('extData')
                 assert isinstance(parameterExtData, dict)
@@ -726,7 +788,7 @@ class Pattern(QtCore.QObject):
             newAutomation = AutomationClasses[newAutomationInfo.parameterType](
                 self, newAutomationInfo.parameterId)
             newRegions.append(newAutomation)
-        self.regions[1:] = sorted(newRegions)
+        self.regions[1:] = sorted(newRegions, cmp=automationTypeComparison)
         return newAutomation
 
     def quantize(self, startRatio, endRatio, otherRatio, quantizeMode):
@@ -805,6 +867,8 @@ class Pattern(QtCore.QObject):
 
 class Track(QtCore.QObject):
     changed = QtCore.pyqtSignal()
+    automationAdded = QtCore.pyqtSignal(object)
+    automationRemoved = QtCore.pyqtSignal(object)
 
     def __init__(self, structure, label='', channel=None):
         QtCore.QObject.__init__(self)
@@ -829,14 +893,15 @@ class Track(QtCore.QObject):
     def index(self):
         return self.structure.tracks.index(self)
 
-    def addPattern(self, pattern=None, time=None, length=None):
+    def addPattern(self, pattern=None, time=None, length=None, repetitions=1):
         if pattern is None:
-            pattern = Pattern(self, time, length)
+            pattern = Pattern(self, time, length, repetitions)
         elif pattern.track != self:
             pattern.track = self
         pattern.repetitionsChanged.connect(self.changed)
         pattern.regionChanged.connect(self.changed)
         self.patterns.append(pattern)
+        return pattern
 
     def removePattern(self, pattern):
         self.patterns.remove(pattern)
@@ -868,26 +933,31 @@ class Track(QtCore.QObject):
                 parameterExtData = kwargs.pop('extData')
             except:
                 parameterExtData = {}
-            automationInfo = RegionInfo(kwargs.pop('parameterType'), kwargs.pop('id'), **parameterExtData)
+            automationInfo = RegionInfo(kwargs.pop('parameterType'), kwargs.pop('parameterId'), **parameterExtData)
         if automationInfo in self.automations(automationInfo.parameterType):
             return
         self.knownAutomations.append(automationInfo)
+        self.knownAutomations.sort(cmp=automationTypeComparison)
         for pattern in self.patterns:
             pattern.addAutomation(automationInfo)
-        return automationInfo
+        try:
+            return automationInfo
+        finally:
+            self.automationAdded.emit(automationInfo)
 
     def automations(self, parameterType=ParameterTypeMask):
-        automations = self.knownAutomations[:]
+        automations = set([a for a in self.knownAutomations if a.parameterType & ParameterTypeMask])
         for pattern in self.patterns:
             for eventRegion in pattern.regions[1:]:
 #                if isinstance(eventRegion, NoteRegion):
 #                    continue
-                if parameterType & ParameterTypeMask and eventRegion.regionInfo not in automations:
-                    automations.append(eventRegion.regionInfo)
-        existing = set()
-        existingAdd = existing.add
-        #get an automation list without duplicates, while keeping original order
-        return [a for a in automations if not (a in existing or existingAdd(a))]
+                if parameterType & ParameterTypeMask:
+                    automations.add(eventRegion.regionInfo)
+#        #get an automation list without duplicates, while keeping original order
+#        existing = set()
+#        existingAdd = existing.add
+#        return [a for a in automations if not (a in existing or existingAdd(a))]
+        return sorted(automations, cmp=automationTypeComparison)
 
 
 class TimelineEvent(QtCore.QObject):
@@ -1043,10 +1113,16 @@ class EndMarker(MarkerEvent):
 
 class Structure(QtCore.QObject):
     changed = QtCore.pyqtSignal()
+    automationChanged = QtCore.pyqtSignal(object, object, bool)
     timelineChanged = QtCore.pyqtSignal()
+    trackDeleted = QtCore.pyqtSignal(object)
+    trackAdded = QtCore.pyqtSignal(object)
+    titleChanged = QtCore.pyqtSignal(str)
 
     def __init__(self):
         QtCore.QObject.__init__(self)
+        self.uid = None
+        self._title = 'New song'
         self.tracks = []
         tempoEvent = TempoEvent(self, first=True)
         tempoEvent.tempoChanged.connect(self.timelineChanged)
@@ -1062,8 +1138,279 @@ class Structure(QtCore.QObject):
         self.loopStart = self.loopEnd = None
         self.addTrack(Track(self))
         self.timelineChanged.connect(self.checkMeters)
+        #the changed signal is delayed for automation as it could interfere with other connections
+        self.automationChanged.connect(lambda: QtCore.QTimer.singleShot(0, self.changed.emit))
 #        for track in (Track(self), Track(self, channel=3), Track(self, channel=10)):
 #            self.addTrack(track)
+        self.createdTime = None
+
+    def getSerializedData(self, new=False):
+        root = ET.Element('Bigglesworth')
+
+        songElement = ET.SubElement(root, 'SequencerSong')
+        songElement.set('title', self.title)
+
+        currentTime = str(QtCore.QDateTime.currentDateTime().toMSecsSinceEpoch())
+        songElement.set('edited', currentTime)
+        if new or self.createdTime is None:
+            songElement.set('created', currentTime)
+            self.createdTime = currentTime
+        else:
+            songElement.set('created', self.createdTime)
+
+        markerListElement = ET.SubElement(songElement, 'Markers')
+        for marker in self.markers:
+            if isinstance(marker, (LoopMarker, EndMarker)):
+                continue
+            markerElement = ET.SubElement(markerListElement, 'Marker')
+            markerElement.set('time', str(marker.time))
+            markerElement.set('label', marker.label)
+        endMarkerElement = ET.SubElement(markerListElement, 'End')
+        endMarkerElement.set('time', str(self.endMarker.time))
+
+        if self.loopStart and self.loopEnd:
+            loopElement = ET.SubElement(songElement, 'Loop')
+            loopElement.set('start', str(self.loopStart.time))
+            loopElement.set('end', str(self.loopEnd.time))
+
+        tempoListElement = ET.SubElement(songElement, 'Tempos')
+        for tempoEvent in self.tempos:
+            tempoElement = ET.SubElement(tempoListElement, 'Tempo')
+            tempoElement.set('time', str(tempoEvent.time))
+            tempoElement.set('tempo', str(tempoEvent.tempo))
+
+        meterListElement = ET.SubElement(songElement, 'Meters')
+        for meterEvent in self.meters:
+            meterElement = ET.SubElement(meterListElement, 'Meter')
+            meterElement.set('time', str(meterEvent.time))
+            meterElement.set('bar', str(meterEvent.bar))
+            meterElement.set('numerator', str(meterEvent.numerator))
+            meterElement.set('denominator', str(meterEvent.denominator))
+
+        for track in self.tracks:
+            trackElement = ET.SubElement(songElement, 'Track')
+            trackElement.set('label', track.label)
+            trackElement.set('channel', str(track.channel))
+
+            autoReference = {}
+            automationListElement = ET.SubElement(trackElement, 'Automations')
+            for automation in track.automations():
+                if automation.parameterType == BlofeldParameter:
+                    automationElement = ET.SubElement(automationListElement, 'Blofeld')
+                    parameter = Parameters.parameterData[automation.parameterId >> 4 & 511]
+                    if parameter.children:
+                        parameter = parameter.children[automation.parameterId & 7]
+                    automationElement.set('parameter', parameter.attr)
+                    automationElement.set('part', str(automation.parameterId >> 15))
+                    autoReference[(automation.parameterType, automation.parameterId)] = parameter.attr, str(automation.parameterId >> 15)
+                else:
+                    automationElement = ET.SubElement(automationListElement, 'CTRL')
+                    automationElement.set('parameter', str(automation.parameterId))
+                    autoReference[(automation.parameterType, automation.parameterId)] = str(automation.parameterId), None
+
+            patternListElement = ET.SubElement(trackElement, 'Patterns')
+            for pattern in track.patterns:
+                patternElement = ET.SubElement(patternListElement, 'Pattern')
+                patternElement.set('time', str(pattern.time))
+                patternElement.set('length', str(pattern.length))
+                patternElement.set('repetitions', str(pattern.repetitions))
+                regionListElement = ET.SubElement(patternElement, 'Regions')
+
+                noteRegionElement = ET.SubElement(regionListElement, 'Notes')
+                for event in pattern.noteRegion.events:
+                    if isinstance(event, NoteOnEvent):
+                        noteElement = ET.SubElement(noteRegionElement, 'NoteOn')
+                    else:
+                        noteElement = ET.SubElement(noteRegionElement, 'NoteOff')
+                    noteElement.set('note', str(event.note))
+                    noteElement.set('velocity', str(event.velocity))
+                    noteElement.set('channel', str(event.channel))
+                    noteElement.set('time', str(event.time))
+
+                for region in pattern.regions[1:]:
+                    if not region.events:
+                        continue
+                    if region.regionInfo.parameterType == BlofeldParameter:
+
+                        p1, p2 = autoReference[(region.regionInfo.parameterType, region.regionInfo.parameterId)]
+                        autoRegionElement = ET.SubElement(regionListElement, 'Blofeld')
+                        autoRegionElement.set('parameter', p1)
+                        autoRegionElement.set('part', str(p2))
+                    else:
+                        p1, p2 = autoReference[(region.regionInfo.parameterType, region.regionInfo.parameterId)]
+                        autoRegionElement = ET.SubElement(regionListElement, 'CC')
+                        autoRegionElement.set('parameter', str(p1))
+                        autoRegionElement.set('channel', str(track.channel))
+                    autoRegionElement.set('continuous', str(region.continuous))
+                    for event in region.events:
+                        eventElement = ET.SubElement(autoRegionElement, 'Event')
+                        eventElement.set('time', str(event.time))
+                        eventElement.set('value', str(event.value))
+#        finrire eutto
+
+        data = ET.tostring(root, encoding='utf-8')
+#        print(data)
+#        print(minidom.parseString(data.encode('utf-8')).toprettyxml())
+        return data
+
+    def clearSong(self):
+        for track in reversed(self.tracks):
+            self.deleteTrack(track)
+        if self.loopStart or self.loopEnd:
+            self.removeLoop()
+        for marker in self.markers + self.tempos[1:] + self.meters[1:]:
+            if marker == self.endMarker:
+                continue
+            self.deleteMarker(marker)
+
+    def newSong(self):
+        self.clearSong()
+        self.addTrack()
+        self.meters[0].setMeter(4, 4)
+        self.tempos[0].setTempo(120)
+        self.endMarker.time = 16
+
+    def setSerializedData(self, data):
+        self.clearSong()
+        root = ET.fromstring(data)
+        songElement = root.find('SequencerSong')
+        assert songElement.find('Track') is not None
+        self.title = songElement.get('title')
+
+        markerListElement = songElement.find('Markers')
+        endElement = markerListElement.find('End')
+        if endElement is not None:
+            self.endMarker.time = float(endElement.get('time'))
+        for markerElement in markerListElement.findall('Marker'):
+            self.addTimelineEvent(Marker, float(markerElement.get('time')), markerElement.get('label'))
+
+        loopElement = songElement.find('Loop')
+        if loopElement is not None:
+            self.addLoop(float(loopElement.get('start')), float(loopElement.get('end')))
+
+
+        tempoListElement = songElement.find('Tempos')
+        tempoElements = tempoListElement.findall('Tempo')
+        tempoElements.sort(key=lambda e: float(e.get('time')))
+        self.tempos[0].tempo = float(tempoElements[0].get('tempo', default=120))
+        for tempoElement in tempoElements[1:]:
+            self.addTimelineEvent(
+                Tempo, 
+                float(tempoElement.get('time')), 
+                float(tempoElement.get('tempo'))
+                )
+
+        meterListElement = songElement.find('Meters')
+        meterElements = meterListElement.findall('Meter')
+        meterElements.sort(key=lambda e: float(e.get('time')))
+        self.meters[0].setMeter(int(meterElements[0].get('numerator')), int(meterElements[0].get('denominator')))
+        for meterElement in meterElements[1:]:
+            self.addTimelineEvent(
+                Meter, 
+                float(meterElement.get('time')), 
+                (int(meterElement.get('numerator', default=4)), int(meterElement.get('denominator', default=4)))
+                )
+
+        for trackElement in songElement.findall('Track'):
+            channel = int(trackElement.get('channel', default=-1))
+            label = trackElement.get('label', default='')
+            track = self.addTrack(channel=channel, label=label)
+
+            for automationElement in trackElement.find('Automations').getiterator():
+                if automationElement.tag == 'Blofeld':
+                    parameter = Parameters.getFromAttribute(automationElement.get('parameter'))
+                    if parameter.parent:
+                        id = (parameter.parent.id << 4) + parameter.id
+                    else:
+                        id = parameter.id << 4
+                    part = int(automationElement.get('part', default=0))
+                    if part:
+                        id |= id << 15
+                    track.addAutomation(RegionInfo(BlofeldParameter, id))
+                elif automationElement.tag == 'CTRL':
+                    track.addAutomation(RegionInfo(CtrlParameter, int(automationElement.get('parameter'))))
+
+            patternListElement = trackElement.find('Patterns')
+            if patternListElement is None:
+                continue
+            for patternElement in patternListElement.findall('Pattern'):
+                patternTime = float(patternElement.get('time', default=0))
+                patternLength = float(patternElement.get('length', default=4))
+                patternRepetitions = int(patternElement.get('repetitions', default=1))
+                pattern = track.addPattern(time=patternTime, length=patternLength, repetitions=max(1, patternRepetitions))
+                regionListElement = patternElement.find('Regions')
+                if regionListElement is None:
+                    print('vuoto?!')
+                    continue
+
+                noteRegionElement = regionListElement.find('Notes')
+                if noteRegionElement is not None:
+                    noteRegion = pattern.noteRegion
+                    for eventElement in noteRegionElement.getiterator():
+                        if eventElement == noteRegionElement:
+                            continue
+                        if eventElement.tag == 'NoteOn':
+                            eventClass = NoteOnEvent
+                        elif eventElement.tag == 'NoteOff':
+                            eventClass = NoteOffEvent
+                        else:
+                            print('unknown event in NoteRegion?', eventElement, eventElement.tag)
+                            continue
+                        note = int(eventElement.get('note'))
+                        velocity = int(eventElement.get('velocity'))
+                        channel = int(eventElement.get('channel'))
+                        time = float(eventElement.get('time'))
+                        noteRegion.events.append(eventClass(note, velocity, channel, time))
+                    noteRegion.checkNotesAfterImport()
+
+                for blofeldElement in regionListElement.findall('Blofeld'):
+                    parameterAttr = blofeldElement.get('parameter')
+                    parameter = Parameters.getFromAttribute(parameterAttr)
+                    parameterId = parameter.id
+                    if parameter.parent:
+                        parameterId |= parameter.parent.id << 4
+                    else:
+                        parameterId <<= 4
+                    part = int(blofeldElement.get('part', default=0))
+                    if part:
+                        parameterId |= part << 15
+
+                    eventElements = blofeldElement.findall('Event')
+                    eventElements.sort(key=lambda e: float(e.get('time')))
+                    eventData = [(int(e.get('value')), float(e.get('time'))) for e in eventElements]
+                    for region in pattern.regions[1:]:
+                        if region.regionInfo.parameterType == BlofeldParameter and region.regionInfo.parameterId == parameterId:
+                            region.addEvents(eventData)
+                            break
+                    if bool(blofeldElement.get('continuous', default=False)):
+                        region.continuous = True
+
+                for ctrlElement in regionListElement.findall('CC'):
+                    parameterId = int(ctrlElement.get('parameter'))
+                    channel = int(ctrlElement.get('channel'))
+
+                    eventElements = ctrlElement.findall('Event')
+                    eventElements.sort(key=lambda e: float(e.get('time')))
+                    eventData = [(int(e.get('value')), channel, float(e.get('time'))) for e in eventElements]
+                    for region in pattern.regions[1:]:
+                        if region.regionInfo.parameterType == CtrlParameter and region.regionInfo.parameterId == parameterId:
+                            region.addEvents(eventData)
+                            break
+                    if bool(ctrlElement.get('continuous', default=False)):
+                        region.continuous = True
+
+
+
+    @property
+    def title(self):
+        return self._title
+
+    @title.setter
+    def title(self, title):
+        if title == self._title:
+            return
+        self._title = title
+        self.titleChanged.emit(self._title)
 
     @property
     def timelineEvents(self):
@@ -1210,6 +1557,10 @@ class Structure(QtCore.QObject):
             channel = min(set(self.usedChannels()) ^ set(range(16)))
         if track is None:
             track = Track(self, channel=channel, label=label)
+        track.automationAdded.connect(lambda automation, track=track: self.automationChanged.emit(track, automation, True))
+        track.automationRemoved.connect(lambda automation, track=track: self.automationChanged.emit(track, automation, False))
+        self.trackAdded.emit(track)
+        self.changed.emit()
         return self.insertTrack(len(self.tracks), track)
 
     def moveTrack(self, track, target):
@@ -1225,6 +1576,7 @@ class Structure(QtCore.QObject):
 
     def deleteTrack(self, track):
         self.tracks.remove(track)
+        self.trackDeleted.emit(track)
         self.changed.emit()
 
     def secsFromTime(self, time):
@@ -1296,7 +1648,6 @@ class Structure(QtCore.QObject):
         self.loopEnd = LoopEndMarker(self, max(start, end))
         self.markers.extend((self.loopStart, self.loopEnd))
         self.sortEvents(Marker)
-        self.loopStart 
         self.loopStart.timeChanged.connect(self.checkLoop)
         self.loopEnd.timeChanged.connect(self.checkLoop)
         self.timelineChanged.emit()
@@ -1328,18 +1679,33 @@ class Structure(QtCore.QObject):
         self.loopEnd._time = self.endMarker.time
         self.timelineChanged.emit()
 
-    def addTimelineEvent(self, eventType, time):
+    def addMarker(self, label, time):
+        self.addTimelineEvent(Marker, time, label)
+
+    def addTempo(self, tempo, time):
+        self.addTimelineEvent(Tempo, time, tempo)
+
+    def addMeter(self, numerator, denominator, time):
+        self.addTimelineEvent(Meter, time, (numerator, denominator))
+
+    def addTimelineEvent(self, eventType, time, data=None):
         if eventType == Marker:
-            label = 'Marker {}'.format(len(self.markers))
+            if data is None:
+                label = 'Marker {}'.format(len(self.markers))
+            else:
+                label = data
             marker = MarkerEvent(self, time, label)
 #            marker.timeChanged.connect(self.timelineChanged)
             self.markers.append(marker)
         elif eventType == Tempo:
-            tempo = self.tempos[0].tempo
-            for tempoEvent in self.tempos:
-                if tempoEvent.time > time:
-                    break
-                tempo = tempoEvent.tempo
+            if data is None:
+                tempo = self.tempos[0].tempo
+                for tempoEvent in self.tempos:
+                    if tempoEvent.time > time:
+                        break
+                    tempo = tempoEvent.tempo
+            else:
+                tempo = data
             marker = TempoEvent(self, time, tempo)
 #            marker.timeChanged.connect(self.timelineChanged)
             marker.tempoChanged.connect(self.timelineChanged)
@@ -1351,14 +1717,13 @@ class Structure(QtCore.QObject):
                 bar += 1
                 if bar in meterBars:
                     return
-#            for index, meter in enumerate(self.meters):
-#                if bar > meter.bar:
-#                    break
-            
-#            print('inserisco a battuta {}'.format(bar), self.meters[index].meter)
+            if data is None:
+                numerator, denominator = self.meters[bisect_left(meterBars, bar) - 1].meter
+            else:
+                numerator, denominator = data
             #bar is the important value here, we just give "time" for 
             #consistency with the base TimelineEvent class
-            marker = MeterEvent(self, time, bar, *self.meters[bisect_left(meterBars, bar) - 1].meter)
+            marker = MeterEvent(self, time, bar, numerator, denominator)
 #            marker.timeChanged.connect(self.timelineChanged)
             marker.meterChanged.connect(self.meterChanged)
 #            marker.meterChanged.connect(self.rebuildMeterTimes)
@@ -1367,6 +1732,7 @@ class Structure(QtCore.QObject):
         self.sortEvents(eventType)
         marker.timeChanged.connect(self.timelineEventTimeChanged)
         self.timelineChanged.emit()
+        return marker
 
     def deleteMarker(self, marker):
         if isinstance(marker, LoopMarker):
@@ -1389,14 +1755,16 @@ class Structure(QtCore.QObject):
             pattern.track.removePattern(pattern)
         self.changed.emit()
 
-    def midiEvents(self, start=0, endTime=None):
+    def midiEvents(self, start=0, endTime=None, pattern=None):
         events = []
-        for track in self.tracks:
-            for pattern in track.patterns:
-#                patternEvents = []
-                for event in pattern.events:
-                    events.append((event.time + pattern.time, event))
-#                events.extend(sorted(patternEvents, cmp=eventTimeComparison))
+        if pattern is not None:
+            for event in pattern.events:
+                events.append((event.time + pattern.time, event))
+        else:
+            for track in self.tracks:
+                for pattern in track.patterns:
+                    for event in pattern.events:
+                        events.append((event.time + pattern.time, event))
         events.sort(cmp=eventTimeComparison)
 
         tempoIter = iter(self.tempos)

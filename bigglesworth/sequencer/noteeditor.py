@@ -8,8 +8,8 @@ from bigglesworth.utils import sanitize, loadUi
 from bigglesworth.midiutils import MidiEvent, NOTEOFF, NOTEON
 from bigglesworth.parameters import Parameters
 from bigglesworth.dialogs import AdvancedMessageBox
-from bigglesworth.sequencer.const import (noteNames, Intervals, IntervalNames, IntervalNamesShort, Chords, Cardinals, 
-    SnapModes, SnapModeRole, DefaultNoteSnapModeId, Erase, Draw, Select, 
+from bigglesworth.sequencer.const import (noteNames, Intervals, IntervalNames, IntervalNamesShort, IntervalTypes, Chords, Cardinals, 
+    SnapModes, SnapModeRole, DefaultNoteSnapModeId, Erase, Draw, Select, PlayheadPen, 
     BlofeldParameter, CtrlParameter, ParameterRole, getCtrlNameFromMapping)
 from bigglesworth.sequencer.dialogs import AddAutomationDialog
 from bigglesworth.sequencer.widgets import ScrollBarSpacer, ZoomWidget
@@ -104,9 +104,18 @@ class VerticalPiano(QtWidgets.QWidget):
             self.stopNote.emit(self.pendingNote)
             self.pendingNote = None
 
+    def event(self, event):
+        if event.type() == QtCore.QEvent.ToolTip and self.noteHighlightWidget.isVisible():
+            note = 127 - int(event.y() // self.noteHeight)
+            rect = self.noteHighlightWidget.geometry()
+            if note % 12 in (0, 2, 4, 5, 7, 9, 11):
+                rect.setWidth(self.width())
+            QtWidgets.QToolTip.showText(event.globalPos(), '{} ({})'.format(noteNames[note], note), self, rect)
+        return QtWidgets.QWidget.event(self, event)
+
     def leaveEvent(self, event):
         self.noteHighlight()
-        QtWidgets.QGraphicsView.leaveEvent(self, event)
+        QtWidgets.QWidget.leaveEvent(self, event)
 
     def noteHighlight(self, note=None):
         if note is None:
@@ -127,6 +136,14 @@ class ChordButton(QtWidgets.QWidget):
         self.intervals = Intervals[diatonicInterval]
         self.diatonicIntervalName = Cardinals[diatonicInterval]
         self.baseInterval = self.intervals[0]
+        self.toggleTexts = 'Enable {} interval'.format(self.diatonicIntervalName), 'Disable {} interval'.format(self.diatonicIntervalName)
+        intervalTypes = IntervalTypes[diatonicInterval]
+        if len(intervalTypes) > 1:
+            self.toggleIntervalText = 'Toggle between '
+            self.toggleIntervalText += ', '.join([i.lower() for i in intervalTypes[:-1]])
+            self.toggleIntervalText += ' and {} {}'.format(intervalTypes[-1].lower(), self.diatonicIntervalName.lower())
+        else:
+            self.toggleIntervalText = ''
         self._currentIndex = 0
         self._active = False
 
@@ -213,6 +230,14 @@ class ChordButton(QtWidgets.QWidget):
 #            index = len(self.intervals) - 1
 #        self.currentIndex = index
 
+    def event(self, event):
+        if event.type() == QtCore.QEvent.ToolTip and self.isEnabled():
+            if event.y() < self.height() / 2:
+                QtWidgets.QToolTip.showText(event.globalPos(), self.toggleTexts[self._active], self, self.rect().adjusted(0, 0, 0, -self.height() / 2))
+            else:
+                QtWidgets.QToolTip.showText(event.globalPos(), self.toggleIntervalText, self, self.rect().adjusted(0, 0, 0, -self.height() / 2))
+        return QtWidgets.QWidget.event(self, event)
+
     def mousePressEvent(self, event):
         if event.buttons() == QtCore.Qt.LeftButton:
             if event.y() < self.height() / 2:
@@ -238,7 +263,14 @@ class ChordButton(QtWidgets.QWidget):
         qp.drawPrimitive(QtWidgets.QStyle.PE_Widget, option)
 
         state = QtGui.QPalette.Normal if self._active and self.isEnabled()else QtGui.QPalette.Disabled
-        qp.drawText(option.rect, QtCore.Qt.AlignCenter, self.diatonicIntervalName)
+        if self._active:
+            font = self.font()
+            font.setBold(True)
+            qp.setFont(font)
+            qp.drawText(option.rect, QtCore.Qt.AlignCenter, self.diatonicIntervalName)
+            qp.setFont(self.font())
+        else:
+            qp.drawText(option.rect, QtCore.Qt.AlignCenter, self.diatonicIntervalName)
         qp.setPen(self.palette().color(state, QtGui.QPalette.WindowText))
         qp.drawText(self.rect().adjusted(0, option.rect.bottom() + 2, 0, 0), QtCore.Qt.AlignCenter, self.chordType)
 
@@ -754,7 +786,7 @@ class NoteEditorAutomationView(QtWidgets.QGraphicsView):
     def resizeEvent(self, event):
         QtWidgets.QGraphicsView.resizeEvent(self, event)
         if self.scene():
-            self.setTransform(QtGui.QTransform().scale(1., self.viewport().rect().height() / 127.))
+            self.setTransform(QtGui.QTransform().scale(self.transform().m11(), self.viewport().rect().height() / 127.))
 
 
 class NoteEditorAutomationWidget(QtWidgets.QWidget):
@@ -798,9 +830,13 @@ class NoteEditorAutomationWidget(QtWidgets.QWidget):
         self.automationCombo.blockSignals(True)
         for automation in self.track.automations():
             if automation.parameterType == BlofeldParameter:
-                parameter = Parameters.parameterData[automation.parameterId >> 4]
+                parameter = Parameters.parameterData[automation.parameterId >> 4 & 511]
                 if parameter.children:
                     parameter = parameter[automation.parameterId & 7]
+                label = parameter.fullName
+                part = automation.parameterId >> 15
+                if part:
+                    label += ' (part {})'.format(part + 1)
                 self.automationCombo.addItem(parameter.fullName)
                 self.automationCombo.setItemData(index, automation, ParameterRole)
                 index += 1
@@ -839,7 +875,7 @@ class NoteEditorAutomationWidget(QtWidgets.QWidget):
         self.automationCombo.clear()
         for automationInfo in sorted(automationInfoSet):
             if automationInfo.parameterType == BlofeldParameter:
-                parameter = Parameters.parameterData[automationInfo.parameterId >> 4]
+                parameter = Parameters.parameterData[automationInfo.parameterId >> 4 & 511]
                 if parameter.children:
                     parameter = parameter.children[automationInfo.parameterId & 7]
                 self.automationCombo.addItem(parameter.fullName)
@@ -877,6 +913,113 @@ class NoteEditorAutomationWidget(QtWidgets.QWidget):
         self.handle.setFixedWidth(self.width())
 
 
+class TimelineWidget(QtWidgets.QWidget):
+    playheadMoveRequested = QtCore.pyqtSignal(float)
+
+    def __init__(self, parent):
+        QtWidgets.QWidget.__init__(self, parent)
+        self.setFixedHeight(self.fontMetrics().height() + 2)
+#        self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.zoomFactor = 1
+        self.playheadPos = 0
+        self.offset = 0
+        self.setMinimumWidth(4000)
+        self.beatSize = self.parent().piano.width()
+
+    def setOffset(self, offset):
+        self.offset = offset + self.beatSize -self.pattern.time * self.beatSize * self.zoomFactor
+        self.move(self.offset, 0)
+
+    def setPattern(self, pattern):
+        self.pattern = pattern
+        self.start = pattern.time
+        self.structure = pattern.track.structure
+        self.playheadPos = self.pattern.time * self.beatSize * self.zoomFactor
+
+    def setPlayheadPos(self, pos):
+        self.playheadPos = pos
+        self.update()
+
+    def mouseMoveEvent(self, event):
+        self.playheadMoveRequested.emit(sanitize(
+            self.pattern.time, 
+            float(event.x()) / self.beatSize / self.zoomFactor, 
+            self.pattern.time + self.pattern.length
+            ))
+
+    def paintEvent(self, event):
+        qp = QtGui.QPainter(self)
+        qp.translate(.5, .5)
+#        qp.fillRect(self.rect(), QtCore.Qt.lightGray)
+        meters = iter(self.structure.meters)
+
+        currentMeter = meters.next()
+        try:
+            nextMeter = meters.next()
+        except:
+            nextMeter = None
+
+        rect = event.rect()
+
+        barBgdColor = self.palette().color(QtGui.QPalette.Window).lighter(150)
+        x = 0
+        align = QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter
+        bar = 1
+        beats = 0
+        height = self.height()
+        unit = self.beatSize * self.zoomFactor
+        currentBarPixels = unit * currentMeter.beats
+        currentBeatPixels = unit / currentMeter.denominator * 4
+        if currentBarPixels < qp.fontMetrics().width('88'):
+            barTextDivisor = 4
+        else:
+            barTextDivisor = 1
+        barData = []
+        while x < rect.right():
+            if nextMeter:
+                if beats + currentMeter.beats > nextMeter.time:
+#                    print(bar, currentMeter.beats, bar * currentMeter.beats, nextMeter.time)
+                    currentMeter = nextMeter
+                    currentBarPixels = unit * currentMeter.beats
+                    currentBeatPixels = unit / currentMeter.denominator * 4
+                    try:
+                        nextMeter = meters.next()
+                    except:
+                        nextMeter = None
+            if x < rect.left() - currentBarPixels:
+                x += currentBarPixels
+                beats += currentMeter.beats
+                bar += 1
+                continue
+            textX = x + 2
+            qp.save()
+            qp.setPen(QtCore.Qt.darkGray)
+            qp.drawLine(x, 0, x, height)
+            qp.restore()
+
+            if currentBeatPixels > 4:
+                beatPixels = currentBeatPixels
+                qp.save()
+                qp.setPen(QtCore.Qt.lightGray)
+                while beatPixels < currentBarPixels:
+                    qp.drawLine(x + beatPixels, 0, x + beatPixels, height)
+                    beatPixels += currentBeatPixels
+                qp.restore()
+
+            if not (bar - 1) % barTextDivisor:
+                barData.append((QtCore.QRect(x + 1, 0, qp.fontMetrics().width(str(bar)) + 1, height), QtCore.QRect(textX, 2, 50, height - 2), str(bar)))
+
+            beats += currentMeter.beats
+            bar += 1
+            x += currentBarPixels
+
+        for barBgd, barRect, barText in barData:
+            qp.fillRect(barBgd, barBgdColor)
+            qp.drawText(barRect, align, barText)
+        qp.setPen(PlayheadPen)
+        qp.drawLine(self.playheadPos, 0, self.playheadPos, height)
+
+
 class NoteRegionView(QtWidgets.QGraphicsView):
     horizontalZoomChanged = QtCore.pyqtSignal(float)
     verticalZoomChanged = QtCore.pyqtSignal(float)
@@ -886,11 +1029,14 @@ class NoteRegionView(QtWidgets.QGraphicsView):
     def __init__(self, *args, **kwargs):
         QtWidgets.QGraphicsView.__init__(self, *args, **kwargs)
         self.piano = VerticalPiano(self)
-        self.timelineHeight = 10
+        self.piano.installEventFilter(self)
 
         self.automationWidget = NoteEditorAutomationWidget(self)
         self.automationWidget.handle.installEventFilter(self)
-        self.setViewportMargins(self.piano.width(), self.timelineHeight, 0, self.automationWidget.height())
+
+        self.timelineWidget = TimelineWidget(self)
+        self.playheadMoveRequested = self.timelineWidget.playheadMoveRequested
+        self.timelineHeight = self.timelineWidget.height()
 
 #        self.addScrollBarWidget(ScrollBarSpacer(self, QtCore.Qt.Horizontal, self.piano.width()), QtCore.Qt.AlignLeft)
         self.verticalScrollBarSpacer = ScrollBarSpacer(self, QtCore.Qt.Vertical, self.automationWidget.height())
@@ -906,7 +1052,11 @@ class NoteRegionView(QtWidgets.QGraphicsView):
         self.verticalZoomChanged.connect(self.verticalZoomWidget.setZoom)
         self.addScrollBarWidget(self.verticalZoomWidget, QtCore.Qt.AlignBottom)
 
+        self.setViewportMargins(self.piano.width(), self.timelineHeight, 0, self.automationWidget.height())
+
+        self.horizontalScrollBar().valueChanged.connect(self.updateTimelinePosition)
         self.verticalScrollBar().valueChanged.connect(self.updatePianoPosition)
+
         self.scrollMargin = 16
         self._centerTarget = QtCore.QPointF()
         self.centerAnimation = QtCore.QPropertyAnimation(self, b'centerTarget')
@@ -923,6 +1073,7 @@ class NoteRegionView(QtWidgets.QGraphicsView):
         self.automationView = self.automationWidget.automationView
         self.horizontalScrollBar().valueChanged.connect(self.automationView.horizontalScrollBar().setValue)
         self.automationScene = self.automationView.scene()
+        self.timelineWidget.setPattern(pattern)
 
     def setHorizontalZoom(self, delta):
         factor = self.transform().m11()
@@ -936,6 +1087,9 @@ class NoteRegionView(QtWidgets.QGraphicsView):
             self.horizontalZoomChanged.emit(factor)
             self.automationView.setTransform(QtGui.QTransform().scale(factor, self.automationView.transform().m22()))
             self.automationView.horizontalScrollBar().setValue(self.horizontalScrollBar().value())
+            self.timelineWidget.zoomFactor = factor
+            self.updateTimelinePosition()
+#            self.timelineWidget.updateZoom(factor, self.mapFromScene(QtCore.QPoint(0, 0)).x())
 
     def setVerticalZoom(self, delta):
         factor = self.transform().m22()
@@ -965,6 +1119,17 @@ class NoteRegionView(QtWidgets.QGraphicsView):
 #            self.setDragMode(self.NoDrag)
 #        else:
 #            self.setDragMode(self.RubberBandDrag)
+
+    def updateTimelinePosition(self):
+        x = self.mapFromScene(QtCore.QPoint(0, 0)).x()
+        self.timelineWidget.setOffset(x)
+        mask = QtGui.QBitmap(self.timelineWidget.width(), self.timelineHeight)
+        mask.clear()
+        qp = QtGui.QPainter(mask)
+        qp.setBrush(QtCore.Qt.black)
+        qp.drawRect(-self.timelineWidget.x() + self.piano.width(), 0, self.viewport().width(), self.timelineHeight)
+        qp.end()
+        self.timelineWidget.setMask(mask)
 
     def updatePianoPosition(self):
         y = self.mapFromScene(QtCore.QPoint(0, 0)).y()
@@ -1037,18 +1202,22 @@ class NoteRegionView(QtWidgets.QGraphicsView):
                 self.mousePos = pos
 
     def eventFilter(self, source, event):
-        if event.type() == QtCore.QEvent.MouseButtonPress and event.buttons() == QtCore.Qt.LeftButton:
-            self.mousePos = source.mapTo(self, event.pos())
-        elif event.type() == QtCore.QEvent.MouseMove and event.buttons() == QtCore.Qt.LeftButton:
-            self.handleResizeDelta(source.mapTo(self, event.pos()))
-        elif event.type() == QtCore.QEvent.MouseButtonRelease:
-            self.mousePos = None
+        if source == self.piano:
+            if event.type() == QtCore.QEvent.Wheel:
+                self.wheelEvent(event)
+        else:
+            if event.type() == QtCore.QEvent.MouseButtonPress and event.buttons() == QtCore.Qt.LeftButton:
+                self.mousePos = source.mapTo(self, event.pos())
+            elif event.type() == QtCore.QEvent.MouseMove and event.buttons() == QtCore.Qt.LeftButton:
+                self.handleResizeDelta(source.mapTo(self, event.pos()))
+            elif event.type() == QtCore.QEvent.MouseButtonRelease:
+                self.mousePos = None
         return QtWidgets.QGraphicsView.eventFilter(self, source, event)
 
     def resizeEvent(self, event):
         QtWidgets.QGraphicsView.resizeEvent(self, event)
-#        self.updateTimelinePosition()
         self.updatePianoPosition()
+        self.updateTimelinePosition()
         self.setViewportMargins(self.piano.width(), self.timelineHeight, 0, self.automationWidget.height())
         self.automationWidget.move(0, self.viewport().geometry().bottom())
         self.automationWidget.setFixedWidth(self.width())
@@ -1070,15 +1239,18 @@ class NoteRegionEditor(QtWidgets.QDialog):
         QtWidgets.QDialog.__init__(self, parent)
         loadUi('ui/noteregioneditor.ui', self)
         self.midiEvent = parent.midiEvent
+        self.player = parent.player
         self.pattern = pattern.clone()
 #        print('Orig {} copy {}'.format(pattern, self.pattern))
 #        self.baseHeight = self.fontMetrics().height()
+        self.timelineWidget = self.noteView.timelineWidget
         self.noteScene = NoteRegionScene(self.noteView, self.pattern)
         self.noteView.setScene(self.noteScene)
         self.noteView.setPattern(self.pattern)
         self.automationView = self.noteView.automationWidget.automationView
         self.automationScene = self.automationView.scene()
 
+        self.playheadStartPos = -pattern.time * self.noteScene.beatSize
         self.noteScene.noteHighlight.connect(self.noteView.piano.noteHighlight)
         self.noteView.piano.playNote.connect(self.playNote)
         self.noteView.piano.stopNote.connect(self.stopNote)
@@ -1121,12 +1293,104 @@ class NoteRegionEditor(QtWidgets.QDialog):
         self.settings.endGroup()
 
         self.chordMenu = QtWidgets.QMenu(self)
+        self.chordMenu.setSeparatorsCollapsible(False)
         for intervals, chordName in Chords:
+            if not intervals:
+                self.chordMenu.addSection(chordName)
+                continue
             action = self.chordMenu.addAction(chordName)
             action.setData(intervals)
         self.autoChordBtn.setMenu(self.chordMenu)
         self.autoChordBtn.triggered.connect(self.setAutoChord)
         self.noteScene.autoChordWidget = self.autoChordWidget
+
+        self.rewindBtn.clicked.connect(self.rewind)
+        self.playBtn.toggled.connect(self.togglePlay)
+        self.player.statusChanged.connect(self.togglePlay)
+        self.loopBtn.toggled.connect(self.setLoop)
+        self.stopBtn.clicked.connect(self.parent().stop)
+
+        option = QtWidgets.QStyleOption()
+        option.initFrom(self)
+        toolBarSpacing = self.style().pixelMetric(QtWidgets.QStyle.PM_ToolBarItemSpacing, option, self)
+        self.mainToolBarLayout.setSpacing(toolBarSpacing)
+        self.inputToolBarLayout.setSpacing(toolBarSpacing)
+        sepSize = self.style().pixelMetric(QtWidgets.QStyle.PM_ToolBarSeparatorExtent, option, self)
+        for layout in (self.mainToolBarLayout, self.inputToolBarLayout):
+            for index in range(layout.count()):
+                item = layout.itemAt(index)
+                try:
+                    widget = item.widget()
+                    if type(widget) == QtWidgets.QFrame and widget.minimumWidth() < sepSize:
+                        widget.setMinimumWidth(sepSize)
+                except:
+                    pass
+
+#        self.copyAction = QtWidgets.QAction(QtGui.QIcon.fromTheme('edit-copy'), 'Copy', self)
+#        self.copyAction.setShortcut(QtGui.QKeySequence(QtGui.QKeySequence.Copy))
+#        self.copyAction.setShortcutContext(QtCore.Qt.WindowShortcut)
+#        self.copyAction.triggered.connect(self.stopcazz)
+
+        self.noteView.playheadMoveRequested.connect(self.playheadMoveRequested)
+        self.parent().playheadTimeChanged.connect(self.setPlayheadPos)
+        self.parent().playheadTime = pattern.time
+        self.playIcons = QtGui.QIcon.fromTheme('media-playback-start'), QtGui.QIcon.fromTheme('media-playback-pause')
+        self.noteView.setFocus()
+
+    def stopcazz(self):
+        print('staocazzoooooooooooo')
+
+    def playheadMoveRequested(self, time):
+        self.parent().playheadTime = time
+
+    def setPlayheadPos(self, pos):
+        pos *= self.noteScene.beatSize
+        self.timelineWidget.setPlayheadPos(pos)
+        self.noteScene.playhead.setX(pos + self.playheadStartPos)
+
+    def setLoop(self, loop):
+        if loop:
+            if self.player.status == self.player.Playing:
+                self.loopBtn.blockSignals(True)
+                self.player.stop()
+                self.loopBtn.setChecked(True)
+                self.loopBtn.blockSignals(False)
+                return QtCore.QTimer.singleShot(0, lambda: self.loopBtn.setChecked(True))
+            self.parent().playheadTime = self.pattern.time
+            self.player.playFrom(self.pattern.time, self.pattern.time + self.pattern.length, loop=loop, pattern=self.pattern)
+        else:
+            self.player.stop()
+            self.togglePlay(True)
+
+    def togglePlay(self, state=None):
+        if state is None:
+            return self.playBtn.setChecked(not self.playBtn.isChecked())
+        if state:
+            start = self.parent().playheadTime
+            if start >= self.pattern.time + self.pattern.length - .125:
+                start = self.pattern.time
+#            self.player.playFrom(self.pattern.time, self.pattern.time + self.pattern.length, pattern=self.pattern)
+            self.parent().togglePlay(True, start, self.pattern.time + self.pattern.length, pattern=self.pattern)
+        else:
+            self.parent().togglePlay(False)
+            QtCore.QTimer.singleShot(0, self.checkLoop)
+        self.playBtn.blockSignals(True)
+        self.playBtn.setChecked(state)
+        self.playBtn.blockSignals(False)
+        self.playBtn.setIcon(self.playIcons[bool(state)])
+
+    def checkLoop(self):
+        if self.player.status != self.player.Playing:
+            self.loopBtn.blockSignals(True)
+            self.loopBtn.setChecked(False)
+            self.loopBtn.blockSignals(False)
+
+    def rewind(self):
+        restart = self.player.status == self.player.Playing
+        self.player.stop()
+        self.parent().setPlayheadTime(self.pattern.time)
+        if restart:
+            QtCore.QTimer.singleShot(0, self.togglePlay)
 
     def setAutoChord(self, action):
         self.autoChordBtn.setChecked(True)
@@ -1134,7 +1398,7 @@ class NoteRegionEditor(QtWidgets.QDialog):
         self.autoChordWidget.setChord(action.data())
 
     def playNote(self, note, velocity=None):
-        print('playo', note)
+#        print('playo', note)
         self.midiEvent.emit(MidiEvent(NOTEON, 1, self.pattern.track.channel, data1=note, 
             data2=velocity if velocity is not None else self.defaultVelocityCombo.value()))
         if self.sender() == self.noteScene:
@@ -1165,6 +1429,22 @@ class NoteRegionEditor(QtWidgets.QDialog):
         elif event.key() == QtCore.Qt.Key_Shift and self.mouseMode() != Select:
             self.setMouseMode(Select)
             self.selectBtn.setDown(True)
+        elif event.key() == QtCore.Qt.Key_Space:
+            self.togglePlay()
+        elif event.key() == QtCore.Qt.Key_Home:
+            self.rewindBtn.click()
+        elif event.key() == QtCore.Qt.Key_Period:
+            self.stopBtn.click()
+        elif event.key() == QtCore.Qt.Key_L:
+            self.loopBtn.toggle()
+        elif event.key() == QtCore.Qt.Key_F1:
+            self.mouseModeGroup.button(Draw).setChecked(True)
+        elif event.key() == QtCore.Qt.Key_F2:
+            self.mouseModeGroup.button(Select).setChecked(True)
+        elif event.key() == QtCore.Qt.Key_F3:
+            self.mouseModeGroup.button(Erase).setChecked(True)
+        elif event.key() == QtCore.Qt.Key_A and event.modifiers() == QtCore.Qt.ShiftModifier | QtCore.Qt.ControlModifier:
+            self.autoChordBtn.toggle()
         QtWidgets.QDialog.keyPressEvent(self, event)
 
     def keyReleaseEvent(self, event):
@@ -1177,7 +1457,7 @@ class NoteRegionEditor(QtWidgets.QDialog):
     def reject(self):
         if self.noteScene.isClean() and self.automationScene.isClean():
            return QtWidgets.QDialog.reject(self)
-        res = AdvancedMessageBox(self, 'Pattern modified', 'The pattern has been modified.', 
+        res = AdvancedMessageBox(self, 'Pattern modified', 'The pattern has been modified.<br/>If you don\'t save it, all changes will be lost', 
             icon=AdvancedMessageBox.Question, 
             buttons={AdvancedMessageBox.Save: 'Save and close', 
                 AdvancedMessageBox.Ignore: None, 
@@ -1198,6 +1478,7 @@ class NoteRegionEditor(QtWidgets.QDialog):
 
     def exec_(self):
         res = QtWidgets.QDialog.exec_(self)
+        self.player.stop()
         self.settings.beginGroup('Sequencer')
         self.settings.setValue('NoteEditorGeometry', self.saveGeometry())
         self.settings.setValue('NoteSnapMode', self.snapCombo.currentIndex())

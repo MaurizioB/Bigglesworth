@@ -7,9 +7,176 @@ from Qt import QtCore, QtGui, QtWidgets
 from bigglesworth.utils import loadUi
 from bigglesworth.parameters import Parameters, ctrl2sysex, sysex2ctrl
 from bigglesworth.sequencer.const import (ValidMappingRole, ParameterRole, QuantizeRole, 
-    SnapModes, DefaultNoteSnapModeId, 
+    SnapModes, DefaultNoteSnapModeId, UnicodeValidator, 
+    UidColumn, DataColumn, TitleColumn, TracksColumn, EditedColumn, CreatedColumn, 
     Mappings, CtrlParameter, SysExParameter, BlofeldParameter, getCtrlNameFromMapping)
 from bigglesworth.sequencer.structure import RegionInfo, MetaRegion
+
+ParameterIdRole = ParameterRole + 1
+
+
+class MidiImportProgressDialog(QtWidgets.QProgressDialog):
+    def __init__(self, parent, count):
+        QtWidgets.QProgressDialog.__init__(self, 'Importing {} MIDI tracks...'.format(count), '', 0, count, parent)
+        self.setCancelButton(None)
+        self.setWindowTitle('Importing MIDI file')
+
+    def closeEvent(self, event):
+        if self.value() >= self.maximum():
+            QtWidgets.QProgressDialog.closeEvent(self, event)
+        else:
+            event.ignore()
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Escape:
+            event.ignore()
+        else:
+            QtWidgets.QProgressDialog.keyPressEvent(self, event)
+
+
+class BlofeldIdDialog(QtWidgets.QDialog):
+    def __init__(self, parent, blofeldId=127):
+        QtWidgets.QDialog.__init__(self, parent)
+        self.setWindowTitle('Specify Device ID')
+        layout = QtWidgets.QGridLayout()
+        self.setLayout(layout)
+        if not blofeldId:
+            text = '''
+            The current song has some Blofeld parameter automation set, but the current 
+            <i>Device ID</i> is set to 0.<br/>
+            While this usually works for most scenarios, using the "broadcast" ID (127) 
+            is suggested.
+            '''
+        else:
+            text = '''
+            The current song has some Blofeld parameter automation set, but the current 
+            <i>Device ID</i> is set to 0.<br/>
+            Setting the ID to the "broadcast" value (127) is preferred.
+            '''
+        label = QtWidgets.QLabel(text)
+        layout.addWidget(label, 0, 0, 1, 3)
+        label.setWordWrap(True)
+        label.setTextFormat(QtCore.Qt.RichText)
+#        label.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
+
+        layout.addWidget(QtWidgets.QLabel('Device ID:'), 1, 0)
+
+        self.idSpin = QtWidgets.QSpinBox()
+        layout.addWidget(self.idSpin, 1, 1)
+        self.idSpin.setMaximum(127)
+        self.idSpin.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
+
+        self.broadcastBtn = QtWidgets.QPushButton('Broadcast')
+        layout.addWidget(self.broadcastBtn, 1, 2)
+        self.broadcastBtn.clicked.connect(lambda: self.idSpin.setValue(127))
+        self.broadcastBtn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
+
+        buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok|QtWidgets.QDialogButtonBox.RestoreDefaults)
+        layout.addWidget(buttonBox, 2, 0, 1, 3)
+        buttonBox.button(buttonBox.RestoreDefaults).clicked.connect(lambda: self.idSpin.setValue(blofeldId))
+        buttonBox.accepted.connect(self.accept)
+        buttonBox.rejected.connect(self.reject)
+
+    def exec_(self):
+        if QtWidgets.QDialog.exec_(self) is not None:
+            return self.idSpin.value()
+
+
+class InputTextDialog(QtWidgets.QDialog):
+    def __init__(self, parent, title, label, text='', maxLength=16):
+        QtWidgets.QDialog.__init__(self, parent)
+        self.setWindowTitle(title)
+        layout = QtWidgets.QVBoxLayout()
+        self.setLayout(layout)
+        layout.addWidget(QtWidgets.QLabel(label))
+        self.lineEdit = QtWidgets.QLineEdit(text)
+        layout.addWidget(self.lineEdit)
+        self.lineEdit.setMaxLength(16)
+        self.lineEdit.setValidator(UnicodeValidator())
+        buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok|QtWidgets.QDialogButtonBox.Cancel)
+        layout.addWidget(buttonBox)
+        buttonBox.accepted.connect(self.accept)
+        buttonBox.rejected.connect(self.reject)
+
+    def exec_(self):
+        if QtWidgets.QDialog.exec_(self):
+            return self.lineEdit.text().strip()
+
+class SongItemDelegate(QtWidgets.QStyledItemDelegate):
+    validator = UnicodeValidator()
+
+    def createEditor(self, parent, option, index):
+        editor = QtWidgets.QStyledItemDelegate.createEditor(self, parent, option, index)
+        editor.setValidator(self.validator)
+        return editor
+
+
+class SongBrowser(QtWidgets.QDialog):
+    def __init__(self, parent, songModel):
+        QtWidgets.QDialog.__init__(self, parent)
+        loadUi('ui/sequencerbrowser.ui', self)
+        self.songModel = songModel
+        self.songTable.setModel(songModel)
+        self.songTable.setColumnHidden(UidColumn, True)
+        self.songTable.setColumnHidden(DataColumn, True)
+        self.songTable.horizontalHeader().setResizeMode(TitleColumn, QtWidgets.QHeaderView.Stretch)
+        self.songTable.horizontalHeader().setResizeMode(TracksColumn, QtWidgets.QHeaderView.ResizeToContents)
+        self.songTable.horizontalHeader().setResizeMode(EditedColumn, QtWidgets.QHeaderView.ResizeToContents)
+        self.songTable.horizontalHeader().setResizeMode(CreatedColumn, QtWidgets.QHeaderView.ResizeToContents)
+        self.songTable.selectionModel().selectionChanged.connect(self.selectionChanged)
+
+        self.songTable.doubleClicked.connect(self.openSong)
+        self.songTable.setItemDelegate(SongItemDelegate())
+        self.songModel.dataChangedSignal.connect(self.checkSelection)
+
+        self.renameBtn.clicked.connect(self.renameSong)
+        self.deleteBtn.clicked.connect(self.deleteSong)
+        self.buttonBox.button(self.buttonBox.Open).setEnabled(False)
+
+    def openSong(self, index):
+        self.accept()
+
+    def renameSong(self):
+        index = self.songTable.currentIndex()
+        if not index.isValid():
+            self.renameBtn.setEnabled(False)
+            return
+        self.songTable.edit(index)
+
+    def deleteSong(self):
+        indexes = self.songTable.selectionModel().selectedRows()
+        if not indexes:
+            self.deleteBtn.setEnabled(False)
+            return
+        if QtWidgets.QMessageBox(self, 'Delete songs', 
+            'Do you want to permanently delete the {count}selected song{p}?'.format(
+                count='{} '.format(len(indexes)) if len(indexes) > 1 else '', 
+                ),
+            QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel
+            ) != QtWidgets.QMessageBox.Ok:
+                return
+        for index in sorted(indexes, key=lambda i: index.row(), reverse=True):
+            self.songModel.removeRow(index.row())
+
+    def checkSelection(self, index):
+        if index.isValid():
+            QtCore.QTimer.singleShot(0, lambda: self.songTable.selectRow(index.row()))
+
+    def selectionChanged(self, current, prev):
+        selectedRows = len(set([i.row() for i in current.indexes()]))
+        self.buttonBox.button(self.buttonBox.Open).setEnabled(selectedRows == 1)
+        self.renameBtn.setEnabled(selectedRows == 1)
+        self.deleteBtn.setEnabled(selectedRows >= 1)
+
+    def exec_(self):
+        if QtWidgets.QDialog.exec_(self):
+            uid = self.songModel.data(
+                self.songTable.currentIndex().sibling(
+                    self.songTable.currentIndex().row(), UidColumn), QtCore.Qt.DisplayRole)
+            data = self.songModel.data(
+                self.songTable.currentIndex().sibling(
+                    self.songTable.currentIndex().row(), DataColumn), QtCore.Qt.DisplayRole)
+            return uid, data
 
 
 class QuantizeDialog(QtWidgets.QDialog):
@@ -191,25 +358,51 @@ class MappingProxyModel(QtCore.QSortFilterProxyModel):
         return self.sourceModel().index(row, 0).data(ValidMappingRole) >= self.filter
 
 
+class BlofeldExistingModel(QtCore.QSortFilterProxyModel):
+    part = 0
+    existing = [set() for p in range(16)]
+    def __init__(self, model, existing):
+        QtCore.QSortFilterProxyModel.__init__(self)
+        self.setSourceModel(model)
+        for parameterId in existing:
+            part = parameterId >> 15
+            realId = parameterId & 32767
+            self.existing[part].add(realId)
+
+    def setPart(self, part):
+        if part != self.part:
+            self.part = part
+            self.invalidate()
+
+    def flags(self, index):
+        flags = QtCore.QSortFilterProxyModel.flags(self, index)
+        try:
+            if index.data(ParameterIdRole) in self.existing[self.part]:
+                flags &= ~ QtCore.Qt.ItemIsEnabled
+        except Exception as e:
+            print(e)
+        return flags
+
+
 class AddAutomationDialog(QtWidgets.QDialog):
     def __init__(self, parent, existing=None):
         QtWidgets.QDialog.__init__(self, parent)
         loadUi('ui/sequenceraddautomationdialog.ui', self)
+        self.existingCtrl = set()
+        self.existingBlofeld = set()
         if existing is not None:
-            self.existing = set(existing)
-            self.existingCtrl = set()
-            self.existingBlofeld = set()
             for regionInfo in existing:
                 if regionInfo.parameterType == CtrlParameter:
                     self.existingCtrl.add(regionInfo.parameterId)
-                    if regionInfo.parameterId >> 4 in ctrl2sysex:
-                        self.existingBlofeld.add(ctrl2sysex[regionInfo.parameterId >> 4])
+                    if regionInfo.parameterId in ctrl2sysex:
+                        self.existingBlofeld.add(ctrl2sysex[regionInfo.parameterId] << 4)
                 elif regionInfo.parameterType == BlofeldParameter:
                     self.existingBlofeld.add(regionInfo.parameterId)
-                    if regionInfo.parameterId >> 4 in sysex2ctrl:
-                        self.existingCtrl.add(sysex2ctrl[regionInfo.parameterId >> 4])
+                    if regionInfo.parameterId >> 4 & 511 in sysex2ctrl:
+                        self.existingCtrl.add(sysex2ctrl[regionInfo.parameterId >> 4 & 511])
 
-        self.blofeldModel = QtGui.QStandardItemModel()
+        model = QtGui.QStandardItemModel()
+        self.blofeldModel = BlofeldExistingModel(model, self.existingBlofeld)
         self.blofeldCombo.setModel(self.blofeldModel)
         index = 0
         for param in Parameters.parameterData:
@@ -222,25 +415,31 @@ class AddAutomationDialog(QtWidgets.QDialog):
                     child = param.children[childId]
                     item = QtGui.QStandardItem(child.fullName)
                     item.setData(child, ParameterRole)
-                    if (param.id << 4) + childId in self.existingBlofeld:
-                        item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEnabled)
-                    self.blofeldModel.appendRow(item)
+                    item.setData((param.id << 4) + childId, ParameterIdRole)
+#                    if (param.id << 4) + childId in self.existingBlofeld:
+#                        item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEnabled)
+                    model.appendRow(item)
 #                    self.blofeldCombo.addItem(child.fullName)
 #                    self.blofeldCombo.setItemData(index, child, ParameterRole)
                     index += 1
             else:
                 item = QtGui.QStandardItem(param.fullName)
                 item.setData(param, ParameterRole)
+                item.setData(param.id << 4, ParameterIdRole)
                 #no, a questo punto vedi se val la pena far lo sbattimento di aggiungereun "sub parameterId"
                 #o lasciar perdere completamente l'implementazione dei parametri blofeld non ctrl
-                if param.id << 4 in self.existingBlofeld:
-                    item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEnabled)
+#                if param.id << 4 in self.existingBlofeld:
+#                    item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEnabled)
 #                self.blofeldCombo.addItem(param.fullName)
 #                self.blofeldCombo.setItemData(index, param, ParameterRole)
-                self.blofeldModel.appendRow(item)
+                model.appendRow(item)
                 index += 1
 
         self.blofeldCombo.currentIndexChanged.connect(self.setBlofeldLabel)
+        self.blofeldCombo.currentIndexChanged.connect(self.checkBlofeldValid)
+        self.partCombo.currentIndexChanged.connect(self.blofeldModel.setPart)
+        self.partCombo.currentIndexChanged.connect(self.checkBlofeldValid)
+        self.tabWidget.currentChanged.connect(self.checkBlofeldValid)
 
         self.mappingCombo.addItem(QtGui.QIcon.fromTheme('blofeld-b'), 'Blofeld')
         self.mappingCombo.setItemData(0, 'Blofeld')
@@ -268,8 +467,15 @@ class AddAutomationDialog(QtWidgets.QDialog):
 
         self.mappingModels = {}
 
-#        #get only existing CtrlParameter automations
-#        self.existing = [a[1] for a in self.track.automations(CtrlParameter)]
+        self.validLbl.setVisible(False)
+        self.validIcon.setVisible(False)
+        self.multiLbl.setVisible(False)
+        icon = QtGui.QIcon.fromTheme('emblem-warning')
+        iconSize = self.fontMetrics().height()
+        pm = icon.pixmap(iconSize)
+        if pm.height() != iconSize or True:
+            pm = pm.scaledToHeight(iconSize, QtCore.Qt.SmoothTransformation)
+        self.validIcon.setPixmap(pm)
 
         self.setMapping(0)
         self.setBlofeld(0)
@@ -277,11 +483,11 @@ class AddAutomationDialog(QtWidgets.QDialog):
 #        self.validMappingChk.setChecked(True)
 
     def setBlofeld(self, index):
-        if self.blofeldModel.item(index).flags() & QtCore.Qt.ItemIsEnabled:
+        if self.blofeldModel.index(index, 0).flags() & QtCore.Qt.ItemIsEnabled:
             self.blofeldCombo.setCurrentIndex(index)
             return
         for row in range(self.blofeldModel.rowCount()):
-            if self.blofeldModel.item(row).flags() & QtCore.Qt.ItemIsEnabled:
+            if self.blofeldModel.index(row, 0).flags() & QtCore.Qt.ItemIsEnabled:
                 self.blofeldCombo.setCurrentIndex(row)
                 return
 
@@ -296,8 +502,18 @@ class AddAutomationDialog(QtWidgets.QDialog):
             defaultVal=param.default, 
             defaultText=param.valueDict[param.default])
         if param.range.step > 1:
-            text += '<br/>In steps of {}'.format(param.range.step)
+            text += '<br/><br/>This parameter has steps of {}'.format(param.range.step)
         self.blofeldLbl.setText(text)
+
+    def checkBlofeldValid(self):
+        if self.tabWidget.currentIndex():
+            valid = True
+        else:
+            valid = bool(self.blofeldModel.index(self.blofeldCombo.currentIndex(), 0).flags() & QtCore.Qt.ItemIsEnabled)
+        self.validLbl.setVisible(not valid)
+        self.validIcon.setVisible(not valid)
+        self.multiLbl.setVisible(self.partCombo.currentIndex())
+        self.buttonBox.button(self.buttonBox.Ok).setEnabled(valid)
 
     def setCtrlStyle(self, index):
         try:
@@ -381,6 +597,7 @@ class AddAutomationDialog(QtWidgets.QDialog):
             id = (parameter.parent.id << 4) + parameter.id
         else:
             id = parameter.id << 4
+        id += self.partCombo.currentIndex() << 15
         return RegionInfo(BlofeldParameter, id)
 
 

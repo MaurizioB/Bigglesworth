@@ -9,7 +9,7 @@ from Qt import QtCore, QtGui, QtWidgets, QtSql
 
 from bigglesworth.utils import loadUi, getName, getChar, Enum, setBold, sanitize
 from bigglesworth.const import (chr2ord, UidColumn, LocationColumn, 
-    INIT, IDW, IDE, SNDP, MULD, END, templateGroupDict)
+    INIT, IDW, IDE, SNDP, MULD, END, templateGroupDict, factoryPresetsNamesDict)
 from bigglesworth.parameters import Parameters, fullRangeCenterZero, driveCurves, arpLength, ctrl2sysex
 from bigglesworth.widgets import SoundsMenu, EditorMenu, EnvelopeView, MidiConnectionsDialog, ModMatrixView, MultiEditor
 from bigglesworth.dialogs import (RandomDialog, InputMessageBox, TemplateManager, SaveSoundAs, 
@@ -98,6 +98,77 @@ _effects = [
 
 
 MidiIn, MidiOut = range(2)
+
+
+class MultiWithoutCollectionDialog(QtWidgets.QDialog):
+    def __init__(self, parent):
+        QtWidgets.QDialog.__init__(self, parent)
+        
+        layout = QtWidgets.QGridLayout()
+        self.setLayout(layout)
+        layout.setHorizontalSpacing(12)
+
+        iconSize = self.style().pixelMetric(QtWidgets.QStyle.PM_MessageBoxIconSize)
+        icon = QtWidgets.QLabel()
+        icon.setPixmap(self.style().standardIcon(QtWidgets.QStyle.SP_MessageBoxWarning).pixmap(iconSize))
+        layout.addWidget(icon)
+
+        label = QtWidgets.QLabel('''The is no current collection selected.<br/><br/>
+            While it is still possible to use Multi without a collection set, 
+            this is discouraged, as there is no collection to select sounds from 
+            and it will not be possible to save any change made to the multi
+            parameters.<br/>
+            Choose a collection, or continue without selecting one at your own risk.
+        ''')
+        label.setWordWrap(True)
+        layout.addWidget(label, 0, 1)
+
+        self.collectionList = QtWidgets.QListView()
+        layout.addWidget(self.collectionList, 1, 1)
+
+        model = QtGui.QStandardItemModel()
+        self.collectionList.setModel(model)
+        self.referenceModel = parent.referenceModel
+
+        settings = parent.settings
+        settings.beginGroup('CollectionIcons')
+        for collection in self.referenceModel.collections:
+            if collection == 'Blofeld':
+                iconName = 'bigglesworth'
+                displayName = collection
+            else:
+                iconName = settings.value(collection, '', str)
+                displayName = collection
+            item = QtGui.QStandardItem(QtGui.QIcon.fromTheme(iconName), displayName)
+            item.setData(collection, QtCore.Qt.UserRole)
+            model.appendRow(item)
+        settings.endGroup()
+
+        lineHeight = self.collectionList.sizeHintForRow(0)
+        self.collectionList.setMaximumHeight(lineHeight * max(5, model.rowCount()) + self.collectionList.frameWidth() * 2 + 1)
+
+        self.collectionList.selectionModel().selectionChanged.connect(self.setCollection)
+
+        self.buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok|QtWidgets.QDialogButtonBox.Cancel)
+        layout.addWidget(self.buttonBox, 2, 0, 1, 2)
+        self.buttonBox.addButton('Continue without collection', self.buttonBox.ActionRole).clicked.connect(self.setNoCollection)
+        self.buttonBox.button(self.buttonBox.Ok).setEnabled(False)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+
+        self.noCollection = False
+
+    def setNoCollection(self):
+        self.noCollection = True
+        self.accept()
+
+    def setCollection(self, current):
+        self.buttonBox.button(self.buttonBox.Ok).setEnabled(self.collectionList.selectionModel().currentIndex().isValid())
+
+    def collection(self):
+        if self.noCollection or not self.collectionList.currentIndex().isValid:
+            return None
+        return self.collectionList.currentIndex().data(QtCore.Qt.UserRole)
 
 
 class MultiEditorCover(QtWidgets.QWidget):
@@ -286,6 +357,7 @@ class FakeLetter(BaseFakeObject):
         self.widget.blockSignals(True)
         self.widget.setText(newText, False)
         self.widget.blockSignals(False)
+
 
 class EffectsFakeObject(QtCore.QObject):
     valueChanged = QtCore.pyqtSignal(int)
@@ -640,7 +712,6 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.libraryModel = self.database.libraryModel
 
         self.maskObject = None
-        self.bankBuffer = None
         self.currentUid = None
         self.currentCollection = None
         self.currentCollections = None
@@ -1039,7 +1110,7 @@ class EditorWindow(QtWidgets.QMainWindow):
 
     @multiMode.setter
     def multiMode(self, mode):
-        if mode == self._multiMode:
+        if mode == self._multiMode or (mode and not self.checkMultiUsability()):
             return
         self._multiMode = mode
         self.display.setMultiMode(mode)
@@ -1060,6 +1131,18 @@ class EditorWindow(QtWidgets.QMainWindow):
 
     def setMultiMode(self, mode):
         self.multiMode = mode
+
+    def checkMultiUsability(self):
+        if self.currentCollection is not None:
+            return True
+        dialog = MultiWithoutCollectionDialog(self)
+        if dialog.exec_():
+            bank = self.currentBank if self.currentBank is not None else 0
+            prog = self.currentProg if self.currentProg is not None else 0
+            self.currentCollection = dialog.collection()
+            self.openSoundFromBankProg(bank, prog)
+            return True
+        return False
 
     @property
     def currentMultiSet(self):
@@ -1806,17 +1889,32 @@ class EditorWindow(QtWidgets.QMainWindow):
         return id == self.main.blofeldId
 
     def sequencerEvent(self, event):
+        if self._multiMode:
+            if event.part != self.currentMultiPartIndex:
+                return
+        elif event.part:
+            return
+        print(event.part, event.parameter.attr, event.value)
         setattr(self.parameters, event.parameter.attr, event.value)
 
+    def programChange(self, bank, prog):
+        if bank is None:
+            if self.currentBank is None:
+                return
+            bank = self.currentBank
+        self.midiInWidget.activate()
+        self.openSoundFromBankProg(bank=bank, prog=prog)
+        print('prog change: {} {}'.format(bank, prog))
+
     def midiEventReceived(self, event):
-        if event.type == PROGRAM:
-            if self.main.progReceiveState and event.channel in self.main.chanReceive:
-                if self.bankBuffer is not None and not QtWidgets.QApplication.activeModalWidget():
-                    self.midiInWidget.activate()
-#                    print('prog change - bank', self.bankBuffer, 'prog', event.program)
-                    self.openSoundFromBankProg(prog=event.program)
-            self.bankBuffer = None
-            return
+#        if event.type == PROGRAM:
+#            if self.main.progReceiveState and event.channel in self.main.chanReceive:
+#                if self.bankBuffer is not None and not QtWidgets.QApplication.activeModalWidget():
+#                    self.midiInWidget.activate()
+##                    print('prog change - bank', self.bankBuffer, 'prog', event.program)
+#                    self.openSoundFromBankProg(prog=event.program)
+#            self.bankBuffer = None
+#            return
         if event.type == NOTEON:
             self.pianoKeyboard.triggerNoteEvent(True, event.note, event.velocity)
             self.midiInWidget.activate()
@@ -1825,17 +1923,17 @@ class EditorWindow(QtWidgets.QMainWindow):
             self.midiInWidget.activate()
         elif event.type == CTRL:
             if event.channel not in self.main.chanReceive:
-                self.bankBuffer = None
+#                self.bankBuffer = None
                 return
-            if event.param == 0:
-                if self.main.progReceiveState:
-                    self.bankBuffer = event.value
-                else:
-                    self.bankBuffer = None
-                return
-            elif event.param == 1:
-                self.modSlider.setValue(event.value)
+#            if event.param == 0:
+#                if self.main.progReceiveState:
+#                    self.bankBuffer = event.value
+#                else:
+#                    self.bankBuffer = None
+#                return
+            if event.param == 1:
                 self.midiInWidget.activate()
+                self.modSlider.setValue(event.value)
             elif event.param in ctrl2sysex:
                 self.midiInWidget.activate()
                 index = ctrl2sysex[event.param]
@@ -1851,14 +1949,21 @@ class EditorWindow(QtWidgets.QMainWindow):
                     if event.source in self.main.blockForwardPorts:
                         self.canForward = False
                     if eventType == SNDP:
-                        id = (event.sysex[6] << 7) + event.sysex[7]
-                        setattr(self.parameters, Parameters.parameterData[id].attr, event.sysex[8])
+                        location, msb, lsb, value = event.sysex[5:9]
+                        if self._multiMode:
+                            if self.currentMultiPartIndex != location:
+                                self.canForward = True
+                                return
+                        elif location:
+                            return
+                        id = (msb << 7) + lsb
+                        setattr(self.parameters, Parameters.parameterData[id].attr, value)
                     elif eventType == MULD:
                         self.multiEditor.midiEventReceived(event)
             else:
                 print('unknown SysExEvent received:\n{}', ', '.join('0x{:x}'.format(e) for e in event.sysex))
         self.canForward = True
-        self.bankBuffer = None
+#        self.bankBuffer = None
 
     def noteEvent(self, eventType, note, velocity):
 #        for channel in sorted(self.main.chanSend):
@@ -2027,7 +2132,17 @@ class EditorWindow(QtWidgets.QMainWindow):
         self.currentBank = bank
         self.currentProg = prog
         self.currentUid = self.database.getUidFromCollection(bank, prog, self.currentCollection)
-        self.setValues(self.database.getSoundDataFromUid(self.currentUid))
+#        self.setValues(self.database.getSoundDataFromUid(self.currentUid))
+        data = self.database.getSoundDataFromUid(self.currentUid)
+        self.parameters.blockSignals(True)
+        if not data:
+            data = [p.default for p in Parameters.parameterData]
+        for p, value in zip(Parameters.parameterData, data):
+            if p.attr.startswith('reserved') or (self._multiMode and p.attr.startswith('nameChar')):
+                continue
+            setattr(self.parameters, p.attr, value)
+        self.parameters.blockSignals(False)
+        self.display.multiSoundLabel.setText(getName(data[363:379]).strip())
 
     def setValues(self, data=None, fromDump=False, resetIndex=True):
         self.setFromDump = fromDump
@@ -2044,7 +2159,6 @@ class EditorWindow(QtWidgets.QMainWindow):
         name = getName(data[363:379]).strip()
         self.undoStack.clear()
         self.undoView.setEmptyLabel(u'"{}" clean status'.format(name))
-        print(name)
         if self._multiMode:
             self.display.multiSoundLabel.setText(name)
         else:
