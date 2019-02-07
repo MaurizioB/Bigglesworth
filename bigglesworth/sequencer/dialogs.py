@@ -148,14 +148,15 @@ class SongBrowser(QtWidgets.QDialog):
         if not indexes:
             self.deleteBtn.setEnabled(False)
             return
-        if QtWidgets.QMessageBox(self, 'Delete songs', 
+        if QtWidgets.QMessageBox.question(self, 'Delete songs', 
             'Do you want to permanently delete the {count}selected song{p}?'.format(
                 count='{} '.format(len(indexes)) if len(indexes) > 1 else '', 
+                p='s' if len(indexes) > 1 else '', 
                 ),
             QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel
             ) != QtWidgets.QMessageBox.Ok:
                 return
-        for index in sorted(indexes, key=lambda i: index.row(), reverse=True):
+        for index in sorted(indexes, key=lambda i: i.row(), reverse=True):
             self.songModel.removeRow(index.row())
 
     def checkSelection(self, index):
