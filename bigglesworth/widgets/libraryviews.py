@@ -11,7 +11,9 @@ from bigglesworth.parameters import categories
 from bigglesworth.widgets import NameEdit, ContextMenu, CategoryDelegate, TagsDelegate
 from bigglesworth.utils import loadUi, getSysExContents, sanitize, getValidQColor, getQtFlags
 from bigglesworth.const import (TagsRole, backgroundRole, foregroundRole, UidColumn, LocationColumn, 
-    NameColumn, CatColumn, TagsColumn, FactoryColumn, chr2ord, factoryPresets)
+    NameColumn, CatColumn, TagsColumn, FactoryColumn, chr2ord, factoryPresets, 
+    SingleClickActions, DoubleClickActions)
+
 from bigglesworth.library import CleanLibraryProxy, BankProxy, CatProxy, NameProxy, TagsProxy, MainLibraryProxy
 from bigglesworth.dialogs import (SoundTagsEditDialog, MultiSoundTagsEditDialog, RemoveSoundsMessageBox, 
     DeleteSoundsMessageBox, DropDuplicatesMessageBox, InitEmptySlotsDialog)
@@ -380,9 +382,18 @@ class BaseLibraryView(QtWidgets.QTableView):
                 highlightFont if section == index else normalFont, QtCore.Qt.FontRole)
 
     def soundDoubleClicked(self, index):
-        if self.parent().editModeBtn.isChecked():
-            return
-        self.window().soundEditRequested.emit(index.sibling(index.row(), UidColumn).data(), self.collection)
+        action = self.window().doubleClickAction
+        if action == DoubleClickActions.Edit:
+            self.window().soundEditRequested.emit(index.sibling(index.row(), UidColumn).data(), self.collection)
+        elif action == DoubleClickActions.Rename and index.sibling(index.row(), NameColumn).flags() & QtCore.Qt.ItemIsEditable:
+            self.edit(index.sibling(index.row(), NameColumn))
+        elif action == DoubleClickActions.Dump and index.sibling(index.row(), NameColumn).flags() & QtCore.Qt.ItemIsEditable:
+            uid = index.sibling(index.row(), UidColumn).data()
+            self.dumpToRequested.emit(uid, None, False)
+#        manca il dump!
+#        if self.parent().editModeBtn.isChecked():
+#            return
+#        self.window().soundEditRequested.emit(index.sibling(index.row(), UidColumn).data(), self.collection)
 
     def showStatusBarMessage(self, message):
         self.window().statusBar().showMessage(message)
@@ -459,8 +470,9 @@ class BaseLibraryView(QtWidgets.QTableView):
             QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel) != QtWidgets.QMessageBox.Ok:
                 return
         self.database.initSound(soundIndex, self.collection)
-        self.window().soundEditRequested.emit(self.database.getUidFromCollection(bank, prog, self.collection), self.collection)
-        self.setCurrentIndex(index.sibling(index.row(), NameColumn))
+        self.soundDoubleClicked(index)
+#        self.window().soundEditRequested.emit(self.database.getUidFromCollection(bank, prog, self.collection), self.collection)
+#        self.setCurrentIndex(index.sibling(index.row(), NameColumn))
 
     def dragEnterEvent(self, event):
         self.dropSelectionIndexes = None
@@ -829,8 +841,10 @@ class BaseLibraryView(QtWidgets.QTableView):
             menu.addSection(name)
             soundEditAction = menu.addAction(QtGui.QIcon.fromTheme('dial'), 'Open in the sound editor')
             soundEditAction.triggered.connect(lambda _, uid=uid: self.window().soundEditRequested.emit(uid, self.collection))
+            renameAction = menu.addAction(QtGui.QIcon.fromTheme('document-edit'), 'Rename')
+            renameAction.triggered.connect(lambda: self.edit(index.sibling(index.row(), NameColumn)))
 
-            dumpMenu = menu.addMenu(QtGui.QIcon(':/images/dump.svg'), 'Dump')
+            dumpMenu = menu.addMenu(QtGui.QIcon.fromTheme('dump'), 'Dump')
             if not outConn:
                 dumpMenu.setEnabled(False)
             dumpMenu.setSeparatorsCollapsible(False)
@@ -849,6 +863,7 @@ class BaseLibraryView(QtWidgets.QTableView):
                 findDuplicatesAction.triggered.connect(lambda: self.findDuplicatesRequested.emit(uid, self.collection))
 
                 receiveSection = dumpMenu.insertSection(sendSection, 'Receive')
+                withMidiInActions = [receiveSection]
 
                 if self.collection not in factoryPresets:
                     dumpFromSoundBuffer = QtWidgets.QAction('Dump from Sound Edit Buffer', dumpMenu)
@@ -859,8 +874,10 @@ class BaseLibraryView(QtWidgets.QTableView):
                     dumpMenu.insertActions(sendSection, [dumpFromSoundBuffer, dumpFromIndex])
                     dumpFromMultiMenu = QtWidgets.QMenu('Dump from Multi Edit Buffer', dumpMenu)
                     dumpMenu.insertMenu(sendSection, dumpFromMultiMenu)
+                    withMidiInActions.extend((dumpFromSoundBuffer, dumpFromIndex, dumpFromMultiMenu))
                 else:
                     receiveSection.setVisible(False)
+                    renameAction.setEnabled(False)
 
                 dumpToSoundBuffer = dumpMenu.addAction('Dump to Sound Edit Buffer')
                 dumpToSoundBuffer.triggered.connect(lambda: self.dumpToRequested.emit(uid, None, False))
@@ -876,7 +893,7 @@ class BaseLibraryView(QtWidgets.QTableView):
                     dumpToMultiAction.triggered.connect(lambda _, part=part: self.dumpToRequested.emit(uid, part, True))
 
                 if not inConn:
-                    for w in (receiveSection, dumpFromSoundBuffer, dumpFromIndex, dumpFromMultiMenu):
+                    for w in withMidiInActions:
                         w.setEnabled(False)
 
                 menu.addSeparator()
@@ -904,6 +921,7 @@ class BaseLibraryView(QtWidgets.QTableView):
                 duplicateAction.setStatusTip('Duplicate the selected sound')
                 if not nameIndex.flags() & QtCore.Qt.ItemIsEditable:
                     deleteAction.setEnabled(False)
+                    renameAction.setEnabled(False)
             duplicateAction.triggered.connect(lambda: self.duplicateRequested.emit(uid, index.row()))
             deleteAction.triggered.connect(lambda: self.deleteRequested.emit([uid]))
             menu.addSeparator()
@@ -1628,7 +1646,7 @@ class CollectionWidget(BaseLibraryWidget):
             self.emptySlotsChk.setEnabled(False)
         else:
             self.editable = True
-            self.editModeBtn.toggled.connect(self.setEditMode)
+#            self.editModeBtn.toggled.connect(self.setEditMode)
 
         self.collectionView.editable = self.editable
 
@@ -1808,7 +1826,7 @@ class LibraryWidget(BaseLibraryWidget):
 #        self.collectionView.tagsDelegate.tagClicked.connect(self.setTagFilter)
 
         self.collection = None
-        self.editModeBtn.toggled.connect(self.setEditMode)
+#        self.editModeBtn.toggled.connect(self.setEditMode)
 
         self.mainLibraryProxy = MainLibraryProxy()
         self.mainLibraryProxy.setSourceModel(self.model)

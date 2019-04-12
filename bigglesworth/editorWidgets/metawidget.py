@@ -21,14 +21,14 @@ LabelPositions = {
     QtCore.Qt.BottomEdge: (3, 2, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop), 
     }
 
-def makeQProperty(type, name, actions=None, *args, **kwargs):
-    def getter(self):
-        return getattr(self, name)
-    def setter(self, value):
-        setattr(self, name, value)
-        if actions:
-            [getattr(self, a)() for a in actions]
-    return QtCore.pyqtProperty(type, getter, setter, *args, **kwargs)
+#def makeQProperty(type, name, actions=None, *args, **kwargs):
+#    def getter(self):
+#        return getattr(self, name)
+#    def setter(self, value):
+#        setattr(self, name, value)
+#        if actions:
+#            [getattr(self, a)() for a in actions]
+#    return QtCore.pyqtProperty(type, getter, setter, *args, **kwargs)
 
 def makeQtProperty(propertyType, name, actions=None, signal=None, *args, **kwargs):
     def getter(self):
@@ -260,7 +260,9 @@ class BaseWidget(QtWidgets.QWidget):
             width = widgetSize.width() + l + r
             height = widgetSize.height() + t + b
         else:
-            labelSize = self._labelWidget.minimumSizeHint()
+            labelSize = self._labelWidget.minimumSize()
+            if labelSize.isNull():
+                labelSize = self._labelWidget.minimumSizeHint()
             if self._labelPos & (QtCore.Qt.TopEdge|QtCore.Qt.BottomEdge):
                 width = max(widgetSize.width(), labelSize.width()) + l + r
                 height = widgetSize.height() + labelSize.height() + self._labelMargin + t + b

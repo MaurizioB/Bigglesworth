@@ -34,7 +34,8 @@ from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, 
     DonateDialog, MidiChartDialog, AboutDialog, UpdateDialog, AdvancedMessageBox)
 from bigglesworth.help import HelpDialog
 
-from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, MULD, SNDR, LogInfo, LogWarning, factoryPresets, factoryPresetsNamesDict
+from bigglesworth.const import (INIT, IDE, IDW, CHK, END, SNDD, SNDP, MULD, SNDR, 
+    LogInfo, LogWarning, factoryPresets, factoryPresetsNamesDict, SingleClickActions)
 from bigglesworth.midiutils import SYSEX, CTRL, NOTEOFF, NOTEON, PROGRAM, SysExEvent, ClockEvent, Port
 
 from bigglesworth.mididevice import MidiDevice
@@ -405,6 +406,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.mainWindow.closed.connect(self.checkClose)
         self.mainWindow.quitAction.triggered.connect(self.quit)
         self.mainWindow.midiConnect.connect(self.midiConnect)
+        self.mainWindow.statusbar.singleActionChanged.connect(self.setSendLibraryProgChange)
 
         self.mainWindow.leftTabWidget.fullDumpBlofeldToCollectionRequested.connect(self.fullDumpBlofeldToCollection)
         self.mainWindow.leftTabWidget.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeld)
@@ -583,6 +585,10 @@ class Bigglesworth(QtWidgets.QApplication):
     @sendLibraryProgChange.setter
     def sendLibraryProgChange(self, state):
         self._sendLibraryProgChange = state
+        self.mainWindow.singleClickAction = state
+
+    def setSendLibraryProgChange(self, state):
+        self.sendLibraryProgChange = state
 
     def updateForwardRules(self):
         self.settings.beginGroup('MIDI')
@@ -1387,12 +1393,12 @@ class Bigglesworth(QtWidgets.QApplication):
     def progChangeRequest(self, index, collection):
         if not self.sendLibraryProgChange:
             return
-#        if self.editorWindow._editStatus == self.editorWindow.Modified:
-#            self.mainWindow.statusbar.showMessage('Failsafe active, program change ignored: current sound in Editor is unsaved!')
-#        else:
-#            bank = index >> 7
-#            prog = index & 127
-#            self.editorWindow.openSoundFromBankProg(bank, prog, collection, show=False)
+        if self.editorWindow._editStatus == self.editorWindow.Modified:
+            self.mainWindow.statusbar.showMessage('Failsafe active, program change ignored: current sound in Editor is unsaved!')
+        else:
+            bank = index >> 7
+            prog = index & 127
+            self.editorWindow.openSoundFromBankProg(bank, prog, collection, show=False)
 
     def isClean(self):
         if self.editorWindow._editStatus == self.editorWindow.Modified:

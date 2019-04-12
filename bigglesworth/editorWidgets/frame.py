@@ -273,6 +273,9 @@ class Frame(QtWidgets.QFrame):
             self._setLabelRect()
         self._computeMargins()
 
+    def setLabel(self, label):
+        self.label = label
+
     @QtCore.pyqtProperty(QtCore.Qt.Corner)
     def labelPos(self):
         return self._labelPos
@@ -330,7 +333,7 @@ class Frame(QtWidgets.QFrame):
     def borderColor(self, color):
         self._setBorderColor = color
         #this is a workaround that might not work around...
-        self._borderColorChanged = True if color != self.palette().color(self.palette().Midlight) else False
+        self._borderColorChanged = color != self.palette().color(self.palette().Midlight)
         self.borderAnimation.setEndValue(color)
         self.setPalette(self.palette())
 
@@ -346,7 +349,7 @@ class Frame(QtWidgets.QFrame):
     def _setLabelRect(self):
 #        self._labelRect = rect = QtCore.QRectF(0, 0, self.fontMetrics().width(self._label) + 4, self.fontMetrics().height() + 2)
         fontMetrics = self.fontMetrics()
-        hMargin = fontMetrics.height() / 4
+        hMargin = fontMetrics.height() / 2
         vMargin = hMargin / 2
         if sys.platform == 'darwin':
             hMargin = max(8, hMargin * 2)
@@ -409,7 +412,8 @@ class Frame(QtWidgets.QFrame):
             qp.restore()
             qp.translate(*textTranslate)
             qp.setPen(self._labelColor)
-            qp.drawText(self._labelRect, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter, self._label)
+            label = self.fontMetrics().elidedText(self._label, QtCore.Qt.ElideRight, self.height() - 2)
+            qp.drawText(self._labelRect, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter, label)
             qp.restore()
             qp.restore()
         except:
@@ -417,7 +421,8 @@ class Frame(QtWidgets.QFrame):
             qp.setBrush(self.borderColor)
             qp.drawPath(self._labelBackgroundPath)
             qp.setPen(self._labelColor)
-            qp.drawText(self._labelRect, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter, self._label)
+            label = self.fontMetrics().elidedText(self._label, QtCore.Qt.ElideRight, self.width() - 2)
+            qp.drawText(self._labelRect, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter, label)
 
     def paintEvent(self, event):
         QtWidgets.QFrame.paintEvent(self, event)

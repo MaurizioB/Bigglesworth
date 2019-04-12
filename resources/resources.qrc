@@ -237,6 +237,10 @@
         <file alias="16x16/document-export.svg">icons/Bigglesworth/16x16/document-export.svg</file>
         <file alias="22x22/document-export.svg">icons/Bigglesworth/22x22/document-export.svg</file>
         <file alias="24x24/document-export.svg">icons/Bigglesworth/24x24/document-export.svg</file>
+        <file alias="32x32/edit-undo.svg">icons/Bigglesworth/32x32/edit-undo.svg</file>
+        <file alias="16x16/edit-undo.svg">icons/Bigglesworth/16x16/edit-undo.svg</file>
+        <file alias="22x22/edit-undo.svg">icons/Bigglesworth/22x22/edit-undo.svg</file>
+        <file alias="24x24/edit-undo.svg">icons/Bigglesworth/24x24/edit-undo.svg</file>
         <file alias="16x16/template.svg">icons/Bigglesworth/16x16/template.svg</file>
         <file alias="22x22/template.svg">icons/Bigglesworth/22x22/template.svg</file>
         <file alias="22x22/labplot-xy-curve-segments.svg">icons/Bigglesworth/22x22/labplot-xy-curve-segments.svg</file>
@@ -330,10 +334,10 @@
         <file alias="16x16/format-align-vertical-center.svg">icons/Bigglesworth/16x16/format-align-vertical-center.svg</file>
         <file alias="22x22/format-align-vertical-center.svg">icons/Bigglesworth/22x22/format-align-vertical-center.svg</file>
         <file alias="24x24/format-align-vertical-center.svg">icons/Bigglesworth/24x24/format-align-vertical-center.svg</file>
-        <file alias="32x32/edit-undo.svg">icons/Bigglesworth/32x32/edit-undo.svg</file>
-        <file alias="16x16/edit-undo.svg">icons/Bigglesworth/16x16/edit-undo.svg</file>
-        <file alias="22x22/edit-undo.svg">icons/Bigglesworth/22x22/edit-undo.svg</file>
-        <file alias="24x24/edit-undo.svg">icons/Bigglesworth/24x24/edit-undo.svg</file>
+        <file alias="32x32/select.svg">icons/Bigglesworth/32x32/select.svg</file>
+        <file alias="16x16/select.svg">icons/Bigglesworth/16x16/select.svg</file>
+        <file alias="22x22/select.svg">icons/Bigglesworth/22x22/select.svg</file>
+        <file alias="24x24/select.svg">icons/Bigglesworth/24x24/select.svg</file>
         <file alias="32x32/view-refresh.svg">icons/Bigglesworth/32x32/view-refresh.svg</file>
         <file alias="16x16/view-refresh.svg">icons/Bigglesworth/16x16/view-refresh.svg</file>
         <file alias="22x22/view-refresh.svg">icons/Bigglesworth/22x22/view-refresh.svg</file>

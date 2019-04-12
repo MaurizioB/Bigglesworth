@@ -265,6 +265,7 @@ class TimelineWidget(QtWidgets.QWidget):
     deleteMarker = QtCore.pyqtSignal(object)
     dragMovement = QtCore.pyqtSignal()
     dragPlayhead = QtCore.pyqtSignal()
+    dragMovementFinished = QtCore.pyqtSignal()
     markerTypeDict = {
         MarkerEvent: MarkerWidget,
         EndMarker: EndMarkerWidget, 
@@ -356,6 +357,8 @@ class TimelineWidget(QtWidgets.QWidget):
     def eventFilter(self, source, event):        
         if event.type() == QtCore.QEvent.MouseMove:
             self.dragMovement.emit()
+        elif event.type() == QtCore.QEvent.MouseButtonRelease and event.button() == QtCore.Qt.LeftButton:
+            self.dragMovementFinished.emit()
         return QtWidgets.QWidget.eventFilter(self, source, event)
 
     def leaveEvent(self, event):
@@ -392,6 +395,8 @@ class TimelineWidget(QtWidgets.QWidget):
     def mouseReleaseEvent(self, event):
         self.mousePos = None
         self.longPressTimer.stop()
+        if event.button() == QtCore.Qt.LeftButton:
+            self.dragMovementFinished.emit()
 
     def wheelEvent(self, event):
         if event.modifiers() & QtCore.Qt.ShiftModifier:
@@ -1165,6 +1170,7 @@ class SequencerView(QtWidgets.QGraphicsView):
         self.timelineWidget.deleteMarker.connect(self.deleteMarker)
         self.timelineWidget.dragMovement.connect(self.timelineDragMovement)
         self.timelineWidget.dragPlayhead.connect(self.dragPlayhead)
+        self.timelineWidget.dragMovementFinished.connect(self.dragMovementFinished)
         self.zoomChanged.connect(self.timelineWidget.zoomChanged)
 
         scene = SequencerScene(self, self.structure, self.trackContainerWidget)
@@ -1213,26 +1219,40 @@ class SequencerView(QtWidgets.QGraphicsView):
         menu.exec_(QtGui.QCursor.pos())
 
     def dragPlayhead(self):
-        x = self.viewport().mapFromGlobal(QtGui.QCursor.pos()).x() / self.transform().m11()
-        time = max(0, (float(x) / BeatHUnit) // self.beatSnap * self.beatSnap)
+#        x = self.viewport().mapFromGlobal(QtGui.QCursor.pos()).x() / self.transform().m11()
+        x = self.mapToScene(self.viewport().mapFromGlobal(QtGui.QCursor.pos())).x()
+        try:
+            time = max(0, (float(x) / BeatHUnit) // self.beatSnap * self.beatSnap)
+        except:
+            time = max(0, (float(x) / BeatHUnit))
         self.playheadTime = time
-        self.timelineDragMovement(x)
         self.playheadMoved.emit(time)
+        rect = self.sceneRect()
+        if rect.right() < x:
+            rect.setRight(x)
+            self.setSceneRect(rect)
+
+    def dragMovementFinished(self):
+        lastMarkerTime = sorted(self.structure.timelineEvents, key=lambda e: e.time)[-1].time
+        rect = self.sceneRect()
+        if rect.right() * BeatHUnit > lastMarkerTime + 16:
+            rect.setRight(max(lastMarkerTime + 16, 16.) * BeatHUnit)
+            self.setSceneRect(rect)
 
     def timelineDragMovement(self, x=None):
         viewport = self.viewport()
         rect = viewport.rect()
         if x is None:
             x = viewport.mapFromGlobal(QtGui.QCursor.pos()).x()
-        if x < rect.x() + 16:
-            self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() + x - rect.x() - 16)
-        elif x > rect.right() - 16:
-            self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() + x - rect.right() + 16)
         mapped = self.mapToScene(QtCore.QPoint(x, 0)).x()
         if mapped > self.sceneRect().right():
             rect = self.sceneRect()
             rect.setRight(mapped)
             self.setSceneRect(rect)
+        if x < rect.x() + 16:
+            self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() + x - rect.x() - 16)
+        elif x > rect.right() - 16:
+            self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() + x - rect.right() + 16)
 #        print(x, self.viewport().geometry())
 
     def moveMarker(self, marker, x):

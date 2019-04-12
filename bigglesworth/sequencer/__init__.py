@@ -403,8 +403,8 @@ class TimeStampEdit(QtWidgets.QLineEdit):
         self.beatLbl = parent.beatLbl
         self.setFrame(False)
         self.currentWidget = None
-        self.barValidator = QtGui.QIntValidator(1, 256)
-        self.beatValidator = QtGui.QIntValidator(1, 32)
+        self.barValidator = QtGui.QIntValidator(0, 256)
+        self.beatValidator = QtGui.QIntValidator(0, 32)
         self.setValidator(self.barValidator)
         self.returnPressed.connect(self.returnCheck)
 
@@ -417,9 +417,9 @@ class TimeStampEdit(QtWidgets.QLineEdit):
             valid, text, pos = self.validator().validate(self.text(), 0)
             if valid == QtGui.QValidator.Acceptable:
                 if self.currentWidget == self.barLbl:
-                    self.parent().timeStampChanged.emit(int(text) - 1, int(self.beatLbl.text()) - 1)
+                    self.parent().timeStampChanged.emit(int(text) - 1, max(0, int(self.beatLbl.text()) - 1))
                 else:
-                    self.parent().timeStampChanged.emit(int(self.barLbl.text()) - 1, int(text) - 1)
+                    self.parent().timeStampChanged.emit(int(self.barLbl.text()) - 1, max(0, int(text) - 1))
 
     def activate(self, widget=None):
         self.checkoutTimeStamp()
@@ -464,10 +464,10 @@ class TimeStampWidget(QtWidgets.QFrame):
         self.barLbl.setSizePolicy(*sizePolicy)
         self.barLbl.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 
-        self.divLbl = QtWidgets.QLabel(':')
-        layout.addWidget(self.divLbl)
-        self.divLbl.setSizePolicy(*sizePolicy)
-        self.divLbl.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+        divLbl = QtWidgets.QLabel(':')
+        layout.addWidget(divLbl)
+        divLbl.setSizePolicy(*sizePolicy)
+        divLbl.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 
         self.beatLbl = QtWidgets.QLabel('01')
         layout.addWidget(self.beatLbl)
@@ -479,6 +479,8 @@ class TimeStampWidget(QtWidgets.QFrame):
         self.edit.installEventFilter(self)
         self.setFocusProxy(self.edit)
         self.activate = self.edit.activate
+
+        self.setStatusTip('Double click to set bar/beat')
 
     @property
     def bar(self):

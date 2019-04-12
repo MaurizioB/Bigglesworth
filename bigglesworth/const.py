@@ -286,6 +286,26 @@ chr2ord = {
     }
 
 
+class MouseActions(object):
+    def __init__(self, *actionData):
+        self.actions = range(len(actionData))
+        self.actionInfo = []
+        for actionId, (attr, iconName, label, toolTip) in enumerate(actionData):
+            setattr(self, attr, actionId)
+            self.actionInfo.append((iconName, label, toolTip))
+
+DoubleClickActions = MouseActions(
+    ('Edit', 'dial', 'Edit', 'Open sound in Editor'), 
+    ('Dump', 'dump', 'Dump', 'Dump to Sound Edit Buffer'), 
+    ('Rename', 'document-edit', 'Rename', 'Rename sounds'), 
+)
+
+
+SingleClickActions = MouseActions(
+        ('Select', 'select', 'Sel.', 'Select sounds'), 
+        ('ProgChange', 'dump', 'Prog', 'Send bank/program'), 
+)
+
 class TemplateClass(object):
     def __init__(self, fullName, dbName, params, groupDelta=None):
         self.fullName = fullName
