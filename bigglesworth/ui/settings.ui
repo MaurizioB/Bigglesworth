@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>672</width>
-    <height>377</height>
+    <width>677</width>
+    <height>385</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -59,7 +59,7 @@
    <item row="2" column="1">
     <widget class="QStackedWidget" name="stackedWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>7</number>
      </property>
      <widget class="QWidget" name="startUpPage">
       <layout class="QGridLayout" name="gridLayout_2">
@@ -1104,9 +1104,9 @@ parameters</string>
           <number>4</number>
          </property>
          <item row="1" column="1">
-          <widget class="QLabel" name="label">
+          <widget class="QLabel" name="sendLibraryLabel">
            <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;WARNING&lt;/span&gt;: activate this function only if you are completely sure about it. If you are editing a sound on your Blofeld and it is not connected to the Bigglesworth's MIDI input, those changes will be cleared by the new selected sound and cannot be restored.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;WARNING&lt;/span&gt;: activate this function only if you are completely sure about it. If you are editing a sound on your Blofeld and it is not connected to the Bigglesworth's MIDI input, those changes will be cleared by the new selected sound and cannot be restored.&lt;br/&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;NOTE&lt;/span&gt;: this option is overridden by the &amp;quot;Sgl&amp;quot; selector in the Librarian status bar.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="wordWrap">
             <bool>true</bool>
@@ -1114,25 +1114,19 @@ parameters</string>
           </widget>
          </item>
          <item row="1" column="0">
-          <spacer name="horizontalSpacer_6">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+          <widget class="QWidget" name="sendLibrarySpacer" native="true">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
            </property>
-           <property name="sizeType">
-            <enum>QSizePolicy::Fixed</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
+          </widget>
          </item>
          <item row="0" column="0" colspan="2">
           <widget class="QCheckBox" name="sendLibraryProgChangeChk">
            <property name="text">
-            <string>Send Program Change on collection selection change</string>
+            <string>Single click on a sound in Librarian selects it in the editor (and sends Program Change)</string>
            </property>
           </widget>
          </item>

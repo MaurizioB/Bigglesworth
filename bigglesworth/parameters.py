@@ -34,6 +34,8 @@ ctrl2sysex = {
     113: 235, 114: 237, 115: 238, 116: 239, 117: 240, 118: 241,   #env4 env
     }
 
+sysex2ctrl = {v: k for k, v in ctrl2sysex.items()}
+
 class RangeObject(tuple):
     def __init__(self, args):
         tuple.__init__(self, args)
@@ -208,7 +210,8 @@ arpLength = ('1/96', '1/48', '1/32', '1/16T', '1/32.', '1/16', '1/8T', '1/16.', 
 arpOctave = tuple([str(x) for x in range(1, 11)])
 arpDirection = ('Up', 'Down', 'Alt Up', 'Alt Down')
 arpPatternLength = tuple(str(pl) for pl in range(1, 17))
-arpTempo = tuple([str(x) for x in range(40,90,2)+range(90,165)+range(165,301,5)])
+arpTempoValues = range(40, 90, 2) + range(90, 165) + range(165, 301, 5)
+arpTempo = tuple([str(x) for x in arpTempoValues])
 characters = tuple(str(unichr(l)) for l in range(32,127))
 characters = characters + (u'°', )
 effectPolarity = ('positive', 'negative')
@@ -642,17 +645,17 @@ parameterData = _ParameterData([
 normalSingle = ('normal', 'single')
 adsr = ('ADSR', 'ADS1DS2R', 'One Shot', 'Loop S1S2', 'Loop All')
 
-parameterData[196].children[5] = _(5, 'filterEnvelopeTrigger', (0, 1, 1), normalSingle, 0, 'Filter Envelope Trigger', 'Trigger', 'Filter Envelope')
-parameterData[196].children[0] = _(0, 'filterEnvelopeMode', (0, 4, 1), adsr, 0, 'Filter Envelope Mode', 'Mode', 'Filter Envelope')
-parameterData[208].children[5] = _(5, 'amplifierEnvelopeTrigger', (0, 1, 1), normalSingle, 0, 'Amplifier Envelope Trigger', 'Trigger', 'Amplifier Envelope')
-parameterData[208].children[0] = _(0, 'amplifierEnvelopeMode', (0, 4, 1), adsr, 0, 'Amplifier Envelope Mode', 'Mode', 'Amplifier Envelope')
-parameterData[220].children[5] = _(5, 'envelope3Trigger', (0, 1, 1), normalSingle, 0, 'Envelope 3 Trigger', 'Trigger', 'Envelope 3')
-parameterData[220].children[0] = _(0, 'envelope3Mode', (0, 4, 1), adsr, 0, 'Envelope 3 Mode', 'Mode', 'Envelope 3')
-parameterData[232].children[5] = _(5, 'envelope4Trigger', (0, 1, 1), normalSingle, 0, 'Envelope 4 Trigger', 'Trigger', 'Envelope 4')
-parameterData[232].children[0] = _(0, 'envelope4Mode', (0, 4, 1), adsr, 0, 'Envelope 4 Mode', 'Mode', 'Envelope 4')
+parameterData[196].children[5] = _(5, 'filterEnvelopeTrigger', (0, 1, 1), normalSingle, 0, 'Filter Envelope Trigger', 'Trigger', 'Filter Envelope', parent=parameterData[196])
+parameterData[196].children[0] = _(0, 'filterEnvelopeMode', (0, 4, 1), adsr, 0, 'Filter Envelope Mode', 'Mode', 'Filter Envelope', parent=parameterData[196])
+parameterData[208].children[5] = _(5, 'amplifierEnvelopeTrigger', (0, 1, 1), normalSingle, 0, 'Amplifier Envelope Trigger', 'Trigger', 'Amplifier Envelope', parent=parameterData[208])
+parameterData[208].children[0] = _(0, 'amplifierEnvelopeMode', (0, 4, 1), adsr, 0, 'Amplifier Envelope Mode', 'Mode', 'Amplifier Envelope', parent=parameterData[208])
+parameterData[220].children[5] = _(5, 'envelope3Trigger', (0, 1, 1), normalSingle, 0, 'Envelope 3 Trigger', 'Trigger', 'Envelope 3', parent=parameterData[220])
+parameterData[220].children[0] = _(0, 'envelope3Mode', (0, 4, 1), adsr, 0, 'Envelope 3 Mode', 'Mode', 'Envelope 3', parent=parameterData[220])
+parameterData[232].children[5] = _(5, 'envelope4Trigger', (0, 1, 1), normalSingle, 0, 'Envelope 4 Trigger', 'Trigger', 'Envelope 4', parent=parameterData[232])
+parameterData[232].children[0] = _(0, 'envelope4Mode', (0, 4, 1), adsr, 0, 'Envelope 4 Mode', 'Mode', 'Envelope 4', parent=parameterData[232])
 
-parameterData[58].children[4] = _(4, 'unisono', (0, 5, 1), ('off', 'dual', '3', '4', '5', '6'), 0, 'Unisono', 'Unisono', 'Allocation Mode and Unisono')
-parameterData[58].children[0] = _(0, 'allocationMode', (0, 1, 1), ('Poly', 'Mono'), 0, 'Allocation Mode', 'Allocation', 'Allocation Mode and Unisono')
+parameterData[58].children[4] = _(4, 'unisono', (0, 5, 1), ('off', 'dual', '3', '4', '5', '6'), 0, 'Unisono', 'Unisono', 'Allocation Mode and Unisono', parent=parameterData[58])
+parameterData[58].children[0] = _(0, 'allocationMode', (0, 1, 1), ('Poly', 'Mono'), 0, 'Allocation Mode', 'Allocation', 'Allocation Mode and Unisono', parent=parameterData[58])
 
 steps = ('normal', 'pause', 'previous', 'first', 'last', 'first+last', 'chord', 'random')
 accents = ('silent', '/4', '/3', '/2', '*1', '*2', '*3', '*4')
@@ -667,12 +670,12 @@ for s in range(1, 17):
     timingLength = parameterData[tlID + s]
     s = str(s)
 
-    stepGlideAccent.children[4] = _(4, 'arpPatternStep' + s, (0, 7, 1), steps, 0, 'Arpeggiator Pattern Step ' + s, 'Step ' + s, 'Arpeggiator Pattern')
-    stepGlideAccent.children[3] = _(3, 'arpPatternGlide' + s, (0, 1, 1), offOn, 0, 'Arpeggiator Pattern Glide ' + s, 'Glide ' + s, 'Arpeggiator Pattern')
-    stepGlideAccent.children[0] = _(0, 'arpPatternAccent' + s, (0, 7, 1), accents, 4, 'Arpeggiator Pattern Accent ' + s, 'Accent ' + s, 'Arpeggiator Pattern')
+    stepGlideAccent.children[4] = _(4, 'arpPatternStep' + s, (0, 7, 1), steps, 0, 'Arpeggiator Pattern Step ' + s, 'Step ' + s, 'Arpeggiator Pattern', parent=stepGlideAccent)
+    stepGlideAccent.children[3] = _(3, 'arpPatternGlide' + s, (0, 1, 1), offOn, 0, 'Arpeggiator Pattern Glide ' + s, 'Glide ' + s, 'Arpeggiator Pattern', parent=stepGlideAccent)
+    stepGlideAccent.children[0] = _(0, 'arpPatternAccent' + s, (0, 7, 1), accents, 4, 'Arpeggiator Pattern Accent ' + s, 'Accent ' + s, 'Arpeggiator Pattern', parent=stepGlideAccent)
 
-    timingLength.children[4] = _(4, 'arpPatternLength' + s, (0, 7, 1), length, 4, 'Arpeggiator Pattern Length ' + s, 'Length ' + s, 'Arpeggiator Pattern')
-    timingLength.children[0] = _(0, 'arpPatternTiming' + s, (0, 7, 1), timing, 4, 'Arpeggiator Pattern Timing ' + s, 'Timing ' + s, 'Arpeggiator Pattern')
+    timingLength.children[4] = _(4, 'arpPatternLength' + s, (0, 7, 1), length, 4, 'Arpeggiator Pattern Length ' + s, 'Length ' + s, 'Arpeggiator Pattern', parent=timingLength)
+    timingLength.children[0] = _(0, 'arpPatternTiming' + s, (0, 7, 1), timing, 4, 'Arpeggiator Pattern Timing ' + s, 'Timing ' + s, 'Arpeggiator Pattern', parent=timingLength)
 
 
 def MakeParameter(id, name, rangeObject, default, children):
@@ -750,6 +753,7 @@ class Parameters(QtCore.QObject):
     indexedValidParameterList = []
     ids = []
     groups = set()
+    attrDict = {}
 
     def __new__(cls, *args, **kwargs):
         obj = QtCore.QObject.__new__(cls, *args, **kwargs)
@@ -763,10 +767,12 @@ class Parameters(QtCore.QObject):
                     childProperty = MakeChildParameter(param.id, childId, child.attr, child.range, child.default)
                     setattr(cls, child.attr, childProperty)
                     childProperties.append((childId, childProperty, mask))
+                    cls.attrDict[child.attr] = child
                 parameterProperty = MakeParameter(param.id, param.attr, param.range, param.default, childProperties)
                 cls.ids.append(param.attr)
                 setattr(cls, param.attr, parameterProperty)
                 cls.parameterList.append(param.attr)
+                cls.attrDict[param.attr] = param
                 if not param.attr.startswith('reserved'):
                     cls.validParameterData.append(param)
                     cls.validParameterList.append(param.attr)
@@ -797,6 +803,10 @@ class Parameters(QtCore.QObject):
     def __iter__(self):
         for i in range(383):
             yield self[i]
+
+    @classmethod
+    def getFromAttribute(cls, attr):
+        return cls.attrDict.get(attr)
 
 #    def getValues(self):
 #        return [getattr()]
@@ -831,7 +841,8 @@ class Parameters(QtCore.QObject):
             widget.setValue(value)
             widget.blockSignals(False)
         except Exception as e:
-            print('Error trying to set parameter "{}" ({})'.format(parameter, e))
+#            print('Error trying to set parameter "{}" ({})'.format(parameter, e))
+            pass
         for widget in self.widgets.get(parameter, []):
             widget.blockSignals(True)
             widget.setValue(value)

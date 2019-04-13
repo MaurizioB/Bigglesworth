@@ -21,3 +21,4 @@ from bigglesworth.widgets.arpeggiator import ArpeggiatorDisplay
 from bigglesworth.widgets.envelopes import EnvelopeView, EnvelopePreviewWidget
 from bigglesworth.widgets.docklibrary import DockLibrary, DockTreeView, LibraryFilterList
 from bigglesworth.widgets.editorfilters import FilterView
+from bigglesworth.widgets.multieditor import MultiEditor

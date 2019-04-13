@@ -38,6 +38,8 @@ IDE = 0x13
 SNDR = 0
 SNDD = 0x10
 SNDP = 0x20
+MULR = 1
+MULD = 0x11
 GLBR = 0x4
 GLBD = 0x14
 WTBD = 0x12
@@ -283,6 +285,26 @@ chr2ord = {
     u'°': 127, 
     }
 
+
+class MouseActions(object):
+    def __init__(self, *actionData):
+        self.actions = range(len(actionData))
+        self.actionInfo = []
+        for actionId, (attr, iconName, label, toolTip) in enumerate(actionData):
+            setattr(self, attr, actionId)
+            self.actionInfo.append((iconName, label, toolTip))
+
+DoubleClickActions = MouseActions(
+    ('Edit', 'dial', 'Edit', 'Open sound in Editor'), 
+    ('Dump', 'dump', 'Dump', 'Dump to Sound Edit Buffer'), 
+    ('Rename', 'document-edit', 'Rename', 'Rename sounds'), 
+)
+
+
+SingleClickActions = MouseActions(
+        ('Select', 'select', 'Sel.', 'Select sounds'), 
+        ('ProgChange', 'dump', 'Prog', 'Send bank/program'), 
+)
 
 class TemplateClass(object):
     def __init__(self, fullName, dbName, params, groupDelta=None):

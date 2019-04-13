@@ -5,7 +5,7 @@ from random import randrange
 from collections import OrderedDict
 from Qt import QtCore, QtGui, QtWidgets
 
-from bigglesworth.const import factoryPresetsNamesDict
+from bigglesworth.const import factoryPresetsNamesDict, SingleClickActions
 from bigglesworth.utils import loadUi
 #from bigglesworth.library import LibraryModel
 from bigglesworth.widgets import LibraryWidget, CollectionWidget, MidiStatusBarWidget
@@ -44,6 +44,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.midiWidget.midiConnect.connect(self.midiConnect)
         self.statusbar.addPermanentWidget(self.midiWidget)
         self.statusbar.setDatabase(parent.database)
+#        self.doubleClickAction = 1
 
         self.leftTabWidget.setSiblings(self.leftTabBar, self.rightTabWidget)
         self.rightTabWidget.setSiblings(self.rightTabBar, self.leftTabWidget)
@@ -237,6 +238,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.menubar.addMenu(self.main.getWindowsMenu(self, self.menubar))
         self.menubar.addMenu(self.main.getAboutMenu(self, self.menubar))
 
+        self.singleClickAction = int(self.settings.value('SendLibraryProgChange', SingleClickActions.Select, bool))
+
 #        self.createMaskObject()
 
     def activate(self):
@@ -252,6 +255,22 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.maskObject:
             self.maskObject.deleteLater()
             self.maskObject = None
+
+    @property
+    def singleClickAction(self):
+        return self.statusbar.singleClickSelector.currentActionId
+
+    @singleClickAction.setter
+    def singleClickAction(self, actionId):
+        self.statusbar.singleClickSelector.setAction(actionId)
+
+    @property
+    def doubleClickAction(self):
+        return self.statusbar.doubleClickSelector.currentActionId
+
+    @doubleClickAction.setter
+    def doubleClickAction(self, actionId):
+        self.statusbar.doubleClickSelector.setAction(actionId)
 
     @property
     def panelLayout(self):
@@ -333,6 +352,8 @@ class MainWindow(QtWidgets.QMainWindow):
                         break
 
     def programChange(self, bank, prog):
+        if bank is None:
+            return
         if isinstance(self.leftTabWidget.currentWidget(), CollectionWidget):
             self.leftTabWidget.currentWidget().focusIndex(bank, prog)
         if self.dualMode and isinstance(self.rightTabWidget.currentWidget(), CollectionWidget):

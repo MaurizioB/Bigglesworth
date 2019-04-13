@@ -224,7 +224,10 @@ class SequenceNumberMetaEvent(MetaEvent):
 class MetaEventWithText(MetaEvent):
     def __init__(self, **kw):
         super(MetaEventWithText, self).__init__(**kw)
-        if 'text' not in kw:
+        if 'text' in kw and not self.data:
+            self.text = kw['text']
+            self.data = [ord(letter) for letter in self.text]
+        else:
             self.text = ''.join(chr(datum) for datum in self.data)
     
     def __repr__(self):

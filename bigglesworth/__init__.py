@@ -31,10 +31,11 @@ from bigglesworth.themes import ThemeCollection
 from bigglesworth.dialogs import (DatabaseCorruptionMessageBox, SettingsDialog, GlobalsDialog, FirmwareDialog, 
     DumpReceiveDialog, DumpSendDialog, WarningMessageBox, SmallDumper, FirstRunWizard, LogWindow, 
     BlofeldDumper, FindDuplicates, SoundImport, SoundExportMulti, SoundListExport, MidiDuplicateDialog, 
-    DonateDialog, MidiChartDialog, AboutDialog, UpdateDialog)
+    DonateDialog, MidiChartDialog, AboutDialog, UpdateDialog, AdvancedMessageBox)
 from bigglesworth.help import HelpDialog
 
-from bigglesworth.const import INIT, IDE, IDW, CHK, END, SNDD, SNDP, SNDR, LogInfo, LogWarning, factoryPresets, factoryPresetsNamesDict
+from bigglesworth.const import (INIT, IDE, IDW, CHK, END, SNDD, SNDP, MULD, SNDR, 
+    LogInfo, LogWarning, factoryPresets, factoryPresetsNamesDict, SingleClickActions)
 from bigglesworth.midiutils import SYSEX, CTRL, NOTEOFF, NOTEON, PROGRAM, SysExEvent, ClockEvent, Port
 
 from bigglesworth.mididevice import MidiDevice
@@ -44,6 +45,8 @@ from bigglesworth.wavetables import WaveTableWindow, UidColumn, NameColumn, Slot
 from bigglesworth.welcome import Welcome
 from bigglesworth.version import isNewer
 from bigglesworth.dialogs.updates import UpdateChecker
+
+from bigglesworth.sequencer import SequencerWindow
 
 
 class SqlTableModelFix(QtSql.QSqlTableModel):
@@ -155,6 +158,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.argparse = argparse
         self._arguments = args
 
+        self.initialized = False
         self.lastActiveWindows = []
         self.lastMidiEvent = None
         self.disconnectionQueue = set()
@@ -274,7 +278,7 @@ class Bigglesworth(QtWidgets.QApplication):
             self.loggerWindow.show()
         self.splash.showMessage('Loading database engine', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, .2)
 
-        self.database = BlofeldDB(self)
+        self.database = BlofeldDB()
         if not self.database.initialize(self.argparse.database):
             if self.database.lastError & self.database.EmptyMask:
                 self.database.factoryStatus.connect(self.updateSplashFactory)
@@ -291,6 +295,19 @@ class Bigglesworth(QtWidgets.QApplication):
                     print('porcozzio', self.database.lastError)
             else:
                 print(self.database.lastError)
+        if self.database.fixes:
+            msgBox = AdvancedMessageBox(self.splash, 'Database fixed', 
+                '''The following issues found in the database have been fixed:<br/>
+                    <ul><li>{}</li></ul>
+                '''.format('</li><li>'.join(self.database.fixes)), 
+                icon=AdvancedMessageBox.Information, 
+                buttons={
+                    AdvancedMessageBox.Ok: None, 
+                    AdvancedMessageBox.Help: (QtGui.QIcon.fromTheme('text-x-log'),'Log')}
+                )
+            if msgBox.exec_() == AdvancedMessageBox.Help:
+                self.loggerWindow.show()
+                self.loggerWindow.loadFull()
         self.tagsModel = self.database.tagsModel
 
         try:
@@ -389,6 +406,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.mainWindow.closed.connect(self.checkClose)
         self.mainWindow.quitAction.triggered.connect(self.quit)
         self.mainWindow.midiConnect.connect(self.midiConnect)
+        self.mainWindow.statusbar.singleActionChanged.connect(self.setSendLibraryProgChange)
 
         self.mainWindow.leftTabWidget.fullDumpBlofeldToCollectionRequested.connect(self.fullDumpBlofeldToCollection)
         self.mainWindow.leftTabWidget.fullDumpCollectionToBlofeldRequested.connect(self.fullDumpCollectionToBlofeld)
@@ -424,6 +442,10 @@ class Bigglesworth(QtWidgets.QApplication):
         self.mainWindow.soundEditRequested.connect(self.editorWindow.openSoundFromUid)
 #        self.editorWindow.midiInWidget.setConnections(len([conn for conn in self.midiDevice.input.connections.input if not conn.hidden]))
 #        self.editorWindow.midiOutWidget.setConnections(len([conn for conn in self.midiDevice.output.connections.output if not conn.hidden]))
+
+        self.sequencerWindow = SequencerWindow()
+        self.sequencerWindow.midiEvent.connect(self.sendMidiEvent)
+        self.sequencerWindow.blofeldEvent.connect(self.editorWindow.sequencerEvent)
 
         self.splash.showMessage('Applying preferences', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom, 1)
 
@@ -468,6 +490,7 @@ class Bigglesworth(QtWidgets.QApplication):
         self.splash.showMessage('Prepare for some coolness! ;-)', QtCore.Qt.AlignLeft|QtCore.Qt.AlignBottom)
 
         self.midiDevice.midi_event.connect(self.midiEventReceived)
+        self.initialized = True
         QtCore.QTimer.singleShot(200, self.loadingComplete)
 
     @property
@@ -562,6 +585,10 @@ class Bigglesworth(QtWidgets.QApplication):
     @sendLibraryProgChange.setter
     def sendLibraryProgChange(self, state):
         self._sendLibraryProgChange = state
+        self.mainWindow.singleClickAction = state
+
+    def setSendLibraryProgChange(self, state):
+        self.sendLibraryProgChange = state
 
     def updateForwardRules(self):
         self.settings.beginGroup('MIDI')
@@ -784,7 +811,7 @@ class Bigglesworth(QtWidgets.QApplication):
                 self.dumpBuffer.append(event.sysex[5:390])
                 self.processDumpBuffer()
 #                self.sound_dump_received(Sound(event.sysex[5:390], SRC_BLOFELD))
-            elif sysexType == SNDP:
+            elif sysexType in (SNDP, MULD):
                 self.editorWindow.midiEventReceived(event)
 #            elif sysexType == GLBD:
 #                self.globals_event.emit(event.sysex)
@@ -792,14 +819,19 @@ class Bigglesworth(QtWidgets.QApplication):
 #                self.device_event.emit(event.sysex)
             return
         elif event.type in (CTRL, NOTEON, NOTEOFF, PROGRAM):
-            self.editorWindow.midiEventReceived(event)
             if WaveTableWindow.openedWindows and event.type in (NOTEON, NOTEOFF):
                 WaveTableWindow.openedWindows[0].midiEventReceived(event)
             if event.type == CTRL and not event.param:
-                self.bankBuffer = event.value
-            elif event.type == PROGRAM and self.bankBuffer is not None:
-                self.mainWindow.programChange(self.bankBuffer, event.program)
+                if self._progReceiveState:
+                    self.bankBuffer = event.value
+                return
+            elif event.type == PROGRAM:
+                if self._progReceiveState:
+                    self.mainWindow.programChange(self.bankBuffer, event.program)
+                    self.editorWindow.programChange(self.bankBuffer, event.program)
                 self.bankBuffer = None
+                return
+            self.editorWindow.midiEventReceived(event)
 
     def sendMidiEvent(self, event, ignoreChanSend=False):
 #        if self.debug_sysex and event.type == SYSEX:
@@ -1214,6 +1246,10 @@ class Bigglesworth(QtWidgets.QApplication):
             waveTableAction.triggered.connect(self.showWavetables)
             menu.wavetableActions = []
             menu.aboutToShow.connect(self.checkWavetableMenu)
+        if not isinstance(parent, SequencerWindow):
+            sequencerAction = menu.addAction(QtGui.QIcon.fromTheme('media-playback-start'), 'Se&quencer')
+            sequencerAction.setShortcut(QtGui.QKeySequence('Alt+P'))
+            sequencerAction.triggered.connect(lambda: self.sequencerWindow.activate())
         menu.wavetableSection = menu.addSection('Open wavetables')
         menu.windowsSeparator = menu.addSeparator()
         settingsAction = menu.addAction(QtGui.QIcon.fromTheme('settings'), '&Settings')
@@ -1416,11 +1452,12 @@ class Bigglesworth(QtWidgets.QApplication):
                     return False
             return True
 
-        if isinstance(self.activeWindow(), WaveTableWindow):
-            if not all((canCloseWavetables(), self.editorWindow.close())):
+        if self.initialized:
+            if isinstance(self.activeWindow(), WaveTableWindow):
+                if not all((canCloseWavetables(), self.editorWindow.close())):
+                    return
+            elif not all((self.editorWindow.close(), canCloseWavetables())):
                 return
-        elif not all((self.editorWindow.close(), canCloseWavetables())):
-            return
 
         QtWidgets.QApplication.quit()
 

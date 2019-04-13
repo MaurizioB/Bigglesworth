@@ -23,7 +23,7 @@
       <enum>Qt::ScrollBarAlwaysOn</enum>
      </property>
      <property name="editTriggers">
-      <set>QAbstractItemView::NoEditTriggers</set>
+      <set>QAbstractItemView::EditKeyPressed</set>
      </property>
      <property name="horizontalScrollMode">
       <enum>QAbstractItemView::ScrollPerPixel</enum>
@@ -150,7 +150,9 @@
             <string>All</string>
            </property>
            <property name="icon">
-            <iconset theme="edit-select-all"/>
+            <iconset theme="edit-select-all">
+             <normaloff/>
+            </iconset>
            </property>
           </item>
           <item>
@@ -158,7 +160,9 @@
             <string>Init</string>
            </property>
            <property name="icon">
-            <iconset theme="init"/>
+            <iconset theme="init">
+             <normaloff/>
+            </iconset>
            </property>
           </item>
           <item>
@@ -166,7 +170,9 @@
             <string>Arp</string>
            </property>
            <property name="icon">
-            <iconset theme="arp"/>
+            <iconset theme="arp">
+             <normaloff/>
+            </iconset>
            </property>
           </item>
           <item>
@@ -174,7 +180,9 @@
             <string>Atmo</string>
            </property>
            <property name="icon">
-            <iconset theme="atmo"/>
+            <iconset theme="atmo">
+             <normaloff/>
+            </iconset>
            </property>
           </item>
           <item>
@@ -182,7 +190,9 @@
             <string>Bass</string>
            </property>
            <property name="icon">
-            <iconset theme="bass"/>
+            <iconset theme="bass">
+             <normaloff/>
+            </iconset>
            </property>
           </item>
           <item>
@@ -190,7 +200,9 @@
             <string>Drum</string>
            </property>
            <property name="icon">
-            <iconset theme="drum"/>
+            <iconset theme="drum">
+             <normaloff/>
+            </iconset>
            </property>
           </item>
           <item>
@@ -198,7 +210,9 @@
             <string>FX</string>
            </property>
            <property name="icon">
-            <iconset theme="fx"/>
+            <iconset theme="fx">
+             <normaloff/>
+            </iconset>
            </property>
           </item>
           <item>
@@ -206,7 +220,9 @@
             <string>Keys</string>
            </property>
            <property name="icon">
-            <iconset theme="keys"/>
+            <iconset theme="keys">
+             <normaloff/>
+            </iconset>
            </property>
           </item>
           <item>
@@ -214,7 +230,9 @@
             <string>Lead</string>
            </property>
            <property name="icon">
-            <iconset theme="lead"/>
+            <iconset theme="lead">
+             <normaloff/>
+            </iconset>
            </property>
           </item>
           <item>
@@ -222,7 +240,9 @@
             <string>Mono</string>
            </property>
            <property name="icon">
-            <iconset theme="mono"/>
+            <iconset theme="mono">
+             <normaloff/>
+            </iconset>
            </property>
           </item>
           <item>
@@ -230,7 +250,9 @@
             <string>Pad</string>
            </property>
            <property name="icon">
-            <iconset theme="pad"/>
+            <iconset theme="pad">
+             <normaloff/>
+            </iconset>
            </property>
           </item>
           <item>
@@ -238,7 +260,9 @@
             <string>Perc</string>
            </property>
            <property name="icon">
-            <iconset theme="perc"/>
+            <iconset theme="perc">
+             <normaloff/>
+            </iconset>
            </property>
           </item>
           <item>
@@ -246,7 +270,9 @@
             <string>Poly</string>
            </property>
            <property name="icon">
-            <iconset theme="poly"/>
+            <iconset theme="poly">
+             <normaloff/>
+            </iconset>
            </property>
           </item>
           <item>
@@ -254,7 +280,9 @@
             <string>Seq</string>
            </property>
            <property name="icon">
-            <iconset theme="seq"/>
+            <iconset theme="seq">
+             <normaloff/>
+            </iconset>
            </property>
           </item>
          </widget>

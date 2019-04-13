@@ -93,6 +93,10 @@ class SettingsDialog(QtWidgets.QDialog):
         loadUi('ui/settings.ui', self)
         self.main = main
         self.settings = main.settings
+        option = QtWidgets.QStyleOptionButton()
+        self.sendLibraryProgChangeChk.initStyleOption(option)
+        _w = self.style().subElementRect(QtWidgets.QStyle.SE_CheckBoxContents, option, self.sendLibraryProgChangeChk)
+        self.sendLibrarySpacer.setFixedWidth(_w.left() - self.sendLibraryLabel.x())
 
         self.treeModel = QtGui.QStandardItemModel()
         self.treeView.setModel(self.treeModel)

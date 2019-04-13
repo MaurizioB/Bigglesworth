@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>723</width>
+    <height>433</height>
+   </rect>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="SequencerView" name="sequencerView">
+      <property name="mouseTracking">
+       <bool>true</bool>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="verticalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOn</enum>
+      </property>
+      <property name="horizontalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOn</enum>
+      </property>
+      <property name="backgroundBrush">
+       <brush brushstyle="SolidPattern">
+        <color alpha="255">
+         <red>0</red>
+         <green>0</green>
+         <blue>0</blue>
+        </color>
+       </brush>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+      </property>
+      <property name="renderHints">
+       <set>QPainter::Antialiasing|QPainter::TextAntialiasing</set>
+      </property>
+      <property name="dragMode">
+       <enum>QGraphicsView::RubberBandDrag</enum>
+      </property>
+      <property name="transformationAnchor">
+       <enum>QGraphicsView::NoAnchor</enum>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>723</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu_File">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <addaction name="newSongAction"/>
+    <addaction name="openSongAction"/>
+    <addaction name="saveSongAction"/>
+    <addaction name="saveSongAsAction"/>
+    <addaction name="separator"/>
+    <addaction name="importSongAction"/>
+    <addaction name="exportSongAction"/>
+   </widget>
+   <addaction name="menu_File"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QToolBar" name="mainToolBar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <property name="allowedAreas">
+    <set>Qt::TopToolBarArea</set>
+   </property>
+   <property name="floatable">
+    <bool>false</bool>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="openSongAction"/>
+   <addaction name="saveSongAction"/>
+   <addaction name="separator"/>
+   <addaction name="addTracksAction"/>
+  </widget>
+  <widget class="QToolBar" name="playToolBar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <property name="allowedAreas">
+    <set>Qt::TopToolBarArea</set>
+   </property>
+   <property name="floatable">
+    <bool>false</bool>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="rewindAction"/>
+   <addaction name="playAction"/>
+   <addaction name="loopAction"/>
+   <addaction name="stopAction"/>
+   <addaction name="separator"/>
+   <addaction name="minimizeAction"/>
+  </widget>
+  <action name="playAction">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset theme="media-playback-start">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Play</string>
+   </property>
+   <property name="toolTip">
+    <string>Toggle Play/Pause</string>
+   </property>
+   <property name="shortcut">
+    <string>Space</string>
+   </property>
+  </action>
+  <action name="stopAction">
+   <property name="icon">
+    <iconset theme="media-playback-stop">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Stop</string>
+   </property>
+   <property name="toolTip">
+    <string>Stop playback</string>
+   </property>
+   <property name="shortcut">
+    <string>.</string>
+   </property>
+  </action>
+  <action name="rewindAction">
+   <property name="icon">
+    <iconset theme="media-skip-backward">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Rewind</string>
+   </property>
+   <property name="toolTip">
+    <string>Rewind to start</string>
+   </property>
+  </action>
+  <action name="addTracksAction">
+   <property name="icon">
+    <iconset theme="insert-horizontal-rule">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Add new tracks...</string>
+   </property>
+   <property name="toolTip">
+    <string>Create new tracks</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+T</string>
+   </property>
+  </action>
+  <action name="loopAction">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset theme="media-playlist-repeat">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Loop</string>
+   </property>
+   <property name="toolTip">
+    <string>Play loop</string>
+   </property>
+   <property name="shortcut">
+    <string>L</string>
+   </property>
+  </action>
+  <action name="minimizeAction">
+   <property name="icon">
+    <iconset theme="zoom-out-large">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Minimize</string>
+   </property>
+   <property name="toolTip">
+    <string>Toggle window size</string>
+   </property>
+  </action>
+  <action name="newSongAction">
+   <property name="icon">
+    <iconset theme="document-new">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>New song</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="saveSongAction">
+   <property name="icon">
+    <iconset theme="document-save">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Save song</string>
+   </property>
+   <property name="toolTip">
+    <string>Save current song to database</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="openSongAction">
+   <property name="icon">
+    <iconset theme="document-open">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Browse songs...</string>
+   </property>
+   <property name="toolTip">
+    <string>Browse songs in the database</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="exportSongAction">
+   <property name="icon">
+    <iconset theme="document-export">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Export to MIDI file</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+E</string>
+   </property>
+  </action>
+  <action name="importSongAction">
+   <property name="icon">
+    <iconset theme="document-import">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Import from MIDI file</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+I</string>
+   </property>
+  </action>
+  <action name="saveSongAsAction">
+   <property name="icon">
+    <iconset theme="document-save-as">
+     <normaloff/>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Save song as...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+S</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>SequencerView</class>
+   <extends>QGraphicsView</extends>
+   <header>bigglesworth.sequencer.sequencerview</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

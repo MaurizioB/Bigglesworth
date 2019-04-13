@@ -50,6 +50,14 @@ class _Button(QtWidgets.QPushButton):
         QtWidgets.QPushButton.setText(self, text)
         self.checkSize()
 
+    def setIcon(self, icon):
+        QtWidgets.QPushButton.setIcon(self, icon)
+        self.checkSize()
+
+    def setIconSize(self, size):
+        QtWidgets.QPushButton.setIconSize(self, size)
+        self.checkSize()
+
     def checkSize(self):
         if self.text():
             l, t, r, b = self.getContentsMargins()
@@ -58,9 +66,14 @@ class _Button(QtWidgets.QPushButton):
             r += hMargin
             if self.parent()._menu and not self.parent()._hidePopupArrow:
                 r += self.iconSize().width()
-            self.setMinimumSize(self.fontMetrics().boundingRect(self.rect(), QtCore.Qt.AlignCenter, self.text()).adjusted(-l, -t, r, b).size())
+            size = self.fontMetrics().boundingRect(self.rect(), QtCore.Qt.AlignCenter, self.text()).adjusted(-l, -t, r, b).size()
         else:
-            self.setMinimumSize(self._minimumSizeHint)
+            size = QtCore.QSize(self._minimumSizeHint)
+        if not self.icon().isNull():
+            size.setWidth(size.width() + self.iconSize().width() + (4 if self.text() else 0))
+            if size.height() < self.iconSize().height():
+                size.setHeight(self.iconSize().height() + 2)
+        self.setMinimumSize(size)
 
     def switch(self):
         if self.parent().switchable:
@@ -84,6 +97,8 @@ class _Button(QtWidgets.QPushButton):
         backgroundNormalLight = backgroundBase
         backgroundPressed = backgroundBase.darker(110)
         backgroundPressedLight = backgroundBase.lighter(125)
+        disabledText = palette.color(palette.ButtonText)
+        disabledText.setAlpha(192)
 
 #        backgroundDisabled = backgroundBase.darker(200)
         backgroundDisabledLight = backgroundBase.darker(140)
@@ -117,6 +132,7 @@ class _Button(QtWidgets.QPushButton):
                 border-style: inset;
             }}
             QPushButton:disabled {{
+                color: {disabledText};
                 background: qradialgradient(cx:0.4, cy:0.4, radius: 1, fx:0.5, fy:0.5, 
                     stop:0 {backgroundDisabledLight},
                     stop:1 {backgroundDisabledPressed});
@@ -124,6 +140,7 @@ class _Button(QtWidgets.QPushButton):
             }}
             '''.format(
 #                light=_getCssQColorStr(backgroundBase.lighter(150)), 
+                disabledText=_getCssQColorStr(disabledText), 
                 dark=_getCssQColorStr(backgroundBase.darker()), 
                 backgroundNormal=_getCssQColorStr(backgroundNormal), 
                 backgroundNormalLight=_getCssQColorStr(backgroundNormalLight), 
@@ -176,12 +193,15 @@ class SquareButton(BaseWidget):
     switched = makeQtProperty(bool, '_switched', actions=(lambda self: self.button._setColors(self.palette()), ), signal='switchToggled')
     inverted = makeQtProperty(bool, '_inverted', actions=(lambda self: self.button._setColors(self.palette()), ))
 
-    def setMenu(self, menu=None):
-        self._menu = menu
-        if menu and not self._hidePopupArrow:
+    def setPaintMode(self):
+        if self._menu and not self._hidePopupArrow:
             self.button.paintEvent = self.button.popupPaintEvent
         else:
             self.button.paintEvent = self.button.defaultPaintEvent
+
+    def setMenu(self, menu=None):
+        self._menu = menu
+        self.setPaintMode()
         self.button.checkSize()
 
     def showPopup(self):
@@ -217,8 +237,8 @@ class SquareButton(BaseWidget):
             if event.pos() in self._labelWidget.geometry()|self.button.geometry():
                 if self._switchable:
                     self.switched = not self._switched
-                else:
-                    self.clicked.emit()
+#                else:
+                self.clicked.emit()
             self.button.setDown(False)
             self._pressing = False
             self.popupTimer.stop()
@@ -238,6 +258,8 @@ class SquareButton(BaseWidget):
     @insideText.setter
     def insideText(self, text):
         self.button.setText(text)
+        self.setPaintMode()
+        self.button.checkSize()
 
     @QtCore.pyqtSlot(bool)
     def setSwitchable(self, switchable):
@@ -264,6 +286,8 @@ class SquareButton(BaseWidget):
     @icon.setter
     def icon(self, icon):
         self.button.setIcon(icon)
+        self.setPaintMode()
+        self.button.checkSize()
 
     @QtCore.pyqtProperty(QtCore.QSize)
     def iconSize(self):
@@ -280,11 +304,8 @@ class SquareButton(BaseWidget):
     @hidePopupArrow.setter
     def hidePopupArrow(self, hide):
         self._hidePopupArrow = hide
-        if self._menu:
-            if not hide:
-                self.button.paintEvent = self.button.popupPaintEvent
-            else:
-                self.button.paintEvent = self.button.defaultPaintEvent
+        self.setPaintMode()
+        self.button.checkSize()
 
 
 def switched(state):

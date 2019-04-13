@@ -188,8 +188,6 @@ class _Dial(QtWidgets.QWidget):
 
         self.value = self.minimum
         self._baseValueList = FakeValueList(self)
-        if valueList:
-            self.setValueList(valueList)
 
         self._absoluteValue = 0
         self._currentIndex = 0
@@ -217,6 +215,9 @@ class _Dial(QtWidgets.QWidget):
         self.setRangeColorEnd(self._defaultRangeEnd)
         self.valueArcPenLinear = self._getValueColor()
 
+        #this was after self._baseValueList = FakeValueList(self)
+        if valueList:
+            self.setValueList(valueList)
         self.setToolTip(self.valueList[0])
 
 #        self.pressPoint = None
@@ -352,8 +353,8 @@ class _Dial(QtWidgets.QWidget):
                 self._valueList.append(str(len(self._valueList * self.step)))
             #invalidate the current value to ensure that the new value is update
             #obviously this is NOT the right way to do this...
-            self.value = None
-            self.setValue(oldValue)
+#            self.value = None
+            self._setValue(oldValue)
         self.setToolTip(self.valueList[self._currentIndex])
 
     @property
